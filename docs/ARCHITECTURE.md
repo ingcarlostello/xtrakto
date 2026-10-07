@@ -349,13 +349,13 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 12. Key decisions
 
-| Decision                                    | Why                                                                     | Alternative considered                           |
-| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ |
-| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.      | Python API with FastAPI                          |
-| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                | Convex                                           |
-| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                 | pg-boss (needs an always-on worker)              |
-| Files read in the browser                   | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server |
-| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.              | Content in the event                             |
-| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                             | LLM extraction for everything                    |
-| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                           | Decimals and timestamps                          |
-| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                       | Application-level filtering only                 |
+| Decision                                    | Why                                                                     | Alternative considered                           | ADR                                                                                                   |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.      | Python API with FastAPI                          | [0002](adr/0002-typescript-backend-python-for-ml.md)                                                  |
+| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                | Convex                                           | [0003](adr/0003-postgresql-with-drizzle.md)                                                           |
+| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                 | pg-boss (needs an always-on worker)              | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Files read in the browser                   | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
+| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.              | Content in the event                             | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                             | LLM extraction for everything                    | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
+| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                           | Decimals and timestamps                          | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
+| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                       | Application-level filtering only                 | —                                                                                                     |
