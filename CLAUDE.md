@@ -14,6 +14,15 @@ The architecture is a plan, not a contract. It was written before most of the co
 - Keep `docs/ARCHITECTURE.md` in sync with the code: update it in the same change. Significant decisions also get an ADR in `docs/adr/`.
 - The `.claude/rules/` files are different: they are standards, not a plan, and their "Always / Never" rules still apply unless the user agrees to change them.
 
+## Roadmap
+
+What to build and in which order (stages, phases, gates, progress, phase log). Follow its section 1 workflow, one phase at a time:
+
+@docs/ROADMAP.md
+
+- Before starting any work, check section 5 for the next unticked phase and say which phase it is.
+- If the roadmap and the Git section below disagree, the Git section wins: don't stage changes (roadmap step 6) unless the user authorizes it. Propose the commit message instead.
+
 ## UI
 
 All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
