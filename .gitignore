@@ -36,3 +36,10 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Real bank statements (local development only)
+fixtures/private/
+
+# Claude Code: per-developer files (shared rules in .claude/rules/ are committed)
+.claude/settings.local.json
+.remember/
