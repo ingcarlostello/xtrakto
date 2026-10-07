@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check-types": "next typegen && tsc --noEmit"
+    "check-types": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "next": "16.3.8",
@@ -19,10 +21,13 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "5.0.3",
     "@xtrakto/eslint-config": "workspace:*",
     "@xtrakto/typescript-config": "workspace:*",
     "eslint": "^9",
     "tailwindcss": "^4",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vite": "8.3.3",
+    "vitest": "5.0.3"
   }
 }

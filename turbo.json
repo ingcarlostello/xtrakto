@@ -14,7 +14,8 @@
       "dependsOn": ["transit"]
     },
     "test": {
-      "dependsOn": ["transit"]
+      "dependsOn": ["transit"],
+      "outputs": ["coverage/**"]
     },
     "transit": {
       "dependsOn": ["^transit"]
