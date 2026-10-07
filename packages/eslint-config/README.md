@@ -1,3 +1,3 @@
-# `@turbo/eslint-config`
+# `@xtrakto/eslint-config`
 
-Collection of internal eslint configurations.
+Shared ESLint configurations for the monorepo.

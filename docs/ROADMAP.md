@@ -102,7 +102,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 0 — Repository foundations**
 - [x] 0.1 Audit the repository (read-only)
-- [ ] 0.2 Clean up the boilerplate
+- [x] 0.2 Clean up the boilerplate
 - [ ] 0.3 Shared TypeScript configuration
 - [ ] 0.4 Shared ESLint configuration
 - [ ] 0.5 Testing setup
@@ -997,6 +997,7 @@ Follows the `ml/` rules.
 | Date | Phase | Summary | Deviations and follow-ups |
 |---|---|---|---|
 | 2026-10-07 | 0.1 | Read-only audit. Node 22.20.0, pnpm 12.9.1, Turborepo 2.11.7, Next.js 16.3.8, React 19.2.8, Tailwind 4.3.3, Prettier 3.9.6. TypeScript 7.0.2 (root, `packages/ui`) and 5.9.3 (`apps/web`); ESLint 10.9.1 (configs) and 9.39.5 (`apps/web`); no Vitest. No `apps/docs` and no `packages/parsers`. `apps/web` came from `create-next-app` as a nested workspace and doesn't use the shared configs. `pnpm install --frozen-lockfile` fails (`ERR_PNPM_IGNORED_BUILDS`, `allowBuilds` placeholder); `turbo test` fails (no task); `check-types`, `lint` and `build` pass with the existing install. | TypeScript 7 exports no compiler API (only `version`), so typescript-eslint can't use it: TypeScript 6.0.3 everywhere (decision 10, ADR in 0.9). ESLint 9 everywhere for `eslint-config-next`. Node 22 kept (EOL April 2027). `fixtures/private/` was only ignored at the root (fixed in 0.6, before 2.8). `transpilePackages` dropped from 0.2. Phases 0.2–0.6, 0.9, 1.1 and 2.1 adjusted. |
+| 2026-10-07 | 0.2 | Removed `packages/ui`, the nested workspace in `apps/web` (lockfile, `pnpm-workspace.yaml`, `packageManager`), template README files and SVGs, and the empty `.npmrc`. `allowBuilds` set to `sharp: false` and `unrs-resolver: false`, so `pnpm install --frozen-lockfile` passes again with a single lockfile. Config packages renamed to `@xtrakto/*`. Root scripts in order, with `test`; `test` task in `turbo.json` using Turborepo's `transit` pattern (tests run in parallel, but their cache depends on dependencies' sources). Spanish placeholder home page. | ESLint 9 is now marked as unsupported on npm, but even `eslint-config-next` 16.4.0 bundles plugins (react, import, jsx-a11y) that only declare ESLint ≤ 9: re-check at the start of 0.4 by testing `eslint-config-next` on ESLint 10. The root layout still has `lang="en"`, the template metadata, Geist fonts and the default favicon: Phase 4.2. |
 
 ---
 
