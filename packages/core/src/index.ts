@@ -4,6 +4,16 @@ export type {
   AppErrorCode,
   AppErrorDetails,
 } from "./app-error.types";
+export { DEFAULT_TIME_ZONE } from "./date.constants";
+export {
+  compareLocalDates,
+  inferDayMonthDate,
+  isWithinPeriod,
+  localDateFromExcelSerial,
+  localDateFromInstant,
+  parseSlashDate,
+} from "./date.helpers";
+export type { ExcelDateTimeZones, LocalDate, Period } from "./date.types";
 export { CURRENCY } from "./money.constants";
 export {
   amountFromNumber,

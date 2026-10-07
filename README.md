@@ -20,7 +20,7 @@ Early development: Stage 0, repository foundations. Nothing is deployed yet. Pro
 apps/
   web/                 Next.js app: routes, UI, server actions
 packages/
-  core/                Domain types, Result and AppError (pure TypeScript)
+  core/                Domain types, money and dates (pure TypeScript)
   eslint-config/       Shared ESLint presets and project rules
   typescript-config/   Shared tsconfig presets
 docs/                  System design, roadmap and ADRs
