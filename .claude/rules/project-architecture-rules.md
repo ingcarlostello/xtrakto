@@ -389,7 +389,7 @@ export async function uploadStatement(
 - **Conventional Commits:** `type(scope): description`. Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`.
   - Example: `feat(parsers): support Bancolombia quarterly statement`.
 - One commit = one logical change. Don't mix refactoring with new functionality.
-- Branches: `feat/<short-description>`, `fix/<short-description>`.
+- Branches: `<type>/<phase>-<short-description>`, with the commit type and the roadmap phase id: `feat/1.2-money-minor-units`, `docs/0.8-readme-adr`. Work that belongs to no phase omits it: `fix/<short-description>`.
 - Significant architecture decisions are documented as an ADR in `docs/adr/NNNN-title.md`: context, decision, alternatives considered and consequences.
 
 ---

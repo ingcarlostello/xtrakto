@@ -1,5 +1,64 @@
 # Xtrakto
 
-Xtrakto reads Colombian bank statements and explains where the money went: real spending, money that only moved between the user's own accounts, and income.
+Xtrakto reads Colombian bank statements and explains where the money went. It separates real spending from money that only moved between the user's own accounts and from income, and it verifies every balance to the cent. The original file never leaves the browser.
 
-Early development. See [docs/ROADMAP.md](docs/ROADMAP.md) for the plan and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design.
+## Status
+
+Early development: Stage 0, repository foundations. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+
+## Stack
+
+- Next.js 16 (App Router), React 19 and Tailwind CSS 4
+- TypeScript 6 in strict mode, on Node.js 22
+- pnpm 12 workspaces and Turborepo 2
+- ESLint 9, Prettier 3 and Vitest 5
+- Planned: PostgreSQL with Drizzle, Clerk, Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
+
+## Monorepo layout
+
+```text
+apps/
+  web/                 Next.js app: routes, UI, server actions
+packages/
+  eslint-config/       Shared ESLint presets and project rules
+  typescript-config/   Shared tsconfig presets
+docs/                  System design, roadmap and ADRs
+```
+
+The domain packages (`core`, `parsers`, `db`) are added in stages 1 to 3.
+
+## Local setup
+
+Requirements: Node.js 22 and pnpm 12.9.1 (the version pinned in `packageManager`).
+
+```bash
+nvm use                      # reads .nvmrc
+npm install -g pnpm@12.9.1
+pnpm install
+pnpm dev                     # http://localhost:3000
+```
+
+No environment variables are needed yet. When they are, `.env.example` documents them: copy it to `.env.local`, which is git-ignored.
+
+Real bank statements must never be committed. They may only live in git-ignored `fixtures/private/` folders, for private tests.
+
+## Scripts
+
+| Command             | What it does                              |
+| ------------------- | ----------------------------------------- |
+| `pnpm dev`          | Runs the web app in development mode      |
+| `pnpm build`        | Builds every package for production       |
+| `pnpm lint`         | Lints every package with ESLint           |
+| `pnpm check-types`  | Type-checks every package with TypeScript |
+| `pnpm test`         | Runs every package's tests with Vitest    |
+| `pnpm format`       | Formats the repository with Prettier      |
+| `pnpm format:check` | Checks formatting without changing files  |
+
+CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request.
+
+## Documentation
+
+- [System design](docs/ARCHITECTURE.md): requirements, architecture, data model and privacy boundaries
+- [Roadmap](docs/ROADMAP.md): stages, phases, decision gates and the phase log
+- [Architecture decision records](docs/adr/README.md)
+- [Project rules](.claude/rules/): code standards, design system and ML rules
