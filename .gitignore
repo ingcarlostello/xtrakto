@@ -1,44 +1,39 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # Dependencies
 node_modules
 .pnp
-.pnp.js
+.pnp.*
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment: only the documented example is committed
+.env*
+!.env.example
 
-# Testing
-coverage
-
-# Turbo
-.turbo
-
-# Vercel
-.vercel
-
-# Build Outputs
+# Build output and caches
 .next/
 out/
 build
 dist
+.turbo
+.vercel
+*.tsbuildinfo
+next-env.d.ts
 
+# Testing
+coverage
+
+# Real bank statements (local development only, any depth)
+**/fixtures/private/
+
+# ML data and artifacts (ml/)
+ml/data/
+ml/artifacts/
 
 # Debug
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+.pnpm-debug.log*
 
 # Misc
 .DS_Store
 *.pem
-
-# Real bank statements (local development only)
-fixtures/private/
 
 # Claude Code: per-developer files (shared rules in .claude/rules/ are committed)
 .claude/settings.local.json

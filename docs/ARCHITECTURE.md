@@ -9,6 +9,7 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 ## 1. Requirements
 
 ### Functional
+
 - Upload a statement (spreadsheet now, PDF in Stage 9) from any supported bank.
 - Parse every movement and verify the balances to the cent.
 - Separate real spending, money that only moved, and income.
@@ -19,6 +20,7 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 - Delete or export all of a user's data on request.
 
 ### Constraints
+
 - Financial data with PII: the original file and the PDF password never reach the server.
 - Amounts as integer minor units; transaction dates as dates without time.
 - Serverless hosting: no always-on worker; request bodies up to 4.5 MB on Vercel.
@@ -27,14 +29,14 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 
 ### Quality attributes
 
-| Attribute | Target | How it is checked |
-|---|---|---|
-| Correctness | Balances reconcile to the cent. No movement counted twice across overlapping uploads. | `reconcile()` on every statement; fingerprints with a unique index; private tests on real files. |
-| Privacy | Extracted content deleted when its job ends, and after 24 h at most. | Job cleanup step and a daily cron; `docs/data-flow.md`. |
-| Isolation | A user can never read another user's rows, even through a buggy query. | Forced Row-Level Security plus integration tests. |
-| Latency (initial targets) | Spreadsheet ingestion p95 < 10 s without LLM, < 30 s with it. Summary page p95 < 800 ms for a quarter (~500 rows). | Inngest run timings; Sentry performance traces. |
-| Cost | Deterministic paths cost nothing. LLM spend capped per user and per platform. | `llm_usage` checked before every call; Langfuse. |
-| Degradation | If every LLM provider fails, statements still load and summaries still compute; only uncategorized rows wait. | Fallback chain covered by tests. |
+| Attribute                 | Target                                                                                                             | How it is checked                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Correctness               | Balances reconcile to the cent. No movement counted twice across overlapping uploads.                              | `reconcile()` on every statement; fingerprints with a unique index; private tests on real files. |
+| Privacy                   | Extracted content deleted when its job ends, and after 24 h at most.                                               | Job cleanup step and a daily cron; `docs/data-flow.md`.                                          |
+| Isolation                 | A user can never read another user's rows, even through a buggy query.                                             | Forced Row-Level Security plus integration tests.                                                |
+| Latency (initial targets) | Spreadsheet ingestion p95 < 10 s without LLM, < 30 s with it. Summary page p95 < 800 ms for a quarter (~500 rows). | Inngest run timings; Sentry performance traces.                                                  |
+| Cost                      | Deterministic paths cost nothing. LLM spend capped per user and per platform.                                      | `llm_usage` checked before every call; Langfuse.                                                 |
+| Degradation               | If every LLM provider fails, statements still load and summaries still compute; only uncategorized rows wait.      | Fallback chain covered by tests.                                                                 |
 
 ---
 
@@ -75,15 +77,15 @@ flowchart LR
 
 The original file and the PDF password never leave the browser. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`.
 
-| Package or app | Responsibility | Runs in |
-|---|---|---|
-| `apps/web` | Routes, UI, server actions, webhooks, Inngest functions | Browser and Vercel |
-| `@xtrakto/core` | Domain types, Zod schemas, money, dates, categories, PII redaction, summaries, insights | Anywhere (pure) |
-| `@xtrakto/parsers` | Spreadsheet and PDF extraction, bank parsers, reconciliation, format detection | Browser (preview) and server (authoritative) |
-| `@xtrakto/db` | Drizzle schema, migrations, RLS policies, persistence functions | Server only |
-| `@xtrakto/models` | Exported ONNX models with manifests and golden files (Stage 14) | Server |
-| `@xtrakto/evals` | Labeled datasets and evaluation runners for LLM features (Stage 8) | CI and local |
-| `ml/` | Training, evaluation and export of models in Python | Offline only |
+| Package or app     | Responsibility                                                                          | Runs in                                      |
+| ------------------ | --------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `apps/web`         | Routes, UI, server actions, webhooks, Inngest functions                                 | Browser and Vercel                           |
+| `@xtrakto/core`    | Domain types, Zod schemas, money, dates, categories, PII redaction, summaries, insights | Anywhere (pure)                              |
+| `@xtrakto/parsers` | Spreadsheet and PDF extraction, bank parsers, reconciliation, format detection          | Browser (preview) and server (authoritative) |
+| `@xtrakto/db`      | Drizzle schema, migrations, RLS policies, persistence functions                         | Server only                                  |
+| `@xtrakto/models`  | Exported ONNX models with manifests and golden files (Stage 14)                         | Server                                       |
+| `@xtrakto/evals`   | Labeled datasets and evaluation runners for LLM features (Stage 8)                      | CI and local                                 |
+| `ml/`              | Training, evaluation and export of models in Python                                     | Offline only                                 |
 
 ---
 
@@ -130,17 +132,17 @@ sequenceDiagram
 
 ## 4. Privacy boundaries
 
-| Party | Receives | Never receives | Kept for |
-|---|---|---|---|
-| User's browser | Original file, PDF password, extracted content | — | While the page is open |
-| Next.js server | Extracted content (rows or PDF text items) | Original file, PDF password | Not kept; written to the job row |
-| PostgreSQL | Temporary extracted content; parsed transactions; normalized holder name; HMACs of references | Raw phone numbers, full account numbers, PDF password | Content: until the job ends (24 h max). Transactions: until the user deletes them |
-| Inngest Cloud | Event names and IDs | Any financial content | Inngest run history |
-| LLM providers | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows | Names, phone numbers, ID and account numbers | Provider's API data policy |
-| Clerk | Email, name, sign-in data | Financial data | Until the account is deleted |
-| Sentry | Scrubbed errors and traces | Request bodies, action arguments, descriptions, amounts | Sentry retention |
-| PostHog | Event names, format ids, count buckets, error codes (after consent) | Descriptions, amounts, names | PostHog retention |
-| Langfuse | Model, tokens, cost, latency | Prompt and response content (masked) | Langfuse retention |
+| Party          | Receives                                                                                      | Never receives                                          | Kept for                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| User's browser | Original file, PDF password, extracted content                                                | —                                                       | While the page is open                                                            |
+| Next.js server | Extracted content (rows or PDF text items)                                                    | Original file, PDF password                             | Not kept; written to the job row                                                  |
+| PostgreSQL     | Temporary extracted content; parsed transactions; normalized holder name; HMACs of references | Raw phone numbers, full account numbers, PDF password   | Content: until the job ends (24 h max). Transactions: until the user deletes them |
+| Inngest Cloud  | Event names and IDs                                                                           | Any financial content                                   | Inngest run history                                                               |
+| LLM providers  | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows      | Names, phone numbers, ID and account numbers            | Provider's API data policy                                                        |
+| Clerk          | Email, name, sign-in data                                                                     | Financial data                                          | Until the account is deleted                                                      |
+| Sentry         | Scrubbed errors and traces                                                                    | Request bodies, action arguments, descriptions, amounts | Sentry retention                                                                  |
+| PostHog        | Event names, format ids, count buckets, error codes (after consent)                           | Descriptions, amounts, names                            | PostHog retention                                                                 |
+| Langfuse       | Model, tokens, cost, latency                                                                  | Prompt and response content (masked)                    | Langfuse retention                                                                |
 
 **Why HMAC and not a plain hash:** Colombian mobile numbers have 10 digits and start with 3, so a plain SHA-256 can be reversed by trying every number. References are hashed with HMAC-SHA-256 and a secret key, which still allows grouping transfers to the same person.
 
@@ -297,15 +299,15 @@ Splitting by statement, not by row, keeps near-identical movements of one statem
 
 ## 9. Infrastructure
 
-| | Local | Preview (per PR) | Production |
-|---|---|---|---|
-| App | `pnpm dev` | Vercel preview deployment | Vercel production · xtrakto.site |
-| Database | Docker: PostgreSQL + pgvector | Database branch (if Neon) | Managed PostgreSQL, main branch |
-| Auth | Clerk development instance | Clerk development instance | Clerk production instance (needs the domain) |
-| Background jobs | Inngest dev server | Inngest branch environment | Inngest production |
-| Migrations | `pnpm db:migrate` | Applied to the branch | CI job on `main` with the owner role |
-| Secrets | `.env.local` | Vercel preview variables | Vercel production variables; migration URL as a GitHub secret |
-| DNS and email | — | — | DNS at Hostinger; Resend on `mail.xtrakto.site` with SPF, DKIM, DMARC (Stage 10) |
+|                 | Local                         | Preview (per PR)           | Production                                                                       |
+| --------------- | ----------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| App             | `pnpm dev`                    | Vercel preview deployment  | Vercel production · xtrakto.site                                                 |
+| Database        | Docker: PostgreSQL + pgvector | Database branch (if Neon)  | Managed PostgreSQL, main branch                                                  |
+| Auth            | Clerk development instance    | Clerk development instance | Clerk production instance (needs the domain)                                     |
+| Background jobs | Inngest dev server            | Inngest branch environment | Inngest production                                                               |
+| Migrations      | `pnpm db:migrate`             | Applied to the branch      | CI job on `main` with the owner role                                             |
+| Secrets         | `.env.local`                  | Vercel preview variables   | Vercel production variables; migration URL as a GitHub secret                    |
+| DNS and email   | —                             | —                          | DNS at Hostinger; Resend on `mail.xtrakto.site` with SPF, DKIM, DMARC (Stage 10) |
 
 ```mermaid
 flowchart LR
@@ -322,38 +324,38 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 10. Failure modes
 
-| Failure | Detected by | Behavior |
-|---|---|---|
-| Unknown format | No parser matches | MVP: clear message. Stage 11: the ingestion agent proposes a mapping. |
-| Balances don't add up | `reconcile()` issues | Saved with `balance_verified = false`; the summary shows a warning with the affected rows. |
-| Duplicate upload | Fingerprint conflict | Nothing new inserted; the user is told it was already loaded. |
-| Step fails mid-job | Inngest error | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted. |
-| LLM timeout or invalid output | Timeout or Zod validation | One retry on the fallback model; then rows stay uncategorized. |
-| Cost limit reached | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews. |
-| Payload too large | Size checks in browser and action | Rejected with a message; the server enforces the same bounds. |
-| Account deleted in Clerk | `user.deleted` webhook | All the user's rows are deleted. |
+| Failure                       | Detected by                       | Behavior                                                                                                         |
+| ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Unknown format                | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                            |
+| Balances don't add up         | `reconcile()` issues              | Saved with `balance_verified = false`; the summary shows a warning with the affected rows.                       |
+| Duplicate upload              | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                    |
+| Step fails mid-job            | Inngest error                     | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted. |
+| LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                   |
+| Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                           |
+| Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                    |
+| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted.                                                                                 |
 
 ---
 
 ## 11. Scaling path
 
-| Load | What changes |
-|---|---|
-| Private beta | One database. Summaries computed in TypeScript from a period's transactions. |
-| Thousands of users | Aggregates move to SQL with monthly rollups per account. Inngest concurrency keyed by user. Connection pooling tuned. |
+| Load                  | What changes                                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Private beta          | One database. Summaries computed in TypeScript from a period's transactions.                                              |
+| Thousands of users    | Aggregates move to SQL with monthly rollups per account. Inngest concurrency keyed by user. Connection pooling tuned.     |
 | Hundreds of thousands | Partition `transactions` by user or month. Read replica for dashboards. Model inference in a dedicated service if needed. |
 
 ---
 
 ## 12. Key decisions
 
-| Decision | Why | Alternative considered |
-|---|---|---|
-| TypeScript backend in Next.js | One language and one deployment; types shared from UI to database. | Python API with FastAPI |
-| PostgreSQL with Drizzle | Tabular, analytical data; RLS; pgvector. | Convex |
-| Inngest for background work | Long, retryable, step-based jobs on serverless hosting. | pg-boss (needs an always-on worker) |
-| Files read in the browser | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server |
-| Events carry IDs only | Event payloads are stored and shown by the queue provider. | Content in the event |
-| Deterministic first, LLM as fallback | Exact, free and testable for known formats. | LLM extraction for everything |
-| Integer minor units and date-only dates | No floating-point drift; no time-zone shifts. | Decimals and timestamps |
-| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter. | Application-level filtering only |
+| Decision                                    | Why                                                                     | Alternative considered                           |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ |
+| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.      | Python API with FastAPI                          |
+| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                | Convex                                           |
+| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                 | pg-boss (needs an always-on worker)              |
+| Files read in the browser                   | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server |
+| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.              | Content in the event                             |
+| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                             | LLM extraction for everything                    |
+| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                           | Decimals and timestamps                          |
+| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                       | Application-level filtering only                 |

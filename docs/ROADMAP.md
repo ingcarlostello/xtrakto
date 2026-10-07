@@ -54,15 +54,15 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 ### Usage limits (free tier)
 
-| Limit | Value |
-|---|---|
-| Statements processed per user per month | 10 |
-| File size | 10 MB |
-| PDF pages | 30 |
-| Chat questions per user per day | 30 |
-| API requests per user per minute | 60 |
-| LLM cost per user per month | USD 1 |
-| Platform LLM budget | Alert at 80%, hard stop at 100% |
+| Limit                                   | Value                           |
+| --------------------------------------- | ------------------------------- |
+| Statements processed per user per month | 10                              |
+| File size                               | 10 MB                           |
+| PDF pages                               | 30                              |
+| Chat questions per user per day         | 30                              |
+| API requests per user per minute        | 60                              |
+| LLM cost per user per month             | USD 1                           |
+| Platform LLM budget                     | Alert at 80%, hard stop at 100% |
 
 ---
 
@@ -87,31 +87,33 @@ These complement the project rules.
 
 The human decides before the phase starts. The agent may propose options with trade-offs.
 
-| Gate | Phase | Options |
-|---|---|---|
-| Spreadsheet library | 2.2 | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker. |
-| PostgreSQL provider | 3.1 | Neon (recommended: serverless, database branches for previews) or Supabase. |
-| Design direction | 4.3 | One of the design canvas versions: v3 (lime with striped bars), v4 (soft and warm), v5 (black card with pastels). The human shares screenshots. |
-| LLM providers | 8.1 | Primary and fallback provider. |
-| Credit card sample | 12.1 | An anonymized card statement provided by the human. |
-| Usury rate source | 12.4 | Official publication confirmed by the human. |
+| Gate                | Phase | Options                                                                                                                                         |
+| ------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker.  |
+| PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                     |
+| Design direction    | 4.3   | One of the design canvas versions: v3 (lime with striped bars), v4 (soft and warm), v5 (black card with pastels). The human shares screenshots. |
+| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                  |
+| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                             |
+| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                    |
 
 ---
 
 ## 5. Progress
 
 **Stage 0 — Repository foundations**
+
 - [x] 0.1 Audit the repository (read-only)
 - [x] 0.2 Clean up the boilerplate
 - [x] 0.3 Shared TypeScript configuration
 - [x] 0.4 Shared ESLint configuration
 - [x] 0.5 Testing setup
-- [ ] 0.6 Formatting, editor and ignore files
+- [x] 0.6 Formatting, editor and ignore files
 - [ ] 0.7 [HUMAN] GitHub repository and CI
 - [ ] 0.8 README and ADR scaffolding
 - [ ] 0.9 ADRs for decisions already made
 
 **Stage 1 — Domain core (`packages/core`)**
+
 - [ ] 1.1 Package scaffold, Result and AppError
 - [ ] 1.2 Money in minor units
 - [ ] 1.3 Dates: LocalDate and conversions
@@ -121,6 +123,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 1.7 Identifier hashing
 
 **Stage 2 — Spreadsheet extraction and parsers (`packages/parsers`)**
+
 - [ ] 2.1 Parser contract and registry
 - [ ] 2.2 Spreadsheet extraction (gate: library)
 - [ ] 2.3 Synthetic fixtures
@@ -131,6 +134,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 2.8 [HUMAN] Private verification with real files
 
 **Stage 3 — Database (`packages/db`)**
+
 - [ ] 3.1 [HUMAN] Database provider and local PostgreSQL
 - [ ] 3.2 Package scaffold and migration tooling
 - [ ] 3.3 Schema v1
@@ -138,6 +142,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 3.5 Persistence functions and dev seed
 
 **Stage 4 — Web app foundations (`apps/web`)**
+
 - [ ] 4.1 Environment validation
 - [ ] 4.2 UI base: shadcn/ui and root layout
 - [ ] 4.3 [HUMAN] Design direction and tokens
@@ -146,6 +151,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 4.6 App shell and empty states
 
 **Stage 5 — First end-to-end slice: spreadsheet ingestion**
+
 - [ ] 5.1 Inngest setup
 - [ ] 5.2 Extraction in a Web Worker
 - [ ] 5.3 Upload screen
@@ -155,6 +161,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 5.7 Transactions page
 
 **Stage 6 — Deterministic insights**
+
 - [ ] 6.1 Rule-based categorizer
 - [ ] 6.2 Real spending vs money that moved
 - [ ] 6.3 Category corrections and "this is mine"
@@ -164,6 +171,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 6.7 Summary page
 
 **Stage 7 — First deployment (private beta)**
+
 - [ ] 7.1 [HUMAN] Domain xtrakto.site on Vercel
 - [ ] 7.2 [HUMAN] Production services
 - [ ] 7.3 Error monitoring with Sentry
@@ -171,7 +179,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
 
-**Stage 8 — LLM layer** *(outline)*
+**Stage 8 — LLM layer** _(outline)_
+
 - [ ] 8.1 [HUMAN] AI module with primary and fallback providers
 - [ ] 8.2 Versioned prompts and Langfuse tracing
 - [ ] 8.3 Usage tracking and limits
@@ -179,34 +188,39 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 8.5 LLM categorization fallback
 - [ ] 8.6 "Tu extracto, traducido"
 
-**Stage 9 — PDF statements** *(outline)*
+**Stage 9 — PDF statements** _(outline)_
+
 - [ ] 9.1 Browser PDF extraction with password
 - [ ] 9.2 Layout reconstruction
 - [ ] 9.3 Quarterly statement PDF parser
 - [ ] 9.4 PDF edge cases
 
-**Stage 10 — Monthly use and retention** *(outline)*
+**Stage 10 — Monthly use and retention** _(outline)_
+
 - [ ] 10.1 Cross-format deduplication
 - [ ] 10.2 Coverage and gaps
 - [ ] 10.3 Optional current balance
 - [ ] 10.4 [HUMAN] Email with Resend and monthly reminder
 - [ ] 10.5 Monthly summary email
 
-**Stage 11 — Unknown formats: ingestion agent** *(outline)*
+**Stage 11 — Unknown formats: ingestion agent** _(outline)_
+
 - [ ] 11.1 Format fingerprints and saved mappings
 - [ ] 11.2 LLM column-mapping proposal
 - [ ] 11.3 Mapping confirmation screen
 - [ ] 11.4 Ingestion agent with LangGraph.js
 - [ ] 11.5 Agent evals
 
-**Stage 12 — Credit cards** *(outline)*
+**Stage 12 — Credit cards** _(outline)_
+
 - [ ] 12.1 [HUMAN] Card statement sample and phase refinement
 - [ ] 12.2 Card statement parser
 - [ ] 12.3 Account and card reconciliation
 - [ ] 12.4 Usury rate pipeline and check
 - [ ] 12.5 Card insights
 
-**Stage 13 — "Pregúntale a tu extracto": chat agent** *(outline)*
+**Stage 13 — "Pregúntale a tu extracto": chat agent** _(outline)_
+
 - [ ] 13.1 Typed data tools
 - [ ] 13.2 Chat agent with LangGraph.js
 - [ ] 13.3 Chat UI with streaming and cited transactions
@@ -214,7 +228,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 13.5 Chat evals
 - [ ] 13.6 (Optional) Analysis sandbox with Pyodide
 
-**Stage 14 — Machine learning (`ml/`)** *(outline)*
+**Stage 14 — Machine learning (`ml/`)** _(outline)_
+
 - [ ] 14.1 `ml/` scaffold
 - [ ] 14.2 Anonymized labeled dataset
 - [ ] 14.3 Baseline and split by statement
@@ -224,14 +239,16 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 14.7 Inference in Node and parity test
 - [ ] 14.8 Anomaly detection
 
-**Stage 15 — RAG and vector search** *(outline)*
+**Stage 15 — RAG and vector search** _(outline)_
+
 - [ ] 15.1 Public sources corpus
 - [ ] 15.2 Chunking, embeddings and pgvector
 - [ ] 15.3 Retrieval evals
 - [ ] 15.4 Pinecone implementation and benchmark
 - [ ] 15.5 Cited answers in the chat
 
-**Stage 16 — Portfolio polish** *(outline)*
+**Stage 16 — Portfolio polish** _(outline)_
+
 - [ ] 16.1 Landing page
 - [ ] 16.2 Final README with architecture and results
 - [ ] 16.3 [HUMAN] Technical write-up and demo video
@@ -250,6 +267,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Goal:** know the real starting point before changing anything.
 
 **Tasks**
+
 - List the workspace packages with their names, scripts and dependencies.
 - Report the versions of Node, pnpm, Turborepo, Next.js, React, TypeScript, Tailwind, ESLint and Vitest (if present).
 - Check: does `apps/docs` exist? `packages/ui`? Is `apps/web` an App Router app with `src/` and Tailwind? Does `packages/parsers` exist with `normalizeDescription` and its tests? Where are the project rules installed?
@@ -263,6 +281,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.2 Clean up the boilerplate
 
 **Tasks**
+
 - Remove template leftovers and every reference to them: `packages/ui` (there is no `apps/docs`), `apps/web/README.md`, the unused `public/*.svg` files and the empty `.npmrc`. Replace the template `README.md` with a stub until Phase 0.8.
 - Remove the nested workspace inside `apps/web` (its `pnpm-lock.yaml`, `pnpm-workspace.yaml` and `packageManager`): the root owns the lockfile and the pnpm settings.
 - In the root `pnpm-workspace.yaml`, replace the `allowBuilds` placeholder, which makes `pnpm install` fail with `ERR_PNPM_IGNORED_BUILDS`, with `sharp: false` and `unrs-resolver: false` (both ship prebuilt binaries).
@@ -279,6 +298,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.3 Shared TypeScript configuration
 
 **Tasks**
+
 - `typescript` pinned to `6.0.3` at the root and in every package (decision 10); `@types/node` on `^22`.
 - `@xtrakto/typescript-config` with a base config for packages and a Next.js config that `apps/web` extends. Packages export TypeScript source consumed by Next.js and Vitest, so the base config uses `moduleResolution: "Bundler"` and `noEmit`. Remove `react-library.json`.
 - `strict` and `noUncheckedIndexedAccess` enabled (parsers index into rows constantly; this catches missing cells).
@@ -292,6 +312,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.4 Shared ESLint configuration
 
 **Tasks**
+
 - ESLint 9 across the monorepo: the plugins bundled in `eslint-config-next` (react, import, jsx-a11y) don't support ESLint 10 yet.
 - Flat config in `@xtrakto/eslint-config` with presets for packages and for the Next.js app (built on `eslint-config-next`). typescript-eslint replaces the template's Babel parser. Remove `eslint-plugin-only-warn`, which turns every error into a warning, and the unused `react-internal` preset.
 - Automate what the project rules allow:
@@ -306,6 +327,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.5 Testing setup
 
 **Tasks**
+
 - Vitest in `apps/web`, the only TypeScript package with code so far, with its own config and `test` script; `test` task in `turbo.json` with correct inputs and coverage as output. Packages created later (1.1, 2.1, 3.2) add Vitest the same way.
 - In `apps/web`: Node environment by default, and an alias that replaces `server-only` with an empty module in tests (the real package throws outside React Server Components). `passWithNoTests` until the app has its first test.
 - Coverage reporter configured, without thresholds yet.
@@ -317,6 +339,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.6 Formatting, editor and ignore files
 
 **Tasks**
+
 - Prettier (single config, with a `.prettierignore` for lockfiles and build output) with `format` and `format:check` scripts; `.editorconfig`; `.nvmrc` with Node 22; `engines` in the root `package.json` set to `^22.12.0` (it says `>=24` today; Vitest needs 22.12 or later).
 - `.gitignore`: `.env*` except `.env.example`, `**/fixtures/private/`, `ml/data/`, `ml/artifacts/`, coverage output, `.turbo`. Today's `fixtures/private/` pattern only matches at the root, so `packages/parsers/fixtures/private/` is **not** ignored. Merge `apps/web/.gitignore` into the root file.
 - Root `.env.example`, documented and empty for now.
@@ -330,6 +353,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** create a **private** GitHub repository named `xtrakto`, add it as the remote and push `main`.
 
 **Tasks**
+
 - `.github/workflows/ci.yml` on pull requests and pushes to `main`: pnpm version from `packageManager`, Node from `.nvmrc`, `pnpm install --frozen-lockfile`, `pnpm turbo check-types lint test`, `pnpm format:check`. Cancel outdated runs of the same branch.
 
 **Done when:** CI passes on a pull request.
@@ -339,6 +363,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.8 README and ADR scaffolding
 
 **Tasks**
+
 - `README.md`: what Xtrakto is (two or three sentences), status, stack, monorepo layout, local setup, scripts, links to `docs/`.
 - `docs/adr/README.md` (index and how to write an ADR) and `docs/adr/0000-template.md` (context, decision, alternatives considered, consequences).
 
@@ -347,6 +372,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.9 ADRs for decisions already made
 
 **Tasks:** short ADRs (one page at most), based on section 3 of this roadmap and the project rules:
+
 - 0001 Monorepo with pnpm workspaces and Turborepo.
 - 0002 TypeScript on Node for the backend (Node 22, end of life in April 2027); Python only for ML training.
 - 0003 PostgreSQL with Drizzle (alternative considered: Convex).
@@ -367,6 +393,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.1 Package scaffold, Result and AppError
 
 **Tasks**
+
 - Create `@xtrakto/core`, the first internal package: public API only in `src/index.ts`, shared TypeScript and ESLint configs, Vitest. Later packages copy its structure.
 - `Result<T, E>` with `ok()` and `err()` helpers.
 - `AppError` with a `code` from an `as const` object (`INVALID_INPUT`, `UNKNOWN_FORMAT`, `PARSE_FAILED`, `BALANCE_MISMATCH`, `LIMIT_REACHED`, `NOT_FOUND`, `UNAUTHORIZED`) and optional `details` that never contain PII.
@@ -378,6 +405,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.2 Money in minor units
 
 **Tasks**
+
 - Branded `AmountMinor` type and a `Currency` type (ISO 4217, starting with `COP`).
 - `parseAmountText(text)` for statement text amounts: `"1,234.56"`, `"-15,000.00"`, `".00"`, `"12.34"`, `"9,876,543"`. Returns a `Result`.
 - `amountFromNumber(n)` for numeric spreadsheet cells (`-50000`, `12.34`) without floating-point drift.
@@ -390,6 +418,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.3 Dates: LocalDate and conversions
 
 **Tasks**
+
 - Branded `LocalDate` (`"YYYY-MM-DD"`) with comparison helpers; time zones via `@date-fns/tz`.
 - `localDateFromInstant(instant, timeZone)`.
 - `localDateFromExcelSerial(serial, { serialTimeZone, targetTimeZone })` for the Excel 1900 date system. Each parser declares how its bank stores dates (Bancolombia's movements export stores local midnight as 05:00 UTC).
@@ -403,6 +432,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.4 Categories as a shared contract
 
 **Tasks**
+
 - `packages/core/categories.json` as the single source of truth (Python reads it in Stage 14). Each category: `id` (snake_case), `labelEs`, `kind` (`spending` | `income` | `internal`).
 - Initial set:
   - **spending:** `groceries`, `restaurants`, `transport`, `utilities`, `housing`, `health`, `education`, `entertainment`, `shopping`, `subscriptions`, `loan_payment`, `transfers_to_people`, `digital_wallet`, `cash_withdrawal`, `taxes_and_fees`, `other_spending`
@@ -417,6 +447,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.5 Domain schemas
 
 **Tasks:** Zod schemas with inferred types:
+
 - `ExtractedContent`, a discriminated union:
   - `spreadsheet`: sheets → rows → cells. A cell is `string | number | null | { excelSerial: number }` (date cells are flagged, never converted to JavaScript `Date`).
   - `pdf`: pages → text items with `str`, `x`, `y`, `width`, `height` (used in Stage 9, defined now).
@@ -431,6 +462,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.6 PII redaction
 
 **Tasks**
+
 - `redactPii(text, { knownNames })` replaces Colombian mobile numbers, digit runs of 6 or more (IDs, accounts, contracts), emails, the account holder's name, and the name after person-transfer prefixes (`TRANSF A`, `TRANSF DE`, `PAGO LLAVE`) with placeholders (`[PHONE]`, `[NUMBER]`, `[EMAIL]`, `[NAME]`).
 - Keeps merchant names (`COMPRA EN …`, `PAGO QR …`): categorization needs them.
 - Document known limitations in the code.
@@ -442,6 +474,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.7 Identifier hashing
 
 **Tasks**
+
 - `hashIdentifier(value, key)`: HMAC-SHA-256 with Web Crypto, after normalizing the value (digits only for phone numbers).
 - The key is passed by the caller; `apps/web` will read it from `IDENTIFIER_HASH_KEY` (at least 32 random bytes). Document it in `.env.example`.
 
@@ -456,6 +489,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.1 Parser contract and registry
 
 **Tasks**
+
 - Create `@xtrakto/parsers` with the same structure as `@xtrakto/core`.
 - `BankParser` as defined in the project rules, with `id`, `bankId`, `canParse(content)` and `parse(content)` → `Result<ParsedStatement>`.
 - A registry and `findParser(content)`.
@@ -468,6 +502,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.2 Spreadsheet extraction — gate: library
 
 **Tasks**
+
 - Propose SheetJS or ExcelJS with trade-offs; record the decision in an ADR.
 - `extractSpreadsheet(bytes)` → `ExtractedContent` for XLSX and CSV. Raw values only: no styles, no formulas evaluated, date cells as `{ excelSerial }`.
 - Must run in Node and in a Web Worker (it will run in the browser in Stage 5).
@@ -480,6 +515,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.3 Synthetic fixtures
 
 **Tasks**
+
 - `packages/parsers/fixtures/` with `ExtractedContent` JSON reproducing the formats in Appendix A, with invented names and numbers only:
   - `quarterly-basic` (about 30 rows), `quarterly-year-rollover` (December to January), `quarterly-repeated-header`, `quarterly-broken-balance` (one wrong amount), `quarterly-large` (about 450 rows, from a seeded script).
   - `movements-basic` (newest first, 05:00 serial dates, phone references) and `movements-overlap` (same month as a quarterly fixture, with interest rows dated one day later).
@@ -492,6 +528,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.4 Bancolombia quarterly statement parser
 
 **Tasks**
+
 - Implement Appendix A.1. Find blocks by their labels, not by fixed row numbers.
 - Read the period, account type, last 4 digits of the account, summary values and holder name. Read movements until `FIN ESTADO DE CUENTA`, skipping repeated headers and other non-movement rows (with a warning for unexpected rows).
 - Amounts with `parseAmountText`, dates with `inferDayMonthDate`, descriptions normalized (keeping the raw text too).
@@ -504,6 +541,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.5 Statement reconciliation
 
 **Tasks**
+
 - `reconcile(statement)` → `{ balanceVerified, issues }` with exact integer comparisons:
   - Each row: previous balance + amount = balance.
   - Opening balance + sum of amounts = closing balance.
@@ -517,6 +555,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.6 Bancolombia movements export parser
 
 **Tasks**
+
 - Implement Appendix A.2: header row, Excel serial dates converted from UTC to `America/Bogota`, numeric amounts.
 - Keep `Referencia` raw (it is hashed at persistence) with a detected `referenceKind`: `phone` | `atm` | `code` | `none`.
 - Rows come newest first; output them by ascending date, in a stable order.
@@ -529,6 +568,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.7 Format detection
 
 **Tasks**
+
 - `canParse` for both parsers using header signatures, ignoring accents, case and extra whitespace.
 - Unknown content returns `UNKNOWN_FORMAT` (handled by the ingestion agent in Stage 11).
 
@@ -541,6 +581,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** confirm that `packages/parsers/fixtures/private/` is git-ignored, then copy the real exports (quarterly XLSX and movements XLSX) into it.
 
 **Tasks**
+
 - `*.private.test.ts` files and a `test:private` script, excluded from `test` and from CI; tests skip themselves if the files are missing.
 - Assert only counts and booleans, and print no descriptions or amounts:
   - The quarterly file parses and reconciles.
@@ -560,6 +601,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** choose the provider (gate) and create the project.
 
 **Tasks**
+
 - `docker-compose.yml` with PostgreSQL and pgvector, same major version as the hosted database.
 - `.env.example`: `DATABASE_URL` (application role) and `DATABASE_MIGRATION_URL` (owner role).
 - Local setup documented in the README.
@@ -571,6 +613,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 3.2 Package scaffold and migration tooling
 
 **Tasks**
+
 - `@xtrakto/db` with Drizzle ORM and drizzle-kit; a connection factory using a Node driver suited to serverless and the provider's pooled connection string.
 - Scripts: `db:generate`, `db:migrate`, `db:studio`.
 - Integration tests run against the local database and are skipped when it isn't available.
@@ -580,6 +623,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 3.3 Schema v1
 
 **Tasks:** tables (snake_case columns, `bigint` in number mode for amounts, `date` for transaction dates, `timestamptz` for instants):
+
 - `users`: id, `clerk_user_id` (unique), created_at.
 - `accounts`: id, user_id, bank_id, account_type, last4 (nullable), currency, display_name, holder_name_normalized (nullable), created_at. Unique on (user_id, bank_id, account_type, last4).
 - `statements`: id, user_id, account_id, format_id, period_from, period_to, opening and closing balances (nullable), totals (nullable), balance_verified, created_at.
@@ -593,6 +637,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 3.4 Row-Level Security and user context
 
 **Tasks**
+
 - Enable and **force** RLS on every table except `users`. Policies compare `user_id` with `current_setting('app.user_id', true)`.
 - A dedicated application role without `BYPASSRLS` that doesn't own the tables; migrations run with the owner role.
 - `withUserContext(db, userId, fn)` opens a transaction and runs `set_config('app.user_id', userId, true)` (transaction-local, required with a transaction-mode pool).
@@ -604,6 +649,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 3.5 Persistence functions and dev seed
 
 **Tasks**
+
 - `saveStatement(tx, input)`: inserts the statement and its transactions idempotently (`ON CONFLICT DO NOTHING` on the fingerprint) and returns inserted and skipped counts.
 - Fingerprint v1: date, normalized description, amount, balance after (if any) and the occurrence index among identical rows. Cross-format deduplication comes in Stage 10.
 - `listTransactions(tx, filter)` with period, account and pagination.
@@ -620,6 +666,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 4.1 Environment validation
 
 **Tasks**
+
 - `lib/env.ts` with Zod schemas for server and client variables; the app fails to start if one is missing or invalid.
 - `.env.example` updated.
 
@@ -628,6 +675,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 4.2 UI base: shadcn/ui and root layout
 
 **Tasks**
+
 - Initialize shadcn/ui; root layout with `lang="es"`, metadata and the app name.
 - No visual decisions yet: neutral defaults until Phase 4.3.
 
@@ -638,6 +686,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** choose the design version (gate) and share screenshots.
 
 **Tasks**
+
 - Translate the design into Tailwind theme tokens (colors, radii, typography, spacing) and document them in `docs/design.md`.
 - Adapt the base components needed by the app (card, button, badge, KPI tile).
 - A development-only page shows the tokens and components.
@@ -651,6 +700,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** create the Clerk application and add the development keys to `.env.local`.
 
 **Tasks**
+
 - `@clerk/nextjs` with Spanish localization; sign-in and sign-up pages.
 - Protect every app route except the public ones. The interception file's name depends on the Next.js version (`middleware.ts` or `proxy.ts`); follow the docs for the installed version.
 
@@ -661,6 +711,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 4.5 User lifecycle and data deletion
 
 **Tasks**
+
 - `getCurrentUserId()` (server only): resolves the Clerk user to the internal id, creating the `users` row on first use.
 - `deleteAllUserData(userId)` in `@xtrakto/db`.
 - Clerk webhook route for `user.deleted`, verifying the signature, that deletes all the user's data. The endpoint is registered in Clerk in Phase 7.2.
@@ -673,6 +724,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 4.6 App shell and empty states
 
 **Tasks**
+
 - Layout following the chosen design: navigation with Resumen, Movimientos, Pagos fijos and Subir extracto.
 - Empty states that invite the user to upload a statement.
 - Server Components only.
@@ -688,6 +740,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.1 Inngest setup
 
 **Tasks**
+
 - Inngest client and route handler in `apps/web`; a test function.
 - Document how to run the local Inngest dev server.
 
@@ -698,6 +751,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.2 Extraction in a Web Worker
 
 **Tasks**
+
 - Run `extractSpreadsheet` and `findParser` in a Web Worker so the interface doesn't freeze, with progress and cancellation.
 - The file never leaves the browser.
 
@@ -708,6 +762,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.3 Upload screen
 
 **Tasks**
+
 - Drop zone with type and size validation (10 MB).
 - Preview from the local parse: bank, account type, period, number of movements.
 - Account selector when the format doesn't identify the account (movements export).
@@ -720,6 +775,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.4 Submit action and ingestion job
 
 **Tasks**
+
 - `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
 - Raise the server action body size limit as needed, keeping it under the hosting limit (Vercel Functions accept request bodies up to 4.5 MB).
 
@@ -730,6 +786,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.5 Ingestion function
 
 **Tasks:** an Inngest function with one step per stage, its logic in plain functions that can be tested without Inngest:
+
 1. Load the job in the user's context.
 2. Detect and parse on the server (authoritative).
 3. Reconcile.
@@ -748,6 +805,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.6 Ingestion status screen
 
 **Tasks**
+
 - Poll the job status every few seconds through a server action.
 - Show the steps from the design: format recognized, personal data protected, movements read, balance verified.
 - A Spanish message for each error code; a link to the transactions once finished.
@@ -757,6 +815,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 5.7 Transactions page
 
 **Tasks**
+
 - Server Component listing transactions with filters by account and month in `searchParams`, and pagination.
 - Formatted amounts and dates.
 
@@ -771,6 +830,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.1 Rule-based categorizer
 
 **Tasks**
+
 - `categorizeByRules(transaction, context)` in `@xtrakto/core`: an ordered list of rules (pattern → category) built from Appendix B. Returns `null` when no rule applies (the LLM handles those in Stage 8).
 - Add it as a step of the ingestion function with `category_source = "rule"`.
 - A private test reports, as a percentage only, how many real movements get a category.
@@ -782,6 +842,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.2 Real spending vs money that moved
 
 **Tasks**
+
 - The transaction's `kind` comes from its category.
 - Detect transfers to or from the account holder by prefix matching against the holder's normalized name, since descriptions truncate names (`TRANSF A <FIRST NAME> <PARTIAL>`).
 - References marked by the user as their own (Phase 6.3) also count as internal.
@@ -793,6 +854,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.3 Category corrections and "this is mine"
 
 **Tasks**
+
 - Change a transaction's category, optionally applying it to every transaction with the same normalized description.
 - Mark a reference (for example a Nequi phone number) or a transfer recipient as "my own account".
 - Store corrections with `category_source = "user"` and as user rules applied before the global rules on future ingestions.
@@ -805,6 +867,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.4 Summary computations
 
 **Tasks:** pure functions over a period's transactions:
+
 - Income, total outflows, real spending, money that moved (by type), spending by category and by month.
 - Interest earned, 4x1000 paid, cash and digital wallet total.
 - Credit card payments without an uploaded card statement.
@@ -816,6 +879,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.5 Recurring payments
 
 **Tasks**
+
 - Detect payments with the same normalized description (or reference hash), a similar amount and a similar day of the month in at least two different months.
 - Exact amounts (loan installments) and variable amounts (utilities) must both work.
 - Output: label, typical amount, typical day, months seen, last date.
@@ -827,6 +891,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.6 Insights ("Para revisar")
 
 **Tasks:** typed generators with Spanish templates, numbers computed in code:
+
 - 4x1000 charged (amount and dates), with the suggestion to check whether the account is marked as exempt.
 - Savings yield: interest earned vs average balance.
 - Money without detail: cash withdrawals plus transfers to digital wallets.
@@ -840,6 +905,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 6.7 Summary page
 
 **Tasks**
+
 - Following the chosen design: headline (real spending vs total outflows), KPIs, real vs moved bar, categories, month by month, recurring payments and insights.
 - Server Components; client components only for interactive charts.
 - In the transactions list, group the daily interest rows into one line per period.
@@ -867,6 +933,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 **Human:** production database, Clerk production instance (it needs the domain), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered.
 
 **Tasks**
+
 - Run migrations against production from a CI job on `main`, with the owner connection string stored as a GitHub secret.
 - An environment checklist in `docs/deployment.md`.
 
@@ -877,6 +944,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 7.3 Error monitoring with Sentry
 
 **Tasks**
+
 - `@sentry/nextjs` without default PII, without session replay, and with a scrubber that removes request bodies, server action arguments, query strings and any description or amount.
 
 **Done when:** the scrubber is tested; a forced error reaches Sentry without sensitive data.
@@ -886,6 +954,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 7.4 Product analytics with PostHog
 
 **Tasks**
+
 - Explicit events only (`statement_uploaded`, `ingestion_failed`, `summary_viewed`, `category_corrected`) with format ids, row count buckets and error codes. Autocapture and session recording off.
 - Analytics only after the user's consent.
 
@@ -896,6 +965,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 7.5 Data flow document and privacy page
 
 **Tasks**
+
 - `docs/data-flow.md` with a Mermaid diagram: what happens in the browser, what reaches the server, what is stored and for how long, and what each third party receives (Clerk, Inngest, Sentry, PostHog; LLM providers from Stage 8).
 - A privacy page in Spanish summarizing it, with deletion instructions. Note: a legal review under Colombian data protection law (Ley 1581 de 2012) is required before the public launch.
 
@@ -911,7 +981,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 
 ---
 
-### Stage 8 — LLM layer *(outline)*
+### Stage 8 — LLM layer _(outline)_
 
 **Goal:** one observable, cost-bounded way to call LLMs, and the first LLM features.
 
@@ -922,14 +992,14 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - **8.5 LLM categorization fallback:** unique redacted descriptions in batches; output restricted to category ids with a confidence; a global cache keyed by the redacted normalized description; `category_source = "llm"`.
 - **8.6 "Tu extracto, traducido":** a plain-language explanation per distinct description pattern (not per row), cached; counts and amounts inserted by code.
 
-### Stage 9 — PDF statements *(outline)*
+### Stage 9 — PDF statements _(outline)_
 
 - **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted; the password never leaves the browser; output text items with positions.
 - **9.2 Layout reconstruction:** text items → rows, grouping by vertical position with a tolerance and assigning columns by the header's horizontal ranges. Synthetic fixtures of text items.
 - **9.3 Quarterly statement PDF parser:** Appendix A.3. Private parity test: the PDF and the XLSX of the same statement produce identical transactions.
 - **9.4 Edge cases:** wrong password, PDFs without a text layer (scanned), 30-page limit, size limit, each with a clear message.
 
-### Stage 10 — Monthly use and retention *(outline)*
+### Stage 10 — Monthly use and retention _(outline)_
 
 - **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS`. Never count a movement twice.
 - **10.2 Coverage and gaps:** date ranges with data per account, and which range to download (the bank allows the current month and the previous three).
@@ -937,7 +1007,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe.
 - **10.5 Monthly summary email:** "Your summary is ready" with a link; no amounts or descriptions in the email.
 
-### Stage 11 — Unknown formats: ingestion agent *(outline)*
+### Stage 11 — Unknown formats: ingestion agent _(outline)_
 
 - **11.1 Fingerprints and saved mappings:** fingerprint of a format from its normalized header; `format_mappings` table (global, no user data): column roles, date and amount formats, sign convention.
 - **11.2 Mapping proposal:** the LLM receives the header and at most 10 redacted sample rows and proposes a mapping, validated with Zod and checked with a dry-run parse and reconciliation.
@@ -945,7 +1015,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - **11.4 Agent with LangGraph.js:** detect → propose → dry run → verify → retry with a stronger model or ask the user, with explicit state.
 - **11.5 Evals:** synthetic spreadsheets from other banks with known answers; success rate and cost per file.
 
-### Stage 12 — Credit cards *(outline)*
+### Stage 12 — Credit cards _(outline)_
 
 - **12.1 [HUMAN] Sample:** an anonymized card statement (Bancolombia or Nu); expand this stage's phases from it.
 - **12.2 Parser:** with reconciliation (previous balance + purchases + interest + fees − payments = new balance).
@@ -953,7 +1023,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - **12.4 Usury rate:** a monthly Inngest cron reads the official publication (source confirmed at the gate), stores the rate per month with its source, and compares it with the card's rates.
 - **12.5 Card insights:** interest paid, fees, insurance, and a minimum-payment simulation (deterministic math; the LLM only explains it).
 
-### Stage 13 — "Pregúntale a tu extracto": chat agent *(outline)*
+### Stage 13 — "Pregúntale a tu extracto": chat agent _(outline)_
 
 - **13.1 Typed tools:** `getTransactions`, `getSpendingByCategory`, `getRecurring`, `getSummary`, `findTransactions`; the user id always comes from the session, never from the model.
 - **13.2 Agent:** LangGraph.js: understand the question → choose tools → compute → answer. No model-generated SQL.
@@ -962,7 +1032,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - **13.5 Evals:** question and answer pairs with deterministic answers over the fixtures.
 - **13.6 (Optional) Sandbox:** Pyodide in a Web Worker for questions the tools can't answer; the data never leaves the browser.
 
-### Stage 14 — Machine learning (`ml/`) *(outline)*
+### Stage 14 — Machine learning (`ml/`) _(outline)_
 
 Follows the `ml/` rules.
 
@@ -975,7 +1045,7 @@ Follows the `ml/` rules.
 - **14.7 Inference in Node:** onnxruntime-node in the ingestion function (verify the bundle size on Vercel), parity test, chain rules → model → LLM; measure the reduction in LLM calls.
 - **14.8 Anomaly detection:** Isolation Forest for unusual charges (duplicates, atypical amounts), with the same export and parity process.
 
-### Stage 15 — RAG and vector search *(outline)*
+### Stage 15 — RAG and vector search _(outline)_
 
 - **15.1 Corpus:** public sources (4x1000 exemption rules, usury rate definitions, published bank fees) with URLs and retrieval dates.
 - **15.2 Index:** chunking, embeddings and pgvector behind a `VectorStore` interface.
@@ -983,7 +1053,7 @@ Follows the `ml/` rules.
 - **15.4 Pinecone:** a second `VectorStore` implementation, the same evals, and an ADR comparing quality, latency, cost and operations.
 - **15.5 Cited answers:** the chat answers with citations and says it doesn't know when retrieval is weak.
 
-### Stage 16 — Portfolio polish *(outline)*
+### Stage 16 — Portfolio polish _(outline)_
 
 - **16.1 Landing page:** in Spanish, with a clear privacy message.
 - **16.2 Final README:** architecture diagram, ADR index, eval results, cost per statement, p50 and p95 latency.
@@ -994,13 +1064,14 @@ Follows the `ml/` rules.
 
 ## 7. Phase log
 
-| Date | Phase | Summary | Deviations and follow-ups |
-|---|---|---|---|
-| 2026-10-07 | 0.1 | Read-only audit. Node 22.20.0, pnpm 12.9.1, Turborepo 2.11.7, Next.js 16.3.8, React 19.2.8, Tailwind 4.3.3, Prettier 3.9.6. TypeScript 7.0.2 (root, `packages/ui`) and 5.9.3 (`apps/web`); ESLint 10.9.1 (configs) and 9.39.5 (`apps/web`); no Vitest. No `apps/docs` and no `packages/parsers`. `apps/web` came from `create-next-app` as a nested workspace and doesn't use the shared configs. `pnpm install --frozen-lockfile` fails (`ERR_PNPM_IGNORED_BUILDS`, `allowBuilds` placeholder); `turbo test` fails (no task); `check-types`, `lint` and `build` pass with the existing install. | TypeScript 7 exports no compiler API (only `version`), so typescript-eslint can't use it: TypeScript 6.0.3 everywhere (decision 10, ADR in 0.9). ESLint 9 everywhere for `eslint-config-next`. Node 22 kept (EOL April 2027). `fixtures/private/` was only ignored at the root (fixed in 0.6, before 2.8). `transpilePackages` dropped from 0.2. Phases 0.2–0.6, 0.9, 1.1 and 2.1 adjusted. |
-| 2026-10-07 | 0.2 | Removed `packages/ui`, the nested workspace in `apps/web` (lockfile, `pnpm-workspace.yaml`, `packageManager`), template README files and SVGs, and the empty `.npmrc`. `allowBuilds` set to `sharp: false` and `unrs-resolver: false`, so `pnpm install --frozen-lockfile` passes again with a single lockfile. Config packages renamed to `@xtrakto/*`. Root scripts in order, with `test`; `test` task in `turbo.json` using Turborepo's `transit` pattern (tests run in parallel, but their cache depends on dependencies' sources). Spanish placeholder home page. | ESLint 9 is now marked as unsupported on npm, but even `eslint-config-next` 16.4.0 bundles plugins (react, import, jsx-a11y) that only declare ESLint ≤ 9: re-check at the start of 0.4 by testing `eslint-config-next` on ESLint 10. The root layout still has `lang="en"`, the template metadata, Geist fonts and the default favicon: Phase 4.2. |
-| 2026-10-07 | 0.3 | TypeScript 6.0.3 pinned at the root and in `apps/web`; `@types/node` on `^22`. `base.json` for packages (ES2023, `ESNext` + `Bundler`, `strict`, `noUncheckedIndexedAccess`, `noEmit`, `types: []`); `nextjs.json` adds the DOM libs, `react-jsx`, `incremental`, the Next.js plugin and `types: ["node"]`. `apps/web` extends it and keeps only `paths` and `include`. `react-library.json` removed. `check-types` in `apps/web` is `next typegen && tsc --noEmit` and passes without a previous build; the `check-types` task uses the `transit` pattern. | TypeScript 6 defaults checked in the compiler: no `@types` package is included unless `types` lists it, and `strict`, `esModuleInterop` and `noUncheckedSideEffectImports` are on. Each config sets `types` explicitly. Isomorphic packages (core, parsers) keep `types: []`, so Node globals can't slip in; server-only packages (db) add `"node"`. Next.js doesn't rewrite a `tsconfig.json` that uses `extends`, so the options it requires live in `nextjs.json`. |
-| 2026-10-07 | 0.4 | `@xtrakto/eslint-config` rebuilt on ESLint 9.39.5 and typescript-eslint 8.71.1, with two presets: `base` (packages: ESLint and typescript-eslint recommended) and `next` (`eslint-config-next` core web vitals and TypeScript). Both add `project-rules.js` and `eslint-config-prettier`. Babel parser, `eslint-plugin-only-warn` and the `react-internal` preset removed. `apps/web` uses the `next` preset; the `lint` task uses the `transit` pattern, so rule changes invalidate the cache. Every rule checked with sample violations on both presets: `any`, `enum` and deep imports are errors; size, depth, parameters and `console` are warnings; tests and fixtures skip the size limits. | ESLint 10 tested in an isolated project: `eslint-config-next` 16.3.8 crashes (`react/display-name` calls `context.getFilename`, removed in ESLint 10) unless the React version is pinned in settings, and three of its plugins declare ESLint ≤ 9. Stayed on ESLint 9, which is unsupported upstream but dev-only; move when those plugins support 10. Phase 1.4 adds its generated `categories.constants.ts` to the size-limit override. `no-unused-vars` is a warning in `next` and an error in `base` (each preset's default). |
-| 2026-10-07 | 0.5 | Vitest 5.0.3 in `apps/web` with `vite` 8.3.3 (a peer dependency of Vitest 5) and `@vitest/coverage-v8`: Node environment, `@/` alias, `server-only` aliased to an empty module, `passWithNoTests`, text and HTML coverage without thresholds. Scripts `test` and `test:coverage`; the `test` task outputs `coverage/**`. A temporary test (not committed) checked both aliases and the coverage report. | Config named `vitest.config.mts`: as `.ts` in a CommonJS package, Vite warns that its upcoming native config loader won't support it. Remove `passWithNoTests` when the app gets its first test. |
+| Date       | Phase | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Deviations and follow-ups                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-07 | 0.1   | Read-only audit. Node 22.20.0, pnpm 12.9.1, Turborepo 2.11.7, Next.js 16.3.8, React 19.2.8, Tailwind 4.3.3, Prettier 3.9.6. TypeScript 7.0.2 (root, `packages/ui`) and 5.9.3 (`apps/web`); ESLint 10.9.1 (configs) and 9.39.5 (`apps/web`); no Vitest. No `apps/docs` and no `packages/parsers`. `apps/web` came from `create-next-app` as a nested workspace and doesn't use the shared configs. `pnpm install --frozen-lockfile` fails (`ERR_PNPM_IGNORED_BUILDS`, `allowBuilds` placeholder); `turbo test` fails (no task); `check-types`, `lint` and `build` pass with the existing install.                                                                                                   | TypeScript 7 exports no compiler API (only `version`), so typescript-eslint can't use it: TypeScript 6.0.3 everywhere (decision 10, ADR in 0.9). ESLint 9 everywhere for `eslint-config-next`. Node 22 kept (EOL April 2027). `fixtures/private/` was only ignored at the root (fixed in 0.6, before 2.8). `transpilePackages` dropped from 0.2. Phases 0.2–0.6, 0.9, 1.1 and 2.1 adjusted.                                                                                                                                       |
+| 2026-10-07 | 0.2   | Removed `packages/ui`, the nested workspace in `apps/web` (lockfile, `pnpm-workspace.yaml`, `packageManager`), template README files and SVGs, and the empty `.npmrc`. `allowBuilds` set to `sharp: false` and `unrs-resolver: false`, so `pnpm install --frozen-lockfile` passes again with a single lockfile. Config packages renamed to `@xtrakto/*`. Root scripts in order, with `test`; `test` task in `turbo.json` using Turborepo's `transit` pattern (tests run in parallel, but their cache depends on dependencies' sources). Spanish placeholder home page.                                                                                                                             | ESLint 9 is now marked as unsupported on npm, but even `eslint-config-next` 16.4.0 bundles plugins (react, import, jsx-a11y) that only declare ESLint ≤ 9: re-check at the start of 0.4 by testing `eslint-config-next` on ESLint 10. The root layout still has `lang="en"`, the template metadata, Geist fonts and the default favicon: Phase 4.2.                                                                                                                                                                               |
+| 2026-10-07 | 0.3   | TypeScript 6.0.3 pinned at the root and in `apps/web`; `@types/node` on `^22`. `base.json` for packages (ES2023, `ESNext` + `Bundler`, `strict`, `noUncheckedIndexedAccess`, `noEmit`, `types: []`); `nextjs.json` adds the DOM libs, `react-jsx`, `incremental`, the Next.js plugin and `types: ["node"]`. `apps/web` extends it and keeps only `paths` and `include`. `react-library.json` removed. `check-types` in `apps/web` is `next typegen && tsc --noEmit` and passes without a previous build; the `check-types` task uses the `transit` pattern.                                                                                                                                        | TypeScript 6 defaults checked in the compiler: no `@types` package is included unless `types` lists it, and `strict`, `esModuleInterop` and `noUncheckedSideEffectImports` are on. Each config sets `types` explicitly. Isomorphic packages (core, parsers) keep `types: []`, so Node globals can't slip in; server-only packages (db) add `"node"`. Next.js doesn't rewrite a `tsconfig.json` that uses `extends`, so the options it requires live in `nextjs.json`.                                                             |
+| 2026-10-07 | 0.4   | `@xtrakto/eslint-config` rebuilt on ESLint 9.39.5 and typescript-eslint 8.71.1, with two presets: `base` (packages: ESLint and typescript-eslint recommended) and `next` (`eslint-config-next` core web vitals and TypeScript). Both add `project-rules.js` and `eslint-config-prettier`. Babel parser, `eslint-plugin-only-warn` and the `react-internal` preset removed. `apps/web` uses the `next` preset; the `lint` task uses the `transit` pattern, so rule changes invalidate the cache. Every rule checked with sample violations on both presets: `any`, `enum` and deep imports are errors; size, depth, parameters and `console` are warnings; tests and fixtures skip the size limits. | ESLint 10 tested in an isolated project: `eslint-config-next` 16.3.8 crashes (`react/display-name` calls `context.getFilename`, removed in ESLint 10) unless the React version is pinned in settings, and three of its plugins declare ESLint ≤ 9. Stayed on ESLint 9, which is unsupported upstream but dev-only; move when those plugins support 10. Phase 1.4 adds its generated `categories.constants.ts` to the size-limit override. `no-unused-vars` is a warning in `next` and an error in `base` (each preset's default). |
+| 2026-10-07 | 0.5   | Vitest 5.0.3 in `apps/web` with `vite` 8.3.3 (a peer dependency of Vitest 5) and `@vitest/coverage-v8`: Node environment, `@/` alias, `server-only` aliased to an empty module, `passWithNoTests`, text and HTML coverage without thresholds. Scripts `test` and `test:coverage`; the `test` task outputs `coverage/**`. A temporary test (not committed) checked both aliases and the coverage report.                                                                                                                                                                                                                                                                                            | Config named `vitest.config.mts`: as `.ts` in a CommonJS package, Vite warns that its upcoming native config loader won't support it. Remove `passWithNoTests` when the app gets its first test.                                                                                                                                                                                                                                                                                                                                  |
+| 2026-10-07 | 0.6   | Prettier 3.9.6 with default options (`.prettierrc.json`), `.prettierignore`, `format` and `format:check` over the whole repository; `.editorconfig`; `.nvmrc` with 22; `engines.node` set to `^22.12.0` (was `>=24`). Single root `.gitignore` (the one in `apps/web` merged into it) with `.env*` except `.env.example`, `**/fixtures/private/`, `ml/data/` and `ml/artifacts/`. Root `.env.example` documented and empty.                                                                                                                                                                                                                                                                        | The first format run reformatted existing files, mostly Markdown tables in `docs/` and `.claude/rules/`; content unchanged (emphasis markers, padding and lowercase hex colors in CSS examples). `git check-ignore` confirms `packages/parsers/fixtures/private/`, `.env.production` and `ml/data/` are now ignored and `.env.example` is not.                                                                                                                                                                                    |
 
 ---
 
@@ -1054,21 +1125,21 @@ No sample yet (Phase 12.1).
 
 Starting point for the rule-based categorizer. Verify each pattern against the real files (privately) before relying on it.
 
-| Pattern (normalized) | Meaning | Category | Notes |
-|---|---|---|---|
-| `ABONO INTERESES AHORROS` | Daily savings interest | `interest` | Group in the UI |
-| contains `INTERES` and `INV` | Investment interest | `interest` | Verify exact text |
-| `APERTURA INV VIRTUAL …` | Opening of a virtual investment | `investment` | Internal |
-| `PAGO INTERBANC <ORIGIN>` | Incoming transfer from another bank (e.g. salary) | `income_transfer` | |
-| `CONSIGNACION CORRESPONSAL …` | Cash deposit at a banking agent | `deposit` | |
-| `TRANSF DE <NAME>` | Incoming transfer | `income_transfer` | `own_account_transfer` if the name matches the holder |
-| `TRANSF A <NAME>` | Outgoing transfer | `transfers_to_people` | `own_account_transfer` if the name matches the holder; some utilities also appear this way |
-| `TRANSFERENCIAS A NEQUI` | Transfer to a Nequi wallet (reference = phone) | `digital_wallet` | Internal if the phone is marked as the user's own |
-| `TRANSFERENCIA CTA SUC VIRTUAL` | Transfer through the virtual branch | `transfers_to_people` | Ambiguous; let the user correct it |
-| `PAGO SUC VIRT TC <BRAND> …` | Credit card payment | `credit_card_payment` | Internal |
-| `PAGO PSE <ENTITY>` | Online payment through PSE | Depends on the entity | Card at another bank → `credit_card_payment`; utility → `utilities`; bank → ask the user |
-| `PAGO LLAVE <NAME>` | Instant payment to a key (person or business) | `transfers_to_people` | Redact the name before any LLM call |
-| `PAGO QR <MERCHANT>` | QR payment at a merchant | Depends on the merchant | Merchant names truncated |
-| `COMPRA EN <MERCHANT>` | Card purchase | Depends on the merchant | About 10 characters of merchant name |
-| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal | `cash_withdrawal` | |
-| contains `4X1000` | Financial transactions tax (GMF) | `taxes_and_fees` | Feeds the 4x1000 insight |
+| Pattern (normalized)                        | Meaning                                           | Category                | Notes                                                                                      |
+| ------------------------------------------- | ------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| `ABONO INTERESES AHORROS`                   | Daily savings interest                            | `interest`              | Group in the UI                                                                            |
+| contains `INTERES` and `INV`                | Investment interest                               | `interest`              | Verify exact text                                                                          |
+| `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                   | `investment`            | Internal                                                                                   |
+| `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary) | `income_transfer`       |                                                                                            |
+| `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                   | `deposit`               |                                                                                            |
+| `TRANSF DE <NAME>`                          | Incoming transfer                                 | `income_transfer`       | `own_account_transfer` if the name matches the holder                                      |
+| `TRANSF A <NAME>`                           | Outgoing transfer                                 | `transfers_to_people`   | `own_account_transfer` if the name matches the holder; some utilities also appear this way |
+| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)    | `digital_wallet`        | Internal if the phone is marked as the user's own                                          |
+| `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch               | `transfers_to_people`   | Ambiguous; let the user correct it                                                         |
+| `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                               | `credit_card_payment`   | Internal                                                                                   |
+| `PAGO PSE <ENTITY>`                         | Online payment through PSE                        | Depends on the entity   | Card at another bank → `credit_card_payment`; utility → `utilities`; bank → ask the user   |
+| `PAGO LLAVE <NAME>`                         | Instant payment to a key (person or business)     | `transfers_to_people`   | Redact the name before any LLM call                                                        |
+| `PAGO QR <MERCHANT>`                        | QR payment at a merchant                          | Depends on the merchant | Merchant names truncated                                                                   |
+| `COMPRA EN <MERCHANT>`                      | Card purchase                                     | Depends on the merchant | About 10 characters of merchant name                                                       |
+| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal                                   | `cash_withdrawal`       |                                                                                            |
+| contains `4X1000`                           | Financial transactions tax (GMF)                  | `taxes_and_fees`        | Feeds the 4x1000 insight                                                                   |

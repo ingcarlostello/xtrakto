@@ -3,6 +3,7 @@
 Mandatory standards for all code in the monorepo. They apply equally to people and to AI agents (Claude Code, Cursor).
 
 **How to read this:**
+
 - **Always / Never** = mandatory. A PR that breaks one is not merged.
 - **Prefer / Avoid** = recommended. Can be broken with an explicit reason in the PR.
 
@@ -76,18 +77,18 @@ xtrakto/
 
 ### SOLID applied to this project
 
-| Principle | How it applies here |
-|---|---|
-| **SRP** | A component renders, a hook manages UI state, a service talks to the outside world, a parser reads one format. |
-| **OCP** | Adding a new bank = adding a new parser that implements `BankParser`. The ingestion agent is not modified. |
-| **LSP** | Any `BankParser` must be substitutable for another: same signature, same output contract (`ParsedStatement`), same guarantees. |
-| **ISP** | Components receive only the props they use. Pass `amount` and `date`, not the whole `Transaction` object, if that's all you need. |
-| **DIP** | Code depends on interfaces (`BankParser`, `VectorStore`, `LlmClient`), not concrete implementations. The LLM provider can be swapped without touching the logic. |
+| Principle | How it applies here                                                                                                                                              |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SRP**   | A component renders, a hook manages UI state, a service talks to the outside world, a parser reads one format.                                                   |
+| **OCP**   | Adding a new bank = adding a new parser that implements `BankParser`. The ingestion agent is not modified.                                                       |
+| **LSP**   | Any `BankParser` must be substitutable for another: same signature, same output contract (`ParsedStatement`), same guarantees.                                   |
+| **ISP**   | Components receive only the props they use. Pass `amount` and `date`, not the whole `Transaction` object, if that's all you need.                                |
+| **DIP**   | Code depends on interfaces (`BankParser`, `VectorStore`, `LlmClient`), not concrete implementations. The LLM provider can be swapped without touching the logic. |
 
 ```typescript
 // packages/parsers/src/bank-parser.types.ts
 export type BankParser = {
-  id: string;                                   // "bancolombia-savings-quarterly"
+  id: string; // "bancolombia-savings-quarterly"
   canParse: (file: RawFile) => boolean;
   parse: (file: RawFile) => ParseResult<ParsedStatement>;
 };
@@ -111,18 +112,22 @@ In the App Router the **server is the default place** to fetch data. Fetching da
 "use client";
 export function StatementSummary() {
   const [summary, setSummary] = useState<Summary | null>(null);
-  useEffect(() => { fetch("/api/summary").then((r) => r.json()).then(setSummary); }, []);
+  useEffect(() => {
+    fetch("/api/summary")
+      .then((r) => r.json())
+      .then(setSummary);
+  }, []);
   return <SummaryCards summary={summary} />;
 }
 
 // ✅ Right: the page (server) fetches the data; the client only handles interaction
 // app/(dashboard)/summary/page.tsx
 export default async function SummaryPage() {
-  const summary = await getStatementSummary();   // statement.service.ts (server-only)
+  const summary = await getStatementSummary(); // statement.service.ts (server-only)
   return (
     <>
-      <SummaryCards summary={summary} />        {/* Server Component */}
-      <PeriodFilter />                           {/* Client Component with usePeriodFilter() */}
+      <SummaryCards summary={summary} /> {/* Server Component */}
+      <PeriodFilter /> {/* Client Component with usePeriodFilter() */}
     </>
   );
 }
@@ -167,16 +172,16 @@ apps/web/src/
 
 ## 5. Naming conventions
 
-| Element | Convention | Example |
-|---|---|---|
-| React components (file and name) | `PascalCase.tsx` | `StatementSummary.tsx` |
-| Hooks | `use-kebab-case.ts`, exports `useCamelCase` | `use-period-filter.ts` → `usePeriodFilter` |
-| Other files | `kebab-case.<role>.ts` | `statement.service.ts`, `money.utils.ts` |
-| Tests | next to the file, `*.test.ts` | `normalize.test.ts` |
-| Variables and functions | `camelCase` | `parseStatement` |
-| Types | `PascalCase` | `ParsedStatement` |
-| Constants | `UPPER_SNAKE_CASE` | `MAX_FILE_SIZE_BYTES` |
-| Internal packages | `@xtrakto/<name>` | `@xtrakto/parsers` |
+| Element                          | Convention                                  | Example                                    |
+| -------------------------------- | ------------------------------------------- | ------------------------------------------ |
+| React components (file and name) | `PascalCase.tsx`                            | `StatementSummary.tsx`                     |
+| Hooks                            | `use-kebab-case.ts`, exports `useCamelCase` | `use-period-filter.ts` → `usePeriodFilter` |
+| Other files                      | `kebab-case.<role>.ts`                      | `statement.service.ts`, `money.utils.ts`   |
+| Tests                            | next to the file, `*.test.ts`               | `normalize.test.ts`                        |
+| Variables and functions          | `camelCase`                                 | `parseStatement`                           |
+| Types                            | `PascalCase`                                | `ParsedStatement`                          |
+| Constants                        | `UPPER_SNAKE_CASE`                          | `MAX_FILE_SIZE_BYTES`                      |
+| Internal packages                | `@xtrakto/<name>`                           | `@xtrakto/parsers`                         |
 
 **Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`.
 
@@ -214,12 +219,12 @@ export type UploadStatementInput = z.infer<typeof uploadStatementSchema>;
 
 ## 7. Services, actions and data access
 
-| Piece | Responsibility | Where it runs |
-|---|---|---|
-| `*.service.ts` | A feature's server logic: query the database, call the LLM, R2 or Clerk | Server only |
-| `*.action.ts` | Server action: validates input with Zod, checks the session, calls the service, returns a result | Server only |
-| `app/api/**/route.ts` | Only for webhooks and endpoints called by third parties (Inngest, Clerk) | Server only |
-| `packages/db` | Schema, migrations and reusable queries | Server only |
+| Piece                 | Responsibility                                                                                   | Where it runs |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ------------- |
+| `*.service.ts`        | A feature's server logic: query the database, call the LLM, R2 or Clerk                          | Server only   |
+| `*.action.ts`         | Server action: validates input with Zod, checks the session, calls the service, returns a result | Server only   |
+| `app/api/**/route.ts` | Only for webhooks and endpoints called by third parties (Inngest, Clerk)                         | Server only   |
+| `packages/db`         | Schema, migrations and reusable queries                                                          | Server only   |
 
 - **Always** add `import "server-only";` at the top of every `*.service.ts` and of modules in `lib/` that use secrets.
 - **Always** check the session and that the resource belongs to the user inside every action and every service. Never trust a `userId` coming from the client.
@@ -258,7 +263,7 @@ Fixed application values, defined at development time, that don't change at runt
 
 ```typescript
 // statement.constants.ts
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;   // 10 MB
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 export const MAX_PDF_PAGES = 30;
 export const SUPPORTED_MIME_TYPES = [
   "application/pdf",
@@ -287,6 +292,7 @@ Before adding global state, walk down this ladder and use the **first level that
 5. **Zustand**, only for client state shared between distant components that changes frequently.
 
 If Zustand is used:
+
 - One store per domain in `features/<feature>/<feature>.store.ts`.
 - Exported hook in `camelCase` with the `use` prefix: `useUploadQueueStore`.
 - **Never** store in Zustand data that already comes from the server, nor persist financial data in `localStorage`.
@@ -326,11 +332,12 @@ This is a financial product. Errors here are the most serious.
 ```typescript
 // packages/core/src/result.types.ts
 export type Result<T, E = AppError> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
+  { ok: true; value: T } | { ok: false; error: E };
 
 // A server action always returns a Result
-export async function uploadStatement(input: unknown): Promise<Result<{ statementId: string }>> {
+export async function uploadStatement(
+  input: unknown,
+): Promise<Result<{ statementId: string }>> {
   const parsed = uploadStatementSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: { code: "INVALID_INPUT" } };
   // ...

@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+.next/
+coverage/
+.turbo/
+next-env.d.ts
+.remember/

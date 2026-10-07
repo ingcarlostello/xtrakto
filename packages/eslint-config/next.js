@@ -15,5 +15,11 @@ export const nextJsConfig = [
   ...nextTs,
   ...projectRules,
   eslintConfigPrettier,
-  globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "coverage/**",
+    "next-env.d.ts",
+  ]),
 ];

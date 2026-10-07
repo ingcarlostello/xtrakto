@@ -10,6 +10,7 @@ Standards for all Python code in the monorepo. They complement the project's gen
 **Scope:** in Xtrakto, Python **does not serve users**. It is used only in `ml/` to prepare data, train models, evaluate them and export them to ONNX. Production loads the ONNX file from TypeScript. That is why there are no routers, endpoints, repositories or caches here.
 
 **How to read this:**
+
 - **Always / Never** = mandatory.
 - **Prefer / Avoid** = recommended; it can be broken with an explicit reason in the PR.
 
@@ -36,17 +37,17 @@ Standards for all Python code in the monorepo. They complement the project's gen
 
 ## 1. Tooling
 
-| Purpose | Tool |
-|---|---|
-| Python version | 3.12 |
-| Environment and dependencies | **uv** (`pyproject.toml` + `uv.lock`) |
-| Linting and formatting | **ruff** (`ruff check` and `ruff format`) |
-| Type checking | **pyright** in `strict` mode |
-| Tests | **pytest** |
-| Data | **pandas** |
-| Models | **scikit-learn**; Hugging Face `transformers` only for the fine-tune |
-| Experiments | **MLflow** |
-| Export | **skl2onnx** and **onnxruntime** (for verification) |
+| Purpose                      | Tool                                                                 |
+| ---------------------------- | -------------------------------------------------------------------- |
+| Python version               | 3.12                                                                 |
+| Environment and dependencies | **uv** (`pyproject.toml` + `uv.lock`)                                |
+| Linting and formatting       | **ruff** (`ruff check` and `ruff format`)                            |
+| Type checking                | **pyright** in `strict` mode                                         |
+| Tests                        | **pytest**                                                           |
+| Data                         | **pandas**                                                           |
+| Models                       | **scikit-learn**; Hugging Face `transformers` only for the fine-tune |
+| Experiments                  | **MLflow**                                                           |
+| Export                       | **skl2onnx** and **onnxruntime** (for verification)                  |
 
 - **Always** add dependencies with `uv add` and commit `uv.lock`. Never with a standalone `pip install`.
 - **Always** run commands with `uv run` (`uv run pytest`, `uv run python -m ...`).
