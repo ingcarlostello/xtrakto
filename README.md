@@ -20,12 +20,13 @@ Early development: Stage 0, repository foundations. Nothing is deployed yet. Pro
 apps/
   web/                 Next.js app: routes, UI, server actions
 packages/
+  core/                Domain types, Result and AppError (pure TypeScript)
   eslint-config/       Shared ESLint presets and project rules
   typescript-config/   Shared tsconfig presets
 docs/                  System design, roadmap and ADRs
 ```
 
-The domain packages (`core`, `parsers`, `db`) are added in stages 1 to 3.
+The `parsers` and `db` packages are added in stages 2 and 3.
 
 ## Local setup
 
