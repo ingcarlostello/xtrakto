@@ -1,40 +1,19 @@
-import babelParser from "@babel/eslint-parser";
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
-import turboPlugin from "eslint-plugin-turbo";
-import onlyWarn from "eslint-plugin-only-warn";
+import tseslint from "typescript-eslint";
+import { projectRules } from "./project-rules.js";
 
 /**
- * A shared ESLint configuration for the repository.
+ * ESLint configuration for internal packages (pure TypeScript, no React).
  *
  * @type {import("eslint").Linter.Config[]}
- * */
+ */
 export const config = [
   js.configs.recommended,
+  ...tseslint.configs.recommended,
+  ...projectRules,
   eslintConfigPrettier,
   {
-    languageOptions: {
-      parser: babelParser,
-      parserOptions: {
-        requireConfigFile: false,
-        babelOptions: {
-          presets: ["@babel/preset-typescript"],
-        },
-      },
-    },
-    plugins: {
-      turbo: turboPlugin,
-    },
-    rules: {
-      "turbo/no-undeclared-env-vars": "warn",
-    },
-  },
-  {
-    plugins: {
-      onlyWarn,
-    },
-  },
-  {
-    ignores: ["dist/**"],
+    ignores: ["dist/**", "coverage/**"],
   },
 ];

@@ -1,39 +1,19 @@
+import eslintConfigPrettier from "eslint-config-prettier";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 import { globalIgnores } from "eslint/config";
-import pluginReactHooks from "eslint-plugin-react-hooks";
-import globals from "globals";
-import pluginNext from "@next/eslint-plugin-next";
-import { config as baseConfig } from "./base.js";
+import { projectRules } from "./project-rules.js";
 
 /**
- * A custom ESLint configuration for libraries that use Next.js.
+ * ESLint configuration for the Next.js app: the official Next.js presets
+ * (React, hooks, accessibility, imports, TypeScript) plus the project rules.
  *
  * @type {import("eslint").Linter.Config[]}
- * */
+ */
 export const nextJsConfig = [
-  ...baseConfig,
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-  {
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.serviceworker,
-      },
-    },
-  },
-  {
-    plugins: {
-      "@next/next": pluginNext,
-    },
-    rules: {
-      ...pluginNext.configs.recommended.rules,
-      ...pluginNext.configs["core-web-vitals"].rules,
-    },
-  },
-  pluginReactHooks.configs.flat.recommended,
+  ...nextVitals,
+  ...nextTs,
+  ...projectRules,
+  eslintConfigPrettier,
+  globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts"]),
 ];
