@@ -4,6 +4,8 @@ export type {
   AppErrorCode,
   AppErrorDetails,
 } from "./app-error.types";
+export { CATEGORIES, CATEGORY_KINDS } from "./categories.constants";
+export type { Category, CategoryId, CategoryKind } from "./category.types";
 export { DEFAULT_TIME_ZONE } from "./date.constants";
 export {
   compareLocalDates,
