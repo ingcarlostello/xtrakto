@@ -16,7 +16,15 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 
 ## Index
 
-| ADR | Title | Status |
-| --- | ----- | ------ |
-
-No ADRs yet. The first ones are recorded in Phase 0.9 of the [roadmap](../ROADMAP.md).
+| ADR                                                             | Title                                                           | Status   |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
+| [0001](0001-monorepo-pnpm-turborepo.md)                         | Monorepo with pnpm workspaces and Turborepo                     | Accepted |
+| [0002](0002-typescript-backend-python-for-ml.md)                | TypeScript on Node for the backend; Python only for ML training | Accepted |
+| [0003](0003-postgresql-with-drizzle.md)                         | PostgreSQL with Drizzle                                         | Accepted |
+| [0004](0004-clerk-for-authentication.md)                        | Clerk for authentication                                        | Accepted |
+| [0005](0005-inngest-for-background-work.md)                     | Inngest for background work                                     | Accepted |
+| [0006](0006-money-as-integer-minor-units.md)                    | Money as integer minor units                                    | Accepted |
+| [0007](0007-transaction-dates-as-local-date.md)                 | Transaction dates as `LocalDate`                                | Accepted |
+| [0008](0008-files-read-in-the-browser.md)                       | Files are read in the browser                                   | Accepted |
+| [0009](0009-deterministic-parsing-first.md)                     | Deterministic parsing first, LLM as a fallback                  | Accepted |
+| [0010](0010-typescript-6-until-typescript-eslint-supports-7.md) | TypeScript 6.0 until typescript-eslint supports TypeScript 7    | Accepted |
