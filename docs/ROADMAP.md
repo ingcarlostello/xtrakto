@@ -78,7 +78,8 @@ These complement the project rules.
 6. **Third-party identifiers** (such as phone numbers in the `Referencia` column) are stored only as HMAC-SHA-256 with a secret key. A plain hash of a phone number can be reversed by brute force.
 7. **The account holder's name** is stored normalized on the account to detect transfers between the user's own accounts. It is never logged or sent to an LLM.
 8. **Services:** Vercel (app and Inngest functions), Inngest Cloud, Clerk, PostgreSQL (provider chosen at gate 3.1); later Langfuse, Sentry, PostHog and Resend. Domain: `xtrakto.site`, DNS managed at Hostinger.
-9. **Development machine:** macOS on Intel (`darwin-x64`), Node 22 via nvm, pnpm 12.9.1. Some packages ship native binaries; if one has no `darwin-x64` build, stop and report instead of working around it.
+9. **Development machine:** macOS on Intel (`darwin-x64`), Node 22 via nvm, pnpm 12.9.1. Some packages ship native binaries; if one has no `darwin-x64` build, stop and report instead of working around it. Node 22 reaches end of life in April 2027: plan the upgrade before then.
+10. **TypeScript 6.0 across the monorepo.** TypeScript 7 has no JavaScript compiler API yet, so typescript-eslint (which supports TS `<6.1`) and the Next.js ESLint config can't use it. Move to TypeScript 7 when typescript-eslint supports it.
 
 ---
 
@@ -100,7 +101,7 @@ The human decides before the phase starts. The agent may propose options with tr
 ## 5. Progress
 
 **Stage 0 — Repository foundations**
-- [ ] 0.1 Audit the repository (read-only)
+- [x] 0.1 Audit the repository (read-only)
 - [ ] 0.2 Clean up the boilerplate
 - [ ] 0.3 Shared TypeScript configuration
 - [ ] 0.4 Shared ESLint configuration
@@ -262,23 +263,27 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.2 Clean up the boilerplate
 
 **Tasks**
-- Remove template leftovers (`apps/docs`, `packages/ui`) and every reference to them.
-- Name the root package `xtrakto`. Keep `packageManager` pinned to the installed pnpm version (the template's version has no `darwin-x64` binary).
+- Remove template leftovers and every reference to them: `packages/ui` (there is no `apps/docs`), `apps/web/README.md`, the unused `public/*.svg` files and the empty `.npmrc`. Replace the template `README.md` with a stub until Phase 0.8.
+- Remove the nested workspace inside `apps/web` (its `pnpm-lock.yaml`, `pnpm-workspace.yaml` and `packageManager`): the root owns the lockfile and the pnpm settings.
+- In the root `pnpm-workspace.yaml`, replace the `allowBuilds` placeholder, which makes `pnpm install` fail with `ERR_PNPM_IGNORED_BUILDS`, with `sharp: false` and `unrs-resolver: false` (both ship prebuilt binaries).
+- Keep the root package named `xtrakto` and `packageManager` pinned to the installed pnpm version (the template's version has no `darwin-x64` binary).
 - Rename the configuration packages to `@xtrakto/typescript-config` and `@xtrakto/eslint-config` and update every reference.
-- Replace the default home page with a minimal placeholder.
-- Configure `transpilePackages` in `apps/web` for internal packages, since they export TypeScript source.
-- Root scripts: `dev`, `build`, `lint`, `check-types`, `test`, `format`.
+- Replace the default home page with a minimal placeholder in Spanish.
+- Root scripts: `dev`, `build`, `lint`, `check-types`, `test`, `format`. Add a minimal `test` task to `turbo.json` so `pnpm turbo check-types lint test` runs from this phase on (Phase 0.5 completes it).
+- No `transpilePackages`: Next.js 16.3 transpiles workspace packages automatically with the App Router. Check this when `apps/web` imports its first internal package.
 
-**Done when:** `pnpm dev` serves only `apps/web`; `git grep "@repo/"` returns nothing.
+**Done when:** `pnpm install --frozen-lockfile` passes with a single lockfile; `pnpm dev` serves only `apps/web`; `git grep "@repo/" -- ':!docs/ROADMAP.md'` returns nothing.
 
 **Commit:** `chore: clean up monorepo boilerplate`
 
 #### 0.3 Shared TypeScript configuration
 
 **Tasks**
-- `@xtrakto/typescript-config` with a base config for packages and a Next.js config for the app.
+- `typescript` pinned to `6.0.3` at the root and in every package (decision 10); `@types/node` on `^22`.
+- `@xtrakto/typescript-config` with a base config for packages and a Next.js config that `apps/web` extends. Packages export TypeScript source consumed by Next.js and Vitest, so the base config uses `moduleResolution: "Bundler"` and `noEmit`. Remove `react-library.json`.
 - `strict` and `noUncheckedIndexedAccess` enabled (parsers index into rows constantly; this catches missing cells).
-- Every package has a `check-types` script.
+- TypeScript 6 changed some defaults: check the effective config with `tsc --showConfig` and set `types` explicitly.
+- Every package with TypeScript code has a `check-types` script. In `apps/web` it is `next typegen && tsc --noEmit`, because route types such as `LayoutProps` are generated and CI has no previous build.
 
 **Done when:** check-types passes everywhere; an unchecked index access is reported as an error (verify locally, don't commit the test case).
 
@@ -287,35 +292,36 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 0.4 Shared ESLint configuration
 
 **Tasks**
-- Flat config in `@xtrakto/eslint-config` with presets for packages and for the Next.js app.
+- ESLint 9 across the monorepo: the plugins bundled in `eslint-config-next` (react, import, jsx-a11y) don't support ESLint 10 yet.
+- Flat config in `@xtrakto/eslint-config` with presets for packages and for the Next.js app (built on `eslint-config-next`). typescript-eslint replaces the template's Babel parser. Remove `eslint-plugin-only-warn`, which turns every error into a warning, and the unused `react-internal` preset.
 - Automate what the project rules allow:
   - Errors: `any`, `enum` (via `no-restricted-syntax`), deep imports into another package (`@xtrakto/*/src/**`).
   - Warnings: `max-lines` 300 (skipping blank lines and comments), `max-lines-per-function` 40, `max-depth` 3, `max-params` 3, `no-console`.
   - Overrides relaxing size rules for tests, fixtures and generated files.
 
-**Done when:** lint passes; each rule triggers on a sample violation (verify locally, don't commit it).
+**Done when:** lint passes; each rule triggers on a sample violation, with `any` and `enum` reported as errors (verify locally, don't commit it).
 
 **Commit:** `chore: shared ESLint configuration with project rules`
 
 #### 0.5 Testing setup
 
 **Tasks**
-- Vitest in every TypeScript package, each with its own config and `test` script; `test` task in `turbo.json` with correct inputs.
-- In `apps/web`: Node environment by default, and an alias that replaces `server-only` with an empty module in tests (the real package throws outside React Server Components).
+- Vitest in `apps/web`, the only TypeScript package with code so far, with its own config and `test` script; `test` task in `turbo.json` with correct inputs and coverage as output. Packages created later (1.1, 2.1, 3.2) add Vitest the same way.
+- In `apps/web`: Node environment by default, and an alias that replaces `server-only` with an empty module in tests (the real package throws outside React Server Components). `passWithNoTests` until the app has its first test.
 - Coverage reporter configured, without thresholds yet.
 
-**Done when:** `pnpm turbo test` from the root runs every package's tests, including `normalizeDescription`'s.
+**Done when:** `pnpm turbo test` from the root runs the app's Vitest setup.
 
-**Commit:** `chore: Vitest setup across the workspace`
+**Commit:** `chore: Vitest setup`
 
 #### 0.6 Formatting, editor and ignore files
 
 **Tasks**
-- Prettier (single config) with `format` and `format:check` scripts; `.editorconfig`; `.nvmrc` with Node 22; `engines` in the root `package.json`.
-- `.gitignore`: `.env*` except `.env.example`, `**/fixtures/private/`, `ml/data/`, `ml/artifacts/`, coverage output, `.turbo`.
+- Prettier (single config, with a `.prettierignore` for lockfiles and build output) with `format` and `format:check` scripts; `.editorconfig`; `.nvmrc` with Node 22; `engines` in the root `package.json` set to `^22.12.0` (it says `>=24` today; Vitest needs 22.12 or later).
+- `.gitignore`: `.env*` except `.env.example`, `**/fixtures/private/`, `ml/data/`, `ml/artifacts/`, coverage output, `.turbo`. Today's `fixtures/private/` pattern only matches at the root, so `packages/parsers/fixtures/private/` is **not** ignored. Merge `apps/web/.gitignore` into the root file.
 - Root `.env.example`, documented and empty for now.
 
-**Done when:** `pnpm format:check` passes; `git check-ignore -v packages/parsers/fixtures/private/test.xlsx` confirms the file would be ignored.
+**Done when:** `pnpm format:check` passes; `git check-ignore -v` confirms that `packages/parsers/fixtures/private/test.xlsx` and `.env.production` would be ignored.
 
 **Commit:** `chore: formatting, editor config and ignore rules`
 
@@ -342,7 +348,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 
 **Tasks:** short ADRs (one page at most), based on section 3 of this roadmap and the project rules:
 - 0001 Monorepo with pnpm workspaces and Turborepo.
-- 0002 TypeScript on Node for the backend; Python only for ML training.
+- 0002 TypeScript on Node for the backend (Node 22, end of life in April 2027); Python only for ML training.
 - 0003 PostgreSQL with Drizzle (alternative considered: Convex).
 - 0004 Clerk for authentication.
 - 0005 Inngest for background work (alternative considered: pg-boss, which needs an always-on worker that Vercel doesn't provide).
@@ -350,6 +356,7 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 - 0007 Transaction dates as `LocalDate`.
 - 0008 Files are read in the browser; the server receives extracted content only.
 - 0009 Deterministic parsing first, LLM as a fallback.
+- 0010 TypeScript 6.0 until typescript-eslint supports TypeScript 7 (decision 10).
 
 **Commit:** `docs(adr): record initial architecture decisions`
 
@@ -360,11 +367,11 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 1.1 Package scaffold, Result and AppError
 
 **Tasks**
-- Create `@xtrakto/core` with the same structure as `@xtrakto/parsers`.
+- Create `@xtrakto/core`, the first internal package: public API only in `src/index.ts`, shared TypeScript and ESLint configs, Vitest. Later packages copy its structure.
 - `Result<T, E>` with `ok()` and `err()` helpers.
 - `AppError` with a `code` from an `as const` object (`INVALID_INPUT`, `UNKNOWN_FORMAT`, `PARSE_FAILED`, `BALANCE_MISMATCH`, `LIMIT_REACHED`, `NOT_FOUND`, `UNAUTHORIZED`) and optional `details` that never contain PII.
 
-**Done when:** helpers are tested; `@xtrakto/parsers` imports from `@xtrakto/core` through its public API.
+**Done when:** helpers are tested; the package's API is exported only from `src/index.ts`.
 
 **Commit:** `feat(core): package scaffold with Result and AppError`
 
@@ -449,11 +456,12 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 #### 2.1 Parser contract and registry
 
 **Tasks**
+- Create `@xtrakto/parsers` with the same structure as `@xtrakto/core`.
 - `BankParser` as defined in the project rules, with `id`, `bankId`, `canParse(content)` and `parse(content)` → `Result<ParsedStatement>`.
 - A registry and `findParser(content)`.
-- Keep and export `normalizeDescription` (trim and collapse whitespace).
+- Create and export `normalizeDescription` (trim and collapse whitespace), with tests.
 
-**Done when:** a test-only parser proves the registry; the public API is exported only from `src/index.ts`.
+**Done when:** a test-only parser proves the registry; the public API is exported only from `src/index.ts`; `@xtrakto/parsers` imports from `@xtrakto/core` through its public API.
 
 **Commit:** `feat(parsers): parser contract and registry`
 
@@ -988,7 +996,7 @@ Follows the `ml/` rules.
 
 | Date | Phase | Summary | Deviations and follow-ups |
 |---|---|---|---|
-| | | | |
+| 2026-10-07 | 0.1 | Read-only audit. Node 22.20.0, pnpm 12.9.1, Turborepo 2.11.7, Next.js 16.3.8, React 19.2.8, Tailwind 4.3.3, Prettier 3.9.6. TypeScript 7.0.2 (root, `packages/ui`) and 5.9.3 (`apps/web`); ESLint 10.9.1 (configs) and 9.39.5 (`apps/web`); no Vitest. No `apps/docs` and no `packages/parsers`. `apps/web` came from `create-next-app` as a nested workspace and doesn't use the shared configs. `pnpm install --frozen-lockfile` fails (`ERR_PNPM_IGNORED_BUILDS`, `allowBuilds` placeholder); `turbo test` fails (no task); `check-types`, `lint` and `build` pass with the existing install. | TypeScript 7 exports no compiler API (only `version`), so typescript-eslint can't use it: TypeScript 6.0.3 everywhere (decision 10, ADR in 0.9). ESLint 9 everywhere for `eslint-config-next`. Node 22 kept (EOL April 2027). `fixtures/private/` was only ignored at the root (fixed in 0.6, before 2.8). `transpilePackages` dropped from 0.2. Phases 0.2–0.6, 0.9, 1.1 and 2.1 adjusted. |
 
 ---
 
