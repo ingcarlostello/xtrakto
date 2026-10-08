@@ -18,7 +18,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 6. Stage the changes and propose a Conventional Commit message. Commit only after the human approves. Never push unless asked.
 7. Stop and wait for "continue".
 
-**Phase size:** a phase must fit in one reviewable commit. If it grows beyond roughly 400 changed lines (excluding fixtures, lockfiles and generated files), split it into sub-phases (2.4a, 2.4b…), update this file and ask for approval.
+**Phase size:** a phase must fit in one reviewable commit. If its code outside tests grows beyond roughly 400 changed lines (fixtures, lockfiles and generated files don't count either), split it into sub-phases (2.4a, 2.4b…), update this file and ask for approval.
 
 **Branches:** until CI exists (Phase 0.7), work on `main`. After that, one branch, one commit and one pull request per phase. Branch names follow `<type>/<phase>-<short-description>`, with the Conventional Commit type and the phase id: `docs/0.8-readme-adr`, `feat/1.2-money-minor-units`.
 
@@ -128,7 +128,9 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 2.1 Parser contract and registry
 - [x] 2.2 Spreadsheet extraction (gate: library)
 - [x] 2.3 Synthetic fixtures
-- [ ] 2.4 Bancolombia quarterly statement parser
+- [x] 2.4a Quarterly statement header and summary
+- [ ] 2.4b Quarterly statement movements
+- [ ] 2.4c Quarterly statement parser and registry
 - [ ] 2.5 Statement reconciliation
 - [ ] 2.6 Bancolombia movements export parser
 - [ ] 2.7 Format detection
@@ -539,16 +541,42 @@ Phase 1.5 was split in two (about 500 changed lines), with the human's approval.
 
 **Commit:** `test(parsers): synthetic Bancolombia fixtures`
 
-#### 2.4 Bancolombia quarterly statement parser
+#### 2.4a Quarterly statement header and summary
+
+Phase 2.4 was split in three (estimated at about 990 changed lines), with the human's approval.
 
 **Tasks**
 
-- Implement Appendix A.1. Find blocks by their labels, not by fixed row numbers.
-- Read the period, account type, last 4 digits of the account, summary values and holder name. Read movements until `FIN ESTADO DE CUENTA`, skipping repeated headers and other non-movement rows (with a warning for unexpected rows).
-- Amounts with `parseAmountText`, dates with `inferDayMonthDate`, descriptions normalized (keeping the raw text too).
-- Never output the address, the city or the full account number.
+- Implement the blocks of Appendix A.1 before the movements. Find blocks by their labels and columns by their header names, not by fixed positions.
+- Read the holder name, the period, the account type (only `CUENTA DE AHORROS`), the last 4 digits of the account, the balances and the totals. `TOTAL CARGOS` keeps its printed, positive sign.
+- Never read the address or the city, and never output the full account number.
+- A missing block, column or value, an invalid amount or date, or another account type returns `PARSE_FAILED` with the reason, block and column, never the cell's text.
 
-**Done when:** all quarterly fixtures produce the expected output; each quirk in Appendix A.1 has its own test.
+**Done when:** the quarterly fixtures give the expected header; each failure has its own test.
+
+**Commit:** `feat(parsers): quarterly statement header and summary`
+
+#### 2.4b Quarterly statement movements
+
+**Tasks**
+
+- Read movements until `FIN ESTADO DE CUENTA`, skipping blank rows and the blocks each page repeats; any other non-movement row gives an `UNEXPECTED_ROW` warning.
+- Amounts with `parseAmountText`, dates with `inferDayMonthDate`, descriptions normalized (keeping the raw text too).
+- In descriptions, runs of 6 or more digits keep only their last 4, with the same length (`INTERES INV VIRT *******7525`). Record the decision in an ADR.
+- A movement that can't be read, a damaged page header or a missing end marker returns `PARSE_FAILED` with the row.
+
+**Done when:** the quarterly fixtures' movements parse; each movement quirk in Appendix A.1 has its own test.
+
+**Commit:** `feat(parsers): quarterly statement movements`
+
+#### 2.4c Quarterly statement parser and registry
+
+**Tasks**
+
+- `bancolombiaQuarterlyParser` (`bancolombia-savings-quarterly`) joins the header and the movements and validates its output with `parsedStatementSchema`. Its `canParse` checks the exact movements header; Phase 2.7 makes it tolerant.
+- A default registry, with a ready `findParser` exported by the package.
+
+**Done when:** all quarterly fixtures produce the expected output; `findParser` finds the parser for them and returns `UNKNOWN_FORMAT` for other content.
 
 **Commit:** `feat(parsers): Bancolombia quarterly statement parser`
 
@@ -1102,6 +1130,8 @@ Follows the `ml/` rules.
 | 2026-10-07 | 2.1   | `@xtrakto/parsers` copies core's structure (one `exports` entry, shared tsconfig and ESLint presets); it depends only on `@xtrakto/core`, which TypeScript and Vitest read from source with no build step. `BankParser` in `src/registry/bank-parser.types.ts`: `id` (the format id), `bankId`, `canParse(content)` and `parse(content)` → `Result<ParsedStatement>`. `createParserRegistry(parsers)` returns a `ParserRegistry` whose `findParser(content)` gives the first parser, in order, that recognizes the content, or `UNKNOWN_FORMAT`; a repeated id throws. `normalizeDescription` in `src/descriptions/` trims and collapses any whitespace (tabs, line breaks, non-breaking spaces) into one space. 21 tests with two test-only parsers; 100% coverage.     | No ready-made `findParser` is exported yet: with no real parser it would always return `UNKNOWN_FORMAT`; Phase 2.4 builds the registry with its parser. The registry is a fixed list, not a `register()` call: with `sideEffects: false`, a bundler could drop registration done on import. First match wins; 2.7 makes sure each format matches exactly one parser. `normalizeDescription` skips Unicode normalization (NFC), unlike `hashIdentifier`; revisit for PDF text (Stage 9) or cross-format deduplication (10.1). The section 2 example in the project rules now shows the real path and contract: it used `RawFile` and `ParseResult`, which don't exist (parsers receive `ExtractedContent`, ADR 0008). README: Stage 2 status and `parsers` in the layout.      |
 | 2026-10-08 | 2.2   | SheetJS 0.20.3, chosen at the gate (ADR 0011), installed in `@xtrakto/parsers` from its official CDN; the lockfile pins its integrity hash. `extractSpreadsheet(bytes)` in `src/extraction/` returns `SpreadsheetContent` from XLSX (ZIP signature) or CSV (UTF-8, or Windows-1252 as Excel saves it in Spanish). Cells keep their position (`null` when empty; trailing empty cells and rows dropped); date cells, found by their number format, become `{ excelSerial }` in the 1900 system, also from 1904 workbooks; formulas keep their saved result; CSV values stay text. Errors: `UNKNOWN_FORMAT` (`file_type`), `PARSE_FAILED`, and `INVALID_INPUT` (`too_large`) with the bounds the server checks. 27 tests; 100% coverage.                                   | No script writes XLSX files: the tests build each synthetic workbook in memory with SheetJS, so no binaries are committed and the tests need no Node APIs; files for manual uploads can come with 5.3. Only XLSX and CSV are accepted: SheetJS also reads legacy XLS, XLSB, ODS and HTML, but ODS dates go through `Date` and each format needs its own tests. Booleans become `TRUE`/`FALSE` and error cells `null`, since a cell can't hold either. SheetJS writes into its options, so each read builds new ones. A browser build of the package pulls in no Node module; the real worker comes in 5.2. ADR 0011 is Accepted: the human decided at the gate. About 500 changed lines, 300 of them tests: kept as one phase, approved by the human.                         |
 | 2026-10-08 | 2.3   | Seven `ExtractedContent` fixtures in `packages/parsers/fixtures/`, generated by `scripts/generate-fixtures.mjs` (`pnpm --filter @xtrakto/parsers generate:fixtures`) from invented data in `scripts/fixture-data.mjs`: `quarterly-basic` (33 movements), `quarterly-year-rollover`, `quarterly-repeated-header` (pages of 14), `quarterly-broken-balance`, `quarterly-large` (465 movements, pages of 50, seeded), `movements-basic` and `movements-overlap`. Every statement reconciles except the broken one, which fails on one row, in total debits and in opening plus movements against closing (checked with a separate script). A test validates each fixture against `extractedContentSchema`.                                                                  | The script builds every fixture, not only `quarterly-large`: hand-written balances are easy to get wrong. Appendices A and B updated from real files the human shared (format only, no value copied): pages repeat the header blocks, `FIN ESTADO DE CUENTA` is in column B, `TOTAL CARGOS` is positive, `Referencia` is text, and the export moves interest one day later but never past the range's end. Follow-ups: `INTERES INV VIRT <number>` puts a full account number in the description, which the privacy table forbids storing, so 2.4 or 5.5 must mask it; overlapping movements exports can date the same interest row differently (note added to 10.1).                                                                                                         |
+| 2026-10-08 | 2.4a  | Phase 2.4 split into 2.4a, 2.4b and 2.4c (estimated at about 990 lines), approved by the human. `readQuarterlyHeader(rows)` in `packages/parsers/src/bancolombia/` reads the client, general and summary blocks: each found by its label, its columns by header name, its values row read as text, with `parseSlashDate` or with `parseAmountText`. Holder name normalized; period checked (start not after end); only `CUENTA DE AHORROS` (`savings`); last 4 digits of the account; `TOTAL CARGOS` kept positive as printed. Failures return `PARSE_FAILED` with reason, block, column and core's cause, never the cell's text. Generic `src/sheets/sheet.utils.ts`: `cellText`, `findLabelRow`, `findColumns`. 34 tests; 100% coverage.                               | Decided with the human for all of 2.4: strict failures (a damaged movement or a missing end marker will fail as well), and long digit runs in descriptions masked by the parser with the same length (2.4b, with an ADR). Labels and header names are compared in one function, so Phase 2.7's tolerance for accents and case changes one place for both `canParse` and parsing. Only the columns that are read are required; CUPO SUGERIDO, the address and the city are never read. A number where text is expected counts as a missing value. `debitsMinor` is positive: Phase 2.5 compares it with the negated sum of the debits. The package exports nothing new until 2.4c.                                                                                             |
+| 2026-10-08 | —     | Process changes requested by the human. Phase size (section 1 of this roadmap): only code outside tests counts toward the ~400-line limit. Testing (section 15 of the project rules): always test what is critical (money and dates, parsers and reconciliation, personal data, data isolation and access, deduplication, the numbers users read, usage limits and LLM costs), avoid tests for trivial code, and drop the coverage target.                                                                                                                                                                                                                                                                                                                               | Existing tests stay. Phase 2.4a has about 320 lines of code and 300 of tests, within the new limit. Later phases test the rules, edge cases and failures of critical code and skip trivial helpers. The PR checklist (section 17 of the project rules) now asks for tests of new critical logic.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ---
 
