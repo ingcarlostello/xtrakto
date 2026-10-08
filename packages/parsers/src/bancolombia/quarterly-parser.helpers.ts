@@ -6,21 +6,17 @@ import {
 } from "@xtrakto/core";
 import type { ExtractedContent, ParsedStatement, Result } from "@xtrakto/core";
 import type { BankParser } from "../registry/bank-parser.types";
-import type { SheetRows } from "../sheets/sheet.utils";
+import { firstSheetRows } from "../sheets/sheet.utils";
 import {
   BANCOLOMBIA_BANK_ID,
   QUARTERLY_FORMAT_ID,
 } from "./bancolombia.constants";
-import { parseFailed } from "./quarterly-failure.helpers";
+import { parseFailed } from "./parse-failure.helpers";
 import { readQuarterlyHeader } from "./quarterly-header.helpers";
 import {
   findMovementsTable,
   readQuarterlyMovements,
 } from "./quarterly-movements.helpers";
-
-// The statement is the first sheet of a spreadsheet; its name varies.
-const firstSheetRows = (content: ExtractedContent): SheetRows | undefined =>
-  content.type === "spreadsheet" ? (content.sheets[0]?.rows ?? []) : undefined;
 
 const parse = (content: ExtractedContent): Result<ParsedStatement> => {
   const rows = firstSheetRows(content);

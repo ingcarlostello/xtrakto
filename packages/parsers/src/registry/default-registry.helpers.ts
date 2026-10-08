@@ -1,3 +1,4 @@
+import { bancolombiaMovementsExportParser } from "../bancolombia/movements-export-parser.helpers";
 import { bancolombiaQuarterlyParser } from "../bancolombia/quarterly-parser.helpers";
 import { createParserRegistry } from "./parser-registry.helpers";
 
@@ -7,4 +8,5 @@ import { createParserRegistry } from "./parser-registry.helpers";
  */
 export const { findParser } = createParserRegistry([
   bancolombiaQuarterlyParser,
+  bancolombiaMovementsExportParser,
 ]);

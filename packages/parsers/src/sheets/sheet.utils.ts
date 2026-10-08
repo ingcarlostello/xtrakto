@@ -1,5 +1,5 @@
 import { err, ok } from "@xtrakto/core";
-import type { Result, SpreadsheetCell } from "@xtrakto/core";
+import type { ExtractedContent, Result, SpreadsheetCell } from "@xtrakto/core";
 
 /** A sheet's rows as extracted: cells by position, an empty row as `[]`. */
 export type SheetRows = readonly (readonly SpreadsheetCell[])[];
@@ -10,6 +10,15 @@ export type ColumnRef<K extends string> = {
   readonly name: string;
   readonly index: number;
 };
+
+/**
+ * The rows of a spreadsheet's first sheet, where bank exports put their
+ * data; the sheet's name varies. Undefined if the content isn't a spreadsheet.
+ */
+export const firstSheetRows = (
+  content: ExtractedContent,
+): SheetRows | undefined =>
+  content.type === "spreadsheet" ? (content.sheets[0]?.rows ?? []) : undefined;
 
 /** A cell's text without surrounding spaces; undefined if it holds no text. */
 export const cellText = (
@@ -30,11 +39,15 @@ export const hasText = (
   expected: string,
 ): boolean => cellText(cell) === expected;
 
+/** Whether a cell is missing, empty or only spaces. */
+export const isBlankCell = (cell: SpreadsheetCell | undefined): boolean =>
+  cell === undefined ||
+  cell === null ||
+  (typeof cell === "string" && cell.trim() === "");
+
 /** Whether a row holds nothing: no cells, or only empty ones. */
 export const isBlankRow = (row: readonly SpreadsheetCell[]): boolean =>
-  row.every(
-    (cell) => cell === null || (typeof cell === "string" && cell.trim() === ""),
-  );
+  row.every(isBlankCell);
 
 /** Index of the first row whose first cell is `label`. */
 export const findLabelRow = (
@@ -62,3 +75,13 @@ export const findColumns = <K extends string>(
   }
   return ok(columns);
 };
+
+/** The position of each column found by `findColumns`, by key. */
+export const columnPositions = <K extends string>(
+  columns: readonly ColumnRef<K>[],
+): Readonly<Record<K, number>> =>
+  // Safe: findColumns returns one column for each key it was given.
+  Object.fromEntries(columns.map(({ key, index }) => [key, index])) as Record<
+    K,
+    number
+  >;
