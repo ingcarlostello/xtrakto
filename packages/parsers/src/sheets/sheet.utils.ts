@@ -1,6 +1,10 @@
 import { err, ok } from "@xtrakto/core";
 import type { ExtractedContent, Result, SpreadsheetCell } from "@xtrakto/core";
 
+const WHITESPACE_RUN = /\s+/g;
+// Decomposed (NFD), an accented letter is the letter plus combining marks.
+const COMBINING_MARKS = /\p{M}/gu;
+
 /** A sheet's rows as extracted: cells by position, an empty row as `[]`. */
 export type SheetRows = readonly (readonly SpreadsheetCell[])[];
 
@@ -29,15 +33,30 @@ export const cellText = (
   return text === "" ? undefined : text;
 };
 
+/** A label as compared: no accents (ñ counts as n), uppercase, single spaces. */
+const comparableText = (text: string): string =>
+  text
+    .normalize("NFD")
+    .replace(COMBINING_MARKS, "")
+    .replace(WHITESPACE_RUN, " ")
+    .trim()
+    .toUpperCase();
+
 /**
- * Whether a cell holds a label or header name. Every such comparison goes
- * through here, so tolerating accents or case later (Phase 2.7) changes one
- * place.
+ * Whether a cell holds a label or header name, ignoring accents, case and
+ * extra spaces: `" descripcion"` matches `"DESCRIPCIÓN"`. Every such
+ * comparison goes through here, so detecting a format (`canParse`) and
+ * parsing it always agree.
  */
 export const hasText = (
   cell: SpreadsheetCell | undefined,
   expected: string,
-): boolean => cellText(cell) === expected;
+): boolean => {
+  const text = cellText(cell);
+  return (
+    text !== undefined && comparableText(text) === comparableText(expected)
+  );
+};
 
 /** Whether a cell is missing, empty or only spaces. */
 export const isBlankCell = (cell: SpreadsheetCell | undefined): boolean =>

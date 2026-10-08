@@ -133,7 +133,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 2.4c Quarterly statement parser and registry
 - [x] 2.5 Statement reconciliation
 - [x] 2.6 Bancolombia movements export parser
-- [ ] 2.7 Format detection
+- [x] 2.7 Format detection
 - [ ] 2.8 [HUMAN] Private verification with real files
 
 **Stage 3 — Database (`packages/db`)**

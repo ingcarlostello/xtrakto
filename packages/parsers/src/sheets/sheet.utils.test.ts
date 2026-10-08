@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { err, ok } from "@xtrakto/core";
 import type { SheetRows } from "./sheet.utils";
-import { cellText, findColumns, findLabelRow } from "./sheet.utils";
+import { cellText, findColumns, findLabelRow, hasText } from "./sheet.utils";
 
 describe("cellText", () => {
   it.each([
@@ -18,6 +18,51 @@ describe("cellText", () => {
     { label: "a missing cell", cell: undefined, text: undefined },
   ])("reads $label", ({ cell, text }) => {
     expect(cellText(cell)).toBe(text);
+  });
+});
+
+describe("hasText", () => {
+  it.each([
+    { label: "the same text", cell: "FECHA", expected: "FECHA" },
+    { label: "no accents", cell: "DESCRIPCION", expected: "DESCRIPCIÓN" },
+    {
+      label: "other case",
+      cell: "información cliente:",
+      expected: "Información Cliente:",
+    },
+    {
+      label: "extra spaces",
+      cell: "  SALDO   ACTUAL ",
+      expected: "SALDO ACTUAL",
+    },
+    {
+      label: "a non-breaking space",
+      cell: "SALDO\u00a0ACTUAL",
+      expected: "SALDO ACTUAL",
+    },
+    {
+      label: "a decomposed accent",
+      cell: "DESCRIPCIO\u0301N",
+      expected: "DESCRIPCIÓN",
+    },
+    { label: "n for ñ", cell: "ANO", expected: "AÑO" },
+  ])("matches $label", ({ cell, expected }) => {
+    expect(hasText(cell, expected)).toBe(true);
+  });
+
+  it.each([
+    { label: "another word", cell: "FECHAS", expected: "FECHA" },
+    { label: "part of the name", cell: "SALDO", expected: "SALDO ACTUAL" },
+    {
+      label: "missing punctuation",
+      cell: "Movimientos",
+      expected: "Movimientos:",
+    },
+    { label: "a space inside a word", cell: "SAL DO", expected: "SALDO" },
+    { label: "a number", cell: 12, expected: "12" },
+    { label: "an empty cell", cell: null, expected: "FECHA" },
+  ])("doesn't match $label", ({ cell, expected }) => {
+    expect(hasText(cell, expected)).toBe(false);
   });
 });
 
