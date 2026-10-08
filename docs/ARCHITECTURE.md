@@ -301,20 +301,20 @@ Splitting by statement, not by row, keeps near-identical movements of one statem
 
 ## 9. Infrastructure
 
-|                 | Local                         | Preview (per PR)           | Production                                                                       |
-| --------------- | ----------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
-| App             | `pnpm dev`                    | Vercel preview deployment  | Vercel production · xtrakto.site                                                 |
-| Database        | Docker: PostgreSQL + pgvector | Database branch (if Neon)  | Managed PostgreSQL, main branch                                                  |
-| Auth            | Clerk development instance    | Clerk development instance | Clerk production instance (needs the domain)                                     |
-| Background jobs | Inngest dev server            | Inngest branch environment | Inngest production                                                               |
-| Migrations      | `pnpm db:migrate`             | Applied to the branch      | CI job on `main` with the owner role                                             |
-| Secrets         | `.env.local`                  | Vercel preview variables   | Vercel production variables; migration URL as a GitHub secret                    |
-| DNS and email   | —                             | —                          | DNS at Hostinger; Resend on `mail.xtrakto.site` with SPF, DKIM, DMARC (Stage 10) |
+|                 | Local                                    | Preview (per PR)           | Production                                                                       |
+| --------------- | ---------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| App             | `pnpm dev`                               | Vercel preview deployment  | Vercel production · xtrakto.site                                                 |
+| Database        | Docker Compose: PostgreSQL 18 + pgvector | Neon branch                | Neon (AWS us-east-1), `main` branch                                              |
+| Auth            | Clerk development instance               | Clerk development instance | Clerk production instance (needs the domain)                                     |
+| Background jobs | Inngest dev server                       | Inngest branch environment | Inngest production                                                               |
+| Migrations      | `pnpm db:migrate`                        | Applied to the branch      | CI job on `main` with the owner role                                             |
+| Secrets         | `.env.local`                             | Vercel preview variables   | Vercel production variables; migration URL as a GitHub secret                    |
+| DNS and email   | —                                        | —                          | DNS at Hostinger; Resend on `mail.xtrakto.site` with SPF, DKIM, DMARC (Stage 10) |
 
 ```mermaid
 flowchart LR
     PR["Pull request"] --> CI["GitHub Actions<br/>check-types · lint · test · format"]
-    CI --> PV["Vercel preview<br/>+ database branch"]
+    CI --> PV["Vercel preview<br/>+ Neon branch"]
     PV --> M["Merge to main"]
     M --> MG["Migrations job<br/>owner role"]
     M --> PROD["Vercel production<br/>xtrakto.site"]
@@ -351,14 +351,15 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 12. Key decisions
 
-| Decision                                    | Why                                                                     | Alternative considered                           | ADR                                                                                                   |
-| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.      | Python API with FastAPI                          | [0002](adr/0002-typescript-backend-python-for-ml.md)                                                  |
-| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                | Convex                                           | [0003](adr/0003-postgresql-with-drizzle.md)                                                           |
-| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                 | pg-boss (needs an always-on worker)              | [0005](adr/0005-inngest-for-background-work.md)                                                       |
-| Files read in the browser                   | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
-| SheetJS for spreadsheets                    | Reads XLSX and CSV in the browser and Node; date cells stay serials.    | ExcelJS (turns dates into `Date` objects)        | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
-| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.              | Content in the event                             | [0005](adr/0005-inngest-for-background-work.md)                                                       |
-| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                             | LLM extraction for everything                    | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
-| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                           | Decimals and timestamps                          | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
-| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                       | Application-level filtering only                 | —                                                                                                     |
+| Decision                                    | Why                                                                     | Alternative considered                                     | ADR                                                                                                   |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.      | Python API with FastAPI                                    | [0002](adr/0002-typescript-backend-python-for-ml.md)                                                  |
+| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                | Convex                                                     | [0003](adr/0003-postgresql-with-drizzle.md)                                                           |
+| Neon, through `pg` and a pool               | Serverless; a branch per preview; only the database is needed.          | Supabase; Neon's HTTP driver (no interactive transactions) | [0013](adr/0013-neon-for-postgresql.md)                                                               |
+| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                 | pg-boss (needs an always-on worker)                        | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Files read in the browser                   | Original file and PDF password never leave the device; no file storage. | Upload to object storage and parse on the server           | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
+| SheetJS for spreadsheets                    | Reads XLSX and CSV in the browser and Node; date cells stay serials.    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
+| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
+| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                           | Decimals and timestamps                                    | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
+| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                       | Application-level filtering only                           | —                                                                                                     |

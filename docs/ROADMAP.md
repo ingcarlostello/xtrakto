@@ -77,7 +77,7 @@ These complement the project rules.
 5. **Data isolation:** all financial tables use forced Row-Level Security through a transaction-local `app.user_id` setting, in addition to filtering by `userId` in every query. The `users` table (identity mapping only, no financial data) is the only exception.
 6. **Third-party identifiers** (such as phone numbers in the `Referencia` column) are stored only as HMAC-SHA-256 with a secret key. A plain hash of a phone number can be reversed by brute force.
 7. **The account holder's name** is stored normalized on the account to detect transfers between the user's own accounts. It is never logged or sent to an LLM.
-8. **Services:** Vercel (app and Inngest functions), Inngest Cloud, Clerk, PostgreSQL (provider chosen at gate 3.1); later Langfuse, Sentry, PostHog and Resend. Domain: `xtrakto.site`, DNS managed at Hostinger.
+8. **Services:** Vercel (app and Inngest functions), Inngest Cloud, Clerk, Neon for PostgreSQL (chosen at gate 3.1, ADR 0013); later Langfuse, Sentry, PostHog and Resend. Domain: `xtrakto.site`, DNS managed at Hostinger.
 9. **Development machine:** macOS on Intel (`darwin-x64`), Node 22 via nvm, pnpm 12.9.1. Some packages ship native binaries; if one has no `darwin-x64` build, stop and report instead of working around it. Node 22 reaches end of life in April 2027: plan the upgrade before then.
 10. **TypeScript 6.0 across the monorepo.** TypeScript 7 has no JavaScript compiler API yet, so typescript-eslint (which supports TS `<6.1`) and the Next.js ESLint config can't use it. Move to TypeScript 7 when typescript-eslint supports it.
 
@@ -138,7 +138,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 3 — Database (`packages/db`)**
 
-- [ ] 3.1 [HUMAN] Database provider and local PostgreSQL
+- [x] 3.1 [HUMAN] Database provider and local PostgreSQL
 - [ ] 3.2 Package scaffold and migration tooling
 - [ ] 3.3 Schema v1
 - [ ] 3.4 Row-Level Security and user context

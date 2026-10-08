@@ -1,0 +1,29 @@
+# Local PostgreSQL for development and integration tests, with the same
+# versions as the hosted database on Neon: PostgreSQL 18 and pgvector 0.8.6.
+# The credentials are for this machine only, and the port is bound to 127.0.0.1.
+name: xtrakto
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg18
+    environment:
+      POSTGRES_USER: xtrakto
+      POSTGRES_PASSWORD: xtrakto
+      POSTGRES_DB: xtrakto
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # PostgreSQL 18 images keep their data in /var/lib/postgresql/18/docker,
+      # so the volume goes on /var/lib/postgresql, not on .../data.
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      # Over TCP: on the first start the image runs a temporary server that only
+      # listens on its socket, so a socket check would pass before init.sql ends.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U xtrakto -d xtrakto"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:
