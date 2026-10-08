@@ -379,7 +379,15 @@ export async function uploadStatement(
 
 - **Vitest** for unit and integration tests; **Playwright** for end-to-end.
 - **Always** put the test next to the file it tests: `normalize.ts` → `normalize.test.ts`.
-- Tests are **mandatory** for: parsers, money and date functions, `redactPii`, domain helpers and server actions.
+- **Always** test what is critical, where a bug costs users money, privacy or trust:
+  - Money and dates: amounts in minor units, local dates, bank parsers and reconciliation.
+  - Personal data: `redactPii`, hashing, masking, and anything that decides what leaves the browser or reaches logs, analytics or an LLM.
+  - Data isolation and access: Row-Level Security, session and ownership checks in server actions, account deletion and data export.
+  - Deduplication: fingerprints, re-uploads and overlapping statements never count a movement twice.
+  - The numbers users read: real spending vs money that moved, summaries, recurring payments and insights.
+  - Usage limits and LLM cost caps.
+- **Avoid** tests for trivial code: constants, types, schemas without rules of their own, re-exports, configuration, presentational components and one-line glue. TypeScript, ESLint and the tests of the code that uses them already check it.
+- There is no coverage target. Critical code is tested when its rules, edge cases and failure modes have tests, not when every line runs.
 - **Always**, when adding a new bank or format, add its anonymized fixture and its test, including balance validation.
 - **Always**, when fixing a bug, first add the test that reproduces it.
 - Test names describe behavior: `it("converts a 05:00 UTC date to the correct local day")`.
@@ -406,5 +414,5 @@ export async function uploadStatement(
 - [ ] No log, event or trace includes financial or personal data.
 - [ ] Every new query filters by `userId`.
 - [ ] New components are server components unless they need interactivity.
-- [ ] There are tests for the new logic and, where applicable, an anonymized fixture.
+- [ ] The new critical logic has tests (section 15) and, where applicable, an anonymized fixture.
 - [ ] If an architecture decision was made, there is an ADR.
