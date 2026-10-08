@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   APP_ERROR_CODE,
   err,
-  extractedContentSchema,
   ok,
   PARSE_WARNING_CODE,
   periodSchema,
 } from "@xtrakto/core";
 import type { ParsedTransaction, SpreadsheetCell } from "@xtrakto/core";
+import { fixtureRows } from "../../fixtures/fixture.utils";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyLarge from "../../fixtures/quarterly-large.json";
@@ -16,15 +16,9 @@ import quarterlyYearRollover from "../../fixtures/quarterly-year-rollover.json";
 import type { SheetRows } from "../sheets/sheet.utils";
 import { readQuarterlyMovements } from "./quarterly-movements.helpers";
 
-// A fixture's first sheet, checked against the extracted content schema.
-const rowsOf = (fixture: unknown): SheetRows => {
-  const content = extractedContentSchema.parse(fixture);
-  return content.type === "spreadsheet" ? (content.sheets[0]?.rows ?? []) : [];
-};
-
 // Invented values, as generated in scripts/fixture-data.mjs.
 const QUARTER = periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" });
-const BASIC = rowsOf(quarterlyBasic);
+const BASIC = fixtureRows(quarterlyBasic);
 const BLOCK = "Movimientos:";
 const FIRST_MOVEMENT = 15;
 const END_ROW = 48;
@@ -115,7 +109,7 @@ describe("readQuarterlyMovements", () => {
       to: "2027-03-31",
     });
     const { transactions } = movementsOf(
-      rowsOf(quarterlyYearRollover),
+      fixtureRows(quarterlyYearRollover),
       rollover,
     );
 
@@ -132,7 +126,7 @@ describe("readQuarterlyMovements", () => {
 
   it("skips the blocks each new page repeats", () => {
     const { transactions, warnings } = movementsOf(
-      rowsOf(quarterlyRepeatedHeader),
+      fixtureRows(quarterlyRepeatedHeader),
     );
     const withoutRows = (movements: readonly ParsedTransaction[]) =>
       movements.map((movement) => ({ ...movement, sourceRow: 0 }));
@@ -144,7 +138,7 @@ describe("readQuarterlyMovements", () => {
   });
 
   it("reads a large quarter split into pages", () => {
-    const { transactions, warnings } = movementsOf(rowsOf(quarterlyLarge));
+    const { transactions, warnings } = movementsOf(fixtureRows(quarterlyLarge));
 
     expect(transactions).toHaveLength(465);
     expectChainedBalances(transactions, 500_000_000);
@@ -152,7 +146,7 @@ describe("readQuarterlyMovements", () => {
   });
 
   it("keeps a misprinted amount as printed", () => {
-    const { transactions } = movementsOf(rowsOf(quarterlyBrokenBalance));
+    const { transactions } = movementsOf(fixtureRows(quarterlyBrokenBalance));
 
     expect(
       transactions.find(({ sourceRow }) => sourceRow === 20),

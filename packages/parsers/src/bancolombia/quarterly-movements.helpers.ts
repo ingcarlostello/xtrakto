@@ -68,7 +68,11 @@ const toPositions = (
     columns.map(({ key, index }) => [key, index]),
   ) as MovementColumns;
 
-const findMovementsTable = (
+/**
+ * Where the movements table starts: the first movements label, followed by
+ * a header with every column that is read.
+ */
+export const findMovementsTable = (
   rows: SheetRows,
 ): Result<{ readonly start: number; readonly columns: MovementColumns }> => {
   const labelRow = findLabelRow(rows, BLOCK);

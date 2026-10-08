@@ -17,7 +17,11 @@ export type QuarterlyFailureReason =
   /** `FIN ESTADO DE CUENTA` never appears after the movements. */
   | "missing_end"
   /** A movement row appears inside the blocks a new page repeats. */
-  | "incomplete_page_header";
+  | "incomplete_page_header"
+  /** The content isn't a spreadsheet. */
+  | "content_type"
+  /** The statement read doesn't satisfy the parsed statement schema. */
+  | "invalid_output";
 
 /**
  * Where a quarterly statement couldn't be read: the printed block and column
