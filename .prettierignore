@@ -4,3 +4,5 @@ coverage/
 .turbo/
 next-env.d.ts
 .remember/
+# Generated with one spreadsheet row per line (packages/parsers/scripts/generate-fixtures.mjs).
+packages/parsers/fixtures/*.json

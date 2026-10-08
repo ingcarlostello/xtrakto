@@ -1,0 +1,25 @@
+{
+  "type": "spreadsheet",
+  "sheets": [
+    {
+      "name": "Hoja1",
+      "rows": [
+        ["Fecha", "Descripción", "Referencia", "Valor"],
+        [{ "excelSerial": 46234.208333333336 }, "ABONO INTERESES AHORROS", null, 3.12],
+        [{ "excelSerial": 46231.208333333336 }, "PAGO QR CAFE DEL PARQUE", "0077001234", -18500],
+        [{ "excelSerial": 46223.208333333336 }, "RETIRO CAJERO  ATM PLAZA CENTR", "ATM PLAZA CENTRAL 1", -300000],
+        [{ "excelSerial": 46218.208333333336 }, "IMPTO GOBIERNO 4X1000", null, -4800],
+        [{ "excelSerial": 46213.208333333336 }, "PAGO SUC VIRT TC VISA PESOS", null, -1250000],
+        [{ "excelSerial": 46213.208333333336 }, "PAGO INTERBANC EMPRESA EJEMPLO", null, 3200000],
+        [{ "excelSerial": 46208.208333333336 }, "ABONO INTERESES AHORROS", null, 0.85],
+        [{ "excelSerial": 46206.208333333336 }, "TRANSF A Ana Maria Pru", null, -200000],
+        [{ "excelSerial": 46206.208333333336 }, "COMPRA EN  TIENDA LA ESQUI", null, -45900],
+        [{ "excelSerial": 46206.208333333336 }, "ABONO INTERESES AHORROS", null, 2.71],
+        [{ "excelSerial": 46205.208333333336 }, "CONSIGNACION CORRESPONSAL CB", null, 150000],
+        [{ "excelSerial": 46205.208333333336 }, "ABONO INTERESES AHORROS", null, 2.89],
+        [{ "excelSerial": 46204.208333333336 }, "PAGO PSE Banco Ejemplo S", "612345678", -350000],
+        [{ "excelSerial": 46204.208333333336 }, "TRANSFERENCIAS A NEQUI", "3001234567", -20000]
+      ]
+    }
+  ]
+}

@@ -127,7 +127,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 2.1 Parser contract and registry
 - [x] 2.2 Spreadsheet extraction (gate: library)
-- [ ] 2.3 Synthetic fixtures
+- [x] 2.3 Synthetic fixtures
 - [ ] 2.4 Bancolombia quarterly statement parser
 - [ ] 2.5 Statement reconciliation
 - [ ] 2.6 Bancolombia movements export parser
@@ -1015,7 +1015,7 @@ Phase 1.5 was split in two (about 500 changed lines), with the human's approval.
 
 ### Stage 10 — Monthly use and retention _(outline)_
 
-- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS`. Never count a movement twice.
+- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS`, also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice.
 - **10.2 Coverage and gaps:** date ranges with data per account, and which range to download (the bank allows the current month and the previous three).
 - **10.3 Optional current balance:** when uploading a movements export, the user can enter the current balance to rebuild balances backwards and verify them.
 - **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe.
@@ -1101,6 +1101,7 @@ Follows the `ml/` rules.
 | 2026-10-07 | 1.7   | `hashIdentifier(value, key)` in `packages/core/src/hashing/`: HMAC-SHA-256 with Web Crypto, as 64 hex characters, after normalizing the value (Colombian mobiles to their 10 digits, with or without +57 and separators; other identifiers in NFC, uppercase and with collapsed spaces). `MIN_IDENTIFIER_HASH_KEY_LENGTH` (32) exported for the environment validation in Phase 4.1. `IDENTIFIER_HASH_KEY` documented in `.env.example`, with how to generate it and why it must stay stable. 17 tests: reference vectors computed with `node:crypto` (an implementation independent of the code under test), different keys give different hashes, equivalent spellings give the same hash, and an empty value or a short key throws. 100% coverage. Stage 1 complete.  | Web Crypto and `TextEncoder` types come from the DOM or Node libraries, which core leaves out; the module declares only the subset it uses and reads them from `globalThis`, so core stays free of platform globals and still type-checks inside programs that include the DOM. An empty value or a short key throws (bugs, not bad input): hashing an empty reference would group unrelated movements. The key is imported on every call; cache it if ingestion profiling shows the cost matters.                                                                                                                                                                                                                                                                            |
 | 2026-10-07 | 2.1   | `@xtrakto/parsers` copies core's structure (one `exports` entry, shared tsconfig and ESLint presets); it depends only on `@xtrakto/core`, which TypeScript and Vitest read from source with no build step. `BankParser` in `src/registry/bank-parser.types.ts`: `id` (the format id), `bankId`, `canParse(content)` and `parse(content)` → `Result<ParsedStatement>`. `createParserRegistry(parsers)` returns a `ParserRegistry` whose `findParser(content)` gives the first parser, in order, that recognizes the content, or `UNKNOWN_FORMAT`; a repeated id throws. `normalizeDescription` in `src/descriptions/` trims and collapses any whitespace (tabs, line breaks, non-breaking spaces) into one space. 21 tests with two test-only parsers; 100% coverage.     | No ready-made `findParser` is exported yet: with no real parser it would always return `UNKNOWN_FORMAT`; Phase 2.4 builds the registry with its parser. The registry is a fixed list, not a `register()` call: with `sideEffects: false`, a bundler could drop registration done on import. First match wins; 2.7 makes sure each format matches exactly one parser. `normalizeDescription` skips Unicode normalization (NFC), unlike `hashIdentifier`; revisit for PDF text (Stage 9) or cross-format deduplication (10.1). The section 2 example in the project rules now shows the real path and contract: it used `RawFile` and `ParseResult`, which don't exist (parsers receive `ExtractedContent`, ADR 0008). README: Stage 2 status and `parsers` in the layout.      |
 | 2026-10-08 | 2.2   | SheetJS 0.20.3, chosen at the gate (ADR 0011), installed in `@xtrakto/parsers` from its official CDN; the lockfile pins its integrity hash. `extractSpreadsheet(bytes)` in `src/extraction/` returns `SpreadsheetContent` from XLSX (ZIP signature) or CSV (UTF-8, or Windows-1252 as Excel saves it in Spanish). Cells keep their position (`null` when empty; trailing empty cells and rows dropped); date cells, found by their number format, become `{ excelSerial }` in the 1900 system, also from 1904 workbooks; formulas keep their saved result; CSV values stay text. Errors: `UNKNOWN_FORMAT` (`file_type`), `PARSE_FAILED`, and `INVALID_INPUT` (`too_large`) with the bounds the server checks. 27 tests; 100% coverage.                                   | No script writes XLSX files: the tests build each synthetic workbook in memory with SheetJS, so no binaries are committed and the tests need no Node APIs; files for manual uploads can come with 5.3. Only XLSX and CSV are accepted: SheetJS also reads legacy XLS, XLSB, ODS and HTML, but ODS dates go through `Date` and each format needs its own tests. Booleans become `TRUE`/`FALSE` and error cells `null`, since a cell can't hold either. SheetJS writes into its options, so each read builds new ones. A browser build of the package pulls in no Node module; the real worker comes in 5.2. ADR 0011 is Accepted: the human decided at the gate. About 500 changed lines, 300 of them tests: kept as one phase, approved by the human.                         |
+| 2026-10-08 | 2.3   | Seven `ExtractedContent` fixtures in `packages/parsers/fixtures/`, generated by `scripts/generate-fixtures.mjs` (`pnpm --filter @xtrakto/parsers generate:fixtures`) from invented data in `scripts/fixture-data.mjs`: `quarterly-basic` (33 movements), `quarterly-year-rollover`, `quarterly-repeated-header` (pages of 14), `quarterly-broken-balance`, `quarterly-large` (465 movements, pages of 50, seeded), `movements-basic` and `movements-overlap`. Every statement reconciles except the broken one, which fails on one row, in total debits and in opening plus movements against closing (checked with a separate script). A test validates each fixture against `extractedContentSchema`.                                                                  | The script builds every fixture, not only `quarterly-large`: hand-written balances are easy to get wrong. Appendices A and B updated from real files the human shared (format only, no value copied): pages repeat the header blocks, `FIN ESTADO DE CUENTA` is in column B, `TOTAL CARGOS` is positive, `Referencia` is text, and the export moves interest one day later but never past the range's end. Follow-ups: `INTERES INV VIRT <number>` puts a full account number in the description, which the privacy table forbids storing, so 2.4 or 5.5 must mask it; overlapping movements exports can date the same interest row differently (note added to 10.1).                                                                                                         |
 
 ---
 
@@ -1110,33 +1111,34 @@ Observed on real files. Values below are illustrative; no real data.
 
 ### A.1 Bancolombia savings account — quarterly statement (spreadsheet)
 
-- A single sheet. Amounts are **text cells**.
-- Blocks are found by the label in the first column (row positions may vary):
+- A single sheet. Every cell is **text**, amounts, dates and the account number included.
+- Blocks are found by the label in the first column (row positions may vary). Each block is a label row, a header row and a values row, with an empty row between blocks:
   1. `Información Cliente:` → header `CLIENTE | DIRECCIÓN | CIUDAD` → one value row. Use only the holder's name; never output the address or city.
   2. `Información General:` → header `DESDE | HASTA | TIPO CUENTA | NRO CUENTA | SUCURSAL` → values such as `2026/06/30 | 2026/09/30 | CUENTA DE AHORROS | <11 digits> | SUCURSAL <CITY>`. Keep only the last 4 digits of the account.
-  3. `Resumen:` → header `SALDO ANTERIOR | TOTAL ABONOS | TOTAL CARGOS | SALDO ACTUAL | SALDO PROMEDIO | CUPO SUGERIDO | INTERESES | RETEFUENTE` → text amounts with `,` as the thousands separator and `.` as the decimal separator (`1,234,567.89`, `.00`, and sometimes no decimals: `9,876,543`).
+  3. `Resumen:` → header `SALDO ANTERIOR | TOTAL ABONOS | TOTAL CARGOS | SALDO ACTUAL | SALDO PROMEDIO | CUPO SUGERIDO | INTERESES | RETEFUENTE` → text amounts with `,` as the thousands separator and `.` as the decimal separator (`1,234,567.89`, `.00`). `SALDO PROMEDIO` has no decimals (`9,876,543`), and `TOTAL CARGOS` is printed as a positive amount.
   4. `Movimientos:` → header `FECHA | DESCRIPCIÓN | SUCURSAL | DCTO. | VALOR | SALDO`, then one row per movement:
      - `FECHA`: `d/mm` without a year (`1/07`, `29/09`). The year comes from the period.
-     - `DESCRIPCIÓN`: uppercase, truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`).
-     - `SUCURSAL` and `DCTO.`: usually empty.
+     - `DESCRIPCIÓN`: mostly uppercase, but names and PSE entities can come in mixed case (`TRANSF A Ana Prueba`, `PAGO PSE Banco Ejemplo S`); truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`).
+     - `SUCURSAL` and `DCTO.`: usually empty; `SUCURSAL` sometimes names the channel (`CANAL CORRESPONSA`).
      - `VALOR`: signed text amount (`-15,000.00`, `12.34`).
      - `SALDO`: balance after the movement, as text.
-- The movements table may contain **repeated header rows** and other non-movement rows in the middle (for example the word `SUCURSAL` where an amount is expected). Skip rows whose `FECHA` doesn't match `d/mm`.
-- The table ends with a row containing `FIN ESTADO DE CUENTA`.
+- The statement is split into **pages** of about 50 movements. Each new page repeats the `Información Cliente:`, `Información General:` and `Movimientos:` blocks (not `Resumen:`) right after the last movement, without an empty row; the repeated `DESDE` header puts the word `SUCURSAL` in the `VALOR` column. Skip rows whose `FECHA` doesn't match `d/mm`.
+- The table ends with a row that has `FIN ESTADO DE CUENTA` in the `DESCRIPCIÓN` column.
 - The period can start on the last day of the previous month (`2026/06/30`, first movement on `1/07`).
-- One `ABONO INTERESES AHORROS` row per day (about 90 per quarter, very small amounts).
-- **Invariants verified on a real file:** every row satisfies previous balance + `VALOR` = `SALDO` to the cent; the sum of positive values equals `TOTAL ABONOS`; the sum of negative values equals `TOTAL CARGOS`; `SALDO ANTERIOR` + sum = `SALDO ACTUAL`.
+- One `ABONO INTERESES AHORROS` row on most days (about 90 per quarter, very small amounts), not always the first row of its day; after a day without one, the next row covers both days.
+- **Invariants verified on a real file:** every row satisfies previous balance + `VALOR` = `SALDO` to the cent; the sum of positive values equals `TOTAL ABONOS`; the sum of negative values equals `TOTAL CARGOS` with the opposite sign; `SALDO ANTERIOR` + sum = `SALDO ACTUAL`.
 
 ### A.2 Bancolombia — movements export ("Descargar movimientos", Excel)
 
-- Downloaded from the account detail in online banking. The user picks the dates; the bank allows the current month and the previous three. Available as PDF or Excel.
+- Downloaded from the account detail in online banking. The user picks any range of dates (a month, two weeks, a few days) within the current month and the previous three. Available as PDF or Excel.
 - A single sheet; the first row is the header `Fecha | Descripción | Referencia | Valor`.
 - `Fecha`: real date cells with time 05:00, which is local midnight in `America/Bogota` stored as UTC. Convert to the local date.
 - `Descripción`: the same text as in the quarterly statement.
-- `Referencia`: often empty. For `TRANSFERENCIAS A NEQUI` it is the recipient's mobile number (10 digits starting with 3) → PII, must be hashed. For ATM withdrawals, the ATM location; for QR, key and PSE payments, a numeric code; for utilities, a contract number.
+- `Referencia`: a text cell (leading zeros kept), often empty. For `TRANSFERENCIAS A NEQUI` it is the recipient's mobile number (10 digits starting with 3) → PII, must be hashed. For ATM withdrawals, `ATM <location>`, longer than the description; for QR and key payments, a 10-digit code with leading zeros (sometimes empty); for PSE, a 9-digit number; for `TRANSFERENCIA CTA SUC VIRTUAL`, the destination account number → PII; for utilities, one or more contract numbers separated by spaces.
 - `Valor`: numeric cell, signed.
-- **No balance column, no account number and no period.** Rows are ordered newest first.
-- **Cross-check with the quarterly statement for the same month (real files):** the same movements, descriptions, amounts and total, except the `ABONO INTERESES AHORROS` rows, which this export dates **one day later**.
+- **No balance column, no account number and no period.** Rows are ordered newest first; within a day, the order doesn't follow the quarterly statement's.
+- Saving the export as CSV from Excel turns dates into `d/mm/yyyy` text and amounts into text with a decimal comma (`11,24`), in Windows-1252 with `;`. Parsers read the Excel file.
+- **Cross-check with the quarterly statement for the same month (real files):** the same movements, descriptions, amounts and total, except the `ABONO INTERESES AHORROS` rows, which this export dates **one day later**, but never after the range's last day (that day holds two interest rows); the interest of the day before the range is left out.
 
 ### A.3 Bancolombia — quarterly statement (PDF)
 
@@ -1157,11 +1159,11 @@ Starting point for the rule-based categorizer. Verify each pattern against the r
 | Pattern (normalized)                        | Meaning                                           | Category                | Notes                                                                                      |
 | ------------------------------------------- | ------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
 | `ABONO INTERESES AHORROS`                   | Daily savings interest                            | `interest`              | Group in the UI                                                                            |
-| contains `INTERES` and `INV`                | Investment interest                               | `interest`              | Verify exact text                                                                          |
+| `INTERES INV VIRT <number>`                 | Investment interest                               | `interest`              | `SUCURSAL` says `VIRTUAL`; the number is an account (redact it)                            |
 | `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                   | `investment`            | Internal                                                                                   |
 | `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary) | `income_transfer`       |                                                                                            |
 | `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                   | `deposit`               |                                                                                            |
-| `TRANSF DE <NAME>`                          | Incoming transfer                                 | `income_transfer`       | `own_account_transfer` if the name matches the holder                                      |
+| `TRANSF DE <NAME>`                          | Incoming transfer                                 | `income_transfer`       | `own_account_transfer` if the name matches the holder, also cut as first name and surname  |
 | `TRANSF A <NAME>`                           | Outgoing transfer                                 | `transfers_to_people`   | `own_account_transfer` if the name matches the holder; some utilities also appear this way |
 | `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)    | `digital_wallet`        | Internal if the phone is marked as the user's own                                          |
 | `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch               | `transfers_to_people`   | Ambiguous; let the user correct it                                                         |
