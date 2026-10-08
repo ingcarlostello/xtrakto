@@ -61,3 +61,6 @@ export type {
   PeriodSource,
   ReferenceKind,
 } from "./statements/statement.types";
+export { PII_PLACEHOLDER } from "./pii/pii.constants";
+export { redactPii } from "./pii/pii.helpers";
+export type { RedactPiiOptions } from "./pii/pii.helpers";
