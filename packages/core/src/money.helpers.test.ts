@@ -4,6 +4,7 @@ import { CURRENCY } from "./money.constants";
 import {
   amountFromNumber,
   formatAmount,
+  isAmountMinor,
   parseAmountText,
   sumAmounts,
 } from "./money.helpers";
@@ -184,4 +185,20 @@ describe("formatAmount", () => {
       "$8,119,555.50",
     );
   });
+});
+
+describe("isAmountMinor", () => {
+  it.each([0, -150, 123_456, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER])(
+    "accepts %s",
+    (value) => {
+      expect(isAmountMinor(value)).toBe(true);
+    },
+  );
+
+  it.each([1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53, "100", null])(
+    "rejects %j",
+    (value) => {
+      expect(isAmountMinor(value)).toBe(false);
+    },
+  );
 });

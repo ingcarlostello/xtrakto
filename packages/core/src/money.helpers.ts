@@ -24,6 +24,10 @@ const parseError = (reason: ParseFailure): Result<never> =>
 const toAmountMinor = (value: number): AmountMinor =>
   (value === 0 ? 0 : value) as AmountMinor;
 
+/** Checks that a value is an amount: a safe integer number of minor units. */
+export const isAmountMinor = (value: unknown): value is AmountMinor =>
+  typeof value === "number" && Number.isSafeInteger(value);
+
 const digitsToAmount = (
   isNegative: boolean,
   integerDigits: string,

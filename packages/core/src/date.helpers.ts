@@ -6,6 +6,7 @@ import type { Result } from "./result.types";
 import { err, ok } from "./result.utils";
 
 const LOCAL_DATE_FORMAT = "yyyy-MM-dd";
+const LOCAL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SLASH_DATE_PATTERN = /^(\d{4})\/(\d{2})\/(\d{2})$/;
 const DAY_MONTH_PATTERN = /^(\d{1,2})\/(\d{1,2})$/;
 // Every real day and month exists in a leap year such as 2000.
@@ -51,6 +52,15 @@ const toLocalDate = (
 ): LocalDate | undefined => {
   if (!isExists(year, month - 1, day)) return undefined;
   return localDateFromInstant(new TZDate(year, month - 1, day, "UTC"), "UTC");
+};
+
+/** Checks that a value is a `"YYYY-MM-DD"` string naming a day that exists. */
+export const isLocalDate = (value: unknown): value is LocalDate => {
+  if (typeof value !== "string") return false;
+  const match = LOCAL_DATE_PATTERN.exec(value);
+  if (!match) return false;
+  const [, year, month, day] = match;
+  return toLocalDate(Number(year), Number(month), Number(day)) !== undefined;
 };
 
 /**

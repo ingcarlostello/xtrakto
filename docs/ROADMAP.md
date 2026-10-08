@@ -118,7 +118,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 1.2 Money in minor units
 - [x] 1.3 Dates: LocalDate and conversions
 - [x] 1.4 Categories as a shared contract
-- [ ] 1.5 Domain schemas
+- [x] 1.5a Base schemas and extracted content
+- [ ] 1.5b Parsed statement schemas
 - [ ] 1.6 PII redaction
 - [ ] 1.7 Identifier hashing
 
@@ -444,20 +445,33 @@ Every phase's "Done when" implicitly includes: `pnpm turbo check-types lint test
 
 **Commit:** `feat(core): spending categories as a shared contract`
 
-#### 1.5 Domain schemas
+#### 1.5a Base schemas and extracted content
+
+Phase 1.5 was split in two (about 500 changed lines), with the human's approval.
 
 **Tasks:** Zod schemas with inferred types:
 
+- Type guards `isLocalDate` and `isAmountMinor`, and the schemas `localDateSchema`, `amountMinorSchema`, `currencySchema` and `periodSchema` (`from` ≤ `to`). They produce the branded types from phases 1.2 and 1.3.
 - `ExtractedContent`, a discriminated union:
   - `spreadsheet`: sheets → rows → cells. A cell is `string | number | null | { excelSerial: number }` (date cells are flagged, never converted to JavaScript `Date`).
   - `pdf`: pages → text items with `str`, `x`, `y`, `width`, `height` (used in Stage 9, defined now).
+- Size bounds (sheets, rows, cells per row, text lengths, pages, items per page) to reject oversized payloads early.
+
+**Done when:** schemas are tested with valid and invalid examples, including each size bound.
+
+**Commit:** `feat(core): base schemas and extracted content`
+
+#### 1.5b Parsed statement schemas
+
+**Tasks:** Zod schemas with inferred types:
+
 - `ParsedTransaction`: `date`, `descriptionRaw`, `descriptionNormalized`, `amountMinor`, optional `balanceAfterMinor`, optional `referenceRaw` and `referenceKind`, `sourceRow`.
 - `ParsedStatement`: `bankId`, `formatId`, `accountType` (`savings` | `credit_card`), optional `accountLast4`, `currency`, `period` and its source (`statement` | `rows`), optional opening and closing balances, optional totals (credits, debits, interest, withholding, average balance), optional `holderName`, `transactions`, `warnings`.
-- Size bounds (rows, string lengths, pages) to reject oversized payloads early.
+- Size bounds for transactions, warnings and text fields.
 
 **Done when:** schemas are tested with valid and invalid examples.
 
-**Commit:** `feat(core): domain schemas for extracted content and statements`
+**Commit:** `feat(core): parsed statement schemas`
 
 #### 1.6 PII redaction
 
@@ -1079,6 +1093,7 @@ Follows the `ml/` rules.
 | 2026-10-07 | 1.2   | Money helpers in `@xtrakto/core`: branded `AmountMinor`, `CURRENCY` with `COP` and `Currency`, `parseAmountText` (strict statement format; commas only as thousands separators, up to two decimals), `amountFromNumber`, `sumAmounts` (checks every partial sum) and `formatAmount`. Formatting passes exact decimal text to `Intl.NumberFormat`, never a float. 72 table-driven tests cover negatives, zero, `".00"`, 10^13 COP, invalid text and floating-point traps (`0.29`, `4.35`, `1.15`, `0.1 + 0.2`); 100% line and branch coverage.                                                                                                                                                      | `amountFromNumber` takes the cell's shortest decimal text; if it has sub-cent digits it strips binary noise (15 significant digits), and real sub-cent values such as `1.005` are rejected, never rounded. Numeric cells are limited to below 2^46 (about 70 trillion COP): above that, doubles can't hold cents. Text amounts reach the full safe range (about 90 trillion COP). `formatAmount` follows the design system instead of plain `Intl` output for `es-CO` (`$ 8.119.555,00`): no space after the symbol, a real minus sign (U+2212), and decimals only when there are cents. A `+` sign for income is left to the UI (Phase 6.7). Parsing assumes two minor digits, which holds for COP; a currency with another exponent would need the currency as a parameter. |
 | 2026-10-07 | 1.3   | Date helpers in `@xtrakto/core` on `date-fns` 4.4.0 and `@date-fns/tz` 1.5.0, core's first runtime dependencies: branded `LocalDate`, `Period` (both ends included), `DEFAULT_TIME_ZONE` (`America/Bogota`), `compareLocalDates`, `isWithinPeriod`, `localDateFromInstant`, `localDateFromExcelSerial` with `ExcelDateTimeZones`, `parseSlashDate` and `inferDayMonthDate`. 62 tests cover 05:00 UTC → same day in Bogotá (and 04:59 UTC → the previous day), year rollover, leap years (no 29/02 in 2027), invalid input and ambiguous dates; 100% coverage. The suite passes with the machine in UTC, Bogotá, UTC+14, UTC−11, São Paulo and Kathmandu.                                           | Excel serials below 61 (1900-03-01) are rejected: Excel counts a nonexistent 1900-02-29, inherited from Lotus 1-2-3. A `d/mm` that occurs twice in the period (only possible in periods longer than a year) returns `ambiguous` instead of guessing. `localDateFromInstant` throws on an invalid instant or time zone, since both come from code. Parse errors use `details.reason`: `format`, `range`, `out_of_period` or `ambiguous`.                                                                                                                                                                                                                                                                                                                                       |
 | 2026-10-07 | 1.4   | `packages/core/categories.json` as the single source of truth: the three kinds (`spending`, `income`, `internal`) and the roadmap's 24 categories with Spanish labels. `scripts/generate-categories.mjs` (`pnpm --filter @xtrakto/core generate:categories`) writes `src/categories.constants.ts` (`CATEGORY_KINDS` and `CATEGORIES` as `as const`, with a "do not edit" header); `Category`, `CategoryId` and `CategoryKind` are derived from it. 8 tests: unique kinds and ids, snake_case ids, valid kinds, non-empty labels, every kind used, generated file in sync with the JSON, and literal types.                                                                                         | The kinds live in the JSON too, so Python reads the same list. The generator is plain JavaScript: in TypeScript it would need `@types/node` in core, which must stay free of Node globals. Its output already follows Prettier's style, so it needs no Prettier dependency, and running it twice gives the same file. The freshness test compares data, not text: editing the JSON without regenerating fails with the command to run (checked). The 0.4 follow-up, a size-limit override for the generated file, isn't needed yet: it has 126 lines. The Spanish labels are a first draft for the human to review.                                                                                                                                                           |
+| 2026-10-07 | 1.5a  | Phase 1.5 split into 1.5a and 1.5b (estimated at about 500 lines), approved by the human. Zod 4.6.5 added to core. `isAmountMinor` and `isLocalDate` type guards; `amountMinorSchema`, `currencySchema`, `localDateSchema` and `periodSchema` (end not before start; the error points at `to`). `extractedContentSchema`: a discriminated union on `type` (`spreadsheet` or `pdf`), strict objects, cells as text, number, `null` or `{ excelSerial }`, and size bounds in `extracted-content.constants.ts`. 63 tests, including each size bound at its limit and one past it; 100% coverage.                                                                                                      | The base schemas use `z.custom` with the type guards so they return the project's own `LocalDate` and `AmountMinor`, not Zod brands; `periodSchema` is checked against `Period` with `satisfies`. Untrusted content uses strict objects: unknown keys are rejected instead of silently dropped. Zod issues don't copy input values, so amounts can't leak into logs through validation errors. The bounds per structure don't cap the total size; the request body limit does (Phase 5.4). The size constants stay internal until a consumer needs them (for example the 30-page message in Phase 9.4).                                                                                                                                                                       |
 
 ---
 
