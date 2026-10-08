@@ -30,6 +30,7 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 
 - Node 22 comes from nvm, which the agent's shell may not load. If `node` isn't found, prefix commands with `export PATH="$HOME/.nvm/versions/node/v22.20.0/bin:$PATH"`.
 - Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both).
+- After changing a parser, also run `pnpm --filter @xtrakto/parsers test:private` if real exports are in `packages/parsers/fixtures/private/`. Never open or print those files: the private tests report counts only.
 
 ## UI
 

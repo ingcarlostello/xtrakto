@@ -12,6 +12,7 @@
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:private": "vitest run --config vitest.private.config.ts",
     "generate:fixtures": "node scripts/generate-fixtures.mjs"
   },
   "dependencies": {

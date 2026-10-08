@@ -26,6 +26,16 @@ The script computes balances and totals, so every statement reconciles except `q
 | `movements-basic`           | Movements export for 2026-10-01 to 2026-10-07: newest first, dates at 05:00 UTC, numeric amounts, and text references (phone, `ATM …`, codes with leading zeros, several numbers in one cell, and none). Interest rows move one day later, so 1/10 has none and 7/10, the last day, has two.                                                                                                                                                                                    |
 | `movements-overlap`         | July of `quarterly-basic` as a 1/07–31/07 export shows it: the same movements and amounts, with interest rows one day later except the last day's, which stays on 31/07.                                                                                                                                                                                                                                                                                                        |
 
-## Not yet confirmed on a real file
+## Confirmed on real files
 
-Phase 2.8 checks these against the real exports: the first row of the quarterly statement is empty (a CSV of it starts with the first label), and how the export dates interest at the edges of the requested range, seen in a single export so far. Parsers must not rely on the sheet name.
+The private tests of Phase 2.8 confirmed what these fixtures assume: the quarterly statement's first row is empty; the export's header is its first row; and the export dates interest one day later, so the last day of its range holds two interest rows and the first day none. Parsers still must not rely on the sheet name.
+
+## Private verification
+
+Real exports may be copied into `fixtures/private/`, which git ignores, to check the parsers against them:
+
+```bash
+pnpm --filter @xtrakto/parsers test:private
+```
+
+`src/bancolombia/real-exports.private.test.ts` reads every `.xlsx` there as the app will: it extracts, recognizes and parses each file, reconciles each quarterly statement, and compares an export's movements with the quarterly statement whose period holds them. It prints only counts, yes/no answers, error codes and row numbers, never a description, amount, name or file name. `pnpm test` and CI never run it, and it skips itself when the folder has no exports.

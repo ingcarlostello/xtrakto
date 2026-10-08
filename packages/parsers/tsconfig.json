@@ -1,4 +1,4 @@
 {
   "extends": "@xtrakto/typescript-config/base.json",
-  "include": ["src", "fixtures", "vitest.config.ts"]
+  "include": ["src", "fixtures", "vitest.config.ts", "vitest.private.config.ts"]
 }
