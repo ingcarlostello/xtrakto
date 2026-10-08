@@ -4,6 +4,7 @@ import { DEFAULT_TIME_ZONE } from "./date.constants";
 import {
   compareLocalDates,
   inferDayMonthDate,
+  isLocalDate,
   isWithinPeriod,
   localDateFromExcelSerial,
   localDateFromInstant,
@@ -276,5 +277,26 @@ describe("inferDayMonthDate", () => {
     expect(inferDayMonthDate("1/07", twoYears)).toEqual(
       parseFailure("ambiguous"),
     );
+  });
+});
+
+describe("isLocalDate", () => {
+  it.each(["2026-07-01", "2024-02-29", "1900-03-01"])("accepts %s", (value) => {
+    expect(isLocalDate(value)).toBe(true);
+  });
+
+  it.each([
+    "2026-02-29",
+    "2026-13-01",
+    "2026-06-31",
+    "2026-7-01",
+    "2026/07/01",
+    " 2026-07-01",
+    "2026-07-01T00:00:00Z",
+    20_260_701,
+    null,
+    undefined,
+  ])("rejects %j", (value) => {
+    expect(isLocalDate(value)).toBe(false);
   });
 });
