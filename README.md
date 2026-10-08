@@ -24,12 +24,12 @@ apps/
 packages/
   core/                Domain types, money and dates (pure TypeScript)
   parsers/             Bank statement parsers and their registry (pure TypeScript)
+  db/                  PostgreSQL access with Drizzle: connection, schema, migrations (server only)
   eslint-config/       Shared ESLint presets and project rules
   typescript-config/   Shared tsconfig presets
+docker/                Local PostgreSQL setup for Docker Compose
 docs/                  System design, roadmap and ADRs
 ```
-
-The `db` package is added in Stage 3.
 
 ## Local setup
 
@@ -63,17 +63,22 @@ On its first start, `docker/postgres/init.sql` creates the application role, `xt
 
 ## Scripts
 
-| Command             | What it does                              |
-| ------------------- | ----------------------------------------- |
-| `pnpm dev`          | Runs the web app in development mode      |
-| `pnpm build`        | Builds every package for production       |
-| `pnpm lint`         | Lints every package with ESLint           |
-| `pnpm check-types`  | Type-checks every package with TypeScript |
-| `pnpm test`         | Runs every package's tests with Vitest    |
-| `pnpm format`       | Formats the repository with Prettier      |
-| `pnpm format:check` | Checks formatting without changing files  |
+| Command             | What it does                                                             |
+| ------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`          | Runs the web app in development mode                                     |
+| `pnpm build`        | Builds every package for production                                      |
+| `pnpm lint`         | Lints every package with ESLint                                          |
+| `pnpm check-types`  | Type-checks every package with TypeScript                                |
+| `pnpm test`         | Runs every package's tests with Vitest                                   |
+| `pnpm format`       | Formats the repository with Prettier                                     |
+| `pnpm format:check` | Checks formatting without changing files                                 |
+| `pnpm db:generate`  | Writes a migration from the Drizzle schema (drizzle-kit)                 |
+| `pnpm db:migrate`   | Applies pending migrations, as the owner role (`DATABASE_MIGRATION_URL`) |
+| `pnpm db:studio`    | Opens Drizzle Studio on the database                                     |
 
-CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request.
+CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request, with the database from `docker compose up --wait`.
+
+The integration tests of `packages/db` use the `xtrakto_test` database through `TEST_DATABASE_URL` (application role) and `TEST_DATABASE_MIGRATION_URL` (owner), read from `.env.local`. With both set, they need the local database running and fail if it isn't; without them, they are skipped, except in CI, which always runs them. Both must point to a local database whose name ends in `_test`.
 
 `pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/`, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 

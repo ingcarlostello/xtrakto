@@ -29,6 +29,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The same PostgreSQL, roles and test database as on a laptop, so the
+      # database tests run here instead of being skipped.
+      - run: docker compose up --wait
+
       - run: pnpm turbo check-types lint test
+        env:
+          TEST_DATABASE_URL: postgresql://xtrakto_app:xtrakto_app@127.0.0.1:5432/xtrakto_test
+          TEST_DATABASE_MIGRATION_URL: postgresql://xtrakto:xtrakto@127.0.0.1:5432/xtrakto_test
 
       - run: pnpm format:check

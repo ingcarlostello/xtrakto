@@ -313,7 +313,7 @@ Splitting by statement, not by row, keeps near-identical movements of one statem
 
 ```mermaid
 flowchart LR
-    PR["Pull request"] --> CI["GitHub Actions<br/>check-types · lint · test · format"]
+    PR["Pull request"] --> CI["GitHub Actions<br/>check-types · lint · test · format<br/>PostgreSQL in Docker for tests"]
     CI --> PV["Vercel preview<br/>+ Neon branch"]
     PV --> M["Merge to main"]
     M --> MG["Migrations job<br/>owner role"]
