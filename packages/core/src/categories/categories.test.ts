@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import categoriesJson from "../categories.json";
+import categoriesJson from "../../categories.json";
 import { CATEGORIES, CATEGORY_KINDS } from "./categories.constants";
 import type { CategoryId, CategoryKind } from "./category.types";
 

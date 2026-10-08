@@ -185,6 +185,8 @@ apps/web/src/
 
 **Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`.
 
+**Inside packages:** group source files by domain module, one folder per concept: `src/<module>/<name>.<role>.ts` (for example `packages/core/src/money/money.helpers.ts`). File names keep their role suffix, tests stay next to the file they test, and folders have no barrel: modules import each other with relative paths, and only `src/index.ts` is public.
+
 **Language:** code, identifiers and comments in English. User-facing text is in Spanish and centralized to ease future translation.
 
 ---
@@ -330,7 +332,7 @@ This is a financial product. Errors here are the most serious.
 - **Always** tell the user what happened and what they can do, in plain language. Never a technical message or a stack trace.
 
 ```typescript
-// packages/core/src/result.types.ts
+// packages/core/src/result/result.types.ts
 export type Result<T, E = AppError> =
   { ok: true; value: T } | { ok: false; error: E };
 

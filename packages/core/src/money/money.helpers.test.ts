@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APP_ERROR_CODE } from "./app-error.constants";
+import { APP_ERROR_CODE } from "../result/app-error.constants";
 import { CURRENCY } from "./money.constants";
 import {
   amountFromNumber,
@@ -9,7 +9,7 @@ import {
   sumAmounts,
 } from "./money.helpers";
 import type { AmountMinor } from "./money.types";
-import { err, ok } from "./result.utils";
+import { err, ok } from "../result/result.utils";
 
 const parseFailure = (reason: "format" | "range") =>
   err({ code: APP_ERROR_CODE.PARSE_FAILED, details: { reason } });

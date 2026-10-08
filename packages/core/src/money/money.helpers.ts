@@ -1,8 +1,8 @@
-import { APP_ERROR_CODE } from "./app-error.constants";
+import { APP_ERROR_CODE } from "../result/app-error.constants";
 import { MINOR_DIGITS } from "./money.constants";
 import type { AmountMinor, Currency } from "./money.types";
-import type { Result } from "./result.types";
-import { err, ok } from "./result.utils";
+import type { Result } from "../result/result.types";
+import { err, ok } from "../result/result.utils";
 
 // Statement text: thousands grouped with commas (or not grouped), up to two decimals.
 const AMOUNT_TEXT_PATTERN = /^(-)?(\d{1,3}(?:,\d{3})+|\d+)?(?:\.(\d{1,2}))?$/;
