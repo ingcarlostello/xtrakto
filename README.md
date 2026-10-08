@@ -4,7 +4,7 @@ Xtrakto reads Colombian bank statements and explains where the money went. It se
 
 ## Status
 
-Early development: Stage 2, spreadsheet extraction and parsers. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+Early development: the domain core and the spreadsheet parsers (stages 1 and 2) are done, verified against real Bancolombia exports; the database (Stage 3) is next. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
 
 ## Stack
 
@@ -58,6 +58,8 @@ Real bank statements must never be committed. They may only live in git-ignored 
 | `pnpm format:check` | Checks formatting without changing files  |
 
 CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request.
+
+`pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/`, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 
 ## Documentation
 
