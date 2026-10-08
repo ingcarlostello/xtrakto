@@ -45,6 +45,7 @@ export const parsedTransactionSchema = z.strictObject({
 /** As printed in the statement's summary; reconciliation compares them with the movements. */
 const statementTotalsSchema = z.strictObject({
   creditsMinor: amountMinorSchema.optional(),
+  /** Money out as a positive amount, whatever sign the statement prints. */
   debitsMinor: amountMinorSchema.optional(),
   interestMinor: amountMinorSchema.optional(),
   withholdingMinor: amountMinorSchema.optional(),
