@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { APP_ERROR_CODE, err, extractedContentSchema, ok } from "@xtrakto/core";
+import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
 import type { SpreadsheetCell } from "@xtrakto/core";
+import { fixtureRows } from "../../fixtures/fixture.utils";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyRepeatedHeader from "../../fixtures/quarterly-repeated-header.json";
@@ -11,13 +12,7 @@ import { readQuarterlyHeader } from "./quarterly-header.helpers";
 
 const { CLIENT, GENERAL, SUMMARY } = QUARTERLY_BLOCK;
 
-// A fixture's first sheet, checked against the extracted content schema.
-const rowsOf = (fixture: unknown): SheetRows => {
-  const content = extractedContentSchema.parse(fixture);
-  return content.type === "spreadsheet" ? (content.sheets[0]?.rows ?? []) : [];
-};
-
-const BASIC = rowsOf(quarterlyBasic);
+const BASIC = fixtureRows(quarterlyBasic);
 
 // Invented values, as generated in scripts/fixture-data.mjs.
 const BASIC_HEADER = {
@@ -72,7 +67,9 @@ describe("readQuarterlyHeader", () => {
   });
 
   it("reads a period that ends in the next year", () => {
-    expect(readQuarterlyHeader(rowsOf(quarterlyYearRollover))).toMatchObject({
+    expect(
+      readQuarterlyHeader(fixtureRows(quarterlyYearRollover)),
+    ).toMatchObject({
       ok: true,
       value: { period: { from: "2026-12-31", to: "2027-03-31" } },
     });
@@ -82,7 +79,7 @@ describe("readQuarterlyHeader", () => {
     { name: "quarterly-repeated-header", fixture: quarterlyRepeatedHeader },
     { name: "quarterly-broken-balance", fixture: quarterlyBrokenBalance },
   ])("reads the same header from $name", ({ fixture }) => {
-    expect(readQuarterlyHeader(rowsOf(fixture))).toEqual(ok(BASIC_HEADER));
+    expect(readQuarterlyHeader(fixtureRows(fixture))).toEqual(ok(BASIC_HEADER));
   });
 
   it("finds each block by its label wherever it is", () => {

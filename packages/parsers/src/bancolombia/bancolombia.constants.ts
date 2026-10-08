@@ -1,5 +1,10 @@
 // The quarterly statement as Appendix A.1 of docs/ROADMAP.md describes it.
 
+export const BANCOLOMBIA_BANK_ID = "bancolombia";
+
+/** Stored with each statement as its format. */
+export const QUARTERLY_FORMAT_ID = "bancolombia-savings-quarterly";
+
 /** Labels that open each block, in the first column. */
 export const QUARTERLY_BLOCK = {
   CLIENT: "Información Cliente:",
