@@ -1,0 +1,28 @@
+{
+  "type": "spreadsheet",
+  "sheets": [
+    {
+      "name": "Hoja1",
+      "rows": [
+        ["Fecha", "Descripción", "Referencia", "Valor"],
+        [{ "excelSerial": 46302.208333333336 }, "COMPRA EN  MERCADO XYZ", null, -84250.5],
+        [{ "excelSerial": 46302.208333333336 }, "PAGO INTERBANC EMPRESA EJEMPLO", null, 3200000],
+        [{ "excelSerial": 46302.208333333336 }, "ABONO INTERESES AHORROS", null, 5.12],
+        [{ "excelSerial": 46302.208333333336 }, "ABONO INTERESES AHORROS", null, 4.7],
+        [{ "excelSerial": 46301.208333333336 }, "TRANSF A EMPRESA DE GAS DE CO", "123456 1234567890 12345", -23340],
+        [{ "excelSerial": 46301.208333333336 }, "PAGO LLAVE Maria Lopez", "0099887766", -60000],
+        [{ "excelSerial": 46301.208333333336 }, "ABONO INTERESES AHORROS", null, 4.76],
+        [{ "excelSerial": 46300.208333333336 }, "TRANSFERENCIAS A NEQUI", "3109876543", -25000],
+        [{ "excelSerial": 46300.208333333336 }, "PAGO PSE EMPRESA DE ENERGIA", "445566778", -185430],
+        [{ "excelSerial": 46300.208333333336 }, "ABONO INTERESES AHORROS", null, 0.93],
+        [{ "excelSerial": 46299.208333333336 }, "ABONO INTERESES AHORROS", null, 4.88],
+        [{ "excelSerial": 46298.208333333336 }, "RETIRO CAJERO  ATM PLAZA CENTR", "ATM PLAZA CENTRAL 1", -200000],
+        [{ "excelSerial": 46298.208333333336 }, "ABONO INTERESES AHORROS", null, 4.91],
+        [{ "excelSerial": 46297.208333333336 }, "PAGO QR TIENDA SIN CODIGO", null, -8500],
+        [{ "excelSerial": 46297.208333333336 }, "PAGO QR CAFE DEL PARQUE", "0077001234", -12000],
+        [{ "excelSerial": 46297.208333333336 }, "ABONO INTERESES AHORROS", null, 4.87],
+        [{ "excelSerial": 46296.208333333336 }, "TRANSFERENCIAS A NEQUI", "3001234567", -50000]
+      ]
+    }
+  ]
+}

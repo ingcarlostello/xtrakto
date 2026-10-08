@@ -1,0 +1,33 @@
+{
+  "type": "spreadsheet",
+  "sheets": [
+    {
+      "name": "Hoja1",
+      "rows": [
+        [],
+        ["Información Cliente:"],
+        ["CLIENTE", "DIRECCIÓN", "CIUDAD"],
+        ["ANA MARIA PRUEBA GOMEZ", "calle falsa #12-34 apto 101", "MEDELLIN (ANTIOQUIA)  ANTI"],
+        [],
+        ["Información General:"],
+        ["DESDE", "HASTA", "TIPO CUENTA", "NRO CUENTA", "SUCURSAL"],
+        ["2026/12/31", "2027/03/31", "CUENTA DE AHORROS", "12345678901", "SUCURSAL CENTRO"],
+        [],
+        ["Resumen:"],
+        ["SALDO ANTERIOR", "TOTAL ABONOS", "TOTAL CARGOS", "SALDO ACTUAL", "SALDO PROMEDIO", "CUPO SUGERIDO", "INTERESES", "RETEFUENTE"],
+        ["1,200,000.00", "3,200,010.35", "172,000.00", "4,228,010.35", "2,714,005", ".00", "10.35", ".00"],
+        [],
+        ["Movimientos:"],
+        ["FECHA", "DESCRIPCIÓN", "SUCURSAL", "DCTO.", "VALOR", "SALDO"],
+        ["31/12", "ABONO INTERESES AHORROS", null, null, ".98", "1,200,000.98"],
+        ["1/01", "ABONO INTERESES AHORROS", null, null, ".95", "1,200,001.93"],
+        ["2/01", "PAGO PSE EMPRESA DE ENERGIA", null, null, "-150,000.00", "1,050,001.93"],
+        ["10/01", "PAGO INTERBANC EMPRESA EJEMPLO", null, null, "3,200,000.00", "4,250,001.93"],
+        ["14/02", "PAGO QR CAFE DEL PARQUE", null, null, "-22,000.00", "4,228,001.93"],
+        ["28/02", "ABONO INTERESES AHORROS", null, null, "4.10", "4,228,006.03"],
+        ["31/03", "ABONO INTERESES AHORROS", null, null, "4.32", "4,228,010.35"],
+        [null, "FIN ESTADO DE CUENTA"]
+      ]
+    }
+  ]
+}
