@@ -1,3 +1,5 @@
+import type { ParsedTransaction } from "@xtrakto/core";
+
 const WHITESPACE_RUN = /\s+/g;
 // Account, ID and phone numbers: the privacy rules forbid keeping them whole.
 const LONG_NUMBER = /\d{6,}/g;
@@ -23,3 +25,17 @@ export const maskLongNumbers = (description: string): string =>
  */
 export const normalizeDescription = (description: string): string =>
   description.replace(WHITESPACE_RUN, " ").trim();
+
+/**
+ * Both descriptions of a movement from its printed text, with long numbers
+ * masked in each (ADR 0012). The raw one keeps the bank's spacing and case.
+ */
+export const movementDescriptions = (
+  text: string,
+): Pick<ParsedTransaction, "descriptionRaw" | "descriptionNormalized"> => {
+  const descriptionRaw = maskLongNumbers(text);
+  return {
+    descriptionRaw,
+    descriptionNormalized: normalizeDescription(descriptionRaw),
+  };
+};

@@ -22,7 +22,7 @@ import {
   SAVINGS_ACCOUNT_TYPE,
   SUMMARY_COLUMN,
 } from "./bancolombia.constants";
-import { parseFailed } from "./quarterly-failure.helpers";
+import { parseFailed } from "./parse-failure.helpers";
 
 /** What the quarterly statement says before its movements. */
 export type QuarterlyHeader = Required<

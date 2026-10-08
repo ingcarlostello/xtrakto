@@ -12,25 +12,23 @@ import type {
   Result,
   SpreadsheetCell,
 } from "@xtrakto/core";
-import {
-  maskLongNumbers,
-  normalizeDescription,
-} from "../descriptions/description.helpers";
+import { movementDescriptions } from "../descriptions/description.helpers";
 import {
   cellText,
+  columnPositions,
   findColumns,
   findLabelRow,
   hasText,
   isBlankRow,
 } from "../sheets/sheet.utils";
-import type { ColumnRef, SheetRows } from "../sheets/sheet.utils";
+import type { SheetRows } from "../sheets/sheet.utils";
 import {
   END_MARKER,
   MOVEMENTS_COLUMN,
   PAGE_START_LABELS,
   QUARTERLY_BLOCK,
 } from "./bancolombia.constants";
-import { parseFailed } from "./quarterly-failure.helpers";
+import { parseFailed } from "./parse-failure.helpers";
 
 /** The movements of a quarterly statement and the rows it couldn't place. */
 export type QuarterlyMovements = Pick<
@@ -60,14 +58,6 @@ type RowKind =
 const BLOCK = QUARTERLY_BLOCK.MOVEMENTS;
 const DAY_MONTH_PATTERN = /^\d{1,2}\/\d{1,2}$/;
 
-// Safe: findColumns returns one position for each key it was given.
-const toPositions = (
-  columns: readonly ColumnRef<MovementKey>[],
-): MovementColumns =>
-  Object.fromEntries(
-    columns.map(({ key, index }) => [key, index]),
-  ) as MovementColumns;
-
 /**
  * Where the movements table starts: the first movements label, followed by
  * a header with every column that is read.
@@ -87,7 +77,7 @@ export const findMovementsTable = (
       column: columns.error,
     });
   }
-  return ok({ start: labelRow + 2, columns: toPositions(columns.value) });
+  return ok({ start: labelRow + 2, columns: columnPositions(columns.value) });
 };
 
 // A d/mm date, or anything but text where the date goes, which then fails to
@@ -118,19 +108,6 @@ const classifyRow = (
   return looksLikeMovement(date) ? "movement" : "unexpected";
 };
 
-// The raw text keeps the bank's spacing; both hide long numbers.
-const readDescription = (
-  text: string,
-): Result<
-  Pick<ParsedTransaction, "descriptionRaw" | "descriptionNormalized">
-> => {
-  const descriptionRaw = maskLongNumbers(text);
-  return ok({
-    descriptionRaw,
-    descriptionNormalized: normalizeDescription(descriptionRaw),
-  });
-};
-
 // Reads the cells of one movement row, failing with the cell's column and row.
 const cellReader =
   (row: readonly SpreadsheetCell[], { columns, sourceRow }: RowContext) =>
@@ -159,7 +136,9 @@ const readMovement = (
     inferDayMonthDate(text, context.period),
   );
   if (!date.ok) return date;
-  const description = readCell("DESCRIPTION", readDescription);
+  const description = readCell("DESCRIPTION", (text) =>
+    ok(movementDescriptions(text)),
+  );
   if (!description.ok) return description;
   const amount = readCell("AMOUNT", parseAmountText);
   if (!amount.ok) return amount;

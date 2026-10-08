@@ -1,9 +1,14 @@
-// The quarterly statement as Appendix A.1 of docs/ROADMAP.md describes it.
+import { DEFAULT_TIME_ZONE } from "@xtrakto/core";
+import type { ExcelDateTimeZones } from "@xtrakto/core";
+
+// The quarterly statement and the movements export as Appendices A.1 and A.2
+// of docs/ROADMAP.md describe them.
 
 export const BANCOLOMBIA_BANK_ID = "bancolombia";
 
-/** Stored with each statement as its format. */
+// Stored with each statement as its format.
 export const QUARTERLY_FORMAT_ID = "bancolombia-savings-quarterly";
+export const MOVEMENTS_EXPORT_FORMAT_ID = "bancolombia-movements-export";
 
 /** Labels that open each block, in the first column. */
 export const QUARTERLY_BLOCK = {
@@ -54,3 +59,20 @@ export const MOVEMENTS_COLUMN = {
 
 /** The only account type the MVP reads. */
 export const SAVINGS_ACCOUNT_TYPE = "CUENTA DE AHORROS";
+
+/** Header names in the first row of the movements export. */
+export const EXPORT_COLUMN = {
+  DATE: "Fecha",
+  DESCRIPTION: "Descripción",
+  REFERENCE: "Referencia",
+  AMOUNT: "Valor",
+} as const;
+
+/** The export's date cells hold local midnight in Bogotá as 05:00 UTC. */
+export const EXPORT_DATE_TIME_ZONES: ExcelDateTimeZones = {
+  serialTimeZone: "UTC",
+  targetTimeZone: DEFAULT_TIME_ZONE,
+};
+
+/** How an ATM withdrawal's reference starts: `ATM <location>`. */
+export const ATM_REFERENCE_PREFIX = "ATM ";
