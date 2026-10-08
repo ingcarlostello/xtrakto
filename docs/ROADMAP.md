@@ -139,7 +139,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 3 — Database (`packages/db`)**
 
 - [x] 3.1 [HUMAN] Database provider and local PostgreSQL
-- [ ] 3.2 Package scaffold and migration tooling
+- [x] 3.2 Package scaffold and migration tooling
 - [ ] 3.3 Schema v1
 - [ ] 3.4 Row-Level Security and user context
 - [ ] 3.5 Persistence functions and dev seed
@@ -658,7 +658,7 @@ Phase 2.4 was split in three (estimated at about 990 changed lines), with the hu
 
 - `@xtrakto/db` with Drizzle ORM and drizzle-kit; a connection factory using a Node driver suited to serverless and the provider's pooled connection string.
 - Scripts: `db:generate`, `db:migrate`, `db:studio`.
-- Integration tests run against the local database and are skipped when it isn't available.
+- Integration tests run against the local test database (`TEST_DATABASE_URL`, `TEST_DATABASE_MIGRATION_URL`). They are skipped when those aren't set and fail when they are but the database is down. CI always runs them, with the database from `docker compose up --wait`.
 
 **Commit:** `feat(db): package scaffold and migration tooling`
 

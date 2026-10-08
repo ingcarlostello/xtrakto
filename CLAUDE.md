@@ -30,7 +30,7 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 
 - Node 22 comes from nvm, which the agent's shell may not load. If `node` isn't found, prefix commands with `export PATH="$HOME/.nvm/versions/node/v22.20.0/bin:$PATH"`.
 - Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both). After changing a parser, also run `pnpm --filter @xtrakto/parsers test:private` if real exports are in `packages/parsers/fixtures/private/`; never open or print those files (the private tests report counts only).
-- Local PostgreSQL runs in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes its data.
+- Local PostgreSQL runs in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes its data. `packages/db` tests run when `TEST_DATABASE_URL` and `TEST_DATABASE_MIGRATION_URL` are set (root `.env.local`; always in CI) and then fail if the database is down.
 
 ## UI
 
