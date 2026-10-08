@@ -12,6 +12,7 @@ Early development: Stage 2, spreadsheet extraction and parsers. Nothing is deplo
 - TypeScript 6 in strict mode, on Node.js 22
 - pnpm 12 workspaces and Turborepo 2
 - ESLint 9, Prettier 3 and Vitest 5
+- SheetJS 0.20 to read XLSX and CSV files, installed from its official CDN ([ADR 0011](docs/adr/0011-sheetjs-for-spreadsheet-extraction.md))
 - Planned: PostgreSQL with Drizzle, Clerk, Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
 
 ## Monorepo layout
