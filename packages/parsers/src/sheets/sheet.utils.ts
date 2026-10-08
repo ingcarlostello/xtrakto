@@ -20,10 +20,21 @@ export const cellText = (
   return text === "" ? undefined : text;
 };
 
-// Labels and header names are compared only here, so tolerating accents or
-// case later (Phase 2.7) changes one place.
-const hasText = (cell: SpreadsheetCell | undefined, expected: string) =>
-  cellText(cell) === expected;
+/**
+ * Whether a cell holds a label or header name. Every such comparison goes
+ * through here, so tolerating accents or case later (Phase 2.7) changes one
+ * place.
+ */
+export const hasText = (
+  cell: SpreadsheetCell | undefined,
+  expected: string,
+): boolean => cellText(cell) === expected;
+
+/** Whether a row holds nothing: no cells, or only empty ones. */
+export const isBlankRow = (row: readonly SpreadsheetCell[]): boolean =>
+  row.every(
+    (cell) => cell === null || (typeof cell === "string" && cell.trim() === ""),
+  );
 
 /** Index of the first row whose first cell is `label`. */
 export const findLabelRow = (

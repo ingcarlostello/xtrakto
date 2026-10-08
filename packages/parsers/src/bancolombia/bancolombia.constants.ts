@@ -5,7 +5,18 @@ export const QUARTERLY_BLOCK = {
   CLIENT: "Información Cliente:",
   GENERAL: "Información General:",
   SUMMARY: "Resumen:",
+  MOVEMENTS: "Movimientos:",
 } as const;
+
+/** Labels that open the blocks each new page repeats; the summary isn't one. */
+export const PAGE_START_LABELS = [
+  QUARTERLY_BLOCK.CLIENT,
+  QUARTERLY_BLOCK.GENERAL,
+  QUARTERLY_BLOCK.MOVEMENTS,
+] as const;
+
+/** Printed in the DESCRIPCIÓN column after the last movement. */
+export const END_MARKER = "FIN ESTADO DE CUENTA";
 
 // Header names of the columns read in each block. The address and the city
 // are never read.
@@ -26,6 +37,14 @@ export const SUMMARY_COLUMN = {
   AVERAGE_BALANCE: "SALDO PROMEDIO",
   INTEREST: "INTERESES",
   WITHHOLDING: "RETEFUENTE",
+} as const;
+
+// SUCURSAL and DCTO. aren't read: the parsed statement has no field for them.
+export const MOVEMENTS_COLUMN = {
+  DATE: "FECHA",
+  DESCRIPTION: "DESCRIPCIÓN",
+  AMOUNT: "VALOR",
+  BALANCE: "SALDO",
 } as const;
 
 /** The only account type the MVP reads. */
