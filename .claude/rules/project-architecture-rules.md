@@ -86,11 +86,12 @@ xtrakto/
 | **DIP**   | Code depends on interfaces (`BankParser`, `VectorStore`, `LlmClient`), not concrete implementations. The LLM provider can be swapped without touching the logic. |
 
 ```typescript
-// packages/parsers/src/bank-parser.types.ts
+// packages/parsers/src/registry/bank-parser.types.ts
 export type BankParser = {
   id: string; // "bancolombia-savings-quarterly"
-  canParse: (file: RawFile) => boolean;
-  parse: (file: RawFile) => ParseResult<ParsedStatement>;
+  bankId: string; // "bancolombia"
+  canParse: (content: ExtractedContent) => boolean;
+  parse: (content: ExtractedContent) => Result<ParsedStatement>;
 };
 ```
 
