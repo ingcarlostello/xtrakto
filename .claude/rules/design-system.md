@@ -24,12 +24,13 @@ The look is calm, light and clear: a cool grey-blue ground, translucent white ca
 
 ## 2. Brand
 
-| Element    | Spec                                                                                                |
-| ---------- | --------------------------------------------------------------------------------------------------- |
-| Wordmark   | `XTRAKTO` — Outfit 500, 24px, uppercase, letter-spacing `0.34em`                                    |
-| Descriptor | `Extractos` — Outfit 300, 21px, color `--text-secondary`, baseline-aligned, 12px after the wordmark |
-| Tagline    | "Cuentas claras, mente tranquila" — Manrope 400, 14px, `--text-muted`                               |
-| Domain     | xtrakto.site                                                                                        |
+| Element    | Spec                                                                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logo       | "Cinta plegada": an X of two rounded bars, blue over orange. Files, variants, sizes, clear space and usage in [`docs/brand.md`](../../docs/brand.md) |
+| Wordmark   | `XTRAKTO` — Outfit 500, 24px, uppercase, letter-spacing `0.3em`                                                                                      |
+| Descriptor | `Extractos` — Outfit 300, 21px, color `--text-secondary`, baseline-aligned, 12px after the wordmark                                                  |
+| Tagline    | "Cuentas claras, mente tranquila" — Manrope 400, 14px, `--text-muted`                                                                                |
+| Domain     | xtrakto.site                                                                                                                                         |
 
 ### Signature elements
 

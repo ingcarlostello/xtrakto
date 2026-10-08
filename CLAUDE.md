@@ -27,6 +27,8 @@ What to build and in which order (stages, phases, gates, progress, phase log). F
 
 All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
 
+Before building any UI that shows the logo, metadata, icons or brand colors, read docs/brand.md.
+
 ## Git
 
 - **Never** run a git command that changes the repository or the remote (`add`, `commit`, `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`/`switch`, `branch`, `tag`, `stash`, opening PRs, etc.) unless the user explicitly asks for it or authorizes it.

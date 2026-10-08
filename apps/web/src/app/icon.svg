@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Xtrakto"><title>Xtrakto</title>
+<defs><linearGradient id="ic-blue" gradientUnits="userSpaceOnUse" x1="14" y1="14" x2="50" y2="50"><stop offset="0" stop-color="#8CB8FF"/><stop offset="1" stop-color="#1D4ED8"/></linearGradient>
+<linearGradient id="ic-orange-top" gradientUnits="userSpaceOnUse" x1="50" y1="14" x2="32" y2="32"><stop offset="0" stop-color="#FFB48A"/><stop offset="1" stop-color="#EA6B2D"/></linearGradient>
+<linearGradient id="ic-orange-fold" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="14" y2="50"><stop offset="0" stop-color="#A63E0B"/><stop offset="1" stop-color="#E2581A"/></linearGradient></defs>
+<line x1="50" y1="14" x2="32" y2="32" stroke="url(#ic-orange-top)" stroke-width="14" stroke-linecap="round"/>
+<line x1="32" y1="32" x2="14" y2="50" stroke="url(#ic-orange-fold)" stroke-width="14" stroke-linecap="round"/>
+<line x1="14" y1="14" x2="50" y2="50" stroke="url(#ic-blue)" stroke-width="14" stroke-linecap="round"/>
+</svg>
