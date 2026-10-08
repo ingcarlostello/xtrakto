@@ -18,13 +18,13 @@ The architecture is a plan, not a contract. It was written before most of the co
 
 ## Roadmap
 
-What to build and in which order (stages, phases, gates, progress, phase log). Follow its section 1 workflow, one phase at a time:
+What to build and in which order (stages, phases, gates, progress). Follow its section 1 workflow, one phase at a time:
 
 @docs/ROADMAP.md
 
 - Before starting any work, check section 5 for the next unticked phase and say which phase it is.
 - If the roadmap and the Git section below disagree, the Git section wins: don't stage changes (roadmap step 6) unless the user authorizes it. Propose the commit message instead.
-- Phase log: Prettier pads every row of a Markdown table to its widest cell, so a new cell wider than the current widest re-pads the whole table. Keep new cells within that width.
+- The phase log lives in `docs/phase-log.md`, not imported here. Read its latest entries when a phase depends on earlier follow-ups.
 
 ## Commands
 
@@ -48,4 +48,4 @@ Before building any UI that shows the logo, metadata, icons or brand colors, rea
 
 ## This file
 
-Update it, in the same change, when a lasting instruction, command or gotcha comes up. Keep it to about 50 lines, not counting the imported docs: constraints, commands and decisions only. History belongs in the phase log, details in the docs and rules.
+Update it, in the same change, when a lasting instruction, command or gotcha comes up. Keep it to about 50 lines, not counting the imported docs: constraints, commands and decisions only. History belongs in `docs/phase-log.md`, details in the docs and rules.

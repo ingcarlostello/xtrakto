@@ -62,6 +62,7 @@ CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull
 ## Documentation
 
 - [System design](docs/ARCHITECTURE.md): requirements, architecture, data model and privacy boundaries
-- [Roadmap](docs/ROADMAP.md): stages, phases, decision gates and the phase log
+- [Roadmap](docs/ROADMAP.md): stages, phases, decision gates and progress
+- [Phase log](docs/phase-log.md): what each phase did, its deviations and follow-ups
 - [Architecture decision records](docs/adr/README.md)
 - [Project rules](.claude/rules/): code standards, design system and ML rules
