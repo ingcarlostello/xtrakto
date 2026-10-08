@@ -13,7 +13,11 @@ export type QuarterlyFailureReason =
   /** The period starts after it ends. */
   | "invalid_period"
   /** Not a savings account. */
-  | "unsupported_account_type";
+  | "unsupported_account_type"
+  /** `FIN ESTADO DE CUENTA` never appears after the movements. */
+  | "missing_end"
+  /** A movement row appears inside the blocks a new page repeats. */
+  | "incomplete_page_header";
 
 /**
  * Where a quarterly statement couldn't be read: the printed block and column

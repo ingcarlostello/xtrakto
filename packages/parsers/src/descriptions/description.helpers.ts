@@ -1,4 +1,20 @@
 const WHITESPACE_RUN = /\s+/g;
+// Account, ID and phone numbers: the privacy rules forbid keeping them whole.
+const LONG_NUMBER = /\d{6,}/g;
+const VISIBLE_DIGITS = 4;
+
+/**
+ * Hides all but the last four digits of every run of six or more digits,
+ * keeping the text's length: "INTERES INV VIRT 27608017525" becomes
+ * "INTERES INV VIRT *******7525".
+ */
+export const maskLongNumbers = (description: string): string =>
+  description.replace(
+    LONG_NUMBER,
+    (digits) =>
+      "*".repeat(digits.length - VISIBLE_DIGITS) +
+      digits.slice(-VISIBLE_DIGITS),
+  );
 
 /**
  * The description used to compare and group movements: spacing that differs
