@@ -64,3 +64,5 @@ export type {
 export { PII_PLACEHOLDER } from "./pii/pii.constants";
 export { redactPii } from "./pii/pii.helpers";
 export type { RedactPiiOptions } from "./pii/pii.helpers";
+export { MIN_IDENTIFIER_HASH_KEY_LENGTH } from "./hashing/identifier-hash.constants";
+export { hashIdentifier } from "./hashing/identifier-hash.helpers";
