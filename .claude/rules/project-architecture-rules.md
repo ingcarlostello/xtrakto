@@ -184,7 +184,7 @@ apps/web/src/
 | Constants                        | `UPPER_SNAKE_CASE`                          | `MAX_FILE_SIZE_BYTES`                      |
 | Internal packages                | `@xtrakto/<name>`                           | `@xtrakto/parsers`                         |
 
-**Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`.
+**Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`. In `packages/db` only, also `.queries.ts` for the functions that read or write the database (section 7); its Drizzle tables go in `.schemas.ts`.
 
 **Inside packages:** group source files by domain module, one folder per concept: `src/<module>/<name>.<role>.ts` (for example `packages/core/src/money/money.helpers.ts`). File names keep their role suffix, tests stay next to the file they test, and folders have no barrel: modules import each other with relative paths, and only `src/index.ts` is public.
 
@@ -222,12 +222,13 @@ export type UploadStatementInput = z.infer<typeof uploadStatementSchema>;
 
 ## 7. Services, actions and data access
 
-| Piece                 | Responsibility                                                                                   | Where it runs |
-| --------------------- | ------------------------------------------------------------------------------------------------ | ------------- |
-| `*.service.ts`        | A feature's server logic: query the database, call the LLM, R2 or Clerk                          | Server only   |
-| `*.action.ts`         | Server action: validates input with Zod, checks the session, calls the service, returns a result | Server only   |
-| `app/api/**/route.ts` | Only for webhooks and endpoints called by third parties (Inngest, Clerk)                         | Server only   |
-| `packages/db`         | Schema, migrations and reusable queries                                                          | Server only   |
+| Piece                         | Responsibility                                                                                                                                                                                                                    | Where it runs |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `*.service.ts`                | A feature's server logic: query the database, call the LLM, R2 or Clerk                                                                                                                                                           | Server only   |
+| `*.action.ts`                 | Server action: validates input with Zod, checks the session, calls the service, returns a result                                                                                                                                  | Server only   |
+| `app/api/**/route.ts`         | Only for webhooks and endpoints called by third parties (Inngest, Clerk)                                                                                                                                                          | Server only   |
+| `packages/db`                 | Drizzle schema (`*.schemas.ts`) and migrations                                                                                                                                                                                    | Server only   |
+| `packages/db/**/*.queries.ts` | Database access: connection, user context, reads and writes. Receives the user id from a service or action that already checked the session. Never imports `server-only`, because it also runs in drizzle-kit, Vitest and scripts | Server only   |
 
 - **Always** add `import "server-only";` at the top of every `*.service.ts` and of modules in `lib/` that use secrets.
 - **Always** check the session and that the resource belongs to the user inside every action and every service. Never trust a `userId` coming from the client.
