@@ -30,3 +30,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0010](0010-typescript-6-until-typescript-eslint-supports-7.md) | TypeScript 6.0 until typescript-eslint supports TypeScript 7    | Accepted |
 | [0011](0011-sheetjs-for-spreadsheet-extraction.md)              | SheetJS for spreadsheet extraction                              | Accepted |
 | [0012](0012-long-numbers-masked-when-parsed.md)                 | Long numbers in descriptions are masked when parsed             | Accepted |
+| [0013](0013-neon-for-postgresql.md)                             | Neon for PostgreSQL                                             | Accepted |
