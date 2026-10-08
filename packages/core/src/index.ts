@@ -42,3 +42,22 @@ export { amountMinorSchema, currencySchema } from "./money/money.schemas";
 export type { AmountMinor, Currency } from "./money/money.types";
 export type { Result } from "./result/result.types";
 export { err, ok } from "./result/result.utils";
+export {
+  ACCOUNT_TYPE,
+  PARSE_WARNING_CODE,
+  PERIOD_SOURCE,
+  REFERENCE_KIND,
+} from "./statements/statement.constants";
+export {
+  parsedStatementSchema,
+  parsedTransactionSchema,
+} from "./statements/statement.schemas";
+export type {
+  AccountType,
+  ParsedStatement,
+  ParsedTransaction,
+  ParseWarning,
+  ParseWarningCode,
+  PeriodSource,
+  ReferenceKind,
+} from "./statements/statement.types";
