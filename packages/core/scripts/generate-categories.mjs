@@ -1,12 +1,18 @@
-// Generates src/categories.constants.ts from categories.json, so TypeScript
-// gets literal types for category ids and kinds. The output is already in
-// Prettier's style: objects that start with a line break stay expanded.
+// Generates src/categories/categories.constants.ts from categories.json, so
+// TypeScript gets literal types for category ids and kinds. The output is
+// already in Prettier's style: objects that start with a line break stay
+// expanded.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PACKAGE_DIR = join(import.meta.dirname, "..");
 const SOURCE = join(PACKAGE_DIR, "categories.json");
-const TARGET = join(PACKAGE_DIR, "src", "categories.constants.ts");
+const TARGET = join(
+  PACKAGE_DIR,
+  "src",
+  "categories",
+  "categories.constants.ts",
+);
 
 const { kinds, categories } = JSON.parse(readFileSync(SOURCE, "utf8"));
 
