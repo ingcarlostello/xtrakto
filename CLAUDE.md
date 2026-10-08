@@ -1,5 +1,7 @@
 # Xtrakto
 
+Reply to the user in Spanish, and explain concepts with an example from the app's domain (a statement, a Nequi transfer) before the technical detail. Code, comments, commits and docs stay in English.
+
 System design (read before planning or changing code):
 
 @docs/ARCHITECTURE.md
@@ -22,6 +24,12 @@ What to build and in which order (stages, phases, gates, progress, phase log). F
 
 - Before starting any work, check section 5 for the next unticked phase and say which phase it is.
 - If the roadmap and the Git section below disagree, the Git section wins: don't stage changes (roadmap step 6) unless the user authorizes it. Propose the commit message instead.
+- Phase log: Prettier pads every row of a Markdown table to its widest cell, so a new cell wider than the current widest re-pads the whole table. Keep new cells within that width.
+
+## Commands
+
+- Node 22 comes from nvm, which the agent's shell may not load. If `node` isn't found, prefix commands with `export PATH="$HOME/.nvm/versions/node/v22.20.0/bin:$PATH"`.
+- Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both).
 
 ## UI
 
@@ -35,3 +43,9 @@ Before building any UI that shows the logo, metadata, icons or brand colors, rea
 - An authorization covers only the task it was given for. It doesn't carry over to later changes.
 - Read-only commands (`status`, `diff`, `log`, `show`, `blame`) are allowed.
 - When work is ready, propose the commit message and let the user decide.
+- The user runs every git command. At the end of each phase, give the exact commands (add, commit with the attribution line, push), say whether to merge to `main` (yes or no, and what must happen first), and give the commands that start the next phase's branch from an updated `main`.
+- Changes outside the phase (process rules, this file) go in their own commit on the same branch.
+
+## This file
+
+Update it, in the same change, when a lasting instruction, command or gotcha comes up. Keep it to about 50 lines, not counting the imported docs: constraints, commands and decisions only. History belongs in the phase log, details in the docs and rules.
