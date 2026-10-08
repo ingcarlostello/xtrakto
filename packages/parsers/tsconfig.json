@@ -1,0 +1,4 @@
+{
+  "extends": "@xtrakto/typescript-config/base.json",
+  "include": ["src", "vitest.config.ts"]
+}

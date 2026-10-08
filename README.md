@@ -4,7 +4,7 @@ Xtrakto reads Colombian bank statements and explains where the money went. It se
 
 ## Status
 
-Early development: Stage 0, repository foundations. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+Early development: Stage 2, spreadsheet extraction and parsers. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
 
 ## Stack
 
@@ -21,12 +21,13 @@ apps/
   web/                 Next.js app: routes, UI, server actions
 packages/
   core/                Domain types, money and dates (pure TypeScript)
+  parsers/             Bank statement parsers and their registry (pure TypeScript)
   eslint-config/       Shared ESLint presets and project rules
   typescript-config/   Shared tsconfig presets
 docs/                  System design, roadmap and ADRs
 ```
 
-The `parsers` and `db` packages are added in stages 2 and 3.
+The `db` package is added in Stage 3.
 
 ## Local setup
 
