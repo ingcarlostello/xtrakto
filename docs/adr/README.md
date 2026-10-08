@@ -28,3 +28,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0008](0008-files-read-in-the-browser.md)                       | Files are read in the browser                                   | Accepted |
 | [0009](0009-deterministic-parsing-first.md)                     | Deterministic parsing first, LLM as a fallback                  | Accepted |
 | [0010](0010-typescript-6-until-typescript-eslint-supports-7.md) | TypeScript 6.0 until typescript-eslint supports TypeScript 7    | Accepted |
+| [0011](0011-sheetjs-for-spreadsheet-extraction.md)              | SheetJS for spreadsheet extraction                              | Accepted |
