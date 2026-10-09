@@ -41,6 +41,8 @@ npm install -g pnpm@12.9.1
 pnpm install
 cp .env.example .env.local   # git-ignored; the database values already match Docker
 docker compose up --wait     # local PostgreSQL, see below
+pnpm db:migrate              # creates the tables
+pnpm db:seed                 # optional: synthetic statements for a dev user
 pnpm dev                     # http://localhost:3000
 ```
 
@@ -63,18 +65,19 @@ On its first start, `docker/postgres/init.sql` creates the application role, `xt
 
 ## Scripts
 
-| Command             | What it does                                                             |
-| ------------------- | ------------------------------------------------------------------------ |
-| `pnpm dev`          | Runs the web app in development mode                                     |
-| `pnpm build`        | Builds every package for production                                      |
-| `pnpm lint`         | Lints every package with ESLint                                          |
-| `pnpm check-types`  | Type-checks every package with TypeScript                                |
-| `pnpm test`         | Runs every package's tests with Vitest                                   |
-| `pnpm format`       | Formats the repository with Prettier                                     |
-| `pnpm format:check` | Checks formatting without changing files                                 |
-| `pnpm db:generate`  | Writes a migration from the Drizzle schema (drizzle-kit)                 |
-| `pnpm db:migrate`   | Applies pending migrations, as the owner role (`DATABASE_MIGRATION_URL`) |
-| `pnpm db:studio`    | Opens Drizzle Studio on the database                                     |
+| Command             | What it does                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`          | Runs the web app in development mode                                                                                   |
+| `pnpm build`        | Builds every package for production                                                                                    |
+| `pnpm lint`         | Lints every package with ESLint                                                                                        |
+| `pnpm check-types`  | Type-checks every package with TypeScript                                                                              |
+| `pnpm test`         | Runs every package's tests with Vitest                                                                                 |
+| `pnpm format`       | Formats the repository with Prettier                                                                                   |
+| `pnpm format:check` | Checks formatting without changing files                                                                               |
+| `pnpm db:generate`  | Writes a migration from the Drizzle schema (drizzle-kit)                                                               |
+| `pnpm db:migrate`   | Applies pending migrations, as the owner role (`DATABASE_MIGRATION_URL`)                                               |
+| `pnpm db:studio`    | Opens Drizzle Studio on the database                                                                                   |
+| `pnpm db:seed`      | Loads three synthetic statements for a development user; needs `IDENTIFIER_HASH_KEY`, and a second run inserts nothing |
 
 CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request, with the database from `docker compose up --wait`.
 

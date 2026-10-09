@@ -9,9 +9,13 @@
     "lint": "eslint",
     "check-types": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:seed": "tsx scripts/seed.mts"
   },
   "dependencies": {
+    "@xtrakto/core": "workspace:*",
+    "@xtrakto/db": "workspace:*",
+    "@xtrakto/parsers": "workspace:*",
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -26,6 +30,7 @@
     "@xtrakto/typescript-config": "workspace:*",
     "eslint": "^9",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vite": "8.3.3",
     "vitest": "5.0.3"

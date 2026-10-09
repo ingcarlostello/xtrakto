@@ -21,3 +21,20 @@ export type ParseWarningCode =
 export type ParseWarning = z.infer<typeof parseWarningSchema>;
 export type ParsedTransaction = z.infer<typeof parsedTransactionSchema>;
 export type ParsedStatement = z.infer<typeof parsedStatementSchema>;
+
+/** A movement ready to save: no raw reference, which can be a phone number. */
+export type PreparedTransaction = Omit<
+  ParsedTransaction,
+  "referenceRaw" | "sourceRow"
+> & {
+  readonly referenceHash: string | undefined;
+  readonly fingerprint: string;
+  readonly occurrenceIndex: number;
+  /** Order within the statement, oldest first. */
+  readonly position: number;
+};
+
+export type PreparedStatement = Omit<ParsedStatement, "transactions"> & {
+  readonly transactions: readonly PreparedTransaction[];
+  readonly contentHash: string;
+};
