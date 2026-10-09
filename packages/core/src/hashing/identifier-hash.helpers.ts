@@ -1,33 +1,6 @@
 import { MIN_IDENTIFIER_HASH_KEY_LENGTH } from "./identifier-hash.constants";
+import { hmacSha256Hex } from "./web-crypto.utils";
 
-// Web Crypto and TextEncoder exist in browsers, workers and Node 22, but their
-// types come from the DOM or Node libraries, which core leaves out so platform
-// globals can't slip in. Only the subset used here is declared.
-type HmacAlgorithm = { readonly name: "HMAC"; readonly hash: "SHA-256" };
-type WebPlatform = {
-  readonly crypto: {
-    readonly subtle: {
-      importKey(
-        format: "raw",
-        keyData: Uint8Array,
-        algorithm: HmacAlgorithm,
-        extractable: false,
-        keyUsages: readonly ["sign"],
-      ): Promise<unknown>;
-      sign(
-        algorithm: "HMAC",
-        key: unknown,
-        data: Uint8Array,
-      ): Promise<ArrayBuffer>;
-    };
-  };
-  readonly TextEncoder: new () => { encode(input: string): Uint8Array };
-};
-
-// Safe: every runtime that runs core provides these globals (see above).
-const platform = globalThis as unknown as WebPlatform;
-
-const HMAC_SHA_256: HmacAlgorithm = { name: "HMAC", hash: "SHA-256" };
 const PHONE_SEPARATORS_PATTERN = /[\s().+-]/g;
 // Colombian mobile: 10 digits starting with 3, optionally after country code 57.
 const COLOMBIAN_MOBILE_PATTERN = /^(?:57)?(3\d{9})$/;
@@ -41,11 +14,6 @@ const normalizeIdentifier = (value: string): string => {
   if (mobile !== undefined) return mobile;
   return text.toUpperCase().replace(/\s+/g, " ");
 };
-
-const toHex = (buffer: ArrayBuffer): string =>
-  Array.from(new Uint8Array(buffer), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
 
 /**
  * HMAC-SHA-256 of a third-party identifier, such as the phone number in a
@@ -65,16 +33,5 @@ export const hashIdentifier = async (
   }
   const normalized = normalizeIdentifier(value);
   if (normalized === "") throw new RangeError("Can't hash an empty identifier");
-  const encoder = new platform.TextEncoder();
-  const { subtle } = platform.crypto;
-  const cryptoKey = await subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    HMAC_SHA_256,
-    false,
-    ["sign"],
-  );
-  return toHex(
-    await subtle.sign("HMAC", cryptoKey, encoder.encode(normalized)),
-  );
+  return hmacSha256Hex(key, normalized);
 };

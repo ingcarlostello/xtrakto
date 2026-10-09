@@ -123,7 +123,7 @@ sequenceDiagram
 ```
 
 - **Events carry IDs only**, because Inngest stores and displays event payloads. The content waits in the job row and is deleted as the last step, or by a daily cron if the job never finishes.
-- **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account. Re-running a job or re-uploading a file inserts nothing new.
+- **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account, and each statement a hash of its content. Re-running a job or re-uploading a file inserts nothing new; an overlapping upload inserts only the movements the account doesn't have.
 - **Account resolution:** the quarterly statement identifies the account by its last 4 digits; the movements export has no account number, so the user picks the account at upload.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
 - **Payload size:** only rows or text items travel, to stay under the 4.5 MB request limit.

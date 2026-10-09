@@ -142,7 +142,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 3.2 Package scaffold and migration tooling
 - [x] 3.3 Schema v1
 - [x] 3.4 Row-Level Security and user context
-- [ ] 3.5 Persistence functions and dev seed
+- [x] 3.5 Persistence functions and dev seed
 
 **Stage 4 — Web app foundations (`apps/web`)**
 

@@ -14,6 +14,8 @@ pnpm --filter @xtrakto/parsers generate:fixtures
 
 The script computes balances and totals, so every statement reconciles except `quarterly-broken-balance`, and a fixed seed makes `quarterly-large` the same on every run. Prettier skips these files so each spreadsheet row stays on one line.
 
+`pnpm db:seed` also reads `quarterly-basic`, `quarterly-year-rollover` and `movements-basic` from this folder, as development data.
+
 ## Fixtures
 
 | Fixture                     | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
