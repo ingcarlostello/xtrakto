@@ -3,6 +3,11 @@ import type { Pool } from "pg";
 
 export type Database = NodePgDatabase;
 
+/** The transaction Drizzle passes to the callback of `db.transaction`. */
+export type DbTransaction = Parameters<
+  Parameters<Database["transaction"]>[0]
+>[0];
+
 export type DbClient = {
   readonly db: Database;
   /** The caller's to end (`pool.end()`) when done, as scripts and tests must. */

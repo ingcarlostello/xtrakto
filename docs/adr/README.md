@@ -31,3 +31,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0011](0011-sheetjs-for-spreadsheet-extraction.md)              | SheetJS for spreadsheet extraction                              | Accepted |
 | [0012](0012-long-numbers-masked-when-parsed.md)                 | Long numbers in descriptions are masked when parsed             | Accepted |
 | [0013](0013-neon-for-postgresql.md)                             | Neon for PostgreSQL                                             | Accepted |
+| [0014](0014-forced-rls-with-transaction-local-user.md)          | Forced Row-Level Security with a transaction-local user id      | Accepted |
