@@ -1,3 +1,7 @@
+/* Clerk's styles sit between Tailwind's base and its utilities, so classes
+   given to Clerk's components still win (lib/clerk.ts). */
+@layer theme, base, clerk, components, utilities;
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";

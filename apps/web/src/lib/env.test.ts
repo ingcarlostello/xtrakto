@@ -7,7 +7,14 @@ const HASH_KEY = "secret-hash-key-0123456789abcdef0123456789";
 const LOCAL_URL = "postgresql://xtrakto_app:secret-pw@127.0.0.1:5432/xtrakto";
 const HOSTED_URL =
   "postgresql://xtrakto_app:secret-pw@ep-example-pooler.us-east-1.aws.neon.tech/neondb";
-const VALID = { DATABASE_URL: LOCAL_URL, IDENTIFIER_HASH_KEY: HASH_KEY };
+const PUBLISHABLE_KEY = "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
+const SECRET_KEY = "sk_test_secretClerkKey0123456789abcdef";
+const VALID = {
+  DATABASE_URL: LOCAL_URL,
+  IDENTIFIER_HASH_KEY: HASH_KEY,
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: PUBLISHABLE_KEY,
+  CLERK_SECRET_KEY: SECRET_KEY,
+};
 
 const failureOf = (source: Record<string, string | undefined>): string => {
   try {
@@ -36,8 +43,27 @@ describe("parseServerEnv", () => {
   it("names every missing variable at once", () => {
     const message = failureOf({});
 
-    expect(message).toContain("DATABASE_URL");
-    expect(message).toContain("IDENTIFIER_HASH_KEY");
+    for (const name of Object.keys(VALID)) expect(message).toContain(name);
+  });
+
+  it("rejects the secret key in the public variable, which would reach the browser", () => {
+    const message = failureOf({
+      ...VALID,
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: SECRET_KEY,
+    });
+
+    expect(message).toContain("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
+    expect(message).not.toContain("secret");
+  });
+
+  it("rejects a Clerk secret key without its prefix without printing it", () => {
+    const message = failureOf({
+      ...VALID,
+      CLERK_SECRET_KEY: "secretClerkKey0123456789abcdef",
+    });
+
+    expect(message).toContain("CLERK_SECRET_KEY");
+    expect(message).not.toContain("secret");
   });
 
   it("rejects the empty hash key that .env.example ships with", () => {

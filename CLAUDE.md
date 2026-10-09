@@ -42,6 +42,8 @@ Before building any UI that shows the logo, metadata, icons or brand colors, rea
 
 shadcn/ui runs on Base UI (ADR 0015). Add a component from the root with `pnpm dlx shadcn@<version> add <name> -c apps/web`, choosing a CLI version older than pnpm's one-day minimum release age; then adapt it to the design system.
 
+Every protected page and layout calls `requireSignedIn()` (`apps/web/src/lib/auth.ts`); `proxy.ts` only redirects signed-out visitors early (Clerk Core 3). Clerk's texts are tuned in `apps/web/src/lib/clerk.ts`.
+
 ## Git
 
 - **Never** run a git command that changes the repository or the remote (`add`, `commit`, `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`/`switch`, `branch`, `tag`, `stash`, opening PRs, etc.) unless the user explicitly asks for it or authorizes it.
