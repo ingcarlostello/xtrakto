@@ -159,6 +159,9 @@ describe("parsedStatementSchema", () => {
       expect(isValidStatement(filled(MAX_SHEET_ROWS))).toBe(true);
       expect(isValidStatement(filled(MAX_SHEET_ROWS + 1))).toBe(false);
     },
+    // Validates 20,001 movements one by one: under a second on a laptop, but
+    // over Vitest's 5-second default on a CI runner busy with other packages.
+    30_000,
   );
 });
 

@@ -4,7 +4,7 @@ Xtrakto reads Colombian bank statements and explains where the money went. It se
 
 ## Status
 
-Early development: the domain core and the spreadsheet parsers (stages 1 and 2) are done, verified against real Bancolombia exports; the database (Stage 3) is in progress. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+Early development: the domain core, the spreadsheet parsers (verified against real Bancolombia exports) and the database (stages 1 to 3) are done; the web app's foundations (Stage 4) are in progress. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
 
 ## Stack
 
@@ -13,8 +13,9 @@ Early development: the domain core and the spreadsheet parsers (stages 1 and 2) 
 - pnpm 12 workspaces and Turborepo 2
 - ESLint 9, Prettier 3 and Vitest 5
 - SheetJS 0.20 to read XLSX and CSV files, installed from its official CDN ([ADR 0011](docs/adr/0011-sheetjs-for-spreadsheet-extraction.md))
-- PostgreSQL 18 with pgvector: Neon in the cloud, Docker Compose locally ([ADR 0013](docs/adr/0013-neon-for-postgresql.md))
-- Planned: Drizzle, Clerk, Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
+- PostgreSQL 18 with pgvector: Neon in the cloud, Docker Compose locally ([ADR 0013](docs/adr/0013-neon-for-postgresql.md)), through Drizzle ORM
+- Zod for every trust boundary, environment variables included
+- Planned: Clerk, Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
 
 ## Monorepo layout
 
@@ -46,7 +47,9 @@ pnpm db:seed                 # optional: synthetic statements for a dev user
 pnpm dev                     # http://localhost:3000
 ```
 
-`.env.example` documents every environment variable.
+`.env.example` documents every environment variable. Before `pnpm dev`, set `IDENTIFIER_HASH_KEY` in `.env.local` (`openssl rand -base64 32`): the web app validates its variables when it starts and stops, naming the variable, if one is missing or invalid.
+
+Every tool reads this one root `.env.local`: drizzle-kit, Vitest, the seed and the web app, which loads it from `apps/web/next.config.ts`. Don't create `.env*` files inside `apps/web`. Turborepo's strict mode passes `pnpm dev` and `pnpm build` only the variables declared in `turbo.json` (and `NEXT_PUBLIC_*` ones), so other variables exported in the shell don't reach the app that way; put them in `.env.local`.
 
 Real bank statements must never be committed. They may only live in git-ignored `fixtures/private/` folders, for private tests.
 
