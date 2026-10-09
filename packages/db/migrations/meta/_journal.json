@@ -15,6 +15,13 @@
       "when": 1791506160995,
       "tag": "0001_row-level-security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791561236143,
+      "tag": "0002_account-deletion",
+      "breakpoints": true
     }
   ]
 }

@@ -23,4 +23,8 @@ export {
   type TransactionPage,
   type TransactionRow,
 } from "./transactions/transaction.queries";
-export { findOrCreateUser } from "./users/user.queries";
+export {
+  deleteAllUserData,
+  findOrCreateUser,
+  findUserId,
+} from "./users/user.queries";

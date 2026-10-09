@@ -152,7 +152,7 @@ sequenceDiagram
 
 ## 5. Data model
 
-Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table except `users` has forced RLS on `user_id`.
+Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table has forced RLS: the four with a user's data on `user_id`, and `users` so that a user can delete only their own row, which takes all their data with it through the cascades ([ADR 0016](adr/0016-users-delete-only-their-own-row.md)).
 
 ```mermaid
 erDiagram
@@ -341,7 +341,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                   |
 | Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                           |
 | Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                    |
-| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted.                                                                                 |
+| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                        |
 
 ---
 

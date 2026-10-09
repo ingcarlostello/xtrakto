@@ -5,7 +5,14 @@ export const AUTH_ROUTES = {
   signUp: "/sign-up",
 } as const;
 
-const PUBLIC_PATH_PREFIXES = [AUTH_ROUTES.signIn, AUTH_ROUTES.signUp];
+// Called by Clerk, without a session: its signature is the check (4.5).
+export const CLERK_WEBHOOK_ROUTE = "/api/webhooks/clerk";
+
+const PUBLIC_PATH_PREFIXES = [
+  AUTH_ROUTES.signIn,
+  AUTH_ROUTES.signUp,
+  CLERK_WEBHOOK_ROUTE,
+];
 
 /**
  * Whether a signed-out visitor may open this path. Only the proxy's early

@@ -37,6 +37,7 @@
     "@xtrakto/eslint-config": "workspace:*",
     "@xtrakto/typescript-config": "workspace:*",
     "eslint": "^9",
+    "happy-dom": "20.14.5",
     "shadcn": "4.21.4",
     "tailwindcss": "^4",
     "tsx": "4.23.15",

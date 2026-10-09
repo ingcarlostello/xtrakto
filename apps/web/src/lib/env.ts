@@ -17,21 +17,42 @@ const isLocalOrVerified = (value: string): boolean => {
   );
 };
 
-const serverEnvSchema = z.object({
-  DATABASE_URL: z
-    .url({ protocol: /^postgres(ql)?$/ })
-    .refine(isLocalOrVerified, "a hosted database needs sslmode=verify-full"),
-  IDENTIFIER_HASH_KEY: z.string().min(MIN_IDENTIFIER_HASH_KEY_LENGTH),
-  // Clerk reads both itself; checking them here stops the server early. The
-  // prefixes also catch the secret key pasted in the public variable, which
-  // would ship it to every browser.
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
-    .string()
-    .regex(/^pk_(test|live)_/, "must start with pk_test_ or pk_live_"),
-  CLERK_SECRET_KEY: z
-    .string()
-    .regex(/^sk_(test|live)_/, "must start with sk_test_ or sk_live_"),
-});
+const serverEnvSchema = z
+  .object({
+    DATABASE_URL: z
+      .url({ protocol: /^postgres(ql)?$/ })
+      .refine(isLocalOrVerified, "a hosted database needs sslmode=verify-full"),
+    IDENTIFIER_HASH_KEY: z.string().min(MIN_IDENTIFIER_HASH_KEY_LENGTH),
+    // Clerk reads both itself; checking them here stops the server early. The
+    // prefixes also catch the secret key pasted in the public variable, which
+    // would ship it to every browser.
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+      .string()
+      .regex(/^pk_(test|live)_/, "must start with pk_test_ or pk_live_"),
+    CLERK_SECRET_KEY: z
+      .string()
+      .regex(/^sk_(test|live)_/, "must start with sk_test_ or sk_live_"),
+    // Signs Clerk's user.deleted webhook. Optional in development, where Clerk
+    // can't reach localhost; production needs it, or deletions made in Clerk
+    // would leave data behind. Empty counts as unset, as .env.example ships it.
+    CLERK_WEBHOOK_SIGNING_SECRET: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z
+        .string()
+        .regex(/^whsec_/, "must start with whsec_")
+        .optional(),
+    ),
+    // Set by Next.js: production for `next build`, `next start` and Vercel.
+    NODE_ENV: z.string().optional(),
+  })
+  .superRefine((env, context) => {
+    if (env.NODE_ENV === "production" && !env.CLERK_WEBHOOK_SIGNING_SECRET)
+      context.addIssue({
+        code: "custom",
+        path: ["CLERK_WEBHOOK_SIGNING_SECRET"],
+        message: "required in production",
+      });
+  });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 

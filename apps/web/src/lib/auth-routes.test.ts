@@ -8,6 +8,7 @@ describe("isPublicPath", () => {
     "/sign-in/sso-callback",
     "/sign-up",
     "/sign-up/verify-email-address",
+    "/api/webhooks/clerk",
   ])("lets a signed-out visitor open %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -20,6 +21,8 @@ describe("isPublicPath", () => {
     "/sign-inx",
     "/sign-up-later",
     "/api/anything",
+    "/api/webhooks",
+    "/api/webhooks/clerkx",
   ])("asks for a session on %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });
