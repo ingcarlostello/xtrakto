@@ -3,4 +3,8 @@ export type {
   CreateDbOptions,
   Database,
   DbClient,
+  DbTransaction,
 } from "./client/db-client.types";
+export { isUserId, toUserId } from "./user-context/user-context.helpers";
+export { withUserContext } from "./user-context/user-context.queries";
+export type { UserContext, UserId } from "./user-context/user-context.types";

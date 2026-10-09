@@ -2,8 +2,11 @@ import { createHash, randomInt, randomUUID } from "node:crypto";
 import type { AmountMinor, LocalDate } from "@xtrakto/core";
 import type { Database } from "../src/client/db-client.types";
 import { accounts } from "../src/accounts/account.schemas";
+import { ingestionJobs } from "../src/ingestion-jobs/ingestion-job.schemas";
 import { statements } from "../src/statements/statement.schemas";
 import { transactions } from "../src/transactions/transaction.schemas";
+import { toUserId } from "../src/user-context/user-context.helpers";
+import type { UserId } from "../src/user-context/user-context.types";
 import { users } from "../src/users/user.schemas";
 
 // Rows for integration tests. Each test creates its own users, so test files
@@ -82,6 +85,27 @@ export const transactionRow = (owner: Owner, statementId: string) => ({
 export type TransactionRow = ReturnType<typeof transactionRow>;
 export const insertTransaction = (db: Database, row: TransactionRow) =>
   db.insert(transactions).values(row);
+
+export type SeededUser = {
+  readonly userId: UserId;
+  readonly accountId: string;
+  readonly statementId: string;
+  readonly transactionId: string;
+};
+
+/** A user with one row in each table, written as the owner (no RLS). */
+export const seedUser = async (db: Database): Promise<SeededUser> => {
+  const userId = toUserId(await insertUser(db));
+  const accountId = await insertAccount(db, userId);
+  const statementId = await insertStatement(db, { userId, accountId });
+  const [movement] = await db
+    .insert(transactions)
+    .values(transactionRow({ userId, accountId }, statementId))
+    .returning({ id: transactions.id });
+  if (!movement) throw new Error("No transaction inserted.");
+  await db.insert(ingestionJobs).values({ userId, accountId });
+  return { userId, accountId, statementId, transactionId: movement.id };
+};
 
 /** The PostgreSQL error code of a failed query (Drizzle wraps the driver's error). */
 export const pgErrorCode = async (query: Promise<unknown>): Promise<string> => {
