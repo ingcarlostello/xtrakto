@@ -184,6 +184,8 @@ apps/web/src/
 | Constants                        | `UPPER_SNAKE_CASE`                          | `MAX_FILE_SIZE_BYTES`                      |
 | Internal packages                | `@xtrakto/<name>`                           | `@xtrakto/parsers`                         |
 
+**shadcn/ui components** in `apps/web/src/components/ui/` keep the file names the shadcn CLI gives them (`button.tsx`, `alert-dialog.tsx`): it can't write PascalCase, and renaming them would break `shadcn add` and `shadcn diff`. The components exported from them are still PascalCase (`Button`). Every other component file follows the table above.
+
 **Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`. In `packages/db` only, also `.queries.ts` for the functions that read or write the database (section 7); its Drizzle tables go in `.schemas.ts`.
 
 **Inside packages:** group source files by domain module, one folder per concept: `src/<module>/<name>.<role>.ts` (for example `packages/core/src/money/money.helpers.ts`). File names keep their role suffix, tests stay next to the file they test, and folders have no barrel: modules import each other with relative paths, and only `src/index.ts` is public.
