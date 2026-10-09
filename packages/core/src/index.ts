@@ -5,10 +5,12 @@ export type {
   AppErrorDetails,
 } from "./result/app-error.types";
 export { CATEGORIES, CATEGORY_KINDS } from "./categories/categories.constants";
+export { CATEGORY_SOURCE } from "./categories/category-source.constants";
 export type {
   Category,
   CategoryId,
   CategoryKind,
+  CategorySource,
 } from "./categories/category.types";
 export { DEFAULT_TIME_ZONE } from "./dates/date.constants";
 export {

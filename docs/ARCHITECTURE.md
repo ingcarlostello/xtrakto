@@ -178,6 +178,7 @@ erDiagram
     }
     STATEMENTS {
         uuid id PK
+        uuid user_id FK
         uuid account_id FK
         text format_id
         date period_from
@@ -185,6 +186,7 @@ erDiagram
         bigint opening_balance_minor
         bigint closing_balance_minor
         boolean balance_verified
+        text content_hash "unique per account"
     }
     TRANSACTIONS {
         uuid id PK
@@ -198,7 +200,9 @@ erDiagram
         text reference_hash
         text category_id
         text category_source
-        text fingerprint UK
+        text fingerprint "unique per account"
+        int occurrence_index
+        int position
     }
     INGESTION_JOBS {
         uuid id PK
@@ -214,6 +218,8 @@ erDiagram
         text category_id
     }
 ```
+
+Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't. `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content.
 
 Later stages add `llm_usage` (8), `format_mappings` without user data (11), `usury_rates` (12) and document chunks with embeddings in pgvector (15).
 
