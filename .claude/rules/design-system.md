@@ -550,7 +550,7 @@ const manrope = Manrope({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
-Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral` and `attention`).
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral` and `attention`). The development page `/design-system` shows every token and component.
 
 ---
 

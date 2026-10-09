@@ -44,6 +44,11 @@ export const parseServerEnv = (
   );
 };
 
+/** `next dev` sets NODE_ENV to development; Next.js inlines it at compile time. */
+// Set by Next.js per command, not by the deployment, so turbo.json doesn't list it.
+// eslint-disable-next-line turbo/no-undeclared-env-vars
+export const isDevelopment = process.env.NODE_ENV === "development";
+
 let serverEnv: ServerEnv | undefined;
 
 /**

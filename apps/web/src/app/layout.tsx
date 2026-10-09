@@ -32,11 +32,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // No fixed height on <html>: the page background is painted at its size,
+    // so a fixed height would repeat the gradient once per screen.
     <html
       lang="es"
-      className={`${outfit.variable} ${manrope.variable} h-full antialiased`}
+      className={`${outfit.variable} ${manrope.variable} antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-dvh flex-col">{children}</body>
     </html>
   );
 }
