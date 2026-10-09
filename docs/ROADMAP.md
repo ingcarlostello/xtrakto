@@ -147,7 +147,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 4 — Web app foundations (`apps/web`)**
 
 - [x] 4.1 Environment validation
-- [ ] 4.2 UI base: shadcn/ui and root layout
+- [x] 4.2 UI base: shadcn/ui and root layout
 - [ ] 4.3 [HUMAN] Design direction and tokens
 - [ ] 4.4 [HUMAN] Authentication with Clerk
 - [ ] 4.5 User lifecycle and data deletion
@@ -719,8 +719,8 @@ Phase 2.4 was split in three (estimated at about 990 changed lines), with the hu
 
 **Tasks**
 
-- Initialize shadcn/ui; root layout with `lang="es"`, metadata and the app name.
-- No visual decisions yet: neutral defaults until Phase 4.3.
+- Initialize shadcn/ui on Base UI (ADR 0015); root layout with `lang="es"`, metadata and the app name.
+- The brand decided in `docs/brand.md` arrives now: Outfit and Manrope, the `Logo` component, the web manifest. The component tokens keep shadcn's neutral defaults until Phase 4.3.
 
 **Commit:** `feat(web): shadcn/ui and root layout`
 

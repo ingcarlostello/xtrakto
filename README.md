@@ -9,6 +9,7 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 ## Stack
 
 - Next.js 16 (App Router), React 19 and Tailwind CSS 4
+- shadcn/ui on Base UI, with Lucide icons ([ADR 0015](docs/adr/0015-shadcn-ui-on-base-ui.md))
 - TypeScript 6 in strict mode, on Node.js 22
 - pnpm 12 workspaces and Turborepo 2
 - ESLint 9, Prettier 3 and Vitest 5
