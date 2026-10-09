@@ -8,6 +8,8 @@ paths:
 
 Visual and UI guide for Xtrakto, based on **version 7** of the design canvas (layout of v4 with the visual style of v6).
 
+Reference screenshots of v7 live in [`docs/ui/`](../../docs/ui/README.md): they show layout and feel; this document wins on exact values.
+
 The look is calm, light and clear: a cool grey-blue ground, translucent white cards with soft shadows, very rounded shapes, thin line icons, and **color that always means something**.
 
 ---
@@ -101,12 +103,15 @@ Extras:
 - Blue is both the interactive color and the "moved" kind. Inside data, blue is always accompanied by the legend or a label, so it is never ambiguous.
 - Signs: income `+$35.421.381`, outflows `−$1.472.800` (use the real minus sign `−`, U+2212).
 
-### 3.5 Status
+### 3.5 Status and danger
 
 | Token                | Value     | Use                                                                |
 | -------------------- | --------- | ------------------------------------------------------------------ |
 | `--status-ok`        | `#34B873` | "Saldo verificado" dot, with a 4px halo `rgba(52, 184, 115, 0.18)` |
 | `--status-attention` | `#EA6B2D` | Alert dot on tiles and icons                                       |
+| `--danger`           | `#B91C1C` | Destructive actions ("Eliminar mi cuenta y mis datos") and errors  |
+
+Danger is not a kind: never use it for spending, and never use the spending orange for errors.
 
 ### 3.6 Verified contrast (WCAG AA)
 
@@ -124,6 +129,8 @@ Extras:
 | Income `#15803D` on its soft background                | 4.5:1  | ⚠️ use `#166534` (6.3:1)                           |
 | Spending text `#C2410C` on white                       | 5.2:1  | ✅                                                 |
 | Spending `#9A3412` on its soft background              | 6.5:1  | ✅                                                 |
+| `--danger` on white / white on `--danger`              | 6.5:1  | ✅                                                 |
+| `--danger` on `#EEF2F7`                                | 5.8:1  | ✅                                                 |
 
 **Graphic colors** (`#34B873`, `#EA6B2D`, `#4C8DF6`) are not for text. The green one (2.6:1 on white) is below 3:1, so a green ring or line must always have its value printed next to it or inside it.
 
@@ -422,11 +429,9 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 /* apps/web/src/app/globals.css */
 @import "tailwindcss";
 
-@theme {
-  /* Fonts (variables set by next/font) */
-  --font-display: var(--font-outfit), system-ui, sans-serif;
-  --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
-
+/* `static` emits every token as a CSS variable, used or not, so inline
+   styles, charts and third-party components can read them. */
+@theme static {
   /* Surfaces */
   --color-bg: #eef2f7;
   --color-surface: #ffffff;
@@ -463,6 +468,33 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
   --color-moved-soft: #e3edfe;
   --color-moved-on-soft: #1d4ed8;
 
+  /* Destructive actions and errors only */
+  --color-danger: #b91c1c;
+
+  /* Type scale (§4): text-title, text-amount-xl/l/m, text-section, text-body,
+     text-caption and text-meta. Each sets its size and line height. */
+  --text-title: 34px;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.01em;
+  --text-amount-xl: 34px;
+  --text-amount-xl--line-height: 1.1;
+  --text-amount-xl--letter-spacing: -0.01em;
+  --text-amount-l: 24px;
+  --text-amount-l--line-height: 1.2;
+  --text-amount-m: 22px;
+  --text-amount-m--line-height: 1.2;
+  --text-section: 18px;
+  --text-section--line-height: 1.3;
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.5;
+  --text-meta: 12px;
+  --text-meta--line-height: 1.45;
+
+  /* Layout: max-w-page */
+  --container-page: 1360px;
+
   /* Radius */
   --radius-sm: 16px;
   --radius-bubble: 18px;
@@ -478,6 +510,17 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
   --shadow-chip: 0 6px 16px rgb(80 98 125 / 0.12);
   --shadow-primary: 0 10px 24px rgb(37 99 235 / 0.28);
   --shadow-assistant: 0 6px 18px rgb(37 99 235 / 0.18);
+}
+
+/* Fonts (variables set by next/font) and shadcn's semantic colors, which
+   point at the tokens above: bg-card is the surface, text-muted-foreground
+   is ink-muted, ring and primary are the primary blue, destructive is danger. */
+@theme inline {
+  --font-display: var(--font-outfit), system-ui, sans-serif;
+  --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
+  --color-card: var(--color-surface);
+  --color-muted-foreground: var(--color-ink-muted);
+  /* … the rest of shadcn's names, in globals.css */
 }
 
 body {
@@ -507,11 +550,13 @@ const manrope = Manrope({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral` and `attention`).
+
 ---
 
 ## 14. Pending
 
 - **Dark mode:** not designed yet. When it is, every token above gets a dark value; components keep using tokens only.
-- **Phone layout:** the one-column version and the bottom tab bar need their own artboards.
+- **Phone layout:** follows §7; `docs/ui/07` and `08` show the summary screen at 390px with the bottom tab bar.
 - **States:** empty (no statements yet), loading (ingestion in progress) and error screens.
 - **Remaining screens** in this style: upload, transactions, recurring payments, categories and settings.

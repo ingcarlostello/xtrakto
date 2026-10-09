@@ -6,74 +6,145 @@
    `dark:` classes in shadcn components would follow the system setting. */
 @custom-variant dark (&:is(.dark *));
 
-/* Brand colors from docs/brand.md. Phase 4.3 adds the rest of the tokens. */
-@theme {
+/* The v7 tokens: .claude/rules/design-system.md §13. `static` emits every one
+   as a CSS variable, used or not, so inline styles, charts and third-party
+   components (Clerk) can read them. */
+@theme static {
+  /* Surfaces */
+  --color-bg: #eef2f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f4f8;
+  --color-divider: #edf0f4;
+  --color-chart-grid: #e6eaf0;
+  --color-chart-axis: #d6dce4;
+  --color-ring-track: #e3e8ef;
+
+  /* Text */
   --color-ink: #1c2430;
+  --color-ink-secondary: #3a4452;
+  --color-ink-muted: #5f6b7a;
+  --color-ink-faint: #7a8597;
+
+  /* Primary */
+  --color-primary: #2563eb;
+  --color-primary-strong: #1d4ed8;
+  --color-primary-soft: #e3edfe;
+  --color-primary-soft-2: #e8f0fe;
+
+  /* Kinds: only for income, real spending and money that moved */
+  --color-income: #34b873;
+  --color-income-text: #15803d;
+  --color-income-soft: #e3f6ec;
+  --color-income-on-soft: #166534;
+  --color-spending: #ea6b2d;
+  --color-spending-text: #c2410c;
+  --color-spending-soft: #fdeee4;
+  --color-spending-on-soft: #9a3412;
+  --color-spending-surface: #fff6ef;
+  --color-moved: #4c8df6;
+  --color-moved-text: #2563eb;
+  --color-moved-soft: #e3edfe;
+  --color-moved-on-soft: #1d4ed8;
+
+  /* Destructive actions and errors only */
+  --color-danger: #b91c1c;
+
+  /* Type scale (§4); every other size uses Tailwind's defaults */
+  --text-title: 34px;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.01em;
+  --text-amount-xl: 34px;
+  --text-amount-xl--line-height: 1.1;
+  --text-amount-xl--letter-spacing: -0.01em;
+  --text-amount-l: 24px;
+  --text-amount-l--line-height: 1.2;
+  --text-amount-m: 22px;
+  --text-amount-m--line-height: 1.2;
+  --text-section: 18px;
+  --text-section--line-height: 1.3;
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.5;
+  --text-meta: 12px;
+  --text-meta--line-height: 1.45;
+
+  /* Layout */
+  --container-page: 1360px;
+
+  /* Radius */
+  --radius-sm: 16px;
+  --radius-bubble: 18px;
+  --radius-md: 22px;
+  --radius-lg: 26px;
+  --radius-xl: 30px;
+
+  /* Shadows, tinted with the cool slate rgb(80 98 125), never black */
+  --shadow-card: 0 8px 22px rgb(80 98 125 / 0.08);
+  --shadow-panel: 0 18px 44px rgb(80 98 125 / 0.12);
+  --shadow-float: 0 16px 40px rgb(80 98 125 / 0.18);
+  --shadow-pop: 0 10px 26px rgb(80 98 125 / 0.18);
+  --shadow-chip: 0 6px 16px rgb(80 98 125 / 0.12);
+  --shadow-primary: 0 10px 24px rgb(37 99 235 / 0.28);
+  --shadow-assistant: 0 6px 18px rgb(37 99 235 / 0.18);
 }
 
-/* next/font sets --font-outfit and --font-manrope on <html> (layout.tsx). */
+/* next/font sets --font-outfit and --font-manrope on <html> (layout.tsx).
+   shadcn's semantic colors point at the tokens above, so the CLI's components
+   follow the design without rewriting each class. */
 @theme inline {
   --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
   --font-heading: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
   --font-display: var(--font-outfit), system-ui, sans-serif;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-/* shadcn's neutral defaults until Phase 4.3 maps them to the v7 tokens. */
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary-foreground: var(--color-surface);
+  --color-secondary: var(--color-surface);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-muted);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent: var(--color-primary-soft);
+  --color-accent-foreground: var(--color-primary-strong);
+  --color-destructive: var(--color-danger);
+  --color-border: var(--color-divider);
+  --color-input: var(--color-divider);
+  --color-ring: var(--color-primary);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border;
   }
   html {
     @apply font-sans;
+  }
+  body {
+    background-color: var(--color-bg);
+    background-image: linear-gradient(
+      180deg,
+      #eef2f7 0%,
+      #e9eef4 55%,
+      #e2e8f0 100%
+    );
+    color: var(--color-ink);
+  }
+  /* The focus ring of every interactive element (§12). */
+  :focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

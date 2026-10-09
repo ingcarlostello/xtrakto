@@ -36,7 +36,7 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 
 ## UI
 
-All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
+All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility); the approved v7 screenshots are in `docs/ui/` (layout and feel; the rules file wins on exact values). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
 
 Before building any UI that shows the logo, metadata, icons or brand colors, read docs/brand.md.
 

@@ -19,7 +19,7 @@ Initialize shadcn/ui (CLI 4.21.4) with Base UI (`@base-ui/react`) and the `nova`
 
 ## Consequences
 
-- Composition uses Base UI's `render` prop: a button that navigates is `<Button render={<Link href="/upload" />}>`.
+- Composition uses Base UI's `render` prop: a button that navigates is `<Button nativeButton={false} render={<Link href="/upload" />}>`.
 - shadcn's `shadcn/tailwind.css` (custom variants such as `data-open:`) and `tw-animate-css` are imported by `globals.css`, so both stay as development dependencies of the app.
 - `@custom-variant dark` stays even without dark mode: without it, `dark:` classes inside the components would follow the system setting.
 - Switching libraries later means regenerating and readapting every component in `components/ui/`.

@@ -87,14 +87,14 @@ These complement the project rules.
 
 The human decides before the phase starts. The agent may propose options with trade-offs.
 
-| Gate                | Phase | Options                                                                                                                                         |
-| ------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker.  |
-| PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                     |
-| Design direction    | 4.3   | One of the design canvas versions: v3 (lime with striped bars), v4 (soft and warm), v5 (black card with pastels). The human shares screenshots. |
-| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                  |
-| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                             |
-| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                    |
+| Gate                | Phase | Options                                                                                                                                        |
+| ------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker. |
+| PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                    |
+| Design direction    | 4.3   | Resolved: v7, the layout of v4 with the style of v6 (`.claude/rules/design-system.md`); screenshots in `docs/ui/`.                             |
+| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                 |
+| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                            |
+| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                   |
 
 ---
 
@@ -148,7 +148,8 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 4.1 Environment validation
 - [x] 4.2 UI base: shadcn/ui and root layout
-- [ ] 4.3 [HUMAN] Design direction and tokens
+- [x] 4.3a [HUMAN] Design direction, tokens and base components
+- [ ] 4.3b Design system development page
 - [ ] 4.4 [HUMAN] Authentication with Clerk
 - [ ] 4.5 User lifecycle and data deletion
 - [ ] 4.6 App shell and empty states
@@ -724,19 +725,30 @@ Phase 2.4 was split in three (estimated at about 990 changed lines), with the hu
 
 **Commit:** `feat(web): shadcn/ui and root layout`
 
-#### 4.3 [HUMAN] Design direction and tokens
+#### 4.3a [HUMAN] Design direction, tokens and base components
 
-**Human:** choose the design version (gate) and share screenshots.
+Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
+
+**Human:** choose the design version (gate) and share screenshots. Done: v7, with screenshots in `docs/ui/`.
 
 **Tasks**
 
-- Translate the design into Tailwind theme tokens (colors, radii, typography, spacing) and document them in `docs/design.md`.
-- Adapt the base components needed by the app (card, button, badge, KPI tile).
-- A development-only page shows the tokens and components.
+- Translate the design into Tailwind theme tokens (colors, radii, typography, spacing); `.claude/rules/design-system.md` stays their only documentation.
+- Adapt the base components needed by the app (card, button, badge). The KPI tile is built with the summary page (6.7), its first consumer.
 
-**Done when:** the development page matches the reference; text contrast meets WCAG AA.
+**Done when:** every text pair meets WCAG AA.
 
 **Commit:** `feat(web): design tokens and base components`
+
+#### 4.3b Design system development page
+
+**Tasks**
+
+- A development-only page shows the tokens and the base components.
+
+**Done when:** the development page matches the reference in `docs/ui/`, at desktop and phone widths.
+
+**Commit:** `feat(web): design system development page`
 
 #### 4.4 [HUMAN] Authentication with Clerk
 
@@ -950,6 +962,7 @@ Phase 2.4 was split in three (estimated at about 990 changed lines), with the hu
 **Tasks**
 
 - Following the chosen design: headline (real spending vs total outflows), KPIs, real vs moved bar, categories, month by month, recurring payments and insights.
+- The KPI tile (stat card with its progress ring, design system §9), moved here from 4.3.
 - Server Components; client components only for interactive charts.
 - In the transactions list, group the daily interest rows into one line per period.
 
