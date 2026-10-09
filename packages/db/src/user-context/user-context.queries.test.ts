@@ -199,7 +199,8 @@ describe.skipIf(!testDatabase)("withUserContext", () => {
     ).rejects.toThrow(/bypasses Row-Level Security/);
   });
 
-  it("lets the application read and add users, not change or remove them", async () => {
+  // Deleting a user is allowed from their own context (users/user.queries.test.ts).
+  it("lets the application read and add users, not change them or empty the table", async () => {
     const a = await seedUser(owner.db);
     await app.db.insert(users).values({ clerkUserId: `test_${sha256Hex()}` });
 
@@ -207,9 +208,8 @@ describe.skipIf(!testDatabase)("withUserContext", () => {
       .update(users)
       .set({ clerkUserId: "taken" })
       .where(eq(users.id, a.userId));
-    const remove = app.db.delete(users).where(eq(users.id, a.userId));
     const truncate = app.db.execute(sql`truncate ${users} cascade`);
-    for (const query of [update, remove, truncate])
+    for (const query of [update, truncate])
       expect(await pgErrorCode(query)).toBe(RLS_VIOLATION);
   });
 });

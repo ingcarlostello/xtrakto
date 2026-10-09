@@ -9,6 +9,7 @@ const HOSTED_URL =
   "postgresql://xtrakto_app:secret-pw@ep-example-pooler.us-east-1.aws.neon.tech/neondb";
 const PUBLISHABLE_KEY = "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
 const SECRET_KEY = "sk_test_secretClerkKey0123456789abcdef";
+const WEBHOOK_SECRET = "whsec_c2VjcmV0V2ViaG9va0tleTAxMjM0NTY3ODk=";
 const VALID = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
@@ -53,6 +54,42 @@ describe("parseServerEnv", () => {
     });
 
     expect(message).toContain("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
+    expect(message).not.toContain("secret");
+  });
+
+  it.each([undefined, ""])(
+    "accepts a missing webhook secret (%j) in development",
+    (secret) => {
+      const env = parseServerEnv({
+        ...VALID,
+        NODE_ENV: "development",
+        CLERK_WEBHOOK_SIGNING_SECRET: secret,
+      });
+
+      expect(env.CLERK_WEBHOOK_SIGNING_SECRET).toBeUndefined();
+    },
+  );
+
+  it("requires the webhook secret in production, or deletions in Clerk would leave data behind", () => {
+    expect(failureOf({ ...VALID, NODE_ENV: "production" })).toContain(
+      "CLERK_WEBHOOK_SIGNING_SECRET",
+    );
+    expect(
+      parseServerEnv({
+        ...VALID,
+        NODE_ENV: "production",
+        CLERK_WEBHOOK_SIGNING_SECRET: WEBHOOK_SECRET,
+      }).CLERK_WEBHOOK_SIGNING_SECRET,
+    ).toBe(WEBHOOK_SECRET);
+  });
+
+  it("rejects a webhook secret without its prefix without printing it", () => {
+    const message = failureOf({
+      ...VALID,
+      CLERK_WEBHOOK_SIGNING_SECRET: "secretWebhookKey0123456789",
+    });
+
+    expect(message).toContain("CLERK_WEBHOOK_SIGNING_SECRET");
     expect(message).not.toContain("secret");
   });
 

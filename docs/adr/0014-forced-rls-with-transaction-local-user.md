@@ -1,6 +1,6 @@
 # 0014. Forced Row-Level Security with a transaction-local user id
 
-- **Status:** Accepted
+- **Status:** Accepted; its grants on `users` are superseded by [0016](0016-users-delete-only-their-own-row.md)
 - **Date:** 2026-10-08
 
 ## Context

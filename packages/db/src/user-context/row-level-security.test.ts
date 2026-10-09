@@ -20,7 +20,7 @@ const TABLE_PRIVILEGES = [
 ] as const;
 const READ_WRITE = ["SELECT", "INSERT", "UPDATE", "DELETE"];
 const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
-  users: ["SELECT", "INSERT"],
+  users: ["SELECT", "INSERT", "DELETE"],
   accounts: READ_WRITE,
   statements: READ_WRITE,
   transactions: READ_WRITE,
@@ -43,7 +43,7 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
     return rows;
   };
 
-  it("forces one per-user policy on every table except users", async () => {
+  it("forces Row-Level Security on every table, with one per-user policy on each data table", async () => {
     const tables = await rowsOf<{
       name: string;
       enabled: boolean;
@@ -55,8 +55,9 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
         (select format_type(a.atttypid, a.atttypmod) || case when a.attnotnull then ' not null' else '' end
            from pg_attribute a where a.attrelid = c.oid and a.attname = 'user_id') as user_id_type,
         (select string_agg(p.permissive || ' ' || p.cmd || ' ' || array_to_string(p.roles, ',')
-                  || ' same_check=' || (p.qual = p.with_check)::text
-                  || ' uses_setting=' || (p.qual like '%app.user_id%')::text, '; ')
+                  || ' same_check=' || (p.qual is not distinct from p.with_check)::text
+                  || ' uses_setting=' || (coalesce(p.qual, '') like '%app.user_id%')::text,
+                  '; ' order by p.cmd)
            from pg_policies p where p.schemaname = 'public' and p.tablename = c.relname) as policies
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relkind = 'r' order by c.relname`);
@@ -66,11 +67,16 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
       .map((name) =>
         name === "users"
           ? {
+              // Anyone may be read or added; only a user's own row deleted.
               name,
-              enabled: false,
-              forced: false,
+              enabled: true,
+              forced: true,
               user_id_type: null,
-              policies: null,
+              policies: [
+                `PERMISSIVE DELETE ${APP_ROLE} same_check=false uses_setting=true`,
+                `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+                `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
+              ].join("; "),
             }
           : {
               name,

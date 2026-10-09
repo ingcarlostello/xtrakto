@@ -74,7 +74,7 @@ These complement the project rules.
 2. **Extraction and parsers are isomorphic** and live in `@xtrakto/parsers`. The browser extracts the content and runs format detection to show a preview; the server re-runs detection and parsing, and its result is the authoritative one.
 3. **Ingestion is asynchronous with Inngest.** The server action stores the extracted content in an `ingestion_jobs` row and sends an event that carries **IDs only** (Inngest stores and displays event payloads). The extracted content is deleted when the job finishes; a daily job deletes anything left after 24 hours.
 4. **Deterministic first:** rules → own ML model (Stage 14) → LLM. The LLM never computes amounts.
-5. **Data isolation:** all financial tables use forced Row-Level Security through a transaction-local `app.user_id` setting, in addition to filtering by `userId` in every query. The `users` table (identity mapping only, no financial data) is the only exception.
+5. **Data isolation:** all financial tables use forced Row-Level Security through a transaction-local `app.user_id` setting, in addition to filtering by `userId` in every query. The `users` table (identity mapping only, no financial data) can be read and added to freely; its Row-Level Security only limits deletion to the user's own row (ADR 0016).
 6. **Third-party identifiers** (such as phone numbers in the `Referencia` column) are stored only as HMAC-SHA-256 with a secret key. A plain hash of a phone number can be reversed by brute force.
 7. **The account holder's name** is stored normalized on the account to detect transfers between the user's own accounts. It is never logged or sent to an LLM.
 8. **Services:** Vercel (app and Inngest functions), Inngest Cloud, Clerk, Neon for PostgreSQL (chosen at gate 3.1, ADR 0013); later Langfuse, Sentry, PostHog and Resend. Domain: `xtrakto.site`, DNS managed at Hostinger.
@@ -151,7 +151,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 4.3a [HUMAN] Design direction, tokens and base components
 - [x] 4.3b Design system development page
 - [x] 4.4 [HUMAN] Authentication with Clerk
-- [ ] 4.5 User lifecycle and data deletion
+- [x] 4.5 User lifecycle and data deletion
 - [ ] 4.6 App shell and empty states
 
 **Stage 5 — First end-to-end slice: spreadsheet ingestion**
@@ -767,8 +767,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- `getCurrentUserId()` (server only): resolves the Clerk user to the internal id, creating the `users` row on first use.
-- `deleteAllUserData(userId)` in `@xtrakto/db`.
+- `deleteAllUserData` in `@xtrakto/db`, with Row-Level Security on `users` so that a user can delete only their own row (ADR 0016). `getCurrentUserId()` moves to 5.4, its first consumer.
 - Clerk webhook route for `user.deleted`, verifying the signature, that deletes all the user's data. The endpoint is registered in Clerk in Phase 7.2.
 - "Delete my account and data" action in settings.
 
@@ -831,6 +830,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
+- `getCurrentUserId()` (server only, moved here from 4.5): resolves the Clerk user to the internal id, creating the `users` row on first use.
 - `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
 - Raise the server action body size limit as needed, keeping it under the hosting limit (Vercel Functions accept request bodies up to 4.5 MB).
 
@@ -996,6 +996,12 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Done when:** a test account can upload a synthetic XLSX in production and see its summary.
 
 **Commit:** `ci: production migrations`
+
+#### 7.2b End-to-end tests with Playwright (pending)
+
+Pending from Phase 4.5: a browser test of the account deletion flow, with a dedicated Clerk test account and the CI browser installed. The happy-dom regression test of the hook runs in every CI job meanwhile.
+
+**Commit:** `test(web): end-to-end tests with Playwright`
 
 #### 7.3 Error monitoring with Sentry
 
