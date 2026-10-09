@@ -146,7 +146,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 4 — Web app foundations (`apps/web`)**
 
-- [ ] 4.1 Environment validation
+- [x] 4.1 Environment validation
 - [ ] 4.2 UI base: shadcn/ui and root layout
 - [ ] 4.3 [HUMAN] Design direction and tokens
 - [ ] 4.4 [HUMAN] Authentication with Clerk
@@ -709,7 +709,8 @@ Phase 2.4 was split in three (estimated at about 990 changed lines), with the hu
 
 **Tasks**
 
-- `lib/env.ts` with Zod schemas for server and client variables; the app fails to start if one is missing or invalid.
+- `lib/env.ts` with a Zod schema for the server variables; the app fails to start if one is missing or invalid. Public variables that a library reads itself (Clerk's publishable key, Phase 4.4) are validated there too; a client schema comes when the app's own browser code reads one.
+- The app reads the root `.env.local`, shared with drizzle-kit, Vitest and the seed.
 - `.env.example` updated.
 
 **Commit:** `feat(web): validated environment variables`
