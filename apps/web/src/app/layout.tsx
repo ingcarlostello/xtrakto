@@ -1,31 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Manrope, Outfit } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Display, amounts and the wordmark (design-system.md §4).
+const outfit = Outfit({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-outfit",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Interface and body text.
+const manrope = Manrope({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-manrope",
 });
 
-// From docs/brand.md §8; Phase 4.2 adds the rest of that metadata.
+// From docs/brand.md §8. The icons and the social image are files in this
+// folder, which Next.js picks up on its own.
 export const metadata: Metadata = {
-  title: "Xtrakto",
+  metadataBase: new URL("https://xtrakto.site"),
+  title: { default: "Xtrakto", template: "%s · Xtrakto" },
   description:
     "Entiende tu extracto bancario: en qué gastaste, qué solo moviste y cuánto entró.",
+  applicationName: "Xtrakto",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#EEF2F7",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
