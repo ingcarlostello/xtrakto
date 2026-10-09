@@ -1,14 +1,18 @@
+import { fileURLToPath } from "node:url";
+import { sql } from "drizzle-orm";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
+import { createDb } from "../src/client/db-client.queries";
 import { testDatabase } from "./test-database";
 
 const CONNECTION_TIMEOUT_MS = 3_000;
+const MIGRATIONS_FOLDER = fileURLToPath(
+  new URL("../migrations", import.meta.url),
+);
 
-// Runs once before the test files: when the test database is configured but
-// unreachable, fail at once and say what to do, instead of in every test.
-export const setup = async (): Promise<void> => {
-  if (!testDatabase) return;
+const assertReachable = async (ownerUrl: string): Promise<void> => {
   const owner = new Client({
-    connectionString: testDatabase.ownerUrl,
+    connectionString: ownerUrl,
     connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
   });
   try {
@@ -20,4 +24,31 @@ export const setup = async (): Promise<void> => {
     );
   }
   await owner.end();
+};
+
+// Runs once before the test files: rebuilds the test database from the
+// migrations, so every run proves they apply to an empty database.
+export const setup = async (): Promise<void> => {
+  if (!testDatabase) return;
+  await assertReachable(testDatabase.ownerUrl);
+  const { db, pool } = createDb({
+    connectionString: testDatabase.ownerUrl,
+    maxConnections: 1,
+  });
+  try {
+    const { rows } = await db.execute<{ name: string }>(
+      sql`select current_database() as name`,
+    );
+    if (!rows[0]?.name.endsWith("_test"))
+      throw new Error("Refusing to reset a database not named *_test.");
+    await db.execute(
+      sql.raw(`drop schema if exists drizzle cascade;
+        drop schema public cascade;
+        create schema public authorization pg_database_owner;
+        grant usage on schema public to public;`),
+    );
+    await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  } finally {
+    await pool.end();
+  }
 };

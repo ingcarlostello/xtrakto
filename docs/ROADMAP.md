@@ -140,7 +140,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 3.1 [HUMAN] Database provider and local PostgreSQL
 - [x] 3.2 Package scaffold and migration tooling
-- [ ] 3.3 Schema v1
+- [x] 3.3 Schema v1
 - [ ] 3.4 Row-Level Security and user context
 - [ ] 3.5 Persistence functions and dev seed
 
