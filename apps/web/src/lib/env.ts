@@ -22,6 +22,15 @@ const serverEnvSchema = z.object({
     .url({ protocol: /^postgres(ql)?$/ })
     .refine(isLocalOrVerified, "a hosted database needs sslmode=verify-full"),
   IDENTIFIER_HASH_KEY: z.string().min(MIN_IDENTIFIER_HASH_KEY_LENGTH),
+  // Clerk reads both itself; checking them here stops the server early. The
+  // prefixes also catch the secret key pasted in the public variable, which
+  // would ship it to every browser.
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+    .string()
+    .regex(/^pk_(test|live)_/, "must start with pk_test_ or pk_live_"),
+  CLERK_SECRET_KEY: z
+    .string()
+    .regex(/^sk_(test|live)_/, "must start with sk_test_ or sk_live_"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

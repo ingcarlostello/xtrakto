@@ -1,5 +1,8 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Manrope, Outfit } from "next/font/google";
+import { AUTH_ROUTES } from "@/lib/auth-routes";
+import { clerkAppearance, clerkLocalization } from "@/lib/clerk";
 import "./globals.css";
 
 // Display, amounts and the wordmark (design-system.md §4).
@@ -38,7 +41,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${outfit.variable} ${manrope.variable} antialiased`}
     >
-      <body className="flex min-h-dvh flex-col">{children}</body>
+      <body className="flex min-h-dvh flex-col">
+        {/* Inside <body>, as Clerk Core 3 requires. */}
+        <ClerkProvider
+          appearance={clerkAppearance}
+          localization={clerkLocalization}
+          signInUrl={AUTH_ROUTES.signIn}
+          signUpUrl={AUTH_ROUTES.signUp}
+          afterSignOutUrl={AUTH_ROUTES.signIn}
+        >
+          {children}
+        </ClerkProvider>
+      </body>
     </html>
   );
 }

@@ -16,7 +16,8 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 - SheetJS 0.20 to read XLSX and CSV files, installed from its official CDN ([ADR 0011](docs/adr/0011-sheetjs-for-spreadsheet-extraction.md))
 - PostgreSQL 18 with pgvector: Neon in the cloud, Docker Compose locally ([ADR 0013](docs/adr/0013-neon-for-postgresql.md)), through Drizzle ORM
 - Zod for every trust boundary, environment variables included
-- Planned: Clerk, Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
+- Clerk for sign-in, in Spanish ([ADR 0004](docs/adr/0004-clerk-for-authentication.md))
+- Planned: Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
 
 ## Monorepo layout
 
@@ -48,7 +49,7 @@ pnpm db:seed                 # optional: synthetic statements for a dev user
 pnpm dev                     # http://localhost:3000
 ```
 
-`.env.example` documents every environment variable. Before `pnpm dev`, set `IDENTIFIER_HASH_KEY` in `.env.local` (`openssl rand -base64 32`): the web app validates its variables when it starts and stops, naming the variable, if one is missing or invalid.
+`.env.example` documents every environment variable. Before `pnpm dev`, set `IDENTIFIER_HASH_KEY` in `.env.local` (`openssl rand -base64 32`) and the Clerk development keys (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`, from the Clerk dashboard): the web app validates its variables when it starts and stops, naming the variable, if one is missing or invalid.
 
 Every tool reads this one root `.env.local`: drizzle-kit, Vitest, the seed and the web app, which loads it from `apps/web/next.config.ts`. Don't create `.env*` files inside `apps/web`. Turborepo's strict mode passes `pnpm dev` and `pnpm build` only the variables declared in `turbo.json` (and `NEXT_PUBLIC_*` ones), so other variables exported in the shell don't reach the app that way; put them in `.env.local`.
 

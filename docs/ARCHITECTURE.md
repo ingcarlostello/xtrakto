@@ -75,7 +75,7 @@ flowchart LR
     Vercel -- "no PII" --> OBS
 ```
 
-The original file and the PDF password never leave the browser. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`.
+The original file and the PDF password never leave the browser. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path.
 
 | Package or app     | Responsibility                                                                          | Runs in                                      |
 | ------------------ | --------------------------------------------------------------------------------------- | -------------------------------------------- |

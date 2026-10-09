@@ -150,7 +150,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 4.2 UI base: shadcn/ui and root layout
 - [x] 4.3a [HUMAN] Design direction, tokens and base components
 - [x] 4.3b Design system development page
-- [ ] 4.4 [HUMAN] Authentication with Clerk
+- [x] 4.4 [HUMAN] Authentication with Clerk
 - [ ] 4.5 User lifecycle and data deletion
 - [ ] 4.6 App shell and empty states
 
@@ -757,7 +757,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - `@clerk/nextjs` with Spanish localization; sign-in and sign-up pages.
-- Protect every app route except the public ones. The interception file's name depends on the Next.js version (`middleware.ts` or `proxy.ts`); follow the docs for the installed version.
+- Protect every app route except the public ones. Clerk's middleware goes in `proxy.ts` (Next.js 16) and only redirects signed-out visitors early; every protected page and layout checks the session itself (`requireSignedIn()`), as Clerk Core 3 recommends.
 
 **Done when:** an anonymous visitor is redirected to sign-in; a signed-in user reaches the app.
 
