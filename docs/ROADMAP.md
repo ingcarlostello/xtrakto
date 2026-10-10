@@ -152,7 +152,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 4.3b Design system development page
 - [x] 4.4 [HUMAN] Authentication with Clerk
 - [x] 4.5 User lifecycle and data deletion
-- [ ] 4.6 App shell and empty states
+- [x] 4.6 App shell and empty states
 
 **Stage 5 — First end-to-end slice: spreadsheet ingestion**
 
@@ -779,9 +779,9 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- Layout following the chosen design: navigation with Resumen, Movimientos, Pagos fijos and Subir extracto.
+- Layout following the chosen design: navigation with Resumen, Movimientos, Pagos fijos and Subir extracto (labeled "Subir" in the dock, as in the design); the settings in the avatar's menu.
 - Empty states that invite the user to upload a statement.
-- Server Components only.
+- Server Components, except the two parts that need the browser: the active navigation item (`usePathname`) and Clerk's avatar menu.
 
 **Done when:** every route renders its empty state; navigation works with the keyboard.
 
@@ -986,7 +986,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 #### 7.2 [HUMAN] Production services
 
-**Human:** production database, Clerk production instance (it needs the domain), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered.
+**Human:** production database, Clerk production instance (it needs the domain) with "Allow users to delete their account" off (User & authentication → User model; `/settings` deletes the data first), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered.
 
 **Tasks**
 

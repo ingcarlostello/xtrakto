@@ -4,7 +4,7 @@ Xtrakto reads Colombian bank statements and explains where the money went. It se
 
 ## Status
 
-Early development: the domain core, the spreadsheet parsers (verified against real Bancolombia exports) and the database (stages 1 to 3) are done; the web app's foundations (Stage 4) are in progress. Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+Early development: the domain core, the spreadsheet parsers (verified against real Bancolombia exports), the database and the web app's foundations (stages 1 to 4) are done. Signing in, deleting an account with all its data and the app's empty screens work; uploading a statement comes next (Stage 5). Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
 
 ## Stack
 

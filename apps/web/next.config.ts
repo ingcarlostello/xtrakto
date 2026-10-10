@@ -10,6 +10,9 @@ import type { NextConfig } from "next";
 const rootEnvFile = join(__dirname, "../../.env.local");
 if (existsSync(rootEnvFile)) process.loadEnvFile(rootEnvFile);
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // A link to a route that doesn't exist fails `check-types`.
+  typedRoutes: true,
+};
 
 export default nextConfig;
