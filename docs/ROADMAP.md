@@ -26,7 +26,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Outlined stages:** stages 8 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
-**Real data:** never read, print, paste or commit real financial data. Real files may only live in git-ignored `fixtures/private/` folders and be used by private tests that print no content (Phase 2.8).
+**Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
 **Decisions:** when a phase makes a decision worth remembering, record it as an ADR in `docs/adr/`.
 
@@ -831,7 +831,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - `getCurrentUserId()` (server only, moved here from 4.5): resolves the Clerk user to the internal id, creating the `users` row on first use.
-- `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
+- `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10; only jobs that finished `done` with at least one new movement count, decided with the human), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
 - Raise the server action body size limit as needed, keeping it under the hosting limit (Vercel Functions accept request bodies up to 4.5 MB).
 
 **Done when:** tests cover validation, the limit and ownership; the event payload contains no content.
@@ -851,6 +851,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 7. Delete `extracted_content`; save counts in `stats`; update the status.
 
 - On final failure: status `failed` with an error code, and the content deleted as well.
+- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human). The fingerprint only matches within one format until 10.1.
 - A daily cron function deletes any `extracted_content` older than 24 hours.
 
 **Done when:** an integration test runs the pipeline with a fixture against the local database; re-running it inserts nothing new.
@@ -864,6 +865,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 - Poll the job status every few seconds through a server action.
 - Show the steps from the design: format recognized, personal data protected, movements read, balance verified.
 - A Spanish message for each error code; a link to the transactions once finished.
+- The finished message comes from the counts: with no new movements it says the period was already loaded.
 
 **Commit:** `feat(web): ingestion status screen`
 
@@ -873,6 +875,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 - Server Component listing transactions with filters by account and month in `searchParams`, and pagination.
 - Formatted amounts and dates.
+- No category column: categories arrive in Stage 6, and stages are built in order (decided with the human).
 
 **Done when:** the page shows the seeded data correctly; filters survive a reload and can be shared as links.
 
@@ -1137,7 +1140,7 @@ Observed on real files. Values below are illustrative; no real data.
   3. `Resumen:` → header `SALDO ANTERIOR | TOTAL ABONOS | TOTAL CARGOS | SALDO ACTUAL | SALDO PROMEDIO | CUPO SUGERIDO | INTERESES | RETEFUENTE` → text amounts with `,` as the thousands separator and `.` as the decimal separator (`1,234,567.89`, `.00`). `SALDO PROMEDIO` has no decimals (`9,876,543`), and `TOTAL CARGOS` is printed as a positive amount.
   4. `Movimientos:` → header `FECHA | DESCRIPCIÓN | SUCURSAL | DCTO. | VALOR | SALDO`, then one row per movement:
      - `FECHA`: `d/mm` without a year (`1/07`, `29/09`). The year comes from the period.
-     - `DESCRIPCIÓN`: mostly uppercase, but names and PSE entities can come in mixed case (`TRANSF A Ana Prueba`, `PAGO PSE Banco Ejemplo S`); truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`).
+     - `DESCRIPCIÓN`: mostly uppercase, but names and PSE entities can come in mixed case (`TRANSF A Ana Prueba`, `PAGO PSE Banco Ejemplo S`); truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`). The export can split a description into two cells where the text has `ñí`, as in `Compañía`: `PAGO PSE Ejemplo Compa` and then `¡a de Finan` in the next cell, which shifts the rest of the row one column to the right (seen in two of three real quarterly files; the parser doesn't handle it yet).
      - `SUCURSAL` and `DCTO.`: usually empty; `SUCURSAL` sometimes names the channel (`CANAL CORRESPONSA`).
      - `VALOR`: signed text amount (`-15,000.00`, `12.34`).
      - `SALDO`: balance after the movement, as text.
