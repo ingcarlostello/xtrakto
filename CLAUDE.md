@@ -33,6 +33,7 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 - Local PostgreSQL runs in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes its data. `packages/db` tests run when `TEST_DATABASE_URL` and `TEST_DATABASE_MIGRATION_URL` are set (root `.env.local`; always in CI) and then fail if the database is down.
 - Schema changes: edit `packages/db/src/**/*.schemas.ts`, then `pnpm db:generate --name=<change>`. Never edit a generated migration; hand-written SQL goes in one made with `drizzle-kit generate --custom`.
 - Environment: one root `.env.local` for every tool; `apps/web/next.config.ts` loads it, and `src/lib/env.ts` stops the server at startup if a variable is missing. No `.env*` inside `apps/web`. Turborepo's strict mode keeps shell-exported variables from `pnpm dev`: to try a value, run `pnpm --filter web exec next dev`.
+- Real keys live only in the git-ignored `.env.local`; never print them. Fake keys in tests are built at runtime (`fakeKey("whsec", …)` in `apps/web/src/lib/env.test.ts`): a whole secret-shaped literal (`whsec_…`, `sk_test_…`) trips GitHub's secret scanning.
 
 ## UI
 
