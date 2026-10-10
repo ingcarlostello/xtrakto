@@ -136,8 +136,9 @@ In running text, write the name as **Xtrakto** (capital X, rest lowercase).
 
 The header uses the **`Logo` component** (inline mark + live text). It doesn't use the SVG file, so the wordmark inherits `next/font`, stays crisp, and can switch color with the theme.
 
-- **Desktop:** mark at 32px.
-- **Mobile:** mark at 28px.
+- **Desktop:** mark at 40px (wordmark 18px).
+- **Mobile:** mark at 32px (wordmark 14.4px).
+- The tagline sits under the logo, in Manrope 14px `--text-muted`, as in the v7 screenshots (`docs/ui/`).
 - The whole logo links to `/` with `aria-label="Xtrakto, inicio"`.
 
 ### Reference component

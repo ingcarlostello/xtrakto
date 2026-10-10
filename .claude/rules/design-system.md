@@ -558,5 +558,5 @@ Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7
 
 - **Dark mode:** not designed yet. When it is, every token above gets a dark value; components keep using tokens only.
 - **Phone layout:** follows §7; `docs/ui/07` and `08` show the summary screen at 390px with the bottom tab bar.
-- **States:** empty (no statements yet), loading (ingestion in progress) and error screens.
+- **States:** loading (ingestion in progress) and error screens. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Subir extracto".
 - **Remaining screens** in this style: upload, transactions, recurring payments, categories and settings.

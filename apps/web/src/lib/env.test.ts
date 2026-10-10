@@ -2,14 +2,21 @@ import { describe, expect, it } from "vitest";
 import { parseServerEnv } from "./env";
 
 // Invented values. The passwords and keys are marked so that a test can prove
-// they never reach the error message, which ends up in logs.
+// they never reach the error message, which ends up in logs. The keys are put
+// together at runtime from readable text: a whole "whsec_…" literal looks real
+// to secret scanners, and GitHub flagged one as a Stripe webhook secret.
+const fakeKey = (prefix: string, body: string) => `${prefix}_${body}`;
+const base64 = (text: string) => Buffer.from(text).toString("base64");
 const HASH_KEY = "secret-hash-key-0123456789abcdef0123456789";
 const LOCAL_URL = "postgresql://xtrakto_app:secret-pw@127.0.0.1:5432/xtrakto";
 const HOSTED_URL =
   "postgresql://xtrakto_app:secret-pw@ep-example-pooler.us-east-1.aws.neon.tech/neondb";
-const PUBLISHABLE_KEY = "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk";
-const SECRET_KEY = "sk_test_secretClerkKey0123456789abcdef";
-const WEBHOOK_SECRET = "whsec_c2VjcmV0V2ViaG9va0tleTAxMjM0NTY3ODk=";
+const PUBLISHABLE_KEY = fakeKey(
+  "pk_test",
+  base64("example.clerk.accounts.dev$"),
+);
+const SECRET_KEY = fakeKey("sk_test", "secretClerkKey0123456789abcdef");
+const WEBHOOK_SECRET = fakeKey("whsec", base64("secretWebhookKey0123456789"));
 const VALID = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
