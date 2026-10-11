@@ -95,6 +95,23 @@ describe("readQuarterlyMovements", () => {
     });
   });
 
+  it("joins a description that older exports split at its ñ, restoring the text", () => {
+    const split = (BASIC[17] ?? []).toSpliced(
+      1,
+      1,
+      "PAGO PSE Ejemplo Compa",
+      "¡a de Finan",
+    );
+    const { transactions } = movementsOf(BASIC.with(17, split));
+
+    expect(transactions).toHaveLength(33);
+    expect(transactions.find(({ sourceRow }) => sourceRow === 17)).toEqual({
+      ...movementAt(17),
+      descriptionRaw: "PAGO PSE Ejemplo Compañía de Finan",
+      descriptionNormalized: "PAGO PSE Ejemplo Compañía de Finan",
+    });
+  });
+
   it("masks the account number in an investment's description", () => {
     expect(movementAt(40)).toMatchObject({
       descriptionRaw: "INTERES INV VIRT *******0001",
@@ -273,6 +290,19 @@ describe("readQuarterlyMovements", () => {
         reason: "missing_value",
         block: BLOCK,
         column: "FECHA",
+        row: 16,
+      },
+    },
+    {
+      label: "a description runs into the next cell without the export's mark",
+      rows: BASIC.with(
+        16,
+        (BASIC[16] ?? []).toSpliced(1, 1, "COMPRA EN TIENDA", "LA ESQUINA"),
+      ),
+      details: {
+        reason: "missing_value",
+        block: BLOCK,
+        column: "VALOR",
         row: 16,
       },
     },

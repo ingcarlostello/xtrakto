@@ -60,6 +60,21 @@ describe("bancolombiaQuarterlyParser.parse", () => {
     expect(result.ok && result.value.transactions).toHaveLength(33);
   });
 
+  it("reads a statement without the empty first row, as some exports come", () => {
+    const rows = BASIC_ROWS.slice(1);
+    const result = parse(spreadsheet(rows));
+
+    expect(canParse(spreadsheet(rows))).toBe(true);
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        period: { from: "2026-06-30", to: "2026-09-30" },
+        closingBalanceMinor: 781_851_882,
+      },
+    });
+    expect(result.ok && result.value.transactions).toHaveLength(33);
+  });
+
   it("never outputs the address, the city or a full account number", () => {
     const output = JSON.stringify(parse(fixtureContent(quarterlyBasic)));
 
