@@ -23,13 +23,14 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 @docs/ROADMAP.md
 
 - Before starting any work, check section 5 for the next unticked phase and say which phase it is.
+- Phases are built strictly in order: never skip one or pull work forward from a later stage (the human's decision).
 - If the roadmap and the Git section below disagree, the Git section wins: don't stage changes (roadmap step 6) unless the user authorizes it. Propose the commit message instead.
 - The phase log lives in `docs/phase-log.md`, not imported here. Read its latest entries when a phase depends on earlier follow-ups.
 
 ## Commands
 
 - Node 22 comes from nvm, which the agent's shell may not load. If `node` isn't found, prefix commands with `export PATH="$HOME/.nvm/versions/node/v22.20.0/bin:$PATH"`.
-- Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both). After changing a parser, also run `pnpm --filter @xtrakto/parsers test:private` if real exports are in `packages/parsers/fixtures/private/`; never open or print those files (the private tests report counts only).
+- Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both). After changing a parser, also run `pnpm --filter @xtrakto/parsers test:private` if real exports are in `packages/parsers/fixtures/private/`. The human authorized the agent to open those files locally to learn the formats (quarterly statements in `extractos trimestrales/`, movements exports in `Movimientos cuenta/`, as XLSX and PDF). Real values (names, ID and account numbers, amounts, descriptions, references) never go into tracked files, commit messages or logs: committed fixtures stay invented, and private tests report counts only. The PDF password is never written to any file.
 - Local PostgreSQL runs in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes its data. `packages/db` tests run when `TEST_DATABASE_URL` and `TEST_DATABASE_MIGRATION_URL` are set (root `.env.local`; always in CI) and then fail if the database is down.
 - Schema changes: edit `packages/db/src/**/*.schemas.ts`, then `pnpm db:generate --name=<change>`. Never edit a generated migration; hand-written SQL goes in one made with `drizzle-kit generate --custom`.
 - Environment: one root `.env.local` for every tool; `apps/web/next.config.ts` loads it, and `src/lib/env.ts` stops the server at startup if a variable is missing. No `.env*` inside `apps/web`. Turborepo's strict mode keeps shell-exported variables from `pnpm dev`: to try a value, run `pnpm --filter web exec next dev`.
@@ -37,7 +38,7 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 
 ## UI
 
-All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility); the approved v7 screenshots are in `docs/ui/` (layout and feel; the rules file wins on exact values). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
+All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility); the approved v8 screenshots, every screen at desktop and phone width, are in `docs/ui/` (layout and feel; the rules file wins on exact values). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
 
 Before building any UI that shows the logo, metadata, icons or brand colors, read docs/brand.md.
 

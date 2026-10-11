@@ -88,7 +88,7 @@ CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull
 
 The integration tests of `packages/db` use the `xtrakto_test` database through `TEST_DATABASE_URL` (application role) and `TEST_DATABASE_MIGRATION_URL` (owner), read from `.env.local`. With both set, they need the local database running and fail if it isn't; without them, they are skipped, except in CI, which always runs them. Both must point to a local database whose name ends in `_test`.
 
-`pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/`, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
+`pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/` or its folders, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 
 ## Documentation
 

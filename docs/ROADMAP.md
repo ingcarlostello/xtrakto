@@ -26,7 +26,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Outlined stages:** stages 8 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
-**Real data:** never read, print, paste or commit real financial data. Real files may only live in git-ignored `fixtures/private/` folders and be used by private tests that print no content (Phase 2.8).
+**Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
 **Decisions:** when a phase makes a decision worth remembering, record it as an ADR in `docs/adr/`.
 
@@ -40,7 +40,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 - **Language:** the UI is in Spanish (`es-CO`) with amounts in COP. Code and documentation are in English.
 - **Key insight:** banks report total debits, but much of that is not spending. Xtrakto separates:
   - **Real spending:** purchases, bills, loan payments, cash withdrawals, transfers to other people.
-  - **Money that only moved:** transfers between the user's own accounts, investments and credit card payments (the card's spending belongs to the card statement).
+  - **Money that only moved:** transfers between the user's own accounts, investments and credit card payments (the card's spending belongs to the card statement), in either direction: money back from the user's own Nequi or name is not income.
   - **Income.**
 - On top of that: categories, recurring payments, fees such as the 4x1000 tax, plain-language explanations of cryptic lines ("Tu extracto, traducido") and, later, a chat to ask questions about the data.
 
@@ -75,7 +75,7 @@ These complement the project rules.
 3. **Ingestion is asynchronous with Inngest.** The server action stores the extracted content in an `ingestion_jobs` row and sends an event that carries **IDs only** (Inngest stores and displays event payloads). The extracted content is deleted when the job finishes; a daily job deletes anything left after 24 hours.
 4. **Deterministic first:** rules → own ML model (Stage 14) → LLM. The LLM never computes amounts.
 5. **Data isolation:** all financial tables use forced Row-Level Security through a transaction-local `app.user_id` setting, in addition to filtering by `userId` in every query. The `users` table (identity mapping only, no financial data) can be read and added to freely; its Row-Level Security only limits deletion to the user's own row (ADR 0016).
-6. **Third-party identifiers** (such as phone numbers in the `Referencia` column) are stored only as HMAC-SHA-256 with a secret key. A plain hash of a phone number can be reversed by brute force.
+6. **Third-party identifiers** (such as phone numbers in the `Referencia` column) are stored only as HMAC-SHA-256 with a secret key, plus their last 4 digits for display (design v8, Phase 5.5). A plain hash of a phone number can be reversed by brute force; 4 digits can't rebuild it.
 7. **The account holder's name** is stored normalized on the account to detect transfers between the user's own accounts. It is never logged or sent to an LLM.
 8. **Services:** Vercel (app and Inngest functions), Inngest Cloud, Clerk, Neon for PostgreSQL (chosen at gate 3.1, ADR 0013); later Langfuse, Sentry, PostHog and Resend. Domain: `xtrakto.site`, DNS managed at Hostinger.
 9. **Development machine:** macOS on Intel (`darwin-x64`), Node 22 via nvm, pnpm 12.9.1. Some packages ship native binaries; if one has no `darwin-x64` build, stop and report instead of working around it. Node 22 reaches end of life in April 2027: plan the upgrade before then.
@@ -87,14 +87,14 @@ These complement the project rules.
 
 The human decides before the phase starts. The agent may propose options with trade-offs.
 
-| Gate                | Phase | Options                                                                                                                                        |
-| ------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker. |
-| PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                    |
-| Design direction    | 4.3   | Resolved: v7, the layout of v4 with the style of v6 (`.claude/rules/design-system.md`); screenshots in `docs/ui/`.                             |
-| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                 |
-| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                            |
-| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                   |
+| Gate                | Phase | Options                                                                                                                                                                                               |
+| ------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker.                                                        |
+| PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                                                                           |
+| Design direction    | 4.3   | Resolved: v8 (October 2026), v7 (the layout of v4 with the style of v6) adjusted after checking real Bancolombia files (`.claude/rules/design-system.md`); screenshots of every screen in `docs/ui/`. |
+| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                                                                        |
+| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                                                                                   |
+| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                                                                          |
 
 ---
 
@@ -163,6 +163,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 5.5 Ingestion function
 - [ ] 5.6 Ingestion status screen
 - [ ] 5.7 Transactions page
+- [ ] 5.8 Onboarding _(design v8)_
 
 **Stage 6 — Deterministic insights**
 
@@ -173,6 +174,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
+- [ ] 6.8 Categories page _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
 
@@ -182,6 +184,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 7.4 Product analytics with PostHog
 - [ ] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
+- [ ] 7.7 Profile _(design v8)_
+- [ ] 7.8 Sample data to explore _(design v8)_
 
 **Stage 8 — LLM layer** _(outline)_
 
@@ -197,6 +201,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [ ] 9.1 Browser PDF extraction with password
 - [ ] 9.2 Layout reconstruction
 - [ ] 9.3 Quarterly statement PDF parser
+- [ ] 9.3b Movements export PDF parser _(design v8)_
 - [ ] 9.4 PDF edge cases
 
 **Stage 10 — Monthly use and retention** _(outline)_
@@ -807,6 +812,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - Run `extractSpreadsheet` and `findParser` in a Web Worker so the interface doesn't freeze, with progress and cancellation.
+- Several files at once (design v8): one extraction per file, each with its own progress.
 - The file never leaves the browser.
 
 **Done when:** a 10 MB spreadsheet is extracted without blocking the page; the worker's message handling is tested.
@@ -817,10 +823,13 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- Drop zone with type and size validation (10 MB).
-- Preview from the local parse: bank, account type, period, number of movements.
-- Account selector when the format doesn't identify the account (movements export).
-- Privacy panel explaining what happens to the data. Errors in plain Spanish.
+- The upload screen of design v8 (`docs/ui/v8-07`): a drop zone for one or several files, with type and size validation (10 MB per file).
+- Preview from the local parse, per file: bank, format, period, number of movements.
+- What the app reads ("Bancolombia: lo que ya leemos") and how many statements are left this month ("7 de 10 disponibles").
+- Account selector when the format doesn't identify the account (movements export) and the user has more than one.
+- Privacy panel ("Cómo cuidamos tus datos"). Errors in plain Spanish, as in `v8-13`.
+- The empty summary gains the bank's download paths (`v8-12`).
+- Later phases fill the rest of the screen: the list of uploaded files (5.6) and the coverage timeline (10.2).
 
 **Done when:** each synthetic XLSX shows the right preview; invalid files show a clear message.
 
@@ -831,8 +840,9 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - `getCurrentUserId()` (server only, moved here from 4.5): resolves the Clerk user to the internal id, creating the `users` row on first use.
-- `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
+- `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10; only jobs that finished `done` with at least one new movement count, decided with the human), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
 - Raise the server action body size limit as needed, keeping it under the hosting limit (Vercel Functions accept request bodies up to 4.5 MB).
+- One job per file, so one unreadable file doesn't hold back the rest.
 
 **Done when:** tests cover validation, the limit and ownership; the event payload contains no content.
 
@@ -851,7 +861,11 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 7. Delete `extracted_content`; save counts in `stats`; update the status.
 
 - On final failure: status `failed` with an error code, and the content deleted as well.
+- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human). The fingerprint only matches within one format until 10.1.
 - A daily cron function deletes any `extracted_content` older than 24 hours.
+- Two decisions from design v8, taken with the human:
+  - **References on screen:** the last 4 digits of a reference are stored next to its HMAC, as the account's `last4` is, so the screens can show "ref ••• 1270"; the raw reference is still discarded (a schema change in this phase).
+  - **A quarterly statement that doesn't reconcile** is saved as unverified, so the user can see where it fails ("Ver dónde no cuadra"), but its numbers stay out of the summaries until it reconciles ("Nunca te mostramos un número que no cuadre con tu banco").
 
 **Done when:** an integration test runs the pipeline with a fixture against the local database; re-running it inserts nothing new.
 
@@ -862,8 +876,10 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - Poll the job status every few seconds through a server action.
-- Show the steps from the design: format recognized, personal data protected, movements read, balance verified.
-- A Spanish message for each error code; a link to the transactions once finished.
+- The upload result of design v8 (`docs/ui/v8-08`): the steps ("Leído en tu navegador", "Reconocido", "Revisando duplicados", the balance check), the counts (in the file, already had, new), the status pill (verified, chained or "Sin saldo para verificar") and a link to the transactions. Later phases add theirs: "Clasificado" and new review groups (Stage 6), "Verificado con tu extracto trimestral" and "referencias agregadas" (10.1), the coverage timeline (10.2).
+- A Spanish message for each error code, as in `v8-13`: notices on the normal surface, errors on the attention surface.
+- The finished message comes from the counts: with no new movements it says the period was already loaded ("Ya tenías todo este archivo").
+- The upload screen lists the uploaded files, newest first, each with its result ("Archivos subidos", `v8-07`).
 
 **Commit:** `feat(web): ingestion status screen`
 
@@ -873,10 +889,23 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 - Server Component listing transactions with filters by account and month in `searchParams`, and pagination.
 - Formatted amounts and dates.
+- No category column: categories arrive in Stage 6, and stages are built in order (decided with the human).
+- The layout of design v8 (`docs/ui/v8-03`) without what later stages bring: rows grouped by day with the day's balance, the bank's text exactly as printed, "Sin descripción del banco" for a text of `0`, the period selector (quarter and months), and search by description or amount. Later phases add the kind tiles and filters, channel tags and "Por revisar" (6.1, 6.2), the detail panel's kind and category (6.3), interest grouped per month (6.7), "También aparece como" and source files (10.1), and "Descargar CSV" (7.6).
 
 **Done when:** the page shows the seeded data correctly; filters survive a reload and can be shared as links.
 
 **Commit:** `feat(web): transactions page`
+
+#### 5.8 Onboarding _(added with design v8)_
+
+**Tasks**
+
+- The three steps of `docs/ui/v8-15` to `v8-17`, each with "Saltar": what Xtrakto does, with an example; what to upload first (the quarterly statement, recommended; the month's movements; credit cards marked "Pronto") and the bank, without asking for the name, which comes from the statement; then the download paths of both Bancolombia formats next to the drop zone.
+- Shown once, after sign-up.
+
+**Done when:** a new user goes through the steps or skips them and lands on the upload screen; the steps work at phone width and with the keyboard.
+
+**Commit:** `feat(web): onboarding`
 
 ---
 
@@ -887,8 +916,11 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - `categorizeByRules(transaction, context)` in `@xtrakto/core`: an ordered list of rules (pattern → category) built from Appendix B. Returns `null` when no rule applies (the LLM handles those in Stage 8).
+- Categories as design v8 shows them (`docs/ui/v8-05`), confirmed by the human, changing `categories.json` and its generated constants: a new `payment_gateways` ("Pasarelas de pago": Bold, Ebanx, dLocal, where the bank doesn't say the store); `transfers_to_people` becomes "Pagos a personas" and takes in `digital_wallet` (a Nequi send is a payment to a person unless the number is the user's, then it moved); labels "Créditos", "Efectivo", "Restaurantes y domicilios", "Servicios del hogar", "Costos del banco" (4x1000, fees and adjustments) and "Otros".
+- A rule gives its best guess and says whether the movement needs review: Bre-B _llave_ payments, PSE payments to fintechs, transfers to the holder's truncated name, deposits at a _corresponsal_, money in from the user's name or Nequi. Stored so the quick review (6.3) can group them, which changes the schema.
+- Each rule carries the reason shown in the movement's detail ("Regla del sistema, sin IA"), and the channel tag comes from the description's prefix (design system §9).
 - Add it as a step of the ingestion function with `category_source = "rule"`.
-- A private test reports, as a percentage only, how many real movements get a category.
+- A private test reports, as a percentage only, how many real movements get a category and how many need review.
 
 **Done when:** every pattern in Appendix B has a test.
 
@@ -901,6 +933,8 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 - The transaction's `kind` comes from its category.
 - Detect transfers to or from the account holder by prefix matching against the holder's normalized name, since descriptions truncate names (`TRANSF A <FIRST NAME> <PARTIAL>`).
 - References marked by the user as their own (Phase 6.3) also count as internal.
+- Moved goes both ways (design v8): money back from the user's own Nequi or name is moved (+), never income.
+- Keep the holder's name and the truncated forms seen in transfers, for "Cómo te escribe el banco" (`docs/ui/v8-11`).
 
 **Done when:** tests cover truncated names and partial matches that must not count.
 
@@ -910,10 +944,12 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- Change a transaction's category, optionally applying it to every transaction with the same normalized description.
-- Mark a reference (for example a Nequi phone number) or a transfer recipient as "my own account".
-- Store corrections with `category_source = "user"` and as user rules applied before the global rules on future ingestions.
+- The quick review of design v8 (`docs/ui/v8-02`): the movements that need review, asked by group, with the best guess as the suggested answer; Nequi numbers with an "Es mío" switch; answered groups collapse, and "Lo que está en juego" shows what each answer would change. The summary shows a review banner while groups are pending.
+- Change a transaction's kind and category from the detail panel (`v8-03`), optionally applying it to every transaction with the same normalized description ("Aplicar a los 3 parecidos").
+- Mark a reference (for example a Nequi phone number, a card or an investment platform) or a transfer recipient as "my own account", and undo it.
+- Store answers and corrections with `category_source = "user"` and as user rules applied before the global rules on future ingestions ("Tus reglas", `v8-05`).
 - These corrections are the labeled data for Stage 14.
+- Probably beyond 400 lines: expect to split it into the quick review and the corrections.
 
 **Done when:** actions validate input and ownership; tests cover applying the rules to new data.
 
@@ -923,9 +959,11 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks:** pure functions over a period's transactions:
 
-- Income, total outflows, real spending, money that moved (by type), spending by category and by month.
-- Interest earned, 4x1000 paid, cash and digital wallet total.
+- Income (without the money that came back from the user's own accounts), total outflows, real spending, money that moved (by type, out and back), spending by category and by month, each with its count.
+- Interest earned, 4x1000 paid, cash total.
 - Credit card payments without an uploaded card statement.
+- The bank's own figures for the account card: average balance and interest paid, from the quarterly statement.
+- A quarterly statement that doesn't reconcile stays out of every figure until it does (decided with the human, Phase 5.5).
 
 **Done when:** tests compare against hand-computed results on the fixtures.
 
@@ -935,9 +973,10 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- Detect payments with the same normalized description (or reference hash), a similar amount and a similar day of the month in at least two different months.
+- Detect payments with the same normalized description (or reference hash), a similar amount and a similar day of the month in at least three consecutive months (design v8: "Necesitamos 3 meses para encontrarlos"; the roadmap said two months before v8, and the human confirmed the change), even when the bank writes it differently or it's paid through another channel.
 - Exact amounts (loan installments) and variable amounts (utilities) must both work.
-- Output: label, typical amount, typical day, months seen, last date.
+- Output: label, typical amount, typical day or range of days, channels, months seen, last date, and how the amount moves ("Estable", "Varía poco", "Monto variable", "Subió 12%").
+- What repeats but isn't spending (card payments, savings) goes in a list of its own (`docs/ui/v8-04`).
 
 **Done when:** tests cover fixed and variable payments and false positives.
 
@@ -949,7 +988,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 - 4x1000 charged (amount and dates), with the suggestion to check whether the account is marked as exempt.
 - Savings yield: interest earned vs average balance.
-- Money without detail: cash withdrawals plus transfers to digital wallets.
+- Money without detail: cash withdrawals, and payments through gateways that hide the store ("6 pagos sin tienda identificada", `docs/ui/v8-05`).
 - Credit card payments without a card statement, with an invitation to upload it.
 - New recurring payments or increased amounts (needs at least two periods).
 
@@ -961,14 +1000,26 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 **Tasks**
 
-- Following the chosen design: headline (real spending vs total outflows), KPIs, real vs moved bar, categories, month by month, recurring payments and insights.
+- Following design v8 (`docs/ui/v8-01`): headline (real spending vs total outflows), KPIs, real vs moved bar, categories, month by month, recurring payments and insights, the review banner, and the account card with the bank's own figures and its status pill.
 - The KPI tile (stat card with its progress ring, design system §9), moved here from 4.3.
 - Server Components; client components only for interactive charts.
-- In the transactions list, group the daily interest rows into one line per period.
+- In the transactions list, group the daily interest rows into one line per month.
 
 **Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
 
 **Commit:** `feat(web): summary page`
+
+#### 6.8 Categories page _(added with design v8)_
+
+**Tasks**
+
+- `docs/ui/v8-05`: real spending by category, largest first, each with its share and count; "Movido no es gasto", with money out (to the investment, the accounts, the cards) and money back; payments through gateways without a store, with a prompt to name them; the user's rules from the quick review.
+- `docs/ui/v8-06`: a category's detail, grouping the different ways the bank writes the same place ("Dónde más").
+- Categorías joins the dock.
+
+**Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
+
+**Commit:** `feat(web): categories page`
 
 ---
 
@@ -1035,11 +1086,28 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 #### 7.6 Export my data
 
-**Tasks:** CSV export of all the user's transactions from settings, next to the "delete my data" action.
+**Tasks:** CSV export of all the user's transactions from settings, next to the "delete my data" action ("Descargar mis datos (CSV)", `docs/ui/v8-11`), and of the selected period from Movimientos ("Descargar CSV", `v8-03`).
 
 **Done when:** the export contains only the user's data (tested).
 
 **Commit:** `feat(web): export my data`
+
+#### 7.7 Profile _(added with design v8)_
+
+**Tasks**
+
+- `/settings` becomes "Tu perfil" (`docs/ui/v8-11`): the Xtrakto account ("Administrar inicio de sesión"), how the bank writes the holder's name (6.2), the accounts and references marked as the user's (6.3), plan usage (statements this month, questions today), the privacy facts, "Descargar mis datos (CSV)" (7.6), "Borrar todos mis datos" (4.5, with the white destructive button of design system §9) and the session.
+- Perfil joins the dock, as v8 shows, and the avatar menu's "Configuración" link (Phase 4.6) goes away (decided with the human). The coverage timeline arrives with 10.2 and the email notices with 10.4.
+
+**Done when:** every section shows the user's data or its empty state, works at phone width and is navigable with the keyboard.
+
+**Commit:** `feat(web): profile page`
+
+#### 7.8 Sample data to explore _(added with design v8)_
+
+**Tasks:** "Explorar con datos de ejemplo" (`docs/ui/v8-17`): a read-only demo loaded with the synthetic fixtures, so someone without statements can see every screen.
+
+**Commit:** `feat(web): explore with sample data`
 
 ---
 
@@ -1056,17 +1124,18 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 ### Stage 9 — PDF statements _(outline)_
 
-- **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted; the password never leaves the browser; output text items with positions.
+- **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted, with the hint "suele ser tu número de documento" (`docs/ui/v8-09`); the password never leaves the browser; output text items with positions. Movements export PDFs have no password.
 - **9.2 Layout reconstruction:** text items → rows, grouping by vertical position with a tolerance and assigning columns by the header's horizontal ranges. Synthetic fixtures of text items.
 - **9.3 Quarterly statement PDF parser:** Appendix A.3. Private parity test: the PDF and the XLSX of the same statement produce identical transactions.
+- **9.3b Movements export PDF parser** _(added with design v8)_: the fourth format ("Movimientos de la Sucursal Virtual (PDF)"); descriptions split across two lines are joined (`docs/ui/v8-08`). Private parity test against the XLSX of the same range.
 - **9.4 Edge cases:** wrong password, PDFs without a text layer (scanned), 30-page limit, size limit, each with a clear message.
 
 ### Stage 10 — Monthly use and retention _(outline)_
 
-- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS`, also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice.
-- **10.2 Coverage and gaps:** date ranges with data per account, and which range to download (the bank allows the current month and the previous three).
+- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS` (paid the next day except at a month's end) and a description the quarterly statement cut before an accented letter (Appendix A.2), also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice. A matched movement gains what the export brings (design v8, `docs/ui/v8-08` and `v8-03`): its reference ("12 referencias agregadas"), the export's way of writing it ("También aparece como") and the file as one more source; an export whose movements all match is "Verificado por tu extracto trimestral".
+- **10.2 Coverage and gaps:** date ranges with data per account, shown as the coverage timeline (`docs/ui/v8-07`, `v8-08`, `v8-11`); each quarterly statement checked against the previous one ("Encadenado": it opens with the previous closing balance); the missing periods ("Te falta abril a junio", `v8-13`) and which range to download (the bank allows the current month and the previous three).
 - **10.3 Optional current balance:** when uploading a movements export, the user can enter the current balance to rebuild balances backwards and verify them.
-- **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe.
+- **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe. The profile's email notices (`docs/ui/v8-11`): a file is ready, something to review, a recurring payment went up, the monthly summary; never amounts.
 - **10.5 Monthly summary email:** "Your summary is ready" with a link; no amounts or descriptions in the email.
 
 ### Stage 11 — Unknown formats: ingestion agent _(outline)_
@@ -1130,14 +1199,14 @@ Observed on real files. Values below are illustrative; no real data.
 
 ### A.1 Bancolombia savings account — quarterly statement (spreadsheet)
 
-- A single sheet. Every cell is **text**, amounts, dates and the account number included.
+- A single sheet. Every cell is **text**, amounts, dates and the account number included. Some exports start with an empty row and others don't.
 - Blocks are found by the label in the first column (row positions may vary). Each block is a label row, a header row and a values row, with an empty row between blocks:
   1. `Información Cliente:` → header `CLIENTE | DIRECCIÓN | CIUDAD` → one value row. Use only the holder's name; never output the address or city.
   2. `Información General:` → header `DESDE | HASTA | TIPO CUENTA | NRO CUENTA | SUCURSAL` → values such as `2026/06/30 | 2026/09/30 | CUENTA DE AHORROS | <11 digits> | SUCURSAL <CITY>`. Keep only the last 4 digits of the account.
   3. `Resumen:` → header `SALDO ANTERIOR | TOTAL ABONOS | TOTAL CARGOS | SALDO ACTUAL | SALDO PROMEDIO | CUPO SUGERIDO | INTERESES | RETEFUENTE` → text amounts with `,` as the thousands separator and `.` as the decimal separator (`1,234,567.89`, `.00`). `SALDO PROMEDIO` has no decimals (`9,876,543`), and `TOTAL CARGOS` is printed as a positive amount.
   4. `Movimientos:` → header `FECHA | DESCRIPCIÓN | SUCURSAL | DCTO. | VALOR | SALDO`, then one row per movement:
      - `FECHA`: `d/mm` without a year (`1/07`, `29/09`). The year comes from the period.
-     - `DESCRIPCIÓN`: mostly uppercase, but names and PSE entities can come in mixed case (`TRANSF A Ana Prueba`, `PAGO PSE Banco Ejemplo S`); truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`).
+     - `DESCRIPCIÓN`: mostly uppercase, but names and PSE entities can come in mixed case (`TRANSF A Ana Prueba`, `PAGO PSE Banco Ejemplo S`); truncated to about 30 characters, sometimes with double spaces (`COMPRA EN  MERCADO XYZ`). Older statements split a description into two cells where the text has `ñí`, as in `Compañía`: `PAGO PSE Ejemplo Compa` and then `¡a de Finan` in the next cell, which shifts the rest of the row one column to the right. The parser joins the cells and restores `ñí`; newer statements write `Compania` in one cell.
      - `SUCURSAL` and `DCTO.`: usually empty; `SUCURSAL` sometimes names the channel (`CANAL CORRESPONSA`).
      - `VALOR`: signed text amount (`-15,000.00`, `12.34`).
      - `SALDO`: balance after the movement, as text.
@@ -1157,7 +1226,9 @@ Observed on real files. Values below are illustrative; no real data.
 - `Valor`: numeric cell, signed.
 - **No balance column, no account number and no period.** Rows are ordered newest first; within a day, the order doesn't follow the quarterly statement's.
 - Saving the export as CSV from Excel turns dates into `d/mm/yyyy` text and amounts into text with a decimal comma (`11,24`), in Windows-1252 with `;`. Parsers read the Excel file.
-- **Cross-check with the quarterly statement for the same month (real files):** the same movements, descriptions, amounts and total, except the `ABONO INTERESES AHORROS` rows, which this export dates **one day later**, but never after the range's last day (that day holds two interest rows); the interest of the day before the range is left out.
+- **Cross-check with the quarterly statement (real files):** the same movements, descriptions, amounts and total, with two differences:
+  - This export dates `ABONO INTERESES AHORROS` on the day the interest was paid: **the next day**, or the same day for a month's last day, which then holds two interest rows. So a range includes the interest of the day before it starts and leaves out the interest of its last day, unless that day ends a month.
+  - Where a description has an accented letter, the quarterly statement can cut it just before that letter while this export keeps it (`PAGO LLAVE COMIDAS R` and `PAGO LLAVE COMIDAS RÁ`; one real case).
 
 ### A.3 Bancolombia — quarterly statement (PDF)
 
@@ -1173,23 +1244,27 @@ No sample yet (Phase 12.1).
 
 ## Appendix B — Description patterns (Bancolombia)
 
-Starting point for the rule-based categorizer. Verify each pattern against the real files (privately) before relying on it.
+Starting point for the rule-based categorizer. Verify each pattern against the real files (privately) before relying on it. "Review" means a best guess the quick review asks about by group (design v8, Phase 6.3); categories follow v8, as Phase 6.1 sets them.
 
-| Pattern (normalized)                        | Meaning                                           | Category                | Notes                                                                                      |
-| ------------------------------------------- | ------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
-| `ABONO INTERESES AHORROS`                   | Daily savings interest                            | `interest`              | Group in the UI                                                                            |
-| `INTERES INV VIRT <number>`                 | Investment interest                               | `interest`              | `SUCURSAL` says `VIRTUAL`; the parser masks the account number (ADR 0012)                  |
-| `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                   | `investment`            | Internal                                                                                   |
-| `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary) | `income_transfer`       |                                                                                            |
-| `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                   | `deposit`               |                                                                                            |
-| `TRANSF DE <NAME>`                          | Incoming transfer                                 | `income_transfer`       | `own_account_transfer` if the name matches the holder, also cut as first name and surname  |
-| `TRANSF A <NAME>`                           | Outgoing transfer                                 | `transfers_to_people`   | `own_account_transfer` if the name matches the holder; some utilities also appear this way |
-| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)    | `digital_wallet`        | Internal if the phone is marked as the user's own                                          |
-| `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch               | `transfers_to_people`   | Ambiguous; let the user correct it                                                         |
-| `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                               | `credit_card_payment`   | Internal                                                                                   |
-| `PAGO PSE <ENTITY>`                         | Online payment through PSE                        | Depends on the entity   | Card at another bank → `credit_card_payment`; utility → `utilities`; bank → ask the user   |
-| `PAGO LLAVE <NAME>`                         | Instant payment to a key (person or business)     | `transfers_to_people`   | Redact the name before any LLM call                                                        |
-| `PAGO QR <MERCHANT>`                        | QR payment at a merchant                          | Depends on the merchant | Merchant names truncated                                                                   |
-| `COMPRA EN <MERCHANT>`                      | Card purchase                                     | Depends on the merchant | About 10 characters of merchant name                                                       |
-| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal                                   | `cash_withdrawal`       |                                                                                            |
-| contains `4X1000`                           | Financial transactions tax (GMF)                  | `taxes_and_fees`        | Feeds the 4x1000 insight                                                                   |
+| Pattern (normalized)                        | Meaning                                                | Category                | Notes                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ABONO INTERESES AHORROS`                   | Daily savings interest                                 | `interest`              | Grouped per month in the UI                                                                                 |
+| `INTERES INV VIRT <number>`                 | Investment interest                                    | `interest`              | `SUCURSAL` says `VIRTUAL`; the parser masks the account number (ADR 0012)                                   |
+| `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                        | `investment`            | Internal                                                                                                    |
+| `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary)      | `income_transfer`       |                                                                                                             |
+| `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                        | `deposit`, review       | The user's own cash (moved) or a payment to them (income)                                                   |
+| `TRANSF DE <NAME>`                          | Incoming transfer                                      | `income_transfer`       | `own_account_transfer` (moved +, never income) if the name matches the holder, also cut; review when unsure |
+| `TRANSF A <NAME>`                           | Outgoing transfer                                      | `transfers_to_people`   | `own_account_transfer` if the name matches the holder; some utilities also appear this way                  |
+| `TRANSF QR <NAME>`                          | Transfer to a person by QR                             | `transfers_to_people`   | Channel QR; seen in real files                                                                              |
+| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)         | `transfers_to_people`   | Was `digital_wallet` before v8. Internal if the phone is marked as the user's own                           |
+| `TRANSFERENCIA DESDE NEQUI`                 | Money in from a Nequi wallet                           | review                  | The user's own Nequi: moved (+), not income; someone else's: income                                         |
+| `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch                    | `transfers_to_people`   | Ambiguous; let the user correct it                                                                          |
+| `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                                    | `credit_card_payment`   | Internal                                                                                                    |
+| `PAGO PSE <ENTITY>`                         | Online payment through PSE                             | Depends on the entity   | Card at another bank → `credit_card_payment`; utility → `utilities`; fintech or bank → review               |
+| `PAGO LLAVE <NAME>`                         | Bre-B instant payment to a key (person, business, app) | review                  | A platform may be the user's investment or savings (moved); redact the name before any LLM call             |
+| `PAGO QR <MERCHANT>`                        | QR payment at a merchant                               | Depends on the merchant | Merchant names truncated                                                                                    |
+| `COMPRA EN <MERCHANT>`                      | Card purchase                                          | Depends on the merchant | About 10 characters of merchant name                                                                        |
+| contains `BOLD`, `EBANX` or `DLOCAL`        | Payment through a gateway                              | `payment_gateways`      | The bank doesn't say the store; let the user name it                                                        |
+| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal                                        | `cash_withdrawal`       |                                                                                                             |
+| contains `4X1000`                           | Financial transactions tax (GMF)                       | `taxes_and_fees`        | Feeds the 4x1000 insight                                                                                    |
+| `0`                                         | No description from the bank                           | review                  | Shown as "Sin descripción del banco"; seen in real files                                                    |

@@ -57,6 +57,8 @@ type RowKind =
 
 const BLOCK = QUARTERLY_BLOCK.MOVEMENTS;
 const DAY_MONTH_PATTERN = /^\d{1,2}\/\d{1,2}$/;
+// How older exports mark a description they split (Appendix A.1).
+const SPLIT_MARK = "¡";
 
 /**
  * Where the movements table starts: the first movements label, followed by
@@ -106,6 +108,26 @@ const classifyRow = (
     return "page_start";
   }
   return looksLikeMovement(date) ? "movement" : "unexpected";
+};
+
+// Older exports break a description at "ñí": the text goes on in the next
+// cell, starting with "¡", and the row's later columns move one place to the
+// right ("PAGO PSE … Compa" and "¡a de Finan" for "Compañía de Finan"). Only
+// that mark is joined: any other extra cell leaves the amount column empty,
+// and the row fails instead of being read with shifted amounts.
+const joinSplitDescription = (
+  row: readonly SpreadsheetCell[],
+  descriptionColumn: number,
+): readonly SpreadsheetCell[] => {
+  const head = row[descriptionColumn];
+  const tail = row[descriptionColumn + 1];
+  if (typeof head !== "string" || typeof tail !== "string") return row;
+  if (!tail.startsWith(SPLIT_MARK)) return row;
+  const joined = `${head}ñí${tail.slice(SPLIT_MARK.length)}`;
+  return joinSplitDescription(
+    row.toSpliced(descriptionColumn, 2, joined),
+    descriptionColumn,
+  );
 };
 
 // Reads the cells of one movement row, failing with the cell's column and row.
@@ -187,7 +209,10 @@ export const readQuarterlyMovements = (
         warnings.push({ code: PARSE_WARNING_CODE.UNEXPECTED_ROW, sourceRow });
         break;
       case "movement": {
-        const movement = readMovement(row, { columns, period, sourceRow });
+        const movement = readMovement(
+          joinSplitDescription(row, columns.DESCRIPTION),
+          { columns, period, sourceRow },
+        );
         if (!movement.ok) return movement;
         transactions.push(movement.value);
         break;

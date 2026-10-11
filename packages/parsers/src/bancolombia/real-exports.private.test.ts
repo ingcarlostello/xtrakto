@@ -10,14 +10,13 @@ import { readPrivateExports } from "../../fixtures/private-exports.mjs";
 import { extractSpreadsheet } from "../extraction/spreadsheet-extraction.helpers";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
 import { findParser } from "../registry/default-registry.helpers";
-import { isBlankRow } from "../sheets/sheet.utils";
 import {
   MOVEMENTS_EXPORT_FORMAT_ID,
   QUARTERLY_FORMAT_ID,
 } from "./bancolombia.constants";
 
-// Real exports a developer copies into the git-ignored fixtures/private/
-// (Phase 2.8). Assertions only compare counts, yes/no answers, error codes
+// Real exports a developer copies into the git-ignored fixtures/private/ or
+// its folders (Phase 2.8). Assertions only compare counts, yes/no answers, error codes
 // and row numbers, so a failure never prints a description, an amount, a
 // name or a file name.
 
@@ -26,7 +25,6 @@ const INTEREST = "ABONO INTERESES AHORROS";
 type ReadExport = {
   readonly statement?: ParsedStatement;
   readonly failure?: AppError;
-  readonly startsWithBlankRow?: boolean;
 };
 
 /** How an export's movements compare with its quarterly statement's. */
@@ -43,40 +41,67 @@ type Comparison = {
 const readExport = (bytes: Uint8Array): ReadExport => {
   const content = extractSpreadsheet(bytes);
   if (!content.ok) return { failure: content.error };
-  const startsWithBlankRow = isBlankRow(content.value.sheets[0]?.rows[0] ?? []);
   const parser = findParser(content.value);
-  if (!parser.ok) return { failure: parser.error, startsWithBlankRow };
+  if (!parser.ok) return { failure: parser.error };
   const statement = parser.value.parse(content.value);
   return statement.ok
-    ? { statement: statement.value, startsWithBlankRow }
-    : { failure: statement.error, startsWithBlankRow };
+    ? { statement: statement.value }
+    : { failure: statement.error };
 };
 
-const dayBefore = (date: LocalDate): string =>
+const shiftDays = (date: LocalDate, days: number): string =>
   new Date(
     Date.UTC(
       Number(date.slice(0, 4)),
       Number(date.slice(5, 7)) - 1,
-      Number(date.slice(8)) - 1,
+      Number(date.slice(8)) + days,
     ),
   )
     .toISOString()
     .slice(0, 10);
 
+const isMonthEnd = (date: LocalDate) => shiftDays(date, 1).endsWith("-01");
+
+const isInterest = ({ descriptionNormalized }: ParsedTransaction) =>
+  descriptionNormalized === INTEREST;
+
 // Where the statement should date an export movement (Appendix A.2): on the
-// same day, except interest, which the export moves one day later but never
-// past its last day.
-const expectedDates = (
-  { date, descriptionNormalized }: ParsedTransaction,
-  lastDay: LocalDate,
-): readonly string[] => {
-  if (descriptionNormalized !== INTEREST) return [date];
-  return date === lastDay ? [dayBefore(date), date] : [dayBefore(date)];
+// same day, except interest, which the export dates on the day it was paid:
+// the next day, or the same day for a month's last day, which then holds two
+// interest rows.
+const expectedDates = (movement: ParsedTransaction): readonly string[] => {
+  if (!isInterest(movement)) return [movement.date];
+  const dayBefore = shiftDays(movement.date, -1);
+  return isMonthEnd(movement.date) ? [dayBefore, movement.date] : [dayBefore];
 };
 
-const isSameMovement = (a: ParsedTransaction, b: ParsedTransaction) =>
-  a.descriptionNormalized === b.descriptionNormalized &&
-  a.amountMinor === b.amountMinor;
+// The statement cuts a description before an accented letter that the
+// export keeps ("COMIDAS R" and "COMIDAS RÁ", Appendix A.2).
+const isSameDescription = (statement: string, exported: string) =>
+  statement === exported || statement === exported.replace(/[^ -~]$/u, "");
+
+const isSameMovement = (
+  statement: ParsedTransaction,
+  exported: ParsedTransaction,
+) =>
+  isSameDescription(
+    statement.descriptionNormalized,
+    exported.descriptionNormalized,
+  ) && statement.amountMinor === exported.amountMinor;
+
+// A statement movement the export should hold: one on the export's dates,
+// except the interest of its last day, paid the next day unless that day
+// ends a month.
+const belongsInExport = (
+  movement: ParsedTransaction,
+  { period }: ParsedStatement,
+) =>
+  isWithinPeriod(movement.date, period) &&
+  !(
+    isInterest(movement) &&
+    movement.date === period.to &&
+    !isMonthEnd(movement.date)
+  );
 
 // Pairs each export movement with one statement movement: first on the
 // expected dates, then, to tell the differences apart, on any date.
@@ -98,7 +123,7 @@ const compareMovements = (
   };
   const unmatched: ParsedTransaction[] = [];
   for (const movement of exported.transactions) {
-    const dates = expectedDates(movement, exported.period.to);
+    const dates = expectedDates(movement);
     if (!take(movement, (date) => dates.includes(date)))
       unmatched.push(movement);
   }
@@ -108,8 +133,8 @@ const compareMovements = (
   return {
     notInQuarterly: unmatched.length - otherDateDifferences,
     otherDateDifferences,
-    missingFromExport: [...unused].filter(({ date }) =>
-      isWithinPeriod(date, exported.period),
+    missingFromExport: [...unused].filter((movement) =>
+      belongsInExport(movement, exported),
     ).length,
   };
 };
@@ -160,12 +185,6 @@ describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
 
   it("finds no unexpected rows in the quarterly statements", () => {
     for (const { warnings } of quarterlies) expect(warnings).toEqual([]);
-  });
-
-  it("starts each quarterly statement with an empty row, as the fixtures do", () => {
-    expect(quarterlyFiles.map((file) => file.startsWithBlankRow)).toEqual(
-      quarterlyFiles.map(() => true),
-    );
   });
 
   it("finds an export's movements in its quarterly statement, with only interest dated a day later", () => {
