@@ -1,41 +1,50 @@
-# Xtrakto — UI reference screenshots
+# Xtrakto — UI reference (version 8)
 
-Screenshots of the **approved design (v7, "Resumen")**. Use them together with [`.claude/rules/design-system.md`](../../.claude/rules/design-system.md) (tokens, components, layout) and [`docs/brand.md`](../brand.md) (logo). The images and their annotations call the design system `design.md`; its section numbers are the same.
+Screenshots of **version 8**, the current design. It replaces every earlier screenshot in this folder.
 
-**If a screenshot and the design system disagree on an exact value, the design system wins.** The images show layout, hierarchy and feel; the document holds the numbers.
+v8 is v7 adjusted after checking real Bancolombia files: 3 quarterly statements and 5 movement exports, each in PDF and Excel. Use these screenshots together with [`.claude/rules/design-system.md`](../../.claude/rules/design-system.md) (tokens, components, layout; the project's only design document) and [`docs/brand.md`](../brand.md) (logo). **If a screenshot and the design system disagree on an exact value, the design system wins.** The v8 changes listed at the end are already in it.
 
-## Files
+Every screen has a desktop capture (`-desktop.png`, 1440px wide, 1x) and a phone capture (`-movil.png`, 390px wide, 2x, full page). All names, amounts and references are **fictional sample data**; never replace them with real statement data.
 
-| File                                  | What it shows                                                                                                       | Use it for                                                    |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `00-resumen-anotado.png`              | The full summary page with numbered boxes and a legend that maps each part to its component in design system §9     | Start here: names of every component and where its spec lives |
-| `01-resumen-desktop.png`              | Full page at 1440px, 1x                                                                                             | Overall layout, spacing between rows, the two-column grid     |
-| `02-header-y-titulo@2x.png`           | Header (logo, greeting, privacy, notifications, avatar) and the title row (legend, period selector, primary button) | Detail at 2x                                                  |
-| `03-vistazo-y-cuenta@2x.png`          | Three stat cards with progress rings, and the account card with the status pill                                     | Detail at 2x                                                  |
-| `04-saldo-y-donde-se-fue@2x.png`      | Balance vs cumulative spending chart with its annotation, and the 2×2 insight tiles (one in the attention variant)  | Detail at 2x                                                  |
-| `05-extracto-traducido-y-chat@2x.png` | Transaction rows (plain words + raw bank text + explanation + amount), filter chips, and the chat panel             | Detail at 2x                                                  |
-| `06-dock@2x.png`                      | Navigation dock                                                                                                     | Detail at 2x                                                  |
-| `07-resumen-movil-completo.png`       | Full page at 390px wide (2x)                                                                                        | Phone layout, top to bottom                                   |
-| `08-resumen-movil-pantalla.png`       | First screen on a phone (390×844, 2x) with the bottom tab bar                                                       | What the user sees on load                                    |
+## Screens
 
-## Notes
+| #     | File prefix                  | Screen                              | What to look at                                                                                                                                                                                                                                                                                                                                                    |
+| ----- | ---------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 01    | `v8-01-resumen`              | Summary                             | Quarter picker plus months; banner for pending review; Ingresos excludes money that came back from your own accounts; "Movido" in both directions; account card with the bank's own _saldo promedio_ and _intereses pagados_; verification pill "Encadenado"; channel tags and a "Por revisar" row in the translated list.                                         |
+| 02    | `v8-02-revision-rapida`      | **Quick review (new)**              | Ambiguous movements asked **by group, not one by one**: transfers to the holder's (truncated) name, card payments, Bre-B "llave" payments, money coming in from your own name or Nequi, Nequi reference numbers (only movement exports have them), cash deposits at _corresponsal_. Answered groups collapse. Side panel shows what each open answer would change. |
+| 03    | `v8-03-movimientos`          | Transactions                        | Interest rows grouped per month (about 90 per quarter); channel filter; "Por revisar" filter; row without a bank description (`0`); raw text shown exactly as printed (double spaces kept); detail panel with real fields only: raw text, **"También aparece como"** (name variants), channel, reference, **source files**, balance after.                         |
+| 04    | `v8-04-pagos-fijos`          | Recurring payments                  | Same service paid by different channels ("Varios canales"); a loan with two installments; name variants; a second list for payments that repeat **but are not spending** (card payment with "Monto variable", monthly savings).                                                                                                                                    |
+| 05    | `v8-05-categorias`           | Categories                          | New categories: **Pagos a personas** and **Pasarelas de pago** (Bold, Ebanx, dLocal hide the store); "Costos del banco" = 4x1000, fees and adjustments; "Movido" panel with money out **and** "Volvió de tus cuentas"; rules created from the quick review.                                                                                                        |
+| 06    | `v8-06-categoria-detalle`    | Category detail                     | "Dónde más" groups the different ways the bank writes the same place (card purchase vs QR).                                                                                                                                                                                                                                                                        |
+| 07    | `v8-07-subir`                | Upload                              | Multiple files at once; the 3 formats we read (quarterly with balances; Sucursal Virtual movements without balances; other banks); **coverage timeline** of months; files list with per-file result (new, already had, references added, verified).                                                                                                                |
+| 08    | `v8-08-subir-resultado`      | **Upload result (new)**             | Detected bank, format and period; counts (in file, already had, new, references added); verification by the quarterly statement; processing steps including "Revisando duplicados"; next step (new review group).                                                                                                                                                  |
+| 09    | `v8-09-subir-pdf-contrasena` | PDF password                        | Hint "suele ser tu número de documento"; movement PDFs have no password.                                                                                                                                                                                                                                                                                           |
+| 10    | `v8-10-preguntale`           | Chat                                | Unchanged except the quarter picker and realistic raw texts.                                                                                                                                                                                                                                                                                                       |
+| 11    | `v8-11-perfil`               | Profile                             | "Cómo te escribe el banco": holder name **taken from the statement** plus the truncated forms seen in transfers; references marked as yours (Nequi, cards, investment platform); coverage; privacy facts (address and IP from file headers are discarded).                                                                                                         |
+| 12    | `v8-12-resumen-vacio`        | Empty summary                       | Real download paths and "upload them all together".                                                                                                                                                                                                                                                                                                                |
+| 13    | `v8-13-estados`              | Reference sheet                     | Empty states, notices and errors, now including: file already uploaded, file without balances, missing period.                                                                                                                                                                                                                                                     |
+| 14    | `v8-14-confirmar-columnas`   | Unknown format                      | Unchanged.                                                                                                                                                                                                                                                                                                                                                         |
+| 15–17 | `v8-15/16/17-onboarding`     | Onboarding                          | Step 2 no longer asks for the name (it comes from the file); you choose quarterly vs monthly movements; step 3 has the real Sucursal Virtual paths for both.                                                                                                                                                                                                       |
+| 18    | `v8-18-componentes`          | **Reference sheet: new components** | Quarter picker (open), verification states, channel tags, badges, the five raw-text cases, "Por revisar" row, "Movido" in both directions, coverage timeline.                                                                                                                                                                                                      |
 
-- **All figures, names and dates are fictional sample data**, but they are internally consistent:
-  - income $46,8M;
-  - outflows $54,2M = real spending $24,4M (45%) + moved $29,8M (55%);
-  - balance from $13,9M to $6.482.310;
-  - 312 transactions.
+## Rules that come from the real files
 
-  Never replace them with real statement data.
+- **Overlapping ranges are normal.** Users download several ranges of the same month (1–7, 5–10, 1–15, 15–30, 1–31). Never treat this as an error: deduplicate and say so ("63 ya los tenías, no se duplican").
+- **Movement exports have no balance.** Their status is "Sin saldo para verificar" until a quarterly statement for that period exists; then "Verificado por tu extracto trimestral".
+- **Quarterly statements chain.** Each starts where the previous ended; show "Encadenado".
+- **Money can move in both directions.** Transfers from your own name and from your Nequi are "Movido" (+), not income.
+- **Raw descriptions are at most 30 characters, often truncated, sometimes broken.** Show them as printed; group variants; handle a description of `0` as "Sin descripción del banco".
+- **Some movements cannot be classified alone** (Bre-B _llave_ payments, PSE to fintechs, transfers to the truncated holder name, corresponsal deposits). Use the best guess, mark "Por revisar" and ask in the quick review by group. Remember answers as rules.
+- **Third-party data stays out of sight.** Nequi numbers are shown masked (last 4); names of people in transfer descriptions are shown only to the account owner and never sent to analytics.
 
-- **Header logo:** these screenshots already use the final logo ("Cinta plegada"): mark 40px and wordmark 18px on desktop, 32px and 14.4px on phones. This replaces the text-only wordmark of the original v7 mockup (see `docs/brand.md`).
-- **Contrast corrections from design system §3 are applied:** raw bank text uses `#5F6B7A`, and active chip and segment text uses `#1D4ED8`.
-- **Phone layout** follows the rules in design system §7, not a separate mockup:
-  - one column, 16px side padding;
-  - the logo and the notification/avatar buttons share the first row, and the greeting goes below;
-  - the period selector and "Subir extracto" are full width;
-  - the chart annotation moves below the chart;
-  - transaction rows put the amount at the top right;
-  - the dock becomes a bottom tab bar with 5 items: Resumen, Movimientos, Subir, Pregúntale, Más.
-- **Only the summary screen is designed.** Upload, ingestion status, the transactions page, recurring payments, categories and profile don't have mockups yet. Build them from the same components and tokens (cards, rows, chips, buttons, empty states) and keep the layout rules of design system §7.
-- Icons are drawn by hand in the mockup. In the app use Lucide, following the mapping in design system §8.
+## Changes v8 made to the design system
+
+Applied to `.claude/rules/design-system.md` in October 2026; `--danger` was already there.
+
+1. Legend, "Movido": "lo que pasó entre tus cuentas, tu inversión o tus tarjetas, en cualquier sentido". "Ingresos": "lo que entró de otros".
+2. Period selector: quarter chip (with its status) and the months of that quarter, plus "Año".
+3. Status pill variants: verified, chained, without balance (grey dot), doesn't reconcile (orange).
+4. New components: channel tag, "Por revisar" badge, review banner, review group card, coverage timeline, monospace raw-text chip (`white-space: pre`).
+5. Unclassified movements: neutral icon chip and ink amount (no kind color) until answered.
+6. Categories: add "Pagos a personas" and "Pasarelas de pago"; "Costos del banco" includes 4x1000, fees and adjustments.
+7. Destructive button token: `--danger: #B91C1C`.

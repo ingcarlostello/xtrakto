@@ -10,10 +10,10 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 
 ### Functional
 
-- Upload a statement (spreadsheet now, PDF in Stage 9) from any supported bank.
+- Upload one or several statements at once (spreadsheet now, PDF in Stage 9) from any supported bank. Overlapping date ranges are normal and are deduplicated.
 - Parse every movement and verify the balances to the cent.
-- Separate real spending, money that only moved, and income.
-- Categorize movements and let the user correct them.
+- Separate real spending, money that only moved (in either direction), and income.
+- Categorize movements, ask the user by group about those that can't be classified alone, and let the user correct them.
 - Show a summary: categories, month by month, recurring payments, fees and insights.
 - Explain cryptic lines in plain Spanish (Stage 8).
 - Answer questions about the user's own data (Stage 13).
@@ -127,24 +127,25 @@ sequenceDiagram
 - **Account resolution:** the quarterly statement identifies the account by its last 4 digits; the movements export has no account number, so the user picks the account at upload.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
 - **Payload size:** only rows or text items travel, to stay under the 4.5 MB request limit.
+- **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
 
 ---
 
 ## 4. Privacy boundaries
 
-| Party          | Receives                                                                                      | Never receives                                          | Kept for                                                                          |
-| -------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| User's browser | Original file, PDF password, extracted content                                                | —                                                       | While the page is open                                                            |
-| Next.js server | Extracted content (rows or PDF text items)                                                    | Original file, PDF password                             | Not kept; written to the job row                                                  |
-| PostgreSQL     | Temporary extracted content; parsed transactions; normalized holder name; HMACs of references | Raw phone numbers, full account numbers, PDF password   | Content: until the job ends (24 h max). Transactions: until the user deletes them |
-| Inngest Cloud  | Event names and IDs                                                                           | Any financial content                                   | Inngest run history                                                               |
-| LLM providers  | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows      | Names, phone numbers, ID and account numbers            | Provider's API data policy                                                        |
-| Clerk          | Email, name, sign-in data                                                                     | Financial data                                          | Until the account is deleted                                                      |
-| Sentry         | Scrubbed errors and traces                                                                    | Request bodies, action arguments, descriptions, amounts | Sentry retention                                                                  |
-| PostHog        | Event names, format ids, count buckets, error codes (after consent)                           | Descriptions, amounts, names                            | PostHog retention                                                                 |
-| Langfuse       | Model, tokens, cost, latency                                                                  | Prompt and response content (masked)                    | Langfuse retention                                                                |
+| Party          | Receives                                                                                                              | Never receives                                          | Kept for                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| User's browser | Original file, PDF password, extracted content                                                                        | —                                                       | While the page is open                                                            |
+| Next.js server | Extracted content (rows or PDF text items)                                                                            | Original file, PDF password                             | Not kept; written to the job row                                                  |
+| PostgreSQL     | Temporary extracted content; parsed transactions; normalized holder name; HMACs of references and their last 4 digits | Raw phone numbers, full account numbers, PDF password   | Content: until the job ends (24 h max). Transactions: until the user deletes them |
+| Inngest Cloud  | Event names and IDs                                                                                                   | Any financial content                                   | Inngest run history                                                               |
+| LLM providers  | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows                              | Names, phone numbers, ID and account numbers            | Provider's API data policy                                                        |
+| Clerk          | Email, name, sign-in data                                                                                             | Financial data                                          | Until the account is deleted                                                      |
+| Sentry         | Scrubbed errors and traces                                                                                            | Request bodies, action arguments, descriptions, amounts | Sentry retention                                                                  |
+| PostHog        | Event names, format ids, count buckets, error codes (after consent)                                                   | Descriptions, amounts, names                            | PostHog retention                                                                 |
+| Langfuse       | Model, tokens, cost, latency                                                                                          | Prompt and response content (masked)                    | Langfuse retention                                                                |
 
-**Why HMAC and not a plain hash:** Colombian mobile numbers have 10 digits and start with 3, so a plain SHA-256 can be reversed by trying every number. References are hashed with HMAC-SHA-256 and a secret key, which still allows grouping transfers to the same person.
+**Why HMAC and not a plain hash:** Colombian mobile numbers have 10 digits and start with 3, so a plain SHA-256 can be reversed by trying every number. References are hashed with HMAC-SHA-256 and a secret key, which still allows grouping transfers to the same person. Their last 4 digits are kept too, so the user can recognize their own Nequi ("ref ••• 1270"); 4 digits can't rebuild the number.
 
 **Long numbers in descriptions:** a description can carry an account or phone number (`INTERES INV VIRT 27608017525`). Parsers hide all but the last four digits of every run of six or more, keeping the text's length (`INTERES INV VIRT *******7525`), so full numbers never reach the database ([ADR 0012](adr/0012-long-numbers-masked-when-parsed.md)).
 
@@ -235,17 +236,19 @@ flowchart LR
     U -- miss --> G["Global rules<br/>known patterns · Stage 6"]
     G -- miss --> M["ML model<br/>ONNX, confidence ≥ τ · Stage 14"]
     M -- miss --> L["LLM fallback<br/>redacted, cached · Stage 8"]
-    L -- miss --> A["Ask the user<br/>uncategorized until corrected"]
+    L -- miss --> A["Best guess, marked for review<br/>asked by group in the quick review"]
     U -- hit --> C["category_id + category_source<br/>user · rule · model · llm"]
     G -- hit --> C
     M -- hit --> C
     L -- hit --> C
-    A -- "user picks" --> C
+    A -- "user answers" --> C
     C --> K["kind: spending · income · internal"]
 ```
 
-- The category's `kind` drives the headline numbers. Credit card payments, investments and own-account transfers are `internal`: they leave the account but are not spending.
-- Own-account transfers are detected by prefix matching against the holder's normalized name, because descriptions truncate names.
+- The category's `kind` drives the headline numbers. Credit card payments, investments and own-account transfers are `internal`: they leave the account but are not spending. Internal goes both ways: money that comes back from the user's own Nequi or name is not income either.
+- Own-account transfers are detected by prefix matching against the holder's normalized name, because descriptions truncate names, and by references the user marked as theirs (a Nequi number, a card, an investment platform).
+- Some movements can't be classified alone: Bre-B _llave_ payments, PSE payments to fintechs, transfers to the truncated holder name, cash deposits at a _corresponsal_. They keep a best guess marked for review, the quick review asks about them by group, and each answer becomes a user rule.
+- The channel shown on each movement (PSE, Llave Bre-B, QR, Nequi, cajero…) comes from the description's prefix; it is not a category.
 - User corrections become user rules and, later, labeled data for the ML model.
 
 ---
@@ -332,16 +335,16 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 10. Failure modes
 
-| Failure                       | Detected by                       | Behavior                                                                                                         |
-| ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Unknown format                | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                            |
-| Balances don't add up         | `reconcile()` issues              | Saved with `balance_verified = false`; the summary shows a warning with the affected rows.                       |
-| Duplicate upload              | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                    |
-| Step fails mid-job            | Inngest error                     | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted. |
-| LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                   |
-| Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                           |
-| Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                    |
-| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                        |
+| Failure                       | Detected by                       | Behavior                                                                                                                                 |
+| ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Unknown format                | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                                                    |
+| Balances don't add up         | `reconcile()` issues              | Saved with `balance_verified = false`, so the user can see the affected rows; its numbers stay out of every summary until it reconciles. |
+| Duplicate upload              | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                                            |
+| Step fails mid-job            | Inngest error                     | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted.                         |
+| LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                                           |
+| Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                                                   |
+| Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                                            |
+| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                                                |
 
 ---
 

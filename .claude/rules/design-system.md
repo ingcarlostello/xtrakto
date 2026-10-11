@@ -6,9 +6,9 @@ paths:
 
 # Xtrakto — Design System
 
-Visual and UI guide for Xtrakto, based on **version 7** of the design canvas (layout of v4 with the visual style of v6).
+Visual and UI guide for Xtrakto, based on **version 8** of the design canvas: v7 (the layout of v4 with the visual style of v6), adjusted after checking real Bancolombia files.
 
-Reference screenshots of v7 live in [`docs/ui/`](../../docs/ui/README.md): they show layout and feel; this document wins on exact values.
+Reference screenshots of v8 live in [`docs/ui/`](../../docs/ui/README.md), every screen at desktop and phone width: they show layout and feel; this document wins on exact values.
 
 The look is calm, light and clear: a cool grey-blue ground, translucent white cards with soft shadows, very rounded shapes, thin line icons, and **color that always means something**.
 
@@ -16,11 +16,13 @@ The look is calm, light and clear: a cool grey-blue ground, translucent white ca
 
 ## 1. Principles
 
-1. **Color is meaning.** Green is income, orange is real spending, blue is money that only moved. A color is never used for decoration if it already means something.
+1. **Color is meaning.** Green is income, orange is real spending, blue is money that moved between the user's own accounts, investment and cards, in either direction. A color is never used for decoration if it already means something.
 2. **Explain every number.** Every figure comes with one line saying what it is ("El 42% de lo que salió…"). No number stands alone.
 3. **Calm over dense.** Generous spacing, few borders, soft shadows. Separation comes from surfaces and space, not lines.
 4. **Actions say what they do.** "Ver en qué gastaste", not "Ver detalle". "Subir extracto", not "Enviar".
 5. **Never rely on color alone.** Every colored element also has a label, a sign (+ / −) or a legend.
+6. **Guess, then ask.** A movement the rules can't classify alone (a Bre-B _llave_ payment, a PSE payment to a fintech, a transfer to the holder's truncated name, a deposit at a _corresponsal_) gets the best guess and a "Por revisar" mark, and the quick review asks about it by group, never one by one. Answers become rules.
+7. **Overlapping files are normal.** Users download several ranges of the same month: deduplicate and say so ("63 ya los tenías, no se duplican"), never as an error.
 
 ---
 
@@ -97,21 +99,25 @@ Extras:
 - Spending gradient for bars: `linear-gradient(90deg, #F59E5B, #EA6B2D)`.
 - "Needs attention" surface (e.g. the 4x1000 tile): `#FFF6EF`, with an `#EA6B2D` dot of 9px.
 
+**Moved goes both ways:** money out to the user's investment, accounts and cards, and money that came back from them (their Nequi, a transfer from their own name). Money that came back is never income.
+
 **Rules**
 
-- Kind colors are used **only** for kinds. Don't use orange or green for anything else.
+- Inside data, kind colors mean kinds only. Outside data, the same hues carry a status, always next to its word: green for verified states ("Verificado", "Estable", `--status-ok`), orange for things to look at ("Por revisar", "Subió", `--status-attention`), soft blue for information ("Varios canales", "Completado").
 - Blue is both the interactive color and the "moved" kind. Inside data, blue is always accompanied by the legend or a label, so it is never ambiguous.
-- Signs: income `+$35.421.381`, outflows `−$1.472.800` (use the real minus sign `−`, U+2212).
+- Signs: income `+$35.421.381`, outflows `−$1.472.800` (use the real minus sign `−`, U+2212). Moved amounts carry their direction too, both in the moved text color: `−$300.000` to the user's Nequi, `+$1.200.000` back from it.
+- **Unclassified movements** have no kind color until the user answers: a neutral icon chip (`--surface-muted`, ink icon), an ink amount and the "Por revisar" badge.
 
 ### 3.5 Status and danger
 
-| Token                | Value     | Use                                                                |
-| -------------------- | --------- | ------------------------------------------------------------------ |
-| `--status-ok`        | `#34B873` | "Saldo verificado" dot, with a 4px halo `rgba(52, 184, 115, 0.18)` |
-| `--status-attention` | `#EA6B2D` | Alert dot on tiles and icons                                       |
-| `--danger`           | `#B91C1C` | Destructive actions ("Eliminar mi cuenta y mis datos") and errors  |
+| Token                | Value     | Use                                                                                                |
+| -------------------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `--status-ok`        | `#34B873` | Verified states ("Saldo verificado", "Encadenado"): dot with a 4px halo `rgba(52, 184, 115, 0.18)` |
+| `--status-attention` | `#EA6B2D` | Alert dot on tiles, icons and attention surfaces ("Por revisar", errors, "No cuadra por $12.400")  |
+| `--text-faint`       | `#7A8597` | Dot of "Sin saldo para verificar" (a file without balances), with the same halo                    |
+| `--danger`           | `#B91C1C` | Destructive actions only ("Borrar todos mis datos") and inline form errors                         |
 
-Danger is not a kind: never use it for spending, and never use the spending orange for errors.
+Danger is not a kind: never use it for spending. Notice and error screens (`docs/ui/v8-13-estados`) don't use it either: notices sit on the normal surface; errors on the attention surface (`#FFF6EF`) with an orange dot, saying what happened and what to do, without apologizing.
 
 ### 3.6 Verified contrast (WCAG AA)
 
@@ -167,7 +173,8 @@ Both come from Google Fonts. In Next.js, load them with `next/font/google` and e
 
 - Amounts in columns and tables: `font-variant-numeric: tabular-nums`.
 - Titles: `text-wrap: balance`.
-- Raw bank descriptions are shown as the bank prints them (uppercase), with letter-spacing `0.02em`.
+- Raw bank descriptions are shown exactly as the bank prints them: case, truncation and double spaces included (`white-space: pre`), with letter-spacing `0.02em`. A description of `0` reads "Sin descripción del banco".
+- The raw-text chip (§9) uses the system monospace stack (`ui-monospace, "SF Mono", Menlo, Consolas, monospace`) at 12px, so a double space is visible.
 
 ### Number and date formats (es-CO)
 
@@ -250,12 +257,16 @@ Shadows always use the cool slate tint `rgb(80, 98, 125)`, never pure black.
 
 ```
 Header ........ wordmark · greeting with assistant mark · privacy · notifications · avatar
-Title row ..... page title + color legend        |  period selector + "Subir extracto"
+Title row ..... page title, color legend below it
+Controls ...... period selector (quarter + months) · the page's action ("Subir extracto")
+Banner ........ review banner, while review groups are pending
 Row 1 ......... Tu trimestre de un vistazo (2)   |  Tu cuenta (1)
 Row 2 ......... Saldo y gasto real (2)           |  Dónde se fue más (1)
 Row 3 ......... Tu extracto, traducido (2)       |  Pregúntale a tu extracto (1)
 Dock .......... sticky at the bottom, centered
 ```
+
+That is the summary; the other screens keep the header, title row and controls, then their own rows (`docs/ui`).
 
 - Max content width: **1360px**, centered.
 - Each row is a wrapping flex row: main column `flex: 2 1 600px`, side column `flex: 1 1 340px`, both with `min-width: 0`.
@@ -274,27 +285,41 @@ Dock .......... sticky at the bottom, centered
 
 ### Concept → icon (Lucide names)
 
-| Concept                | Icon                               |
-| ---------------------- | ---------------------------------- |
-| Income                 | `download` (arrow into tray)       |
-| Real spending          | `shopping-cart`                    |
-| Moved                  | `arrow-left-right`                 |
-| Investment             | `trending-up`                      |
-| Loan / bank            | `landmark`                         |
-| Credit card            | `credit-card`                      |
-| Cash                   | `banknote`                         |
-| Nequi / digital wallet | `smartphone`                       |
-| 4x1000 / fees          | `file-text`                        |
-| Recurring payments     | `calendar`                         |
-| Privacy                | `shield-check`                     |
-| Upload                 | `upload`                           |
-| Ask / chat             | `message-square`                   |
-| Summary                | `layout-grid`                      |
-| Transactions           | `list`                             |
-| Categories             | `chart-pie`                        |
-| Notifications          | `bell`                             |
-| Profile                | `user`                             |
-| Assistant              | Custom open-ring arrow (see Brand) |
+| Concept                                       | Icon                               |
+| --------------------------------------------- | ---------------------------------- |
+| Income                                        | `download` (arrow into tray)       |
+| Real spending                                 | `shopping-cart`                    |
+| Moved                                         | `arrow-left-right`                 |
+| Investment                                    | `trending-up`                      |
+| Loan / bank ("Créditos")                      | `landmark`                         |
+| Credit card                                   | `credit-card`                      |
+| Cash ("Efectivo")                             | `banknote`                         |
+| Nequi / phone                                 | `smartphone`                       |
+| Bank costs ("Costos del banco": 4x1000, fees) | `file-text`                        |
+| Payments to people ("Pagos a personas")       | `users`                            |
+| Payment gateways ("Pasarelas de pago")        | `globe`                            |
+| Groceries ("Mercado")                         | `shopping-bag`                     |
+| Restaurants and delivery                      | `utensils`                         |
+| Shopping ("Compras")                          | `package`                          |
+| Transport                                     | `car`                              |
+| Home services ("Servicios del hogar")         | `house`                            |
+| Health                                        | `heart`                            |
+| Subscriptions                                 | `repeat`                           |
+| Other                                         | `ellipsis`                         |
+| To review ("Por revisar")                     | `circle-alert`                     |
+| Rules from the quick review                   | `tag`                              |
+| Recurring payments                            | `calendar`                         |
+| Privacy                                       | `shield-check`                     |
+| Upload                                        | `upload`                           |
+| Ask / chat                                    | `message-square`                   |
+| Summary                                       | `layout-grid`                      |
+| Transactions                                  | `list`                             |
+| Categories                                    | `chart-pie`                        |
+| Notifications                                 | `bell`                             |
+| Profile                                       | `user`                             |
+| Assistant                                     | Custom open-ring arrow (see Brand) |
+
+An unclassified movement shows the icon of its best guess in neutral ink.
 
 ---
 
@@ -306,26 +331,32 @@ Wordmark block on the left, greeting with the assistant mark in the center, util
 
 ### Page title row
 
-- H1 with the account name ("Resumen de tu cuenta de ahorros").
-- **Color legend** right below: three dots of 10px with a bold label and a plain-language meaning ("**Gasto real:** lo que de verdad gastaste"). It appears on every screen that shows kinds.
-- On the right: period selector and primary button.
+- H1 with the page or account name ("Resumen de tu cuenta de ahorros").
+- **Color legend** right below: three dots of 10px with a bold label and a plain-language meaning. It appears on every screen that shows kinds, with this copy:
+  - "**Ingresos:** lo que entró de otros" (green)
+  - "**Gasto real:** lo que de verdad gastaste" (orange)
+  - "**Movido:** lo que pasó entre tus cuentas, tu inversión o tus tarjetas, en cualquier sentido" (blue)
+- Below it, the controls: period selector, then the page's action ("Subir extracto" on the summary, "Descargar CSV" on Movimientos). On phones they stack at full width.
 
 ### Buttons
 
-| Variant     | Spec                                                                                                                             |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Primary     | Pill, `--primary` background, white Manrope 700 15px, min-height 50px, padding 0 22px, `--shadow-primary`, icon 18px on the left |
-| Secondary   | Pill, `--surface` background, `--text` Manrope 600, `--shadow-chip`                                                              |
-| Icon button | 44px circle, `rgba(255,255,255,0.8)`, `--shadow-chip`, icon 19px; always with `aria-label`                                       |
-| Link action | Manrope 700 14px, `--primary`, no underline; underline on hover                                                                  |
+| Variant     | Spec                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Primary     | Pill, `--primary` background, white Manrope 700 15px, min-height 50px, padding 0 22px, `--shadow-primary`, icon 18px on the left                                                                        |
+| Secondary   | Pill, `--surface` background, `--text` Manrope 600, `--shadow-chip`                                                                                                                                     |
+| Icon button | 44px circle, `rgba(255,255,255,0.8)`, `--shadow-chip`, icon 19px; always with `aria-label`                                                                                                              |
+| Link action | Manrope 700 14px, `--primary`, no underline; underline on hover                                                                                                                                         |
+| Destructive | Pill, `--surface` background, `--danger` Manrope 700 text and `trash-2` icon, `--shadow-chip` ("Borrar todos mis datos"). The confirmation dialog's confirm button is filled `--danger` with white text |
+| Answer      | Quick review answers: the suggested one as Primary, the others as Secondary, then a caption "Sugerido: la primera"                                                                                      |
 
-### Segmented control (period)
+### Period selector
 
-Pill container `rgba(255,255,255,0.8)` with 5px padding and `--shadow-chip`. Options: pill, min-height 40px, padding 0 16px, Manrope 600 14px `--text-muted`. Active: `--primary-soft` background, Manrope 700, `--primary-strong`.
+- **Quarter picker:** white pill button (`--shadow-chip`, `calendar` icon, the quarter "Jul – sep 2026", chevron). It opens a popover (`--surface`, `--radius-md`, `--shadow-pop`) that lists the quarters with their status badge ("Verificado", "Sin verificar") and "Año 2026" with its coverage ("9 de 12 meses"); "Año" adds up the quarters the user has. The selected quarter has a `--primary-soft` background and `--primary-strong` text.
+- **Months:** a segmented control with the quarter's three months and "Trimestre", the default. Pill container `rgba(255,255,255,0.8)` with 5px padding and `--shadow-chip`. Options: pill, min-height 40px, padding 0 16px, Manrope 600 14px `--text-muted`. Active: `--primary-soft` background, Manrope 700, `--primary-strong`.
 
 ### Filter chips
 
-Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`, `--text-secondary`, 600. Active: `--primary-soft`, `--primary-strong`, 700, `aria-pressed="true"`.
+Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`, `--text-secondary`, 600. Active: `--primary-soft`, `--primary-strong`, 700, `aria-pressed="true"`. A chip can carry its count ("Por revisar · 24").
 
 ### Stat card
 
@@ -336,15 +367,28 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 - Explanation: Caption, `--text-muted`, one sentence.
 - Action link that names the destination ("Ver en qué gastaste").
 
+### Kind total tile
+
+On Movimientos: icon chip 44px with the kind's soft background, the label, the total in Amount L with its sign and the kind's text color, and the count ("41 movimientos"). Moved shows both directions: "−$29,8M · +$2,8M", "57 salieron · 8 volvieron".
+
 ### Account card
 
 - `--surface-panel`, `--radius-lg`, padding 22, `--shadow-panel`.
-- Left: label "Saldo al 30 de septiembre", balance (Amount XL), account name, status pill.
+- Left: label "Saldo al 30 de septiembre", balance (Amount XL), account name with the number masked to its last 4 digits ("Cuenta de ahorros · Bancolombia ••••8821"), two small boxes with the bank's own figures ("Saldo promedio", "Intereses pagados"; `--surface`, `--radius-sm`), then the status pill.
 - Right: statement object illustration, about 112×160px.
 
 ### Status pill
 
-`--surface`, `--radius-sm`, padding 10px 14px, `--shadow-chip`. Status dot (10px with halo) + title (Manrope 700 14px) + detail (12px muted). Example: "Saldo verificado · 379 movimientos cuadran".
+`--surface`, `--radius-sm`, padding 10px 14px, `--shadow-chip`. Status dot (10px with halo) + title (Manrope 700 14px) + detail (12px muted). The variant depends on the file:
+
+| Variant           | Dot                  | Example                                               |
+| ----------------- | -------------------- | ----------------------------------------------------- |
+| Verified          | `--status-ok`        | "Saldo verificado" · "312 movimientos cuadran"        |
+| Chained           | `--status-ok`        | "Encadenado" · "Empieza donde terminó abr-jun"        |
+| Without balance   | `--text-faint`       | "Sin saldo para verificar" · "Archivo de movimientos" |
+| Doesn't reconcile | `--status-attention` | "No cuadra por $12.400" · "Revisa el archivo"         |
+
+A movements export without balances becomes "Verificado por tu extracto trimestral" once a quarterly statement covers its dates and agrees with it.
 
 ### Chart card
 
@@ -366,8 +410,71 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 - Divider `--divider` on top, padding 14px 0, wraps on small screens.
 - Icon chip 44px with the kind's soft background and kind icon.
 - Plain-language title (Manrope 700 15px) and, below it, the raw bank text (12px, `--text-muted`, as printed).
-- Explanation (13px, `--text-secondary`).
+- Explanation (13px, `--text-secondary`), then the channel tag and any badge ("Por revisar", "Subió").
 - Amount (Amount S) in the kind's text color, with its sign, right-aligned in a 128px column.
+- Unclassified rows: neutral icon chip and ink amount (§3.4), with "Por revisar".
+- The daily interest rows of a month are one row ("Intereses de septiembre", "30 abonos diarios, agrupados en una línea").
+- A raw text of `0` is titled "Sin descripción del banco", with a link to name it.
+- On Movimientos the rows are grouped by day, each header with the day's balance ("Saldo del día $6.482.310"), and a row opens a detail panel: "Así lo escribe el banco", "También aparece como" (the other ways the bank wrote it), channel, reference, source files, balance after, kind and category with the reason ("Regla del sistema, sin IA").
+
+### Channel tag
+
+A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary`. It comes from the bank's text:
+
+| Tag              | Bank text                |
+| ---------------- | ------------------------ |
+| PSE              | `PAGO PSE`               |
+| Llave Bre-B      | `PAGO LLAVE`             |
+| QR               | `PAGO QR`, `TRANSF QR`   |
+| Nequi            | `TRANSFERENCIAS A NEQUI` |
+| Cajero           | `RETIRO CAJERO`          |
+| Corresponsal     | `CORRESPONSAL`           |
+| Débito           | `COMPRA EN`              |
+| Sucursal virtual | `PAGO SUC VIRT`          |
+| Transferencia    | `TRANSF A`, `TRANSF DE`  |
+
+### Badges
+
+Pills without a border, Manrope 600 12px, on a soft background:
+
+| Badge                         | Background        | Text                 |
+| ----------------------------- | ----------------- | -------------------- |
+| Por revisar (`circle-alert`)  | `--spending-soft` | `--spending-on-soft` |
+| Subió (`arrow-up-right`)      | `--spending-soft` | `--spending-on-soft` |
+| Estable, Verificado           | `--income-soft`   | `--income-on-soft`   |
+| Varios canales, Completado    | `--primary-soft`  | `--primary-strong`   |
+| Monto variable, Sin verificar | `--surface-muted` | `--text-secondary`   |
+
+### Raw-text chip
+
+The bank's text exactly as printed, for the quick review, the profile and the detail panel: `--surface`, 1px `--ring-track` border, radius 8, padding 4px 10px, monospace 12px (§4), `white-space: pre`. Repeats show as "×3" beside it.
+
+### Review banner
+
+On the summary while review groups are pending: the attention surface (`#FFF6EF`), `--radius-lg`, a white icon chip with the 9px orange dot, a title with the count ("Tienes 4 grupos por revisar (24 movimientos)"), one line ("Mientras tanto usamos nuestra mejor suposición. Confírmalos: pueden cambiar tu gasto real.") and a Primary "Revisar ahora".
+
+### Review group card
+
+The quick review asks one question per group:
+
+- **Open:** `--surface-card`, `--radius-lg`, padding 24. Neutral icon chip, the question as card title ("¿Qué son estos pagos con llave (Bre-B)?"), one line of context, the amount at stake and its count on the right (Amount S, ink), the raw-text chips of the group, and the answers (Answer buttons, §9). A group of references (Nequi numbers) lists each one with its count and total and an "Es mío" switch, then "Guardar" and "Ninguno es mío".
+- **Answered:** collapses to one line on `--surface-card`: a check icon chip (`--income-soft`), the group and what it now counts as ("Son tuyas: 5 movimientos cuentan como movido.") and a "Cambiar" link.
+- Beside the groups, the panel "Lo que está en juego": progress ("2 de 6 respondidos"), each open group with its amount and what the answer would change ("Si son compras, tu gasto real sube a $30,4M"), and "Ver mi resumen" / "Responder después".
+
+### Coverage timeline
+
+The months the user has, on the upload screen, the upload result and the profile: one rounded segment per month (8px tall, 6px apart) with the month below (Meta), and a legend:
+
+| Segment                                     | Color                                        |
+| ------------------------------------------- | -------------------------------------------- |
+| Quarterly statement, verified               | `--status-ok`                                |
+| Also in movements exports (a line below it) | `--moved`, 4px                               |
+| Without balance to verify                   | stripes of `--text-faint` and `--chart-axis` |
+| Missing                                     | `--ring-track`                               |
+
+### Switch
+
+For "Es mío" and the email notices: `--primary` when on, `--ring-track` when off, always with a visible label.
 
 ### Chat ("Pregúntale a tu extracto")
 
@@ -384,7 +491,7 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 - `position: sticky; bottom: 16px`, centered.
 - Items: icon 22px above a 14px label, min-width 86px, padding 10px 14px, `--radius-md`.
 - Active item: `--primary-soft-2` background, `--primary` text and icon, weight 700, `aria-current="page"`.
-- Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil.
+- Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil. Each one appears when its screen exists.
 
 ---
 
@@ -395,7 +502,7 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 3. Every chart has a title, a one-line reading guide and a legend.
 4. Print the values: never make the user read a value off an axis.
 5. Highlight at most one event per chart, explained in plain language.
-6. Daily interest rows are grouped into one line per period.
+6. Daily interest rows are grouped into one line per month.
 
 ---
 
@@ -407,6 +514,8 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 - Every number gets its meaning: "El 58% de lo que salió. Sigue siendo tuyo."
 - Actions name the result: "Ver los 21 retiros", "Subir extracto".
 - Errors say what happened and what to do, without apologizing: "Este PDF tiene contraseña. Escríbela para abrirlo; no sale de tu navegador."
+- A best guess says so: "Creemos que es tu inversión. Confírmalo en la revisión."
+- Repeated files and missing balances are facts, not errors: "Ya tenías todo este archivo", "Este archivo no trae saldos".
 
 ---
 
@@ -417,6 +526,8 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 - Focus ring: `3px solid #2563EB` with a 3px offset, on every interactive element.
 - Real `<button>`, `<a href>` and `<input>` with `<label>`. Icon-only buttons have an `aria-label`.
 - Toggle groups use `role="group"` with `aria-label`, and options use `aria-pressed`. The active navigation item uses `aria-current="page"`.
+- Switches use `role="switch"` with a label that names what they change ("Es mío: Nequi terminado en 1270").
+- The coverage timeline has a text alternative that states it ("Enero a septiembre completo y verificado; octubre sin saldo").
 - Charts have `role="img"` and an `aria-label` that states the conclusion.
 - Color is never the only signal: legend, labels and signs always accompany it.
 - Respect `prefers-reduced-motion`.
@@ -552,11 +663,13 @@ Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards)
 
 Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral` and `attention`). The development page `/design-system` shows every token and component.
 
+v8 needs no new color tokens: the grey status dot is `ink-faint`, and the coverage timeline uses `income`, `moved`, `ink-faint`, `chart-axis` and `ring-track`. Each v8 component (§9) is built with its first consumer: `Button` gains the white destructive variant and `Badge` the status badges of §9 then, and the development page shows them.
+
 ---
 
 ## 14. Pending
 
 - **Dark mode:** not designed yet. When it is, every token above gets a dark value; components keep using tokens only.
-- **Phone layout:** follows §7; `docs/ui/07` and `08` show the summary screen at 390px with the bottom tab bar.
-- **States:** loading (ingestion in progress) and error screens. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Subir extracto".
-- **Remaining screens** in this style: upload, transactions, recurring payments, categories and settings.
+- **Phone layout:** follows §7; every v8 screen has a 390px capture (`docs/ui/v8-*-movil.png`), with the bottom tab bar Resumen, Movimientos, Subir, Pregúntale and "Más".
+- **States:** ingestion in progress follows the processing steps of `v8-08`; notices and errors follow `v8-13`. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Subir extracto"; `v8-12` adds the bank's download paths.
+- **Screens:** v8 covers every MVP screen, including the quick review, the upload result, the profile and onboarding. `docs/ROADMAP.md` says which phase builds each.
