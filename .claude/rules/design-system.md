@@ -151,7 +151,7 @@ Danger is not a kind: never use it for spending. Notice and error screens (`docs
 | Display, amounts, wordmark | **Outfit** (300, 400, 500, 600)  | `system-ui, sans-serif`             |
 | UI and body                | **Manrope** (400, 500, 600, 700) | `"Segoe UI", system-ui, sans-serif` |
 
-Both come from Google Fonts. In Next.js, load them with `next/font/google` and expose them as CSS variables (`--font-display`, `--font-body`).
+Both come from Google Fonts, as variable files kept in `apps/web/src/fonts/` (Latin subset): Next.js loads them with `next/font/local` and exposes them as CSS variables (`--font-outfit`, `--font-manrope`). With `next/font/google` every build downloaded them, and one of Google's answers broke the CI build.
 
 ### Type scale
 
@@ -657,16 +657,16 @@ body {
 
 ```tsx
 // apps/web/src/app/layout.tsx
-import { Manrope, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+const outfit = localFont({
+  src: "../fonts/outfit-latin.woff2",
+  weight: "100 900",
   variable: "--font-outfit",
 });
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const manrope = localFont({
+  src: "../fonts/manrope-latin.woff2",
+  weight: "200 800",
   variable: "--font-manrope",
 });
 
