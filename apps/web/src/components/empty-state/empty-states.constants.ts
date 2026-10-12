@@ -1,5 +1,6 @@
 // The Spanish copy of the pages before there is data. Each page's feature
-// takes its copy over when it gets real content (5.3, 5.7, 6.5, 6.7).
+// takes its copy over when it gets real content (5.7, 6.5, 6.7); the upload
+// feature already has.
 export const PAGE_COPY = {
   uploadAction: "Subir extracto",
   summary: {
@@ -22,12 +23,5 @@ export const PAGE_COPY = {
     emptyTitle: "Aún no hay pagos fijos",
     emptyDescription:
       "Con extractos de al menos dos meses encontramos tus cuotas, servicios y suscripciones, y te avisamos si alguno sube.",
-  },
-  upload: {
-    title: "Subir extracto",
-    subtitle: "Bancolombia, cuenta de ahorros.",
-    emptyTitle: "Tu archivo no sale de tu navegador",
-    emptyDescription:
-      "Leemos el extracto en tu equipo y solo enviamos sus movimientos: nunca el archivo ni su contraseña. La subida llega muy pronto.",
   },
 } as const;
