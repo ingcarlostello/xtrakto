@@ -419,7 +419,7 @@ A movements export without balances becomes "Verificado por tu extracto trimestr
 
 ### Channel tag
 
-A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary`. It comes from the bank's text:
+A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary` (`Badge` variant `tag`, which a file's tags use too). It comes from the bank's text:
 
 | Tag              | Bank text                |
 | ---------------- | ------------------------ |
@@ -471,6 +471,20 @@ The months the user has, on the upload screen, the upload result and the profile
 | Also in movements exports (a line below it) | `--moved`, 4px                               |
 | Without balance to verify                   | stripes of `--text-faint` and `--chart-axis` |
 | Missing                                     | `--ring-track`                               |
+
+### Drop zone
+
+On the upload screen, inside the card "Elige uno o varios archivos": `--radius-md`, a 2px dashed border in `--primary` at 30%, padding 40px 20px, centered. A 72px `--primary-soft` circle with the `upload` icon (28px, `--primary`), the title "Arrastra tus extractos aquí" (Outfit 500 24px), the Primary "Elegir archivos" button with `file-text`, and a caption with the size limit and where files are read. While files are dragged over it, the border turns solid `--primary` on `--primary-soft`. The button is the way in with a keyboard and on phones; a file dropped elsewhere on the page is ignored, so the browser never opens it.
+
+### File row (before sending)
+
+One per chosen file, in a list with dividers: a 44px icon chip (`--surface-muted`, `file-spreadsheet` in ink), the file name (Manrope 700 15px, cut with an ellipsis; it never leaves the browser) and "Quitar" on the right (link action, with an `aria-label` that names the file; the focus then goes back to "Elegir archivos"). Under the name, announced politely:
+
+- Waiting or being read: the step, in Caption `--text-muted` ("Leyendo el archivo…").
+- Read: the tags (bank, format, file type and period: "jul–sep 2026" for a statement's own period, "1–15 ago 2026" for a range of movements), then the count ("33 movimientos").
+- With a problem: the row sits on the attention surface (`#FFF6EF`, `--radius-md`, reaching past the row so the chips stay aligned), the chip turns white with the 9px orange dot, and it says what happened (Manrope 700 14px) and what to do (Caption), as `v8-13` does.
+
+Below the list, a Primary "Subir N archivos" for the files read.
 
 ### Switch
 
