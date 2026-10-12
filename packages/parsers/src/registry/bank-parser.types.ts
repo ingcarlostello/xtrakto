@@ -18,6 +18,13 @@ export type BankParser = {
    * the format is an expected error (`PARSE_FAILED`), never an exception.
    */
   readonly parse: (content: ExtractedContent) => Result<ParsedStatement>;
+  /**
+   * The content with only what `parse` reads, for content this parser
+   * recognizes: what leaves the browser (ADR 0017). Pure and idempotent; rows
+   * keep their positions, so `parse(minimize(content))` gives the same result
+   * as `parse(content)`. Never throws.
+   */
+  readonly minimize: (content: ExtractedContent) => ExtractedContent;
 };
 
 export type ParserRegistry = {

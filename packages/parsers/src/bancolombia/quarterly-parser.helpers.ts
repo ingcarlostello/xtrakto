@@ -13,6 +13,7 @@ import {
 } from "./bancolombia.constants";
 import { parseFailed } from "./parse-failure.helpers";
 import { readQuarterlyHeader } from "./quarterly-header.helpers";
+import { minimizeQuarterly } from "./quarterly-minimize.helpers";
 import {
   findMovementsTable,
   readQuarterlyMovements,
@@ -50,4 +51,5 @@ export const bancolombiaQuarterlyParser: BankParser = {
     return rows !== undefined && findMovementsTable(rows).ok;
   },
   parse,
+  minimize: minimizeQuarterly,
 };

@@ -27,6 +27,7 @@ import {
   MOVEMENTS_COLUMN,
   PAGE_START_LABELS,
   QUARTERLY_BLOCK,
+  SPLIT_MARK,
 } from "./bancolombia.constants";
 import { parseFailed } from "./parse-failure.helpers";
 
@@ -37,7 +38,8 @@ export type QuarterlyMovements = Pick<
 >;
 
 type MovementKey = keyof typeof MOVEMENTS_COLUMN;
-type MovementColumns = Readonly<Record<MovementKey, number>>;
+/** Where each column of the movements table is, by key. */
+export type MovementColumns = Readonly<Record<MovementKey, number>>;
 
 type RowContext = {
   readonly columns: MovementColumns;
@@ -57,8 +59,6 @@ type RowKind =
 
 const BLOCK = QUARTERLY_BLOCK.MOVEMENTS;
 const DAY_MONTH_PATTERN = /^\d{1,2}\/\d{1,2}$/;
-// How older exports mark a description they split (Appendix A.1).
-const SPLIT_MARK = "¡";
 
 /**
  * Where the movements table starts: the first movements label, followed by
@@ -82,9 +82,13 @@ export const findMovementsTable = (
   return ok({ start: labelRow + 2, columns: columnPositions(columns.value) });
 };
 
-// A d/mm date, or anything but text where the date goes, which then fails to
-// read instead of passing as a stray row.
-const looksLikeMovement = (cell: SpreadsheetCell | undefined): boolean => {
+/**
+ * Whether a row's date cell makes it a movement: a d/mm date, or anything but
+ * text, which then fails to read instead of passing as a stray row.
+ */
+export const looksLikeMovement = (
+  cell: SpreadsheetCell | undefined,
+): boolean => {
   if (cell === null || cell === undefined) return false;
   return typeof cell !== "string" || DAY_MONTH_PATTERN.test(cell.trim());
 };

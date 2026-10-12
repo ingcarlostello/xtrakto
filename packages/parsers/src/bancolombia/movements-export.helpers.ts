@@ -27,11 +27,13 @@ import {
   ATM_REFERENCE_PREFIX,
   EXPORT_COLUMN,
   EXPORT_DATE_TIME_ZONES,
+  EXPORT_HEADER_ROW,
 } from "./bancolombia.constants";
 import { parseFailed } from "./parse-failure.helpers";
 
 type ExportKey = keyof typeof EXPORT_COLUMN;
-type ExportColumns = Readonly<Record<ExportKey, number>>;
+/** Where each column of the export is, by key. */
+export type ExportColumns = Readonly<Record<ExportKey, number>>;
 type FilledCell = Exclude<SpreadsheetCell, null>;
 
 type RowContext = {
@@ -39,7 +41,6 @@ type RowContext = {
   readonly sourceRow: number;
 };
 
-const HEADER_ROW = 0;
 // A Colombian mobile number: 10 digits starting with 3.
 const MOBILE_NUMBER_PATTERN = /^3\d{9}$/;
 
@@ -132,7 +133,7 @@ const inDateOrder = (
 
 /** Where each column is, from the header in the export's first row. */
 export const findExportColumns = (rows: SheetRows): Result<ExportColumns> => {
-  const header = findColumns(rows[HEADER_ROW] ?? [], EXPORT_COLUMN);
+  const header = findColumns(rows[EXPORT_HEADER_ROW] ?? [], EXPORT_COLUMN);
   return header.ok
     ? ok(columnPositions(header.value))
     : parseFailed({ reason: "missing_column", column: header.error });
@@ -150,7 +151,7 @@ export const readExportMovements = (
   const columns = header.value;
   const transactions: ParsedTransaction[] = [];
   for (const [index, row] of rows.entries()) {
-    if (index === HEADER_ROW || isBlankRow(row)) continue;
+    if (index === EXPORT_HEADER_ROW || isBlankRow(row)) continue;
     const movement = readMovement(row, { columns, sourceRow: index });
     if (!movement.ok) return movement;
     transactions.push(movement.value);

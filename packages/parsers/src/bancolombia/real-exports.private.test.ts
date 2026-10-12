@@ -14,6 +14,7 @@ import {
   MOVEMENTS_EXPORT_FORMAT_ID,
   QUARTERLY_FORMAT_ID,
 } from "./bancolombia.constants";
+import { findExportColumns } from "./movements-export.helpers";
 
 // Real exports a developer copies into the git-ignored fixtures/private/ or
 // its folders (Phase 2.8). Assertions only compare counts, yes/no answers, error codes
@@ -21,6 +22,7 @@ import {
 // name or a file name.
 
 const INTEREST = "ABONO INTERESES AHORROS";
+const LONG_NUMBER = /\d{6,}/;
 
 type ReadExport = {
   readonly statement?: ParsedStatement;
@@ -139,7 +141,42 @@ const compareMovements = (
   };
 };
 
-const files = (await readPrivateExports()).map(readExport);
+/** What minimizing a file before it's sent does to it (ADR 0017). */
+type Minimized = {
+  /** Whether the minimized content parses exactly as the original. */
+  readonly isSameParse: boolean;
+  /** Cells with a long number left, except an export's references. */
+  readonly longNumbers: number;
+};
+
+// Compared through JSON, so a difference prints a yes or no, never content.
+const minimizeExport = (bytes: Uint8Array): Minimized | undefined => {
+  const content = extractSpreadsheet(bytes);
+  if (!content.ok) return undefined;
+  const parser = findParser(content.value);
+  if (!parser.ok) return undefined;
+  const { minimize, parse } = parser.value;
+  const minimized = minimize(content.value);
+  const rows =
+    minimized.type === "spreadsheet" ? (minimized.sheets[0]?.rows ?? []) : [];
+  const columns = findExportColumns(rows);
+  // The server needs references whole, to hash them.
+  const references = columns.ok ? columns.value.REFERENCE : undefined;
+  const longNumbers = rows
+    .flatMap((row) => row.filter((_, index) => index !== references))
+    .filter(
+      (cell) => typeof cell === "string" && LONG_NUMBER.test(cell),
+    ).length;
+  return {
+    isSameParse:
+      JSON.stringify(parse(minimized)) === JSON.stringify(parse(content.value)),
+    longNumbers,
+  };
+};
+
+const exportBytes = await readPrivateExports();
+const files = exportBytes.map(readExport);
+const minimizedFiles = exportBytes.map(minimizeExport);
 
 const ofFormat = (formatId: string) =>
   files.filter(({ statement }) => statement?.formatId === formatId);
@@ -181,6 +218,16 @@ describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
         issues: [],
       });
     }
+  });
+
+  it("parses every minimized file exactly as the original", () => {
+    expect(minimizedFiles.filter((file) => !file?.isSameParse).length).toBe(0);
+  });
+
+  it("leaves long numbers only in an export's references once minimized", () => {
+    expect(
+      minimizedFiles.map((file) => file?.longNumbers ?? 0).filter(Boolean),
+    ).toEqual([]);
   });
 
   it("finds no unexpected rows in the quarterly statements", () => {

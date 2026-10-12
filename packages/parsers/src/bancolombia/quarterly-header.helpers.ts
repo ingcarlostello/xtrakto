@@ -16,6 +16,8 @@ import { cellText, findColumns, findLabelRow } from "../sheets/sheet.utils";
 import type { ColumnRef, SheetRows } from "../sheets/sheet.utils";
 import {
   ACCOUNT_COLUMN,
+  ACCOUNT_LAST_DIGITS,
+  ACCOUNT_NUMBER_PATTERN,
   CLIENT_COLUMN,
   PERIOD_COLUMN,
   QUARTERLY_BLOCK,
@@ -46,9 +48,6 @@ type BlockSpec<K extends string, T> = {
   /** Turns a cell's text into its value. */
   readonly read: (text: string) => Result<T>;
 };
-
-const ACCOUNT_NUMBER_PATTERN = /^\d{4,}$/;
-const ACCOUNT_LAST_DIGITS = 4;
 
 const readText = (text: string): Result<string> => ok(text);
 

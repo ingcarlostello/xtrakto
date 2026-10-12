@@ -23,6 +23,9 @@ coverage
 # Real bank statements (local development only, any depth)
 **/fixtures/private/
 
+# Synthetic XLSX files generated for manual checks (`generate:xlsx`)
+**/fixtures/xlsx/
+
 # ML data and artifacts (ml/)
 ml/data/
 ml/artifacts/

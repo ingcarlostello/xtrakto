@@ -1,5 +1,10 @@
 import { err, ok } from "@xtrakto/core";
-import type { ExtractedContent, Result, SpreadsheetCell } from "@xtrakto/core";
+import type {
+  ExtractedContent,
+  Result,
+  SpreadsheetCell,
+  SpreadsheetContent,
+} from "@xtrakto/core";
 
 const WHITESPACE_RUN = /\s+/g;
 // Decomposed (NFD), an accented letter is the letter plus combining marks.
@@ -23,6 +28,27 @@ export const firstSheetRows = (
   content: ExtractedContent,
 ): SheetRows | undefined =>
   content.type === "spreadsheet" ? (content.sheets[0]?.rows ?? []) : undefined;
+
+/** Spreadsheet content with these rows as its only sheet, which has no name. */
+export const asSingleSheet = (
+  rows: readonly (readonly SpreadsheetCell[])[],
+): SpreadsheetContent => ({
+  type: "spreadsheet",
+  sheets: [{ name: "", rows: rows.map((row) => [...row]) }],
+});
+
+/**
+ * The row with only the cells at these positions, the rest empty, and no
+ * empty cells at its end.
+ */
+export const keepCells = (
+  row: readonly SpreadsheetCell[],
+  positions: ReadonlySet<number>,
+): SpreadsheetCell[] => {
+  const kept = row.map((cell, index) => (positions.has(index) ? cell : null));
+  const lastKept = kept.findLastIndex((cell) => cell !== null);
+  return kept.slice(0, lastKept + 1);
+};
 
 /** A cell's text without surrounding spaces; undefined if it holds no text. */
 export const cellText = (
