@@ -1,13 +1,14 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useRef } from "react";
-import type { ChangeEvent, Ref } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { useUploadQueue } from "../hooks/use-upload-queue";
+import { countText, fileRowView } from "../upload-display.helpers";
 import { UPLOAD_COPY as COPY, UPLOAD_STATUS } from "../upload.constants";
-import type { ExtractionWorker, UploadItem } from "../upload.types";
+import type { ExtractionWorker } from "../upload.types";
+import { DropZone } from "./DropZone";
 import { FileRow } from "./FileRow";
 
 // Turbopack bundles the worker, SheetJS included, into chunks of its own,
@@ -16,47 +17,13 @@ import { FileRow } from "./FileRow";
 const createExtractionWorker = (): ExtractionWorker =>
   new Worker(new URL("../extract-statement.worker.ts", import.meta.url));
 
-const statusText = (item: UploadItem): string => {
-  switch (item.status) {
-    case UPLOAD_STATUS.WAITING:
-      return COPY.waiting;
-    case UPLOAD_STATUS.EXTRACTING:
-      return COPY.stage[item.stage];
-    case UPLOAD_STATUS.READY:
-      return COPY.ready;
-    case UPLOAD_STATUS.FAILED:
-      return COPY.failed;
-  }
-};
-
-type ChooseFilesProps = {
-  ref: Ref<HTMLButtonElement>;
-  onChoose: (files: readonly File[]) => void;
-};
-
-// The native picker stays hidden behind a real button, which takes the focus.
-function ChooseFiles({ ref, onChoose }: ChooseFilesProps) {
-  const input = useRef<HTMLInputElement>(null);
-
-  const choose = (event: ChangeEvent<HTMLInputElement>) => {
-    onChoose([...(event.target.files ?? [])]);
-    // Choosing the same file again must fire another change.
-    event.target.value = "";
-  };
-
+// Sending arrives with Phase 5.4b; until then the button says why it waits.
+function SubmitFiles({ count }: { count: number }) {
   return (
-    <div className="flex flex-col items-start gap-2">
-      <input
-        ref={input}
-        type="file"
-        accept=".xlsx"
-        multiple
-        hidden
-        onChange={choose}
-      />
-      <Button ref={ref} onClick={() => input.current?.click()}>
-        <FileText aria-hidden />
-        {COPY.choose}
+    <div className="flex flex-col items-start gap-2 border-t border-divider pt-4">
+      <Button disabled>
+        <Upload aria-hidden />
+        {`${COPY.submit} ${countText(count, COPY.files)}`}
       </Button>
       <p className="text-caption text-ink-muted">{COPY.notSentYet}</p>
     </div>
@@ -68,6 +35,9 @@ export function UploadFlow() {
     createWorker: createExtractionWorker,
   });
   const chooseButton = useRef<HTMLButtonElement>(null);
+  const readyCount = items.filter(
+    (item) => item.status === UPLOAD_STATUS.READY,
+  ).length;
 
   // A removed row takes the focus with it: hand it back to the picker.
   const removeFile = (id: string) => {
@@ -83,19 +53,20 @@ export function UploadFlow() {
         </h2>
         <CardDescription>{COPY.chooseDescription}</CardDescription>
       </CardHeader>
-      <ChooseFiles ref={chooseButton} onChoose={addFiles} />
+      <DropZone ref={chooseButton} onFiles={addFiles} />
       {items.length > 0 && (
-        <ul className="flex flex-col">
+        <ul aria-label={COPY.fileList} className="flex flex-col">
           {items.map((item) => (
             <FileRow
               key={item.id}
               name={item.file.name}
-              status={statusText(item)}
+              view={fileRowView(item)}
               onRemove={() => removeFile(item.id)}
             />
           ))}
         </ul>
       )}
+      {readyCount > 0 && <SubmitFiles count={readyCount} />}
     </Card>
   );
 }

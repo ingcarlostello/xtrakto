@@ -4,6 +4,7 @@ import { useEffect, useReducer, useRef } from "react";
 import type { Dispatch } from "react";
 import { itemsToStart, uploadQueueReducer } from "../upload-queue.helpers";
 import type { UploadQueueAction } from "../upload-queue.helpers";
+import { FILE_PROBLEM } from "../upload.constants";
 import type {
   ExtractedStatement,
   ExtractionWorker,
@@ -13,7 +14,7 @@ import type {
 // The file couldn't be read from disk, or its worker stopped unexpectedly.
 const unreadable: Result<never> = err({
   code: APP_ERROR_CODE.PARSE_FAILED,
-  details: { reason: "unreadable" },
+  details: { reason: FILE_PROBLEM.UNREADABLE },
 });
 
 type Extraction = {

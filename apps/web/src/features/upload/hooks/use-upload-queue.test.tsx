@@ -1,10 +1,20 @@
 // @vitest-environment happy-dom
-import { APP_ERROR_CODE, err, ok, periodSchema } from "@xtrakto/core";
+import {
+  APP_ERROR_CODE,
+  err,
+  ok,
+  PERIOD_SOURCE,
+  periodSchema,
+} from "@xtrakto/core";
 import type { AppError } from "@xtrakto/core";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EXTRACTION_STAGE, UPLOAD_STATUS } from "../upload.constants";
+import {
+  EXTRACTION_STAGE,
+  FILE_PROBLEM,
+  UPLOAD_STATUS,
+} from "../upload.constants";
 import type {
   ExtractedStatement,
   ExtractionMessage,
@@ -45,6 +55,7 @@ const STATEMENT: ExtractedStatement = {
     bankId: "bancolombia",
     formatId: "bancolombia-movements-export",
     period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
+    periodSource: PERIOD_SOURCE.ROWS,
     movementCount: 2,
   },
 };
@@ -197,6 +208,25 @@ describe("useUploadQueue", () => {
       }),
     );
     expect(workers[0]?.requests).toHaveLength(0);
+  });
+
+  it("never reads a file that fails the checks", () => {
+    const statement = fileNamed("extracto.xlsx");
+
+    add(fileNamed("extracto.pdf"), statement, statement);
+
+    expect(queue.items).toMatchObject([
+      {
+        status: UPLOAD_STATUS.FAILED,
+        error: { details: { reason: FILE_PROBLEM.TYPE } },
+      },
+      { status: UPLOAD_STATUS.EXTRACTING },
+      {
+        status: UPLOAD_STATUS.FAILED,
+        error: { details: { reason: FILE_PROBLEM.DUPLICATE } },
+      },
+    ]);
+    expect(workers).toHaveLength(1);
   });
 
   it("stops a removed file's worker and starts a waiting file", () => {

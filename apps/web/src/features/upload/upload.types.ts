@@ -1,4 +1,10 @@
-import type { AppError, ExtractedContent, Period, Result } from "@xtrakto/core";
+import type {
+  AppError,
+  ExtractedContent,
+  Period,
+  PeriodSource,
+  Result,
+} from "@xtrakto/core";
 import type { EXTRACTION_STAGE, UPLOAD_STATUS } from "./upload.constants";
 
 export type ExtractionStage =
@@ -9,6 +15,8 @@ export type StatementPreview = {
   readonly bankId: string;
   readonly formatId: string;
   readonly period: Period;
+  /** A statement's own period reads as months; one from its rows, as days. */
+  readonly periodSource: PeriodSource;
   readonly movementCount: number;
 };
 

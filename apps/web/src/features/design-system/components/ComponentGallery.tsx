@@ -99,6 +99,8 @@ function Badges() {
       <Badge variant="spending">Gasto real</Badge>
       <Badge variant="moved">Movido</Badge>
       <Badge variant="attention">Revisar</Badge>
+      <Badge variant="tag">PSE</Badge>
+      <Badge variant="tag">Extracto trimestral</Badge>
     </div>
   );
 }

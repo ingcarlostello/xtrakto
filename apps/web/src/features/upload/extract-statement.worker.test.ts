@@ -1,4 +1,4 @@
-import { ok, periodSchema } from "@xtrakto/core";
+import { ok, PERIOD_SOURCE, periodSchema } from "@xtrakto/core";
 import { describe, expect, it, vi } from "vitest";
 import { EXTRACTION_STAGE } from "./upload.constants";
 import type {
@@ -30,6 +30,7 @@ const STATEMENT: ExtractedStatement = {
     bankId: "bancolombia",
     formatId: "bancolombia-movements-export",
     period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
+    periodSource: PERIOD_SOURCE.ROWS,
     movementCount: 2,
   },
 };
