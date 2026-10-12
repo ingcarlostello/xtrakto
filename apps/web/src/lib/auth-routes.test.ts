@@ -9,6 +9,7 @@ describe("isPublicPath", () => {
     "/sign-up",
     "/sign-up/verify-email-address",
     "/api/webhooks/clerk",
+    "/api/inngest",
   ])("lets a signed-out visitor open %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -23,6 +24,7 @@ describe("isPublicPath", () => {
     "/api/anything",
     "/api/webhooks",
     "/api/webhooks/clerkx",
+    "/api/inngestx",
   ])("asks for a session on %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });

@@ -8,10 +8,15 @@ export const AUTH_ROUTES = {
 // Called by Clerk, without a session: its signature is the check (4.5).
 export const CLERK_WEBHOOK_ROUTE = "/api/webhooks/clerk";
 
+// Called by Inngest to sync and run functions, without a session: in Cloud
+// mode the SDK verifies Inngest's signature on every request (5.1).
+export const INNGEST_ROUTE = "/api/inngest";
+
 const PUBLIC_PATH_PREFIXES = [
   AUTH_ROUTES.signIn,
   AUTH_ROUTES.signUp,
   CLERK_WEBHOOK_ROUTE,
+  INNGEST_ROUTE,
 ];
 
 /**

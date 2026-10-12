@@ -17,7 +17,8 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 - PostgreSQL 18 with pgvector: Neon in the cloud, Docker Compose locally ([ADR 0013](docs/adr/0013-neon-for-postgresql.md)), through Drizzle ORM
 - Zod for every trust boundary, environment variables included
 - Clerk for sign-in, in Spanish ([ADR 0004](docs/adr/0004-clerk-for-authentication.md))
-- Planned: Inngest and Vercel (see the [system design](docs/ARCHITECTURE.md))
+- Inngest for background jobs, with its Dev Server in Docker Compose locally ([ADR 0005](docs/adr/0005-inngest-for-background-work.md))
+- Planned: Vercel (see the [system design](docs/ARCHITECTURE.md))
 
 ## Monorepo layout
 
@@ -43,7 +44,7 @@ nvm use                      # reads .nvmrc
 npm install -g pnpm@12.9.1
 pnpm install
 cp .env.example .env.local   # git-ignored; the database values already match Docker
-docker compose up --wait     # local PostgreSQL, see below
+docker compose up --wait     # local PostgreSQL and Inngest Dev Server, see below
 pnpm db:migrate              # creates the tables
 pnpm db:seed                 # optional: synthetic statements for a dev user
 pnpm dev                     # http://localhost:3000
@@ -52,6 +53,8 @@ pnpm dev                     # http://localhost:3000
 `.env.example` documents every environment variable. Before `pnpm dev`, set `IDENTIFIER_HASH_KEY` in `.env.local` (`openssl rand -base64 32`) and the Clerk development keys (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`, from the Clerk dashboard): the web app validates its variables when it starts and stops, naming the variable, if one is missing or invalid.
 
 Every tool reads this one root `.env.local`: drizzle-kit, Vitest, the seed and the web app, which loads it from `apps/web/next.config.ts`. Don't create `.env*` files inside `apps/web`. Turborepo's strict mode passes `pnpm dev` and `pnpm build` only the variables declared in `turbo.json` (and `NEXT_PUBLIC_*` ones), so other variables exported in the shell don't reach the app that way; put them in `.env.local`.
+
+`.env.example` also sets `INNGEST_DEV=http://127.0.0.1:8288`, which points the app at the local Inngest Dev Server; without it the app wants Inngest's cloud keys and stops at startup.
 
 Real bank statements must never be committed. They may only live in git-ignored `fixtures/private/` folders, for private tests.
 
@@ -67,6 +70,16 @@ docker compose down -v                      # stops it and deletes the data
 ```
 
 On its first start, `docker/postgres/init.sql` creates the application role, `xtrakto_app`, which owns no table and can't bypass Row-Level Security, and the `xtrakto_test` database for integration tests. It only runs on an empty volume: after changing it, reset with `docker compose down -v`. The port is bound to `127.0.0.1`, and the passwords in `docker-compose.yml` and `.env.example` are for local use only.
+
+### Background jobs
+
+The same `docker compose up --wait` starts the Inngest Dev Server, pinned like PostgreSQL. It calls the app at `http://host.docker.internal:3000/api/inngest`, so run `pnpm dev` on port 3000, and keeps runs in memory until it stops. Its UI, http://127.0.0.1:8288, lists the app's functions and every run with its steps; a test event can be sent from there, or with:
+
+```bash
+curl -X POST http://127.0.0.1:8288/e/dev -d '{"name":"app/ping","data":{}}'
+```
+
+CI starts only PostgreSQL: the tests don't need the Dev Server.
 
 ## Scripts
 

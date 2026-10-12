@@ -315,14 +315,14 @@ Splitting by statement, not by row, keeps near-identical movements of one statem
 | App             | `pnpm dev`                               | Vercel preview deployment  | Vercel production · xtrakto.site                                                 |
 | Database        | Docker Compose: PostgreSQL 18 + pgvector | Neon branch                | Neon (AWS us-east-1), `main` branch                                              |
 | Auth            | Clerk development instance               | Clerk development instance | Clerk production instance (needs the domain)                                     |
-| Background jobs | Inngest dev server                       | Inngest branch environment | Inngest production                                                               |
+| Background jobs | Inngest Dev Server in Docker Compose     | Inngest branch environment | Inngest production                                                               |
 | Migrations      | `pnpm db:migrate`                        | Applied to the branch      | CI job on `main` with the owner role                                             |
 | Secrets         | `.env.local`                             | Vercel preview variables   | Vercel production variables; migration URL as a GitHub secret                    |
 | DNS and email   | —                                        | —                          | DNS at Hostinger; Resend on `mail.xtrakto.site` with SPF, DKIM, DMARC (Stage 10) |
 
 ```mermaid
 flowchart LR
-    PR["Pull request"] --> CI["GitHub Actions<br/>check-types · lint · test · format<br/>PostgreSQL in Docker for tests"]
+    PR["Pull request"] --> CI["GitHub Actions<br/>check-types · lint · test · format · build<br/>PostgreSQL in Docker for tests"]
     CI --> PV["Vercel preview<br/>+ Neon branch"]
     PV --> M["Merge to main"]
     M --> MG["Migrations job<br/>owner role"]

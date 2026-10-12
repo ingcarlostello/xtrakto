@@ -17,11 +17,19 @@ const PUBLISHABLE_KEY = fakeKey(
 );
 const SECRET_KEY = fakeKey("sk_test", "secretClerkKey0123456789abcdef");
 const WEBHOOK_SECRET = fakeKey("whsec", base64("secretWebhookKey0123456789"));
-const VALID = {
+const SIGNING_KEY = ["signkey", "prod", "secretSigningKey0123456789"].join("-");
+const EVENT_KEY = "secret-event-key-0123456789";
+const DEV_SERVER = "http://127.0.0.1:8288";
+const REQUIRED = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: PUBLISHABLE_KEY,
   CLERK_SECRET_KEY: SECRET_KEY,
+};
+const VALID = { ...REQUIRED, INNGEST_DEV: DEV_SERVER };
+const CLOUD_KEYS = {
+  INNGEST_SIGNING_KEY: SIGNING_KEY,
+  INNGEST_EVENT_KEY: EVENT_KEY,
 };
 
 const failureOf = (source: Record<string, string | undefined>): string => {
@@ -51,7 +59,67 @@ describe("parseServerEnv", () => {
   it("names every missing variable at once", () => {
     const message = failureOf({});
 
-    for (const name of Object.keys(VALID)) expect(message).toContain(name);
+    for (const name of Object.keys(REQUIRED)) expect(message).toContain(name);
+  });
+
+  it("requires both Inngest keys unless INNGEST_DEV points to the Dev Server", () => {
+    const message = failureOf({ ...REQUIRED, INNGEST_DEV: "" });
+
+    expect(message).toContain("INNGEST_SIGNING_KEY");
+    expect(message).toContain("INNGEST_EVENT_KEY");
+  });
+
+  it("accepts Cloud mode with both keys, without the Dev Server", () => {
+    expect(parseServerEnv({ ...REQUIRED, ...CLOUD_KEYS })).toEqual({
+      ...REQUIRED,
+      ...CLOUD_KEYS,
+    });
+  });
+
+  it("refuses INNGEST_DEV on Vercel, where dev mode would skip the signature check", () => {
+    const message = failureOf({ ...VALID, ...CLOUD_KEYS, VERCEL: "1" });
+
+    expect(message).toContain("INNGEST_DEV");
+    expect(message).not.toContain("secret");
+  });
+
+  it("lets a local production server (next start) use the Dev Server", () => {
+    const env = parseServerEnv({
+      ...VALID,
+      NODE_ENV: "production",
+      CLERK_WEBHOOK_SIGNING_SECRET: WEBHOOK_SECRET,
+    });
+
+    expect(env.INNGEST_DEV).toBe(DEV_SERVER);
+  });
+
+  it.each(["1", DEV_SERVER, "http://localhost:8288/", "http://[::1]:8288"])(
+    "accepts INNGEST_DEV=%s",
+    (value) => {
+      expect(parseServerEnv({ ...VALID, INNGEST_DEV: value }).INNGEST_DEV).toBe(
+        value,
+      );
+    },
+  );
+
+  it.each(["0", "true", "https://inn.gs", "http://192.168.1.20:8288"])(
+    "rejects INNGEST_DEV=%s, which isn't the local Dev Server",
+    (value) => {
+      expect(failureOf({ ...VALID, INNGEST_DEV: value })).toContain(
+        "INNGEST_DEV",
+      );
+    },
+  );
+
+  it("rejects an Inngest signing key without its prefix without printing it", () => {
+    const message = failureOf({
+      ...REQUIRED,
+      ...CLOUD_KEYS,
+      INNGEST_SIGNING_KEY: "secretSigningKey0123456789",
+    });
+
+    expect(message).toContain("INNGEST_SIGNING_KEY");
+    expect(message).not.toContain("secret");
   });
 
   it("rejects the secret key in the public variable, which would reach the browser", () => {

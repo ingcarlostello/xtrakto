@@ -17,42 +17,99 @@ const isLocalOrVerified = (value: string): boolean => {
   );
 };
 
-const serverEnvSchema = z
-  .object({
-    DATABASE_URL: z
-      .url({ protocol: /^postgres(ql)?$/ })
-      .refine(isLocalOrVerified, "a hosted database needs sslmode=verify-full"),
-    IDENTIFIER_HASH_KEY: z.string().min(MIN_IDENTIFIER_HASH_KEY_LENGTH),
-    // Clerk reads both itself; checking them here stops the server early. The
-    // prefixes also catch the secret key pasted in the public variable, which
-    // would ship it to every browser.
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+// The local Inngest Dev Server: `1`, or its URL on this machine.
+const INNGEST_DEV_PATTERN =
+  /^(1|http:\/\/(127\.0\.0\.1|localhost|\[::1\]):\d+\/?)$/;
+
+// Empty counts as unset, as .env.example ships these variables.
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    schema.optional(),
+  );
+
+const serverEnvShape = z.object({
+  DATABASE_URL: z
+    .url({ protocol: /^postgres(ql)?$/ })
+    .refine(isLocalOrVerified, "a hosted database needs sslmode=verify-full"),
+  IDENTIFIER_HASH_KEY: z.string().min(MIN_IDENTIFIER_HASH_KEY_LENGTH),
+  // Clerk reads both itself; checking them here stops the server early. The
+  // prefixes also catch the secret key pasted in the public variable, which
+  // would ship it to every browser.
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+    .string()
+    .regex(/^pk_(test|live)_/, "must start with pk_test_ or pk_live_"),
+  CLERK_SECRET_KEY: z
+    .string()
+    .regex(/^sk_(test|live)_/, "must start with sk_test_ or sk_live_"),
+  // Signs Clerk's user.deleted webhook. Optional in development, where Clerk
+  // can't reach localhost; production needs it, or deletions made in Clerk
+  // would leave data behind.
+  CLERK_WEBHOOK_SIGNING_SECRET: optional(
+    z.string().regex(/^whsec_/, "must start with whsec_"),
+  ),
+  // Inngest's SDK reads these itself, as Clerk does. Version 4 defaults to
+  // Cloud mode, which needs both keys; INNGEST_DEV points it at the local Dev
+  // Server instead, which needs none.
+  INNGEST_DEV: optional(
+    z
       .string()
-      .regex(/^pk_(test|live)_/, "must start with pk_test_ or pk_live_"),
-    CLERK_SECRET_KEY: z
-      .string()
-      .regex(/^sk_(test|live)_/, "must start with sk_test_ or sk_live_"),
-    // Signs Clerk's user.deleted webhook. Optional in development, where Clerk
-    // can't reach localhost; production needs it, or deletions made in Clerk
-    // would leave data behind. Empty counts as unset, as .env.example ships it.
-    CLERK_WEBHOOK_SIGNING_SECRET: z.preprocess(
-      (value) => (value === "" ? undefined : value),
-      z
-        .string()
-        .regex(/^whsec_/, "must start with whsec_")
-        .optional(),
-    ),
-    // Set by Next.js: production for `next build`, `next start` and Vercel.
-    NODE_ENV: z.string().optional(),
-  })
-  .superRefine((env, context) => {
-    if (env.NODE_ENV === "production" && !env.CLERK_WEBHOOK_SIGNING_SECRET)
-      context.addIssue({
-        code: "custom",
-        path: ["CLERK_WEBHOOK_SIGNING_SECRET"],
-        message: "required in production",
-      });
-  });
+      .regex(INNGEST_DEV_PATTERN, "must be 1 or the local Dev Server's URL"),
+  ),
+  INNGEST_SIGNING_KEY: optional(
+    z.string().regex(/^signkey-/, "must start with signkey-"),
+  ),
+  INNGEST_EVENT_KEY: optional(z.string()),
+  // Set by Next.js: production for `next build`, `next start` and Vercel.
+  NODE_ENV: z.string().optional(),
+  // Set by Vercel on every deployment, previews included.
+  VERCEL: optional(z.string()),
+});
+
+type ServerEnvShape = z.infer<typeof serverEnvShape>;
+type EnvIssue = {
+  readonly path: keyof ServerEnvShape;
+  readonly message: string;
+};
+
+const productionIssues = (env: ServerEnvShape): EnvIssue[] =>
+  env.NODE_ENV === "production" && !env.CLERK_WEBHOOK_SIGNING_SECRET
+    ? [
+        {
+          path: "CLERK_WEBHOOK_SIGNING_SECRET",
+          message: "required in production",
+        },
+      ]
+    : [];
+
+// Keyed on VERCEL rather than NODE_ENV, so that a local `next start` still
+// uses the Dev Server.
+const inngestIssues = (env: ServerEnvShape): EnvIssue[] => {
+  if (env.INNGEST_DEV)
+    return env.VERCEL
+      ? [
+          {
+            path: "INNGEST_DEV",
+            message:
+              "must not be set on Vercel: dev mode skips Inngest's signature check",
+          },
+        ]
+      : [];
+  return (["INNGEST_SIGNING_KEY", "INNGEST_EVENT_KEY"] as const)
+    .filter((name) => !env[name])
+    .map((path) => ({
+      path,
+      message: "required unless INNGEST_DEV points to the local Dev Server",
+    }));
+};
+
+const serverEnvSchema = serverEnvShape.superRefine((env, context) => {
+  for (const { path, message } of [
+    ...productionIssues(env),
+    ...inngestIssues(env),
+  ])
+    context.addIssue({ code: "custom", path: [path], message });
+});
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
