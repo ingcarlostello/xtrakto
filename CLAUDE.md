@@ -31,20 +31,17 @@ What to build and in which order (stages, phases, gates, progress). Follow its s
 
 - Node 22 comes from nvm, which the agent's shell may not load. If `node` isn't found, prefix commands with `export PATH="$HOME/.nvm/versions/node/v22.20.0/bin:$PATH"`.
 - Before closing a phase, run `pnpm turbo check-types lint test` and `pnpm format:check` (CI runs both). After changing a parser, also run `pnpm --filter @xtrakto/parsers test:private` if real exports are in `packages/parsers/fixtures/private/`. The human authorized the agent to open those files locally to learn the formats (quarterly statements in `extractos trimestrales/`, movements exports in `Movimientos cuenta/`, as XLSX and PDF). Real values (names, ID and account numbers, amounts, descriptions, references) never go into tracked files, commit messages or logs: committed fixtures stay invented, and private tests report counts only. The PDF password is never written to any file.
-- Local PostgreSQL runs in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes its data. `packages/db` tests run when `TEST_DATABASE_URL` and `TEST_DATABASE_MIGRATION_URL` are set (root `.env.local`; always in CI) and then fail if the database is down.
+- Local PostgreSQL and the Inngest Dev Server (UI http://127.0.0.1:8288) run in Docker (Docker Desktop must be open): `docker compose up --wait`; `docker compose down -v` deletes the data. `.env.local` sets `INNGEST_DEV=http://127.0.0.1:8288`, which `env.ts` refuses on Vercel. `packages/db` tests run when `TEST_DATABASE_URL` and `TEST_DATABASE_MIGRATION_URL` are set (root `.env.local`; always in CI) and then fail if the database is down.
 - Schema changes: edit `packages/db/src/**/*.schemas.ts`, then `pnpm db:generate --name=<change>`. Never edit a generated migration; hand-written SQL goes in one made with `drizzle-kit generate --custom`.
 - Environment: one root `.env.local` for every tool; `apps/web/next.config.ts` loads it, and `src/lib/env.ts` stops the server at startup if a variable is missing. No `.env*` inside `apps/web`. Turborepo's strict mode keeps shell-exported variables from `pnpm dev`: to try a value, run `pnpm --filter web exec next dev`.
 - Real keys live only in the git-ignored `.env.local`; never print them. Fake keys in tests are built at runtime (`fakeKey("whsec", …)` in `apps/web/src/lib/env.test.ts`): a whole secret-shaped literal (`whsec_…`, `sk_test_…`) trips GitHub's secret scanning.
 
 ## UI
 
-All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility); the approved v8 screenshots, every screen at desktop and phone width, are in `docs/ui/` (layout and feel; the rules file wins on exact values). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
-
-Before building any UI that shows the logo, metadata, icons or brand colors, read docs/brand.md.
-
-shadcn/ui runs on Base UI (ADR 0015). Add a component from the root with `pnpm dlx shadcn@<version> add <name> -c apps/web`, choosing a CLI version older than pnpm's one-day minimum release age; then adapt it to the design system.
-
-Every protected page and layout calls `requireSignedIn()` (`apps/web/src/lib/auth.ts`); `proxy.ts` only redirects signed-out visitors early (Clerk Core 3). Clerk's texts are tuned in `apps/web/src/lib/clerk.ts`.
+- All UI follows `.claude/rules/design-system.md` (tokens, components, copy, accessibility); the approved v8 screenshots, every screen at desktop and phone width, are in `docs/ui/` (layout and feel; the rules file wins on exact values). It loads automatically when you open `.tsx` or `.css` files under `apps/web/src/`. If you start a screen or component before opening one, read it first.
+- Before building any UI that shows the logo, metadata, icons or brand colors, read docs/brand.md.
+- shadcn/ui runs on Base UI (ADR 0015). Add a component from the root with `pnpm dlx shadcn@<version> add <name> -c apps/web`, choosing a CLI version older than pnpm's one-day minimum release age; then adapt it to the design system.
+- Every protected page and layout calls `requireSignedIn()` (`apps/web/src/lib/auth.ts`); `proxy.ts` only redirects signed-out visitors early (Clerk Core 3). Clerk's texts are tuned in `apps/web/src/lib/clerk.ts`.
 
 ## Git
 

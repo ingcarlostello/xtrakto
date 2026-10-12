@@ -30,8 +30,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # The same PostgreSQL, roles and test database as on a laptop, so the
-      # database tests run here instead of being skipped.
-      - run: docker compose up --wait
+      # database tests run here instead of being skipped. Only PostgreSQL: the
+      # tests don't need the Inngest Dev Server.
+      - run: docker compose up --wait postgres
 
       - run: pnpm turbo check-types lint test
         env:
@@ -39,3 +40,7 @@ jobs:
           TEST_DATABASE_MIGRATION_URL: postgresql://xtrakto:xtrakto@127.0.0.1:5432/xtrakto_test
 
       - run: pnpm format:check
+
+      # A dependency or a Web Worker that fails to bundle passes every check
+      # above; the production build catches it.
+      - run: pnpm --filter web build

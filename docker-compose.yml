@@ -25,5 +25,22 @@ services:
       timeout: 3s
       retries: 30
 
+  # Inngest Dev Server (background jobs), pinned like PostgreSQL. It calls the
+  # app running on this machine at /api/inngest and needs no keys; its UI is
+  # http://127.0.0.1:8288. CI starts only PostgreSQL.
+  inngest:
+    image: inngest/inngest:v1.46.0
+    command:
+      - inngest
+      - dev
+      - "-u"
+      - http://host.docker.internal:3000/api/inngest
+      - "--no-discovery"
+    ports:
+      - "127.0.0.1:8288:8288"
+    extra_hosts:
+      # Docker Desktop defines host.docker.internal; Linux needs this mapping.
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres-data:

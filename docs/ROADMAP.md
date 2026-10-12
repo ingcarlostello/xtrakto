@@ -156,13 +156,22 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 5 — First end-to-end slice: spreadsheet ingestion**
 
-- [ ] 5.1 Inngest setup
-- [ ] 5.2 Extraction in a Web Worker
-- [ ] 5.3 Upload screen
-- [ ] 5.4 Submit action and ingestion job
-- [ ] 5.5 Ingestion function
-- [ ] 5.6 Ingestion status screen
-- [ ] 5.7 Transactions page
+- [x] 5.1 Inngest setup
+- [ ] 5.2a Content minimization and synthetic XLSX files
+- [ ] 5.2b Extraction in a Web Worker
+- [ ] 5.3a Drop zone and pre-upload preview
+- [ ] 5.3b Accounts, formats and privacy panel
+- [ ] 5.4a Submit action and ingestion job
+- [ ] 5.4b Submit from the upload screen
+- [ ] 5.5a Persistence rules for ingestion
+- [ ] 5.5b Ingestion function
+- [ ] 5.5c Daily cleanup of stale jobs
+- [ ] 5.6a Status polling
+- [ ] 5.6b Upload result
+- [ ] 5.6c Uploaded files and "Encadenado"
+- [ ] 5.7a Movements by day
+- [ ] 5.7b Period selector and account switch
+- [ ] 5.7c Search and "No cuadra"
 - [ ] 5.8 Onboarding _(design v8)_
 
 **Stage 6 — Deterministic insights**
@@ -796,112 +805,225 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 
 ### Stage 5 — First end-to-end slice: spreadsheet ingestion
 
+Planned with the human on 2026-10-11 and split into 17 sub-phases (about 5,300 lines of code), with these decisions:
+
+- **Only what works today.** Screens show the Excel files of a Bancolombia savings account and nothing a later stage brings (PDF, other banks, sample data, credit cards, the coverage timeline, "Año" in the period selector, categories, "Tu extracto, traducido", the chat). Copy is true today.
+- **Minimized content.** The browser sends only what the parser reads, and the server minimizes again before storing: no address, city, branch or suggested credit line; only the account's last 4 digits; long numbers in descriptions masked. References travel raw only so the server can hash them, and are deleted when the job ends (24 hours at most). File names never leave the browser.
+- **Two Inngest steps that carry ids only.** `claim` and `ingest` (one transaction) instead of one step per stage, because Inngest stores and shows step outputs, function results and errors; errors are sanitized. The event carries the job and user ids: forced Row-Level Security needs the user to load the job.
+- **The verified quarterly statement wins.** On the days a verified quarterly statement covers, the other format's movements are stored hidden and never counted, whichever file arrives first; 10.1 later matches them and carries their references over. A quarterly statement that doesn't reconcile hides nothing, counts nowhere and shows only in "Ver dónde no cuadra". Another version of a period replaces an unverified statement; a verified one is never replaced.
+- **"Encadenado"** is built in 5.6c; 10.2 keeps the coverage timeline and the missing periods. **The detail panel** of `v8-03` moves to 6.3, which edits kind and category from it.
+- **Local Inngest** runs as a Docker Compose service next to PostgreSQL; CI starts only PostgreSQL and also builds the app.
+- **Checks.** The agent checks screens only with synthetic files, in an account without real data. Real files go into a throwaway Clerk account that the human deletes afterwards; the agent prints counts only.
+
 #### 5.1 Inngest setup
 
 **Tasks**
 
-- Inngest client and route handler in `apps/web`; a test function.
-- Document how to run the local Inngest dev server.
+- `inngest` in `apps/web`: a client, the route handler `/api/inngest` (public in the proxy: in Cloud mode the SDK verifies Inngest's signature) and a test function.
+- Environment: `INNGEST_DEV` locally (version 4 of the SDK defaults to Cloud mode); the signing and event keys required without it; `INNGEST_DEV` refused on Vercel, because dev mode skips signature checks.
+- The Inngest Dev Server as a pinned Docker Compose service. CI starts only PostgreSQL and builds the app (`next build`), so bundling errors fail the pull request.
+- Document how to run it.
 
-**Done when:** the test function runs from the local dev server.
+**Done when:** the test function runs from the local Dev Server; the environment rules are tested.
 
 **Commit:** `feat(web): Inngest setup`
 
-#### 5.2 Extraction in a Web Worker
+#### 5.2a Content minimization and synthetic XLSX files
+
+Phase 5.2 was split in two, with the human's approval.
 
 **Tasks**
 
-- Run `extractSpreadsheet` and `findParser` in a Web Worker so the interface doesn't freeze, with progress and cancellation.
-- Several files at once (design v8): one extraction per file, each with its own progress.
+- `BankParser.minimize(content)`: pure and idempotent, keeps row positions, and `parse(minimize(c))` equals `parse(c)`. It keeps only the cells the parser reads, in every block a page repeats: no address, city, branch, suggested credit line or sheet name; the account number becomes its last 4 digits; long numbers in descriptions are masked (ADR 0012); references stay raw.
+- A writer that turns every fixture into a real XLSX, and a script that generates git-ignored files for manual checks, including invalid files and one of about 10 MB.
+- An ADR for minimizing before sending.
+
+**Done when:** parity, idempotency and the absence of personal data hold for every fixture and every private file (counts only).
+
+**Commit:** `feat(parsers): minimize extracted content per format`
+
+#### 5.2b Extraction in a Web Worker
+
+**Tasks**
+
+- One Web Worker per file (at most 3 at a time) runs extraction, detection, minimization and the preview parse, with progress by stage and cancellation, so the interface doesn't freeze. It posts only the minimized content and a preview (bank, format, period, number of movements), never the file name or the movements.
+- A byte cap on the serialized content, under the request limit (Vercel Functions accept request bodies up to 4.5 MB).
 - The file never leaves the browser.
 
-**Done when:** a 10 MB spreadsheet is extracted without blocking the page; the worker's message handling is tested.
+**Done when:** a 10 MB spreadsheet is extracted without blocking the page; the worker's message handling is tested; a production build loads the worker from the same origin.
 
 **Commit:** `feat(web): spreadsheet extraction in a Web Worker`
 
-#### 5.3 Upload screen
+#### 5.3a Drop zone and pre-upload preview
+
+Phase 5.3 was split in two, with the human's approval.
 
 **Tasks**
 
-- The upload screen of design v8 (`docs/ui/v8-07`): a drop zone for one or several files, with type and size validation (10 MB per file).
-- Preview from the local parse, per file: bank, format, period, number of movements.
-- What the app reads ("Bancolombia: lo que ya leemos") and how many statements are left this month ("7 de 10 disponibles").
-- Account selector when the format doesn't identify the account (movements export) and the user has more than one.
-- Privacy panel ("Cómo cuidamos tus datos"). Errors in plain Spanish, as in `v8-13`.
-- The empty summary gains the bank's download paths (`v8-12`).
-- Later phases fill the rest of the screen: the list of uploaded files (5.6) and the coverage timeline (10.2).
+- The upload screen of design v8 (`docs/ui/v8-07`), limited to what works today: a drop zone for one or several files, type and size validation (`.xlsx`, 10 MB per file), and a row per file with its local preview (bank, format, period, number of movements) or its problem in plain Spanish (`v8-13`).
+- v8 doesn't draw the moment between choosing and sending: it is built from v8's pieces with a "Subir N archivos" button, disabled until 5.4b, and shown to the human before closing the phase.
+- Design system: the drop zone and the pre-upload file row.
 
 **Done when:** each synthetic XLSX shows the right preview; invalid files show a clear message.
 
-**Commit:** `feat(web): upload screen with local preview`
+**Commit:** `feat(web): upload drop zone with local preview`
 
-#### 5.4 Submit action and ingestion job
+#### 5.3b Accounts, formats and privacy panel
+
+**Tasks**
+
+- Where each movements export will be saved: the only account, or a selector when the user has more than one (the format doesn't identify the account).
+- "Bancolombia: lo que ya leemos" with the Excel formats only, and "Cómo cuidamos tus datos" saying exactly what is sent.
+- The empty summary gains the bank's download paths (`v8-12`); copy that promises later stages is fixed.
+
+**Done when:** an export shows its destination; the formats and privacy copy are true today.
+
+**Commit:** `feat(web): accounts, formats and privacy panel for uploads`
+
+#### 5.4a Submit action and ingestion job
+
+Phase 5.4 was split in two, with the human's approval.
 
 **Tasks**
 
 - `getCurrentUserId()` (server only, moved here from 4.5): resolves the Clerk user to the internal id, creating the `users` row on first use.
-- `submitStatement` server action: validates the input with Zod and size bounds, checks the session and the monthly statement limit (10; only jobs that finished `done` with at least one new movement count, decided with the human), creates the `ingestion_jobs` row with the extracted content, and sends the Inngest event with IDs only.
-- Raise the server action body size limit as needed, keeping it under the hosting limit (Vercel Functions accept request bodies up to 4.5 MB).
-- One job per file, so one unreadable file doesn't hold back the rest.
+- `submitStatement` server action: Zod input (no file name), a byte cap, the session, server-side detection and minimization, the account pinned when that is unambiguous, and the monthly limit of 10 statements. Pending and processing jobs hold a slot and finished ones count when they added at least one movement (decided with the human), in the calendar month in Bogotá, under a per-user lock. It creates the `ingestion_jobs` row and sends the Inngest event with the job and user ids only; if the send fails, the job is deleted and the error thrown.
+- Errors sanitized before any log sees them; the server action body limit raised under the hosting limit.
 
-**Done when:** tests cover validation, the limit and ownership; the event payload contains no content.
+**Done when:** tests cover validation, the byte cap, ownership, the limit (window, reservation, race) and a failed send; the event payload contains ids only.
 
 **Commit:** `feat(web): submit statement action and ingestion job`
 
-#### 5.5 Ingestion function
+#### 5.4b Submit from the upload screen
 
-**Tasks:** an Inngest function with one step per stage, its logic in plain functions that can be tested without Inngest:
+**Tasks**
 
-1. Load the job in the user's context.
-2. Detect and parse on the server (authoritative).
-3. Reconcile.
-4. Resolve the account: by bank, type and last 4 digits for the quarterly statement; the account chosen by the user for the movements export. Store the normalized holder name on the account.
-5. Prepare rows: fingerprints, hashed references (HMAC); discard raw references.
-6. Persist idempotently.
-7. Delete `extracted_content`; save counts in `stats`; update the status.
+- "Subir N archivos" sends the files one at a time, one job per file, and shows each file's outcome; a rejected send offers "Reintentar".
+- How many statements are left this month ("7 de 10 disponibles"), moved here from 5.3.
+- An error boundary for the app's pages.
 
+**Done when:** files are sent in order with per-file outcomes, and the count reflects pending jobs.
+
+**Commit:** `feat(web): submit files from the upload screen`
+
+#### 5.5a Persistence rules for ingestion
+
+Phase 5.5 was split in three, with the human's approval.
+
+**Tasks**
+
+- A reference's last 4 digits next to its HMAC (phone and code references with at least 6 digits), as decided with the human for design v8; the raw reference is still discarded.
+- Account resolution: the quarterly statement by its last 4 digits, adopting the account an earlier export created; the export's pinned account, or one created without a number. The holder's normalized name stored on the account.
+- Statement versions: another version of a period replaces an unverified statement; a verified one keeps later versions out.
+- Coverage (the verified quarterly statement wins, in both orders) and the predicate every reader uses for what counts.
+- The balance check stored at ingest: the closing difference and the rows where the chain breaks, as `reconcile` reports them.
+- Drop the unused `ingestion_jobs.step`.
+
+**Done when:** database tests prove coverage, versions, account resolution and the exact count of added movements; the migration applies to an empty database.
+
+**Commit:** `feat(db): coverage, statement versions and account resolution`
+
+#### 5.5b Ingestion function
+
+**Tasks**
+
+- An Inngest function with two steps, `claim` and `ingest`. `ingest` parses on the server (authoritative), resolves the account, reconciles, prepares the rows (fingerprints, HMAC), saves them and finishes the job, deleting its content, in one transaction. Steps return ids, codes and counts only; one job per user at a time.
 - On final failure: status `failed` with an error code, and the content deleted as well.
-- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human). The fingerprint only matches within one format until 10.1.
-- A daily cron function deletes any `extracted_content` older than 24 hours.
-- Two decisions from design v8, taken with the human:
-  - **References on screen:** the last 4 digits of a reference are stored next to its HMAC, as the account's `last4` is, so the screens can show "ref ••• 1270"; the raw reference is still discarded (a schema change in this phase).
-  - **A quarterly statement that doesn't reconcile** is saved as unverified, so the user can see where it fails ("Ver dónde no cuadra"), but its numbers stay out of the summaries until it reconciles ("Nunca te mostramos un número que no cuadre con tu banco").
+- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human).
+- Database tests in `apps/web`, run after `@xtrakto/db`'s and never in parallel with its rebuild.
 
-**Done when:** an integration test runs the pipeline with a fixture against the local database; re-running it inserts nothing new.
+**Done when:** an integration test runs the pipeline with fixtures against the local database; re-running it inserts nothing new; a privacy test shows Inngest keeps ids, codes and counts only.
 
 **Commit:** `feat(web): statement ingestion function`
 
-#### 5.6 Ingestion status screen
+#### 5.5c Daily cleanup of stale jobs
 
 **Tasks**
 
-- Poll the job status every few seconds through a server action.
-- The upload result of design v8 (`docs/ui/v8-08`): the steps ("Leído en tu navegador", "Reconocido", "Revisando duplicados", the balance check), the counts (in the file, already had, new), the status pill (verified, chained or "Sin saldo para verificar") and a link to the transactions. Later phases add theirs: "Clasificado" and new review groups (Stage 6), "Verificado con tu extracto trimestral" and "referencias agregadas" (10.1), the coverage timeline (10.2).
-- A Spanish message for each error code, as in `v8-13`: notices on the normal surface, errors on the attention surface.
-- The finished message comes from the counts: with no new movements it says the period was already loaded ("Ya tenías todo este archivo").
-- The upload screen lists the uploaded files, newest first, each with its result ("Archivos subidos", `v8-07`).
+- A daily cron (03:00 in Bogotá) fails jobs pending or processing for more than 24 hours and deletes their content, through a `SECURITY DEFINER` function without parameters that the catalog test allows by name (ADR 0014).
 
-**Commit:** `feat(web): ingestion status screen`
+**Done when:** tests prove the cleanup across users and the 24-hour boundary.
 
-#### 5.7 Transactions page
+**Commit:** `feat(web): daily cleanup of stale ingestion jobs`
+
+#### 5.6a Status polling
+
+Phase 5.6 was split in three, with the human's approval.
 
 **Tasks**
 
-- Server Component listing transactions with filters by account and month in `searchParams`, and pagination.
-- Formatted amounts and dates.
+- Poll the jobs every 2 seconds with one batched server action until they end; results survive a reload (job ids in the URL).
+- A notice when a job takes longer than usual.
+
+**Done when:** results appear without reloading and survive a reload.
+
+**Commit:** `feat(web): ingestion status polling`
+
+#### 5.6b Upload result
+
+**Tasks**
+
+- The upload result of design v8 (`docs/ui/v8-08`) within Stage 5: the counts (in the file, already had, new), the steps ("Leído en tu navegador", "Reconocido", "Revisando duplicados", the balance check) and the status pill ("Saldo verificado", "No cuadra por $12.400", "Sin saldo para verificar"). Later phases add theirs: "Clasificado" and new review groups (Stage 6), "Verificado por tu extracto trimestral" and "referencias agregadas" (10.1), the coverage timeline (10.2).
+- A Spanish message for each error code, as in `v8-13`: notices on the normal surface, errors on the attention surface. With no new movements it says the period was already loaded ("Ya tenías todo este archivo").
+
+**Done when:** every outcome and error code reads correctly.
+
+**Commit:** `feat(web): upload result`
+
+#### 5.6c Uploaded files and "Encadenado"
+
+**Tasks**
+
+- "Encadenado": a verified quarterly statement that opens with the closing balance of the account's previous quarterly statement, computed when read, so the upload order doesn't matter.
+- The upload screen lists the uploaded files, newest first, each with its result ("Archivos subidos", `v8-07`), labeled from format and period.
+
+**Done when:** "Encadenado" and the list work in both upload orders.
+
+**Commit:** `feat(web): uploaded files and chained statements`
+
+#### 5.7a Movements by day
+
+Phase 5.7 was split in three, with the human's approval; its detail panel moved to 6.3.
+
+**Tasks**
+
+- A Server Component listing the account's movements that count, newest first, grouped by day with the day's balance (when the day has one), the bank's text exactly as printed, "Sin descripción del banco" for a text of `0`, signed amounts, and "Mostrar 30 más". Only display columns reach the browser.
 - No category column: categories arrive in Stage 6, and stages are built in order (decided with the human).
-- The layout of design v8 (`docs/ui/v8-03`) without what later stages bring: rows grouped by day with the day's balance, the bank's text exactly as printed, "Sin descripción del banco" for a text of `0`, the period selector (quarter and months), and search by description or amount. Later phases add the kind tiles and filters, channel tags and "Por revisar" (6.1, 6.2), the detail panel's kind and category (6.3), interest grouped per month (6.7), "También aparece como" and source files (10.1), and "Descargar CSV" (7.6).
+- The summary's empty state changes once the user has movements.
 
-**Done when:** the page shows the seeded data correctly; filters survive a reload and can be shared as links.
+**Done when:** the page shows the seeded data correctly.
 
-**Commit:** `feat(web): transactions page`
+**Commit:** `feat(web): movements by day`
+
+#### 5.7b Period selector and account switch
+
+**Tasks**
+
+- The period selector of design v8 (`docs/ui/v8-03`): quarters with their status ("Verificado", "Sin verificar") and the quarter's months, in `searchParams`; the account switch when the user has more than one account.
+- The upload result links to the period's movements.
+
+**Done when:** filters survive a reload and can be shared as links.
+
+**Commit:** `feat(web): period selector and account switch`
+
+#### 5.7c Search and "No cuadra"
+
+**Tasks**
+
+- Search by description (ignoring case and accents) or by amount typed the Colombian way ("$90.000"), within the period.
+- "Ver dónde no cuadra": the rows of a quarterly statement that doesn't reconcile, with the row that breaks marked; the list warns when its period has one, and the upload result links to it.
+- Later phases add the kind tiles and filters, channel tags and "Por revisar" (6.1, 6.2), the detail panel (6.3), interest grouped per month (6.7), "También aparece como" and source files (10.1), and "Descargar CSV" (7.6).
+
+**Done when:** search and the "No cuadra" view work and survive a reload.
+
+**Commit:** `feat(web): search and balance breaks in movements`
 
 #### 5.8 Onboarding _(added with design v8)_
 
 **Tasks**
 
-- The three steps of `docs/ui/v8-15` to `v8-17`, each with "Saltar": what Xtrakto does, with an example; what to upload first (the quarterly statement, recommended; the month's movements; credit cards marked "Pronto") and the bank, without asking for the name, which comes from the statement; then the download paths of both Bancolombia formats next to the drop zone.
-- Shown once, after sign-up.
+- The three steps of `docs/ui/v8-15` to `v8-17`, each with "Saltar", with copy true today: what Xtrakto does; what to upload first (the quarterly statement, recommended, or the month's movements) for a Bancolombia savings account, without asking for the name, which comes from the statement; then the download paths of both formats next to the drop zone. No credit cards, other banks or sample data yet.
+- Shown once: Clerk sends the user there right after sign-up, and nothing is stored (decided with the human).
 
 **Done when:** a new user goes through the steps or skips them and lands on the upload screen; the steps work at phone width and with the keyboard.
 
@@ -935,6 +1057,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 - References marked by the user as their own (Phase 6.3) also count as internal.
 - Moved goes both ways (design v8): money back from the user's own Nequi or name is moved (+), never income.
 - Keep the holder's name and the truncated forms seen in transfers, for "Cómo te escribe el banco" (`docs/ui/v8-11`).
+- Onboarding's first step gains "Separa lo que gastaste de lo que solo moviste", left out in 5.8.
 
 **Done when:** tests cover truncated names and partial matches that must not count.
 
@@ -945,7 +1068,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 **Tasks**
 
 - The quick review of design v8 (`docs/ui/v8-02`): the movements that need review, asked by group, with the best guess as the suggested answer; Nequi numbers with an "Es mío" switch; answered groups collapse, and "Lo que está en juego" shows what each answer would change. The summary shows a review banner while groups are pending.
-- Change a transaction's kind and category from the detail panel (`v8-03`), optionally applying it to every transaction with the same normalized description ("Aplicar a los 3 parecidos").
+- The detail panel of `v8-03`, moved here from 5.7: the movement's real fields (date, amount, "Así lo escribe el banco", reference, balance after, source statement) and its kind and category with the reason, which the user can change, optionally for every transaction with the same normalized description ("Aplicar a los 3 parecidos").
 - Mark a reference (for example a Nequi phone number, a card or an investment platform) or a transfer recipient as "my own account", and undo it.
 - Store answers and corrections with `category_source = "user"` and as user rules applied before the global rules on future ingestions ("Tus reglas", `v8-05`).
 - These corrections are the labeled data for Stage 14.
@@ -963,7 +1086,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 - Interest earned, 4x1000 paid, cash total.
 - Credit card payments without an uploaded card statement.
 - The bank's own figures for the account card: average balance and interest paid, from the quarterly statement.
-- A quarterly statement that doesn't reconcile stays out of every figure until it does (decided with the human, Phase 5.5).
+- A quarterly statement that doesn't reconcile stays out of every figure until it does (decided with the human, Phase 5.5); on its days, the movements exports' rows count instead, if there are any. Every figure uses Stage 5's predicate for the movements that count.
 
 **Done when:** tests compare against hand-computed results on the fixtures.
 
@@ -1004,6 +1127,7 @@ Phase 4.3 was split in two (about 650 changed lines), with the human's approval.
 - The KPI tile (stat card with its progress ring, design system §9), moved here from 4.3.
 - Server Components; client components only for interactive charts.
 - In the transactions list, group the daily interest rows into one line per month.
+- Onboarding's welcome example gets its kind rings back, left out in 5.8.
 
 **Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
 
@@ -1058,7 +1182,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 **Tasks**
 
-- `@sentry/nextjs` without default PII, without session replay, and with a scrubber that removes request bodies, server action arguments, query strings and any description or amount.
+- `@sentry/nextjs` without default PII, without session replay, and with a scrubber that removes request bodies, server action arguments, query strings (Movimientos keeps search terms in `q`) and any description or amount.
 
 **Done when:** the scrubber is tested; a forced error reaches Sentry without sensitive data.
 
@@ -1071,7 +1195,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 - Explicit events only (`statement_uploaded`, `ingestion_failed`, `summary_viewed`, `category_corrected`) with format ids, row count buckets and error codes. Autocapture and session recording off.
 - Analytics only after the user's consent.
 
-**Done when:** events carry no financial or personal data (tested).
+**Done when:** events carry no financial or personal data, and no URLs with search terms (tested).
 
 **Commit:** `feat(web): privacy-preserving product analytics`
 
@@ -1105,7 +1229,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 #### 7.8 Sample data to explore _(added with design v8)_
 
-**Tasks:** "Explorar con datos de ejemplo" (`docs/ui/v8-17`): a read-only demo loaded with the synthetic fixtures, so someone without statements can see every screen.
+**Tasks:** "Explorar con datos de ejemplo" (`docs/ui/v8-17`): a read-only demo loaded with the synthetic fixtures, so someone without statements can see every screen. It also brings back "Ver con datos de ejemplo" in the empty summary (`v8-12`) and in onboarding's last step, left out in Stage 5.
 
 **Commit:** `feat(web): explore with sample data`
 
@@ -1120,11 +1244,11 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 - **8.3 Usage and limits:** `llm_usage` table; per-user monthly cost cap, chat questions per day and request rate (Postgres counters); platform budget alert at 80% and hard stop at 100%.
 - **8.4 Evaluation harness:** `packages/evals` with a labeled synthetic set of at least 200 realistic, redacted descriptions; accuracy, macro-F1 and coverage with a threshold. Runs in CI only when prompts or the AI module change, and on demand.
 - **8.5 LLM categorization fallback:** unique redacted descriptions in batches; output restricted to category ids with a confidence; a global cache keyed by the redacted normalized description; `category_source = "llm"`.
-- **8.6 "Tu extracto, traducido":** a plain-language explanation per distinct description pattern (not per row), cached; counts and amounts inserted by code.
+- **8.6 "Tu extracto, traducido":** a plain-language explanation per distinct description pattern (not per row), cached; counts and amounts inserted by code. Onboarding's first step gains "Traduce cada movimiento", left out in 5.8.
 
 ### Stage 9 — PDF statements _(outline)_
 
-- **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted, with the hint "suele ser tu número de documento" (`docs/ui/v8-09`); the password never leaves the browser; output text items with positions. Movements export PDFs have no password.
+- **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted, with the hint "suele ser tu número de documento" (`docs/ui/v8-09`); the password never leaves the browser; output text items with positions. Movements export PDFs have no password. The upload screen and onboarding then mention PDF ("Excel o PDF", the password hint), left out in Stage 5.
 - **9.2 Layout reconstruction:** text items → rows, grouping by vertical position with a tolerance and assigning columns by the header's horizontal ranges. Synthetic fixtures of text items.
 - **9.3 Quarterly statement PDF parser:** Appendix A.3. Private parity test: the PDF and the XLSX of the same statement produce identical transactions.
 - **9.3b Movements export PDF parser** _(added with design v8)_: the fourth format ("Movimientos de la Sucursal Virtual (PDF)"); descriptions split across two lines are joined (`docs/ui/v8-08`). Private parity test against the XLSX of the same range.
@@ -1132,8 +1256,8 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 ### Stage 10 — Monthly use and retention _(outline)_
 
-- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS` (paid the next day except at a month's end) and a description the quarterly statement cut before an accented letter (Appendix A.2), also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice. A matched movement gains what the export brings (design v8, `docs/ui/v8-08` and `v8-03`): its reference ("12 referencias agregadas"), the export's way of writing it ("También aparece como") and the file as one more source; an export whose movements all match is "Verificado por tu extracto trimestral".
-- **10.2 Coverage and gaps:** date ranges with data per account, shown as the coverage timeline (`docs/ui/v8-07`, `v8-08`, `v8-11`); each quarterly statement checked against the previous one ("Encadenado": it opens with the previous closing balance); the missing periods ("Te falta abril a junio", `v8-13`) and which range to download (the bank allows the current month and the previous three).
+- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS` (paid the next day except at a month's end) and a description the quarterly statement cut before an accented letter (Appendix A.2), also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice. A matched movement gains what the export brings (design v8, `docs/ui/v8-08` and `v8-03`): its reference ("12 referencias agregadas"), the export's way of writing it ("También aparece como") and the file as one more source; an export whose movements all match is "Verificado por tu extracto trimestral". Matching clears Stage 5's coverage (`covered_by_statement_id`) for the matched rows and carries their references over.
+- **10.2 Coverage and gaps:** date ranges with data per account, shown as the coverage timeline (`docs/ui/v8-07`, `v8-08`, `v8-11`) and as "Año" in the period selector with its coverage ("9 de 12 meses"); the missing periods ("Te falta abril a junio", `v8-13`) and which range to download (the bank allows the current month and the previous three). "Encadenado" was built in 5.6c.
 - **10.3 Optional current balance:** when uploading a movements export, the user can enter the current balance to rebuild balances backwards and verify them.
 - **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe. The profile's email notices (`docs/ui/v8-11`): a file is ready, something to review, a recurring payment went up, the monthly summary; never amounts.
 - **10.5 Monthly summary email:** "Your summary is ready" with a link; no amounts or descriptions in the email.
@@ -1142,13 +1266,13 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 - **11.1 Fingerprints and saved mappings:** fingerprint of a format from its normalized header; `format_mappings` table (global, no user data): column roles, date and amount formats, sign convention.
 - **11.2 Mapping proposal:** the LLM receives the header and at most 10 redacted sample rows and proposes a mapping, validated with Zod and checked with a dry-run parse and reconciliation.
-- **11.3 Confirmation screen:** when the mapping can't be verified, the user confirms or corrects it. Confirmed mappings are reused deterministically, without the LLM.
+- **11.3 Confirmation screen:** when the mapping can't be verified, the user confirms or corrects it. Confirmed mappings are reused deterministically, without the LLM. The upload screen and onboarding then offer "¿Otro banco?", left out in Stage 5.
 - **11.4 Agent with LangGraph.js:** detect → propose → dry run → verify → retry with a stronger model or ask the user, with explicit state.
 - **11.5 Evals:** synthetic spreadsheets from other banks with known answers; success rate and cost per file.
 
 ### Stage 12 — Credit cards _(outline)_
 
-- **12.1 [HUMAN] Sample:** an anonymized card statement (Bancolombia or Nu); expand this stage's phases from it.
+- **12.1 [HUMAN] Sample:** an anonymized card statement (Bancolombia or Nu); expand this stage's phases from it. Onboarding's second step gains the credit card option, left out in 5.8.
 - **12.2 Parser:** with reconciliation (previous balance + purchases + interest + fees − payments = new balance).
 - **12.3 Account and card reconciliation:** match payments from the savings account with the payments in the card statement, without double counting.
 - **12.4 Usury rate:** a monthly Inngest cron reads the official publication (source confirmed at the gate), stores the rate per month with its source, and compares it with the card's rates.
@@ -1158,7 +1282,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 - **13.1 Typed tools:** `getTransactions`, `getSpendingByCategory`, `getRecurring`, `getSummary`, `findTransactions`; the user id always comes from the session, never from the model.
 - **13.2 Agent:** LangGraph.js: understand the question → choose tools → compute → answer. No model-generated SQL.
-- **13.3 UI:** streaming answers, the transactions used, and "how it was calculated".
+- **13.3 UI:** streaming answers, the transactions used, and "how it was calculated". Onboarding's first step gains "Responde con tus propios datos", left out in 5.8.
 - **13.4 Hardening:** descriptions are untrusted data (prompt injection); output validation; limit of 30 questions per day.
 - **13.5 Evals:** question and answer pairs with deterministic answers over the fixtures.
 - **13.6 (Optional) Sandbox:** Pyodide in a Web Worker for questions the tools can't answer; the data never leaves the browser.
