@@ -48,9 +48,8 @@ One Next.js app on Vercel serves pages, receives uploads through server actions 
 flowchart LR
     subgraph Browser
         UI["Upload UI<br/>React client components"]
-        WK["Web Worker<br/>extract: SheetJS / pdf.js"]
-        PP["@xtrakto/parsers<br/>detect, minimize, preview"]
-        UI -- file --> WK -- content --> PP
+        WK["Web Worker, one per file<br/>@xtrakto/parsers: extract (SheetJS / pdf.js),<br/>detect, minimize, preview"]
+        UI -- "file bytes" --> WK -- "minimized content, preview" --> UI
     end
     subgraph Vercel["Vercel · Next.js app (Node runtime)"]
         RSC["Server Components<br/>summary, transactions, settings"]
@@ -66,7 +65,7 @@ flowchart LR
     OBS["Langfuse, Sentry, PostHog<br/>scrubbed telemetry"]
 
     RSC -- pages --> UI
-    PP -- "minimized content" --> SA
+    UI -- "minimized content" --> SA
     Vercel -- "SQL in user context" --> PG
     SA -- "event: jobId only" --> IC
     IC -- invoke --> RH
@@ -75,7 +74,7 @@ flowchart LR
     Vercel -- "no PII" --> OBS
 ```
 
-The original file and the PDF password never leave the browser. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path.
+The original file and the PDF password never leave the browser. Each file is read in its own Web Worker, at most three at a time, so the page never freezes; the worker gets the file's bytes, never its name. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path.
 
 | Package or app     | Responsibility                                                                          | Runs in                                      |
 | ------------------ | --------------------------------------------------------------------------------------- | -------------------------------------------- |
@@ -102,8 +101,8 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant I as Inngest Cloud
     participant F as Ingestion function
-    B->>W: file (and PDF password)
-    W-->>B: ExtractedContent + detected format
+    B->>W: file bytes (and PDF password)
+    W-->>B: minimized content + preview
     B->>S: submitStatement(content, accountId?)
     S->>S: Zod · session · monthly limit
     S->>DB: insert ingestion_job (content kept temporarily)
@@ -126,7 +125,7 @@ sequenceDiagram
 - **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account, and each statement a hash of its content. Re-running a job or re-uploading a file inserts nothing new; an overlapping upload inserts only the movements the account doesn't have.
 - **Account resolution:** the quarterly statement identifies the account by its last 4 digits; the movements export has no account number, so the user picks the account at upload.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
-- **Payload size:** only rows or text items travel, to stay under the 4.5 MB request limit.
+- **Payload size:** only the minimized rows or text items travel, and the browser refuses a file whose content would pass 3.5 MB, under the 4.5 MB request limit.
 - **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
 
 ---
