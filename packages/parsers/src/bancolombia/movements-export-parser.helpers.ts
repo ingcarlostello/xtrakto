@@ -12,6 +12,7 @@ import {
   BANCOLOMBIA_BANK_ID,
   MOVEMENTS_EXPORT_FORMAT_ID,
 } from "./bancolombia.constants";
+import { minimizeMovementsExport } from "./movements-export-minimize.helpers";
 import {
   findExportColumns,
   readExportMovements,
@@ -57,4 +58,5 @@ export const bancolombiaMovementsExportParser: BankParser = {
     return rows !== undefined && findExportColumns(rows).ok;
   },
   parse,
+  minimize: minimizeMovementsExport,
 };

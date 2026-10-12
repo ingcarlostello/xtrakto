@@ -157,7 +157,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 5 — First end-to-end slice: spreadsheet ingestion**
 
 - [x] 5.1 Inngest setup
-- [ ] 5.2a Content minimization and synthetic XLSX files
+- [x] 5.2a Content minimization and synthetic XLSX files
 - [ ] 5.2b Extraction in a Web Worker
 - [ ] 5.3a Drop zone and pre-upload preview
 - [ ] 5.3b Accounts, formats and privacy panel

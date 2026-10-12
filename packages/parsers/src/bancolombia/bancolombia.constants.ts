@@ -39,6 +39,10 @@ export const ACCOUNT_COLUMN = {
   NUMBER: "NRO CUENTA",
 } as const;
 
+/** The account number as printed: digits only. Its last 4 are all that's kept. */
+export const ACCOUNT_NUMBER_PATTERN = /^\d{4,}$/;
+export const ACCOUNT_LAST_DIGITS = 4;
+
 export const SUMMARY_COLUMN = {
   OPENING_BALANCE: "SALDO ANTERIOR",
   CREDITS: "TOTAL ABONOS",
@@ -57,8 +61,17 @@ export const MOVEMENTS_COLUMN = {
   BALANCE: "SALDO",
 } as const;
 
+/**
+ * How older exports mark a description they split at "ñí": the text goes on
+ * in the next cell, starting with this mark (Appendix A.1).
+ */
+export const SPLIT_MARK = "¡";
+
 /** The only account type the MVP reads. */
 export const SAVINGS_ACCOUNT_TYPE = "CUENTA DE AHORROS";
+
+/** The movements export's header is its first row. */
+export const EXPORT_HEADER_ROW = 0;
 
 /** Header names in the first row of the movements export. */
 export const EXPORT_COLUMN = {

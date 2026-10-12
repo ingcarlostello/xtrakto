@@ -5,7 +5,8 @@ import type { BankParser } from "./bank-parser.types";
 import { createParserRegistry } from "./parser-registry.helpers";
 
 // A test-only format: the first cell of the first sheet holds its signature.
-// The registry only calls `canParse`, so `parse` never succeeds here.
+// The registry only calls `canParse`, so `parse` never succeeds here and
+// `minimize` keeps everything.
 const testParser = (id: string, signature: string): BankParser => ({
   id,
   bankId: "test-bank",
@@ -13,6 +14,7 @@ const testParser = (id: string, signature: string): BankParser => ({
     content.type === "spreadsheet" &&
     content.sheets[0]?.rows[0]?.[0] === signature,
   parse: () => err({ code: APP_ERROR_CODE.PARSE_FAILED }),
+  minimize: (content) => content,
 });
 
 const spreadsheetStartingWith = (firstCell: string): ExtractedContent => ({
