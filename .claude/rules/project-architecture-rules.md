@@ -186,7 +186,7 @@ apps/web/src/
 
 **shadcn/ui components** in `apps/web/src/components/ui/` keep the file names the shadcn CLI gives them (`button.tsx`, `alert-dialog.tsx`): it can't write PascalCase, and renaming them would break `shadcn add` and `shadcn diff`. The components exported from them are still PascalCase (`Button`). Every other component file follows the table above.
 
-**Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`. In `packages/db` only, also `.queries.ts` for the functions that read or write the database (section 7); its Drizzle tables go in `.schemas.ts`.
+**Allowed role suffixes:** `.types.ts`, `.schemas.ts`, `.service.ts`, `.action.ts`, `.utils.ts`, `.helpers.ts`, `.constants.ts`, `.store.ts`. In `packages/db` only, also `.queries.ts` for the functions that read or write the database (section 7); its Drizzle tables go in `.schemas.ts`. In `apps/web` only, also `.function.ts` for Inngest functions (section 7) and `.worker.ts` for Web Worker entry points, which only receive messages and call pure helpers.
 
 **Inside packages:** group source files by domain module, one folder per concept: `src/<module>/<name>.<role>.ts` (for example `packages/core/src/money/money.helpers.ts`). File names keep their role suffix, tests stay next to the file they test, and folders have no barrel: modules import each other with relative paths, and only `src/index.ts` is public.
 
@@ -229,6 +229,7 @@ export type UploadStatementInput = z.infer<typeof uploadStatementSchema>;
 | `*.service.ts`                | A feature's server logic: query the database, call the LLM, R2 or Clerk                                                                                                                                                           | Server only   |
 | `*.action.ts`                 | Server action: validates input with Zod, checks the session, calls the service, returns a result                                                                                                                                  | Server only   |
 | `app/api/**/route.ts`         | Only for webhooks and endpoints called by third parties (Inngest, Clerk)                                                                                                                                                          | Server only   |
+| `*.function.ts`               | Inngest function: its triggers, steps and failure handler. The logic lives in services; steps return ids, codes and counts only, because Inngest stores and shows step outputs and errors                                         | Server only   |
 | `packages/db`                 | Drizzle schema (`*.schemas.ts`) and migrations                                                                                                                                                                                    | Server only   |
 | `packages/db/**/*.queries.ts` | Database access: connection, user context, reads and writes. Receives the user id from a service or action that already checked the session. Never imports `server-only`, because it also runs in drizzle-kit, Vitest and scripts | Server only   |
 
