@@ -22,6 +22,7 @@ const toPreview = (statement: ParsedStatement): StatementPreview => ({
   bankId: statement.bankId,
   formatId: statement.formatId,
   period: statement.period,
+  periodSource: statement.periodSource,
   movementCount: statement.transactions.length,
 });
 

@@ -1,21 +1,25 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
-import { Manrope, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import { AUTH_ROUTES } from "@/lib/auth-routes";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk";
 import "./globals.css";
 
+// Google Fonts' variable files, Latin subset, kept in the repository: with
+// next/font/google every build downloads them, and Google's answer can break
+// it (src/fonts/README.md).
+
 // Display, amounts and the wordmark (design-system.md §4).
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+const outfit = localFont({
+  src: "../fonts/outfit-latin.woff2",
+  weight: "100 900",
   variable: "--font-outfit",
 });
 
 // Interface and body text.
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const manrope = localFont({
+  src: "../fonts/manrope-latin.woff2",
+  weight: "200 800",
   variable: "--font-manrope",
 });
 

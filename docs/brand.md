@@ -366,10 +366,12 @@ The app-icon tile gradient is `#FFFFFF → #DCE5F2`.
 
 ## 10. Typography
 
-| Use                        | Font                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| Wordmark, display, amounts | **Outfit** (300, 400, 500, 600), loaded with `next/font/google` as `--font-outfit`   |
-| UI and body                | **Manrope** (400, 500, 600, 700), loaded with `next/font/google` as `--font-manrope` |
+| Use                        | Font                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| Wordmark, display, amounts | **Outfit** (300, 400, 500, 600), loaded with `next/font/local` as `--font-outfit`   |
+| UI and body                | **Manrope** (400, 500, 600, 700), loaded with `next/font/local` as `--font-manrope` |
+
+Both are Google Fonts' variable files, kept in `apps/web/src/fonts/` with their licenses (SIL OFL 1.1).
 
 See `.claude/rules/design-system.md` §4 for the type scale.
 

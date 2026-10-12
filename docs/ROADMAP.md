@@ -159,7 +159,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.1 Inngest setup
 - [x] 5.2a Content minimization and synthetic XLSX files
 - [x] 5.2b Extraction in a Web Worker
-- [ ] 5.3a Drop zone and pre-upload preview
+- [x] 5.3a Drop zone and pre-upload preview
 - [ ] 5.3b Accounts, formats and privacy panel
 - [ ] 5.4a Submit action and ingestion job
 - [ ] 5.4b Submit from the upload screen

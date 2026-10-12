@@ -1,4 +1,5 @@
 import type { Result } from "@xtrakto/core";
+import { fileProblem } from "./file-checks.helpers";
 import {
   EXTRACTION_STAGE,
   MAX_PARALLEL_EXTRACTIONS,
@@ -10,11 +11,10 @@ import type {
   UploadItem,
 } from "./upload.types";
 
+type QueuedFile = { readonly id: string; readonly file: File };
+
 export type UploadQueueAction =
-  | {
-      readonly type: "added";
-      readonly files: readonly { readonly id: string; readonly file: File }[];
-    }
+  | { readonly type: "added"; readonly files: readonly QueuedFile[] }
   | { readonly type: "started"; readonly id: string }
   | {
       readonly type: "stageReached";
@@ -45,6 +45,18 @@ const finishedItem = (
     ? { id, file, status: UPLOAD_STATUS.READY, statement: result.value }
     : { id, file, status: UPLOAD_STATUS.FAILED, error: result.error };
 
+// A file that fails the checks is never read; the others wait their turn.
+const addFile = (items: Queue, { id, file }: QueuedFile): Queue => {
+  const error = fileProblem(
+    file,
+    items.map((item) => item.file),
+  );
+  const item: UploadItem = error
+    ? { id, file, status: UPLOAD_STATUS.FAILED, error }
+    : { id, file, status: UPLOAD_STATUS.WAITING };
+  return [...items, item];
+};
+
 /** The files chosen for upload, each one waiting, being read, read or failed. */
 export const uploadQueueReducer = (
   items: Queue,
@@ -52,14 +64,7 @@ export const uploadQueueReducer = (
 ): Queue => {
   switch (action.type) {
     case "added":
-      return [
-        ...items,
-        ...action.files.map(({ id, file }) => ({
-          id,
-          file,
-          status: UPLOAD_STATUS.WAITING,
-        })),
-      ];
+      return action.files.reduce(addFile, items);
     case "started":
       return updateItem(items, action.id, ({ id, file }) => ({
         id,
