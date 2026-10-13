@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { FileSpreadsheet } from "lucide-react";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { FileRowView } from "../upload-display.helpers";
@@ -9,6 +10,8 @@ type FileRowProps = {
   name: string;
   view: FileRowView;
   onRemove: () => void;
+  /** Below the file's status, outside what is announced: its account. */
+  children?: ReactNode;
 };
 
 function RowBody({ view }: { view: FileRowView }) {
@@ -40,7 +43,7 @@ function RowBody({ view }: { view: FileRowView }) {
 
 // A chosen file before it's sent; its name never leaves the browser. A file
 // with a problem sits on the attention surface, with the orange dot (§3.5).
-export function FileRow({ name, view, onRemove }: FileRowProps) {
+export function FileRow({ name, view, onRemove, children }: FileRowProps) {
   const isProblem = view.kind === "problem";
   return (
     <li
@@ -68,6 +71,7 @@ export function FileRow({ name, view, onRemove }: FileRowProps) {
         <div className="flex flex-col gap-1" aria-live="polite">
           <RowBody view={view} />
         </div>
+        {children}
       </div>
       <Button
         variant="link"

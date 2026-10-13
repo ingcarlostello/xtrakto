@@ -29,6 +29,7 @@ const STATEMENT: ExtractedStatement = {
   preview: {
     bankId: "bancolombia",
     formatId: "bancolombia-movements-export",
+    accountType: "savings",
     period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
     periodSource: PERIOD_SOURCE.ROWS,
     movementCount: 2,

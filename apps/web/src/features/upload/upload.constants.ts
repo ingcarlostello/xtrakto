@@ -1,3 +1,4 @@
+import type { AccountType } from "@xtrakto/core";
 import type { FormatId } from "@xtrakto/parsers";
 
 // Reading statement files in the browser before sending them. The Spanish copy
@@ -49,6 +50,14 @@ export const FORMAT_LABELS = {
 
 export const BANK_LABELS = { bancolombia: "Bancolombia" } as const;
 
+export const ACCOUNT_TYPE_LABELS = {
+  savings: "Cuenta de ahorros",
+  credit_card: "Tarjeta de crédito",
+} as const satisfies Record<AccountType, string>;
+
+/** How an account number shows: only its last 4 digits. */
+export const MASKED_DIGITS = "••••";
+
 export const UPLOAD_COPY = {
   title: "Subir extracto",
   subtitle:
@@ -74,6 +83,63 @@ export const UPLOAD_COPY = {
   files: { one: "archivo", other: "archivos" },
   notSentYet:
     "La subida llega muy pronto: por ahora solo los leemos en tu navegador.",
+  statementAccount: "cuenta",
+  savedIn: "Se guardará en",
+  chooseAccount: "¿En qué cuenta lo guardamos?",
+  chooseAccountPlaceholder: "Elige una cuenta",
+} as const;
+
+// design-system.md §11: only what works today, in plain words.
+export const FORMATS_COPY = {
+  title: "Bancolombia: lo que ya leemos",
+  quarterly: {
+    title: "Extracto trimestral",
+    detail:
+      "Trae saldos: lo verificamos al centavo y lo encadenamos con el anterior.",
+  },
+  movements: {
+    title: "Movimientos de la Sucursal Virtual",
+    detail:
+      "Sin saldos, pero con referencias (Nequi, PSE). Puedes bajar varios rangos del mismo mes: no se duplican.",
+  },
+} as const;
+
+// Exactly what leaves the browser (ADR 0017) and what is kept of it.
+export const PRIVACY_COPY = {
+  title: "Cómo cuidamos tus datos",
+  reading: {
+    title: "Lo leemos en tu navegador",
+    detail:
+      "El archivo no sale de tu equipo: enviamos solo lo que leemos de él.",
+  },
+  header: {
+    title: "Del encabezado solo usamos tu nombre y tu cuenta",
+    detail:
+      "Descartamos tu dirección, tu ciudad y la sucursal. Del número de cuenta enviamos solo los últimos 4 dígitos.",
+  },
+  references: {
+    title: "De un celular guardamos solo un código",
+    detail:
+      "Una referencia, como el celular de un Nequi, queda como un código que no se puede revertir y sus últimos 4 dígitos. El número se borra al terminar de procesar el archivo.",
+  },
+  deletion: {
+    title: "Borras todo cuando quieras",
+    detail: "Desde Configuración, en un paso.",
+  },
+} as const;
+
+// The bank's own download paths (docs/ui/v8-12).
+export const HOW_IT_WORKS_COPY = {
+  title: "Así funciona",
+  download: {
+    title: "Descárgalo en Excel de la Sucursal Virtual",
+    detail:
+      "Documentos → Extractos (trimestral) o Movimientos: Cuentas (del mes).",
+  },
+  upload: {
+    title: "Súbelos todos juntos en Subir",
+    detail: "Si los rangos se cruzan, no se duplica nada.",
+  },
 } as const;
 
 // What happened and what to do, without apologizing (design-system.md §11).

@@ -21,6 +21,8 @@ const serializedBytes = (value: unknown): number =>
 const toPreview = (statement: ParsedStatement): StatementPreview => ({
   bankId: statement.bankId,
   formatId: statement.formatId,
+  accountType: statement.accountType,
+  accountLast4: statement.accountLast4,
   period: statement.period,
   periodSource: statement.periodSource,
   movementCount: statement.transactions.length,

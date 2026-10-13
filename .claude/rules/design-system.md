@@ -685,5 +685,5 @@ v8 needs no new color tokens: the grey status dot is `ink-faint`, and the covera
 
 - **Dark mode:** not designed yet. When it is, every token above gets a dark value; components keep using tokens only.
 - **Phone layout:** follows §7; every v8 screen has a 390px capture (`docs/ui/v8-*-movil.png`), with the bottom tab bar Resumen, Movimientos, Subir, Pregúntale and "Más".
-- **States:** ingestion in progress follows the processing steps of `v8-08`; notices and errors follow `v8-13`. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Subir extracto"; `v8-12` adds the bank's download paths.
+- **States:** ingestion in progress follows the processing steps of `v8-08`; notices and errors follow `v8-13`. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Ir a Subir", a link to the upload screen, the only place where files are uploaded; `v8-12` adds the bank's download paths.
 - **Screens:** v8 covers every MVP screen, including the quick review, the upload result, the profile and onboarding. `docs/ROADMAP.md` says which phase builds each.

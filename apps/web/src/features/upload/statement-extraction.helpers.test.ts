@@ -70,6 +70,7 @@ describe("extractStatement", () => {
         preview: {
           bankId: "bancolombia",
           formatId: "bancolombia-movements-export",
+          accountType: "savings",
           period: { from: "2026-10-01", to: "2026-10-02" },
           periodSource: "rows",
           movementCount: 2,

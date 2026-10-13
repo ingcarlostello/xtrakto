@@ -26,6 +26,11 @@ export type UploadQueueAction =
       readonly id: string;
       readonly result: Result<ExtractedStatement>;
     }
+  | {
+      readonly type: "accountChosen";
+      readonly id: string;
+      readonly key: string;
+    }
   | { readonly type: "removed"; readonly id: string };
 
 type Queue = readonly UploadItem[];
@@ -81,6 +86,12 @@ export const uploadQueueReducer = (
     case "finished":
       return updateItem(items, action.id, (item) =>
         finishedItem(item, action.result),
+      );
+    case "accountChosen":
+      return updateItem(items, action.id, (item) =>
+        item.status === UPLOAD_STATUS.READY
+          ? { ...item, accountKey: action.key }
+          : item,
       );
     case "removed":
       return items.filter((item) => item.id !== action.id);
