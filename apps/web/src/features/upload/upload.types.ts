@@ -7,7 +7,9 @@ import type {
   Result,
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
+import type { z } from "zod";
 import type { EXTRACTION_STAGE, UPLOAD_STATUS } from "./upload.constants";
+import type { submitStatementSchema } from "./upload.schemas";
 
 export type ExtractionStage =
   (typeof EXTRACTION_STAGE)[keyof typeof EXTRACTION_STAGE];
@@ -70,3 +72,15 @@ export type UploadItem = {
   readonly id: string;
   readonly file: File;
 } & UploadState;
+
+/** What the upload screen sends for a file: its content and, for an export, the account key. */
+export type SubmitStatementInput = z.input<typeof submitStatementSchema>;
+
+/** A submission once validated: the account key is now the account it pins. */
+export type SubmitStatementRequest = z.output<typeof submitStatementSchema>;
+
+/** The account chosen for a movements export, as the job will hold it. */
+export type AccountChoice = NonNullable<SubmitStatementRequest["account"]>;
+
+/** A statement sent and waiting for the ingestion function. */
+export type SubmittedStatement = { readonly jobId: string };

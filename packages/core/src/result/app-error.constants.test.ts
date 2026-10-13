@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { APP_ERROR_CODE } from "./app-error.constants";
 
 describe("APP_ERROR_CODE", () => {
-  it("defines the seven domain error codes", () => {
+  it("defines the eight domain error codes", () => {
     expect(Object.keys(APP_ERROR_CODE)).toEqual([
       "INVALID_INPUT",
       "UNKNOWN_FORMAT",
@@ -11,6 +11,7 @@ describe("APP_ERROR_CODE", () => {
       "LIMIT_REACHED",
       "NOT_FOUND",
       "UNAUTHORIZED",
+      "ACCOUNT_REQUIRED",
     ]);
   });
 

@@ -161,7 +161,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.2b Extraction in a Web Worker
 - [x] 5.3a Drop zone and pre-upload preview
 - [x] 5.3b Accounts, formats and privacy panel
-- [ ] 5.4a Submit action and ingestion job
+- [x] 5.4a Submit action and ingestion job
 - [ ] 5.4b Submit from the upload screen
 - [ ] 5.5a Persistence rules for ingestion
 - [ ] 5.5b Ingestion function
@@ -887,8 +887,8 @@ Phase 5.4 was split in two, with the human's approval.
 
 **Tasks**
 
-- `getCurrentUserId()` (server only, moved here from 4.5): resolves the Clerk user to the internal id, creating the `users` row on first use.
-- `submitStatement` server action: Zod input (no file name), a byte cap, the session, server-side detection and minimization, the account pinned when that is unambiguous or as chosen on the upload screen (an account id, or the last 4 digits of an account a quarterly statement of the same batch creates, 5.3b), and the monthly limit of 10 statements. Pending and processing jobs hold a slot and finished ones count when they added at least one movement (decided with the human), in the calendar month in Bogotá, under a per-user lock. It creates the `ingestion_jobs` row and sends the Inngest event with the job and user ids only; if the send fails, the job is deleted and the error thrown.
+- The user's row is created on their first statement, just before writing (`findOrCreateUser`, from 3.5). No separate `getCurrentUserId()`, which 4.5 had moved here: like the other services, the submit service takes the session's Clerk id.
+- `submitStatement` server action: Zod input (no file name), a byte cap, the session, server-side detection and minimization, the account pinned when that is unambiguous or as chosen on the upload screen (an account id, or the last 4 digits of an account a quarterly statement of the same batch creates, 5.3b, kept in the job's new `account_last4`), and the monthly limit of 10 statements. Each parser says its account type and whether its format names the account, so the server pins without parsing; a user with several accounts who chose none gets `ACCOUNT_REQUIRED`. Pending and processing jobs hold a slot and finished ones count when they added at least one movement (decided with the human), in the calendar month in Bogotá, under a per-user lock. It creates the `ingestion_jobs` row and sends the Inngest event with the job and user ids only; if the send fails, the job is deleted and the error thrown.
 - Errors sanitized before any log sees them; the server action body limit raised under the hosting limit.
 
 **Done when:** tests cover validation, the byte cap, ownership, the limit (window, reservation, race) and a failed send; the event payload contains ids only.
@@ -914,7 +914,7 @@ Phase 5.5 was split in three, with the human's approval.
 **Tasks**
 
 - A reference's last 4 digits next to its HMAC (phone and code references with at least 6 digits), as decided with the human for design v8; the raw reference is still discarded.
-- Account resolution: the quarterly statement by its last 4 digits, adopting the account an earlier export created; the export's pinned account, else the only account the user has when it's processed (a quarterly statement of the same batch may have just created it), or one created without a number. The holder's normalized name stored on the account.
+- Account resolution: the quarterly statement by its last 4 digits, adopting the account an earlier export created; the export's pinned account (or the one with its pinned `account_last4`, found or created), else the only account the user has when it's processed (a quarterly statement of the same batch may have just created it), or one created without a number. The holder's normalized name stored on the account.
 - Statement versions: another version of a period replaces an unverified statement; a verified one keeps later versions out.
 - Coverage (the verified quarterly statement wins, in both orders) and the predicate every reader uses for what counts.
 - The balance check stored at ingest: the closing difference and the rows where the chain breaks, as `reconcile` reports them.
@@ -930,7 +930,7 @@ Phase 5.5 was split in three, with the human's approval.
 
 - An Inngest function with two steps, `claim` and `ingest`. `ingest` parses on the server (authoritative), resolves the account, reconciles, prepares the rows (fingerprints, HMAC), saves them and finishes the job, deleting its content, in one transaction. Steps return ids, codes and counts only; one job per user at a time.
 - On final failure: status `failed` with an error code, and the content deleted as well.
-- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human).
+- A statement whose movements are all saved already (the same file again, or a range already loaded) ends `done` like any other, with counts such as 0 new and 45 already saved; no separate status (decided with the human). The monthly limit (5.4a) reads the finished job's `stats.added`, so that count keeps its name.
 - Database tests in `apps/web`, run after `@xtrakto/db`'s and never in parallel with its rebuild.
 
 **Done when:** an integration test runs the pipeline with fixtures against the local database; re-running it inserts nothing new; a privacy test shows Inngest keeps ids, codes and counts only.

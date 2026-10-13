@@ -52,6 +52,8 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
 export const bancolombiaMovementsExportParser: BankParser = {
   id: MOVEMENTS_EXPORT_FORMAT_ID,
   bankId: BANCOLOMBIA_BANK_ID,
+  accountType: ACCOUNT_TYPE.SAVINGS,
+  identifiesAccount: false,
   // Recognized by its header row, found the same way `parse` finds it.
   canParse: (content) => {
     const rows = firstSheetRows(content);
