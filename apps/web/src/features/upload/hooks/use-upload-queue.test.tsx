@@ -54,6 +54,7 @@ const STATEMENT: ExtractedStatement = {
   preview: {
     bankId: "bancolombia",
     formatId: "bancolombia-movements-export",
+    accountType: "savings",
     period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
     periodSource: PERIOD_SOURCE.ROWS,
     movementCount: 2,
@@ -251,5 +252,19 @@ describe("useUploadQueue", () => {
     isMounted = false;
 
     expect(workers.map((worker) => worker.isTerminated)).toEqual([true, true]);
+  });
+
+  it("keeps the account chosen for a file read", async () => {
+    add(fileNamed("movimientos.xlsx"));
+    await bytesSentTo(workers[0]);
+    workers[0]?.post({ type: "done", result: ok(STATEMENT) });
+    const [item] = queue.items;
+
+    act(() => queue.chooseAccount(item?.id ?? "", "account:a"));
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.READY,
+      accountKey: "account:a",
+    });
   });
 });

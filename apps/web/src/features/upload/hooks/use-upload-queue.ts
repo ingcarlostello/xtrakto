@@ -83,5 +83,8 @@ export const useUploadQueue = ({ createWorker }: UploadQueueOptions) => {
     dispatch({ type: "removed", id });
   };
 
-  return { items, addFiles, remove };
+  const chooseAccount = (id: string, key: string) =>
+    dispatch({ type: "accountChosen", id, key });
+
+  return { items, addFiles, remove, chooseAccount };
 };

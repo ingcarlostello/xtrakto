@@ -11,6 +11,7 @@ import {
   FORMAT_LABELS,
   PROBLEM_COPY,
   UPLOAD_COPY as COPY,
+  MASKED_DIGITS,
   UPLOAD_STATUS,
 } from "./upload.constants";
 import type { StatementPreview, UploadItem } from "./upload.types";
@@ -47,6 +48,14 @@ export const previewTags = (preview: StatementPreview): readonly string[] => [
     ? formatMonthRange(preview.period)
     : formatDayRange(preview.period),
 ];
+
+// A quarterly statement names its account; a movements export gets its
+// account below, from the destination.
+const readyCount = (preview: StatementPreview): string => {
+  const count = countText(preview.movementCount, COPY.movements);
+  if (preview.accountLast4 === undefined) return count;
+  return `${count} · ${COPY.statementAccount} ${MASKED_DIGITS}${preview.accountLast4}`;
+};
 
 const inputProblem = (reason: unknown): ProblemText => {
   if (reason === FILE_PROBLEM.SIZE) return PROBLEM_COPY.tooHeavy;
@@ -90,7 +99,7 @@ export const fileRowView = (item: UploadItem): FileRowView => {
       return {
         kind: "ready",
         tags: previewTags(preview),
-        count: countText(preview.movementCount, COPY.movements),
+        count: readyCount(preview),
       };
     }
     case UPLOAD_STATUS.FAILED:

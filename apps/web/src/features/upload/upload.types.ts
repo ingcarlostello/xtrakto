@@ -1,19 +1,27 @@
 import type {
+  AccountType,
   AppError,
   ExtractedContent,
   Period,
   PeriodSource,
   Result,
 } from "@xtrakto/core";
+import type { AccountRow } from "@xtrakto/db";
 import type { EXTRACTION_STAGE, UPLOAD_STATUS } from "./upload.constants";
 
 export type ExtractionStage =
   (typeof EXTRACTION_STAGE)[keyof typeof EXTRACTION_STAGE];
 
+/** One of the user's accounts, as the upload screen offers it. */
+export type UploadAccount = AccountRow;
+
 /** What the screen shows of a file before sending it: never its movements. */
 export type StatementPreview = {
   readonly bankId: string;
   readonly formatId: string;
+  readonly accountType: AccountType;
+  /** Only a quarterly statement names its account, by these digits. */
+  readonly accountLast4?: string;
   readonly period: Period;
   /** A statement's own period reads as months; one from its rows, as days. */
   readonly periodSource: PeriodSource;
@@ -52,6 +60,8 @@ type UploadState =
   | {
       readonly status: typeof UPLOAD_STATUS.READY;
       readonly statement: ExtractedStatement;
+      /** The account chosen for a movements export, when it had to be asked. */
+      readonly accountKey?: string;
     }
   | { readonly status: typeof UPLOAD_STATUS.FAILED; readonly error: AppError };
 

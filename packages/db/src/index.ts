@@ -9,8 +9,10 @@ export { isUserId, toUserId } from "./user-context/user-context.helpers";
 export { withUserContext } from "./user-context/user-context.queries";
 export type { UserContext, UserId } from "./user-context/user-context.types";
 export {
+  type AccountRow,
   type IdentifiedAccount,
   findOrCreateAccount,
+  listAccounts,
 } from "./accounts/account.queries";
 export { saveStatement } from "./statements/statement.queries";
 export type {

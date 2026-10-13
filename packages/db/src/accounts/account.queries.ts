@@ -1,7 +1,31 @@
 import type { AccountType, Currency } from "@xtrakto/core";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { UserContext } from "../user-context/user-context.types";
 import { accounts } from "./account.schemas";
+
+/** An account as screens list it; `last4` is null until a statement names it. */
+export type AccountRow = {
+  readonly id: string;
+  readonly bankId: string;
+  readonly accountType: AccountType;
+  readonly last4: string | null;
+};
+
+/** The context user's accounts, oldest first. */
+export const listAccounts = ({
+  tx,
+  userId,
+}: UserContext): Promise<AccountRow[]> =>
+  tx
+    .select({
+      id: accounts.id,
+      bankId: accounts.bankId,
+      accountType: accounts.accountType,
+      last4: accounts.last4,
+    })
+    .from(accounts)
+    .where(eq(accounts.userId, userId))
+    .orderBy(asc(accounts.createdAt), asc(accounts.id));
 
 /** An account the statement identifies by its last four digits. */
 export type IdentifiedAccount = {
