@@ -26,8 +26,12 @@ export const ingestionJobs = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // Unknown until the user picks it, for formats without an account number.
+    // A movements export names no account: the one it was pinned to when
+    // submitted, or null until it's processed.
     accountId: uuid("account_id"),
+    // Or the last 4 digits of the account a quarterly statement of the same
+    // upload creates, when the user chose that one (Phase 5.3b).
+    accountLast4: text("account_last4"),
     status: text("status")
       .$type<IngestionJobStatus>()
       .notNull()
@@ -55,6 +59,15 @@ export const ingestionJobs = pgTable(
     check(
       "ingestion_jobs_status_check",
       isOneOf(t.status, Object.values(INGESTION_JOB_STATUS)),
+    ),
+    check(
+      "ingestion_jobs_account_last4_check",
+      sql`${t.accountLast4} ~ '^[0-9]{4}$'`,
+    ),
+    // Pinned to an account or to the digits of one, never both.
+    check(
+      "ingestion_jobs_one_account_check",
+      sql`${t.accountId} is null or ${t.accountLast4} is null`,
     ),
     // A finished job must not keep the statement's content.
     check(

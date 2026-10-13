@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_KEY_PREFIX,
   ACCOUNT_TYPE_LABELS,
   BANK_LABELS,
   MASKED_DIGITS,
@@ -44,7 +45,7 @@ const withStatementAccount = (
       candidate.last4 === null ? { ...candidate, last4 } : candidate,
     );
   }
-  return [...candidates, { key: `last4:${last4}`, last4 }];
+  return [...candidates, { key: `${ACCOUNT_KEY_PREFIX.LAST4}${last4}`, last4 }];
 };
 
 /**
@@ -61,9 +62,10 @@ export const exportDestination = (
   const isSameKind = (other: AccountKind) =>
     other.bankId === preview.bankId &&
     other.accountType === preview.accountType;
-  const owned = accounts
-    .filter(isSameKind)
-    .map(({ id, last4 }) => ({ key: `account:${id}`, last4 }));
+  const owned = accounts.filter(isSameKind).map(({ id, last4 }) => ({
+    key: `${ACCOUNT_KEY_PREFIX.ACCOUNT}${id}`,
+    last4,
+  }));
   const named = batch
     .filter(isSameKind)
     .flatMap(({ accountLast4 }) => (accountLast4 ? [accountLast4] : []));

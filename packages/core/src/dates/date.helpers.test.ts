@@ -8,6 +8,7 @@ import {
   isWithinPeriod,
   localDateFromExcelSerial,
   localDateFromInstant,
+  monthBoundsInTimeZone,
   parseSlashDate,
 } from "./date.helpers";
 import type { ExcelDateTimeZones, LocalDate, Period } from "./date.types";
@@ -102,6 +103,42 @@ describe("localDateFromInstant", () => {
     expect(() =>
       localDateFromInstant(new Date(Number.NaN), DEFAULT_TIME_ZONE),
     ).toThrow(RangeError);
+  });
+});
+
+describe("monthBoundsInTimeZone", () => {
+  const boundsOf = (iso: string, timeZone = DEFAULT_TIME_ZONE) => {
+    const { start, end } = monthBoundsInTimeZone(new Date(iso), timeZone);
+    return { start: start.toISOString(), end: end.toISOString() };
+  };
+
+  it("spans the month from midnight on the 1st in Bogotá", () => {
+    expect(boundsOf("2026-10-12T15:00:00Z")).toEqual({
+      start: "2026-10-01T05:00:00.000Z",
+      end: "2026-11-01T05:00:00.000Z",
+    });
+  });
+
+  it("keeps the last evening of a month in Bogotá in that month, though UTC is in the next", () => {
+    expect(boundsOf("2026-11-01T04:59:59Z").start).toBe(
+      "2026-10-01T05:00:00.000Z",
+    );
+    expect(boundsOf("2026-11-01T05:00:00Z").start).toBe(
+      "2026-11-01T05:00:00.000Z",
+    );
+  });
+
+  it("ends December at the start of January", () => {
+    expect(boundsOf("2026-12-31T12:00:00Z").end).toBe(
+      "2027-01-01T05:00:00.000Z",
+    );
+  });
+
+  it("uses the given time zone", () => {
+    expect(boundsOf("2026-11-01T03:00:00Z", "UTC")).toEqual({
+      start: "2026-11-01T00:00:00.000Z",
+      end: "2026-12-01T00:00:00.000Z",
+    });
   });
 });
 

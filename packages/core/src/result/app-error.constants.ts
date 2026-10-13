@@ -6,4 +6,6 @@ export const APP_ERROR_CODE = {
   LIMIT_REACHED: "LIMIT_REACHED",
   NOT_FOUND: "NOT_FOUND",
   UNAUTHORIZED: "UNAUTHORIZED",
+  // A movements export names no account, and the user has several to choose from.
+  ACCOUNT_REQUIRED: "ACCOUNT_REQUIRED",
 } as const;

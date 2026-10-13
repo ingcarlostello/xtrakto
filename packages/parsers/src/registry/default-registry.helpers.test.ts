@@ -60,33 +60,55 @@ const recognizedBy = (content: ExtractedContent) =>
     ({ id }) => id,
   );
 
-describe("format detection", () => {
-  it.each([
-    { name: "quarterly-basic", fixture: quarterlyBasic, id: QUARTERLY },
-    {
-      name: "quarterly-year-rollover",
-      fixture: quarterlyYearRollover,
-      id: QUARTERLY,
-    },
-    {
-      name: "quarterly-repeated-header",
-      fixture: quarterlyRepeatedHeader,
-      id: QUARTERLY,
-    },
-    {
-      name: "quarterly-broken-balance",
-      fixture: quarterlyBrokenBalance,
-      id: QUARTERLY,
-    },
-    { name: "quarterly-large", fixture: quarterlyLarge, id: QUARTERLY },
-    { name: "movements-basic", fixture: movementsBasic, id: EXPORT },
-    { name: "movements-overlap", fixture: movementsOverlap, id: EXPORT },
-  ])("recognizes $name with exactly one parser", ({ fixture, id }) => {
-    const content = fixtureContent(fixture);
+const FIXTURES = [
+  { name: "quarterly-basic", fixture: quarterlyBasic, id: QUARTERLY },
+  {
+    name: "quarterly-year-rollover",
+    fixture: quarterlyYearRollover,
+    id: QUARTERLY,
+  },
+  {
+    name: "quarterly-repeated-header",
+    fixture: quarterlyRepeatedHeader,
+    id: QUARTERLY,
+  },
+  {
+    name: "quarterly-broken-balance",
+    fixture: quarterlyBrokenBalance,
+    id: QUARTERLY,
+  },
+  { name: "quarterly-large", fixture: quarterlyLarge, id: QUARTERLY },
+  { name: "movements-basic", fixture: movementsBasic, id: EXPORT },
+  { name: "movements-overlap", fixture: movementsOverlap, id: EXPORT },
+];
 
-    expect(recognizedBy(content)).toEqual([id]);
-    expect(findParser(content)).toMatchObject({ ok: true, value: { id } });
-  });
+describe("format detection", () => {
+  it.each(FIXTURES)(
+    "recognizes $name with exactly one parser",
+    ({ fixture, id }) => {
+      const content = fixtureContent(fixture);
+
+      expect(recognizedBy(content)).toEqual([id]);
+      expect(findParser(content)).toMatchObject({ ok: true, value: { id } });
+    },
+  );
+
+  // The server pins a statement's account from these alone, before parsing.
+  it.each(FIXTURES)(
+    "reads $name as its parser declares: bank, account type and whether it names the account",
+    ({ fixture, id }) => {
+      const parser = DEFAULT_PARSERS.find((candidate) => candidate.id === id);
+      const statement = parser?.parse(fixtureContent(fixture));
+
+      expect(statement).toMatchObject({
+        ok: true,
+        value: { bankId: parser?.bankId, accountType: parser?.accountType },
+      });
+      expect(statement?.ok && statement.value.accountLast4 !== undefined).toBe(
+        parser?.identifiesAccount,
+      );
+    },
+  );
 
   it.each([
     {

@@ -14,6 +14,13 @@ export {
   findOrCreateAccount,
   listAccounts,
 } from "./accounts/account.queries";
+export {
+  createIngestionJobWithinLimit,
+  deletePendingIngestionJob,
+  type NewIngestionJob,
+  type QuotaUsed,
+  type SubmissionQuota,
+} from "./ingestion-jobs/ingestion-job.queries";
 export { saveStatement } from "./statements/statement.queries";
 export type {
   SavedStatement,

@@ -1,4 +1,5 @@
-import type { AccountType } from "@xtrakto/core";
+import { APP_ERROR_CODE } from "@xtrakto/core";
+import type { AccountType, AppError } from "@xtrakto/core";
 import type { FormatId } from "@xtrakto/parsers";
 
 // Reading statement files in the browser before sending them. The Spanish copy
@@ -19,6 +20,27 @@ export const ACCEPTED_EXTENSION = ".xlsx";
  * action's own encoding. A quarter of minimized movements is about 40 KB.
  */
 export const MAX_UPLOAD_CONTENT_BYTES = 3_500_000;
+
+/**
+ * Content over that cap. Content over the extraction's bounds fails the same
+ * way: for the person uploading, both mean the file is too large.
+ */
+export const CONTENT_TOO_LARGE = {
+  code: APP_ERROR_CODE.INVALID_INPUT,
+  details: { reason: "too_large" },
+} as const satisfies AppError;
+
+/** Statements a user may send per calendar month in Bogotá (roadmap §2). */
+export const MONTHLY_STATEMENT_LIMIT = 10;
+
+/**
+ * How the account selector's keys start: one of the user's accounts, or the
+ * last 4 digits of an account a quarterly statement of the same upload names.
+ */
+export const ACCOUNT_KEY_PREFIX = {
+  ACCOUNT: "account:",
+  LAST4: "last4:",
+} as const;
 
 /** The steps of reading a file, in order. */
 export const EXTRACTION_STAGE = {

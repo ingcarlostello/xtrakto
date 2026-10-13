@@ -67,7 +67,7 @@ flowchart LR
     RSC -- pages --> UI
     UI -- "minimized content" --> SA
     Vercel -- "SQL in user context" --> PG
-    SA -- "event: jobId only" --> IC
+    SA -- "event: job and user ids" --> IC
     IC -- invoke --> RH
     FN -- "redacted text" --> LLM
     Browser -- sign-in --> CL
@@ -103,10 +103,10 @@ sequenceDiagram
     participant F as Ingestion function
     B->>W: file bytes (and PDF password)
     W-->>B: minimized content + preview
-    B->>S: submitStatement(content, accountId?)
-    S->>S: Zod · session · monthly limit
-    S->>DB: insert ingestion_job (content kept temporarily)
-    S->>I: send statement/submitted with jobId only
+    B->>S: submitStatement(content, account?)
+    S->>S: session · Zod · size · detect, minimize again
+    S->>DB: pin the account, monthly limit, insert ingestion_job (content kept temporarily)
+    S->>I: send statement/submitted with the job and user ids
     S-->>B: jobId
     I->>F: invoke, step by step
     F->>DB: load job in user context
@@ -121,11 +121,12 @@ sequenceDiagram
     end
 ```
 
-- **Events carry IDs only**, because Inngest stores and displays event payloads. The content waits in the job row and is deleted as the last step, or by a daily cron if the job never finishes.
+- **Events carry IDs only**, because Inngest stores and displays event payloads: the job's and its user's, since Row-Level Security shows the job only in its user's context. The content waits in the job row and is deleted as the last step, or by a daily cron if the job never finishes. An event that can't be sent deletes its job, content included, and the action fails.
+- **Monthly limit:** 10 statements per calendar month in Bogotá. Pending and processing jobs hold a slot; a finished one keeps it only if it added a movement, so a file already loaded costs nothing. The action counts and inserts under a per-user advisory lock, so two submissions can't both take the last slot.
 - **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account, and each statement a hash of its content. Re-running a job or re-uploading a file inserts nothing new; an overlapping upload inserts only the movements the account doesn't have.
-- **Account resolution:** the quarterly statement identifies the account by its last 4 digits; the movements export has no account number, so the user picks the account at upload.
+- **Account resolution:** the quarterly statement identifies the account by its last 4 digits. The movements export has no account number, so its job is pinned when submitted: to the user's only account, or to the one chosen on the upload screen, which can be the digits of an account a quarterly statement of the same upload creates. A user with no account yet gets one when the job is processed.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
-- **Payload size:** only the minimized rows or text items travel, and the browser refuses a file whose content would pass 3.5 MB, under the 4.5 MB request limit.
+- **Payload size:** only the minimized rows or text items travel. The browser refuses a file whose content would pass 3.5 MB, and the action checks the same cap; it accepts bodies of up to 4 MB, under Vercel's 4.5 MB request limit.
 - **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
 
 ---
@@ -147,6 +148,8 @@ sequenceDiagram
 **Why HMAC and not a plain hash:** Colombian mobile numbers have 10 digits and start with 3, so a plain SHA-256 can be reversed by trying every number. References are hashed with HMAC-SHA-256 and a secret key, which still allows grouping transfers to the same person. Their last 4 digits are kept too, so the user can recognize their own Nequi ("ref ••• 1270"); 4 digits can't rebuild the number.
 
 **Long numbers in descriptions:** a description can carry an account or phone number (`INTERES INV VIRT 27608017525`). Parsers hide all but the last four digits of every run of six or more, keeping the text's length (`INTERES INV VIRT *******7525`), so full numbers never reach the database ([ADR 0012](adr/0012-long-numbers-masked-when-parsed.md)). The browser already masks them when it minimizes the content, before sending it ([ADR 0017](adr/0017-content-minimized-before-sending.md)).
+
+**Errors:** a database error's message lists its query's parameters, which can hold a statement's content, and Next.js logs whatever an action throws. So the server throws errors that name only what failed (the error's class, a SQLSTATE or system code, a constraint) before any log sees them.
 
 ---
 
@@ -343,6 +346,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                                           |
 | Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                                                   |
 | Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                                            |
+| Event not sent                | `inngest.send` throws             | The job is deleted with its content and the action fails, so nothing waits for an event that never came.                                 |
 | Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                                                |
 
 ---

@@ -1,22 +1,13 @@
-import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
+import { err, ok } from "@xtrakto/core";
 import type { ParsedStatement, Result } from "@xtrakto/core";
 import { extractSpreadsheet, findParser } from "@xtrakto/parsers";
-import { EXTRACTION_STAGE, MAX_UPLOAD_CONTENT_BYTES } from "./upload.constants";
+import { fitsInUpload } from "./upload-size.helpers";
+import { CONTENT_TOO_LARGE, EXTRACTION_STAGE } from "./upload.constants";
 import type {
   ExtractedStatement,
   ExtractionStage,
   StatementPreview,
 } from "./upload.types";
-
-// The same code and reason as content over the extraction's bounds: for the
-// person uploading, both mean the file is too large.
-const tooLarge: Result<never> = err({
-  code: APP_ERROR_CODE.INVALID_INPUT,
-  details: { reason: "too_large" },
-});
-
-const serializedBytes = (value: unknown): number =>
-  new TextEncoder().encode(JSON.stringify(value)).byteLength;
 
 const toPreview = (statement: ParsedStatement): StatementPreview => ({
   bankId: statement.bankId,
@@ -47,7 +38,7 @@ export const extractStatement = (
   if (!parser.ok) return parser;
   onStage(EXTRACTION_STAGE.PREPARING);
   const content = parser.value.minimize(extracted.value);
-  if (serializedBytes(content) > MAX_UPLOAD_CONTENT_BYTES) return tooLarge;
+  if (!fitsInUpload(content)) return err(CONTENT_TOO_LARGE);
   const statement = parser.value.parse(content);
   if (!statement.ok) return statement;
   return ok({ content, preview: toPreview(statement.value) });

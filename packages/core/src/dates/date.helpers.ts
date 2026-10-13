@@ -1,5 +1,5 @@
 import { TZDate, tz } from "@date-fns/tz";
-import { format, isExists } from "date-fns";
+import { addMonths, format, isExists, startOfMonth } from "date-fns";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
 import type { ExcelDateTimeZones, LocalDate, Period } from "./date.types";
 import type { Result } from "../result/result.types";
@@ -43,6 +43,20 @@ export const localDateFromInstant = (
 ): LocalDate =>
   // This format always yields "YYYY-MM-DD".
   format(instant, LOCAL_DATE_FORMAT, { in: tz(timeZone) }) as LocalDate;
+
+/**
+ * The calendar month an instant falls in, in a time zone: from its first
+ * instant to the next month's first instant, excluded. Limits counted per
+ * month in Bogotá use it, whatever the server's own time zone.
+ */
+export const monthBoundsInTimeZone = (
+  instant: Date,
+  timeZone: string,
+): { readonly start: Date; readonly end: Date } => {
+  const start = startOfMonth(instant, { in: tz(timeZone) });
+  const end = addMonths(start, 1, { in: tz(timeZone) });
+  return { start: new Date(start.getTime()), end: new Date(end.getTime()) };
+};
 
 // Month is 1-based. Returns undefined when the day doesn't exist.
 const toLocalDate = (

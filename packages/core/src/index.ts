@@ -21,6 +21,7 @@ export {
   isWithinPeriod,
   localDateFromExcelSerial,
   localDateFromInstant,
+  monthBoundsInTimeZone,
   parseSlashDate,
 } from "./dates/date.helpers";
 export { localDateSchema, periodSchema } from "./dates/date.schemas";

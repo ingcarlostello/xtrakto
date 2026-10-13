@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_TYPE,
   CURRENCY,
   ok,
   PERIOD_SOURCE,
@@ -45,6 +46,9 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
 export const bancolombiaQuarterlyParser: BankParser = {
   id: QUARTERLY_FORMAT_ID,
   bankId: BANCOLOMBIA_BANK_ID,
+  // The header's TIPO CUENTA must say CUENTA DE AHORROS.
+  accountType: ACCOUNT_TYPE.SAVINGS,
+  identifiesAccount: true,
   // Recognized by its movements table, found the same way `parse` finds it.
   canParse: (content) => {
     const rows = firstSheetRows(content);

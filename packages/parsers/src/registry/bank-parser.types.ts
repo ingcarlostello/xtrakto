@@ -1,4 +1,9 @@
-import type { ExtractedContent, ParsedStatement, Result } from "@xtrakto/core";
+import type {
+  AccountType,
+  ExtractedContent,
+  ParsedStatement,
+  Result,
+} from "@xtrakto/core";
 
 /**
  * Reads one statement format from the content extracted in the browser. Every
@@ -10,12 +15,21 @@ export type BankParser = {
   readonly id: string;
   /** Bank the format belongs to: "bancolombia". */
   readonly bankId: string;
+  /** Type of the account every statement in this format belongs to. */
+  readonly accountType: AccountType;
+  /**
+   * Whether the format names its account, by its last 4 digits. A movements
+   * export doesn't, so the user chooses where it goes when uploading it.
+   */
+  readonly identifiesAccount: boolean;
   /** Recognizes the format by its signature, such as a header row. Never throws. */
   readonly canParse: (content: ExtractedContent) => boolean;
   /**
    * Returns a statement that satisfies `parsedStatementSchema`, with this
-   * parser's `id` as `formatId` and its `bankId`. Content that doesn't follow
-   * the format is an expected error (`PARSE_FAILED`), never an exception.
+   * parser's `id` as `formatId`, its `bankId` and `accountType`, and an
+   * `accountLast4` exactly when it `identifiesAccount`. Content that doesn't
+   * follow the format is an expected error (`PARSE_FAILED`), never an
+   * exception.
    */
   readonly parse: (content: ExtractedContent) => Result<ParsedStatement>;
   /**

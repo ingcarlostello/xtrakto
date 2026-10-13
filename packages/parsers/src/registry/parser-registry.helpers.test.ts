@@ -10,6 +10,8 @@ import { createParserRegistry } from "./parser-registry.helpers";
 const testParser = (id: string, signature: string): BankParser => ({
   id,
   bankId: "test-bank",
+  accountType: "savings",
+  identifiesAccount: false,
   canParse: (content) =>
     content.type === "spreadsheet" &&
     content.sheets[0]?.rows[0]?.[0] === signature,

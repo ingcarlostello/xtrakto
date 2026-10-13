@@ -13,6 +13,13 @@ if (existsSync(rootEnvFile)) process.loadEnvFile(rootEnvFile);
 const nextConfig: NextConfig = {
   // A link to a route that doesn't exist fails `check-types`.
   typedRoutes: true,
+  experimental: {
+    serverActions: {
+      // A statement's content goes up to 3.5 MB (MAX_UPLOAD_CONTENT_BYTES)
+      // and Vercel Functions accept request bodies of 4.5 MB; the default is 1 MB.
+      bodySizeLimit: "4mb",
+    },
+  },
 };
 
 export default nextConfig;

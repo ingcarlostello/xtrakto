@@ -1,7 +1,7 @@
 import type { ExtractedContent } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
-import { insertUser, pgErrorCode } from "../../test/test-rows";
+import { insertAccount, insertUser, pgErrorCode } from "../../test/test-rows";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { ingestionJobs } from "./ingestion-job.schemas";
@@ -41,4 +41,26 @@ describe.skipIf(!testDatabase)("ingestion_jobs table", () => {
       expect(await pgErrorCode(insert)).toBe(CHECK_VIOLATION);
     },
   );
+
+  it.each(["210", "21a9", "02109"])(
+    "rejects %s as an account's last 4 digits",
+    async (accountLast4) => {
+      const userId = await insertUser(owner.db);
+      const insert = owner.db
+        .insert(ingestionJobs)
+        .values({ userId, accountLast4 });
+
+      expect(await pgErrorCode(insert)).toBe(CHECK_VIOLATION);
+    },
+  );
+
+  it("rejects a job pinned to both an account and the digits of one", async () => {
+    const userId = await insertUser(owner.db);
+    const accountId = await insertAccount(owner.db, userId);
+    const insert = owner.db
+      .insert(ingestionJobs)
+      .values({ userId, accountId, accountLast4: "2109" });
+
+    expect(await pgErrorCode(insert)).toBe(CHECK_VIOLATION);
+  });
 });

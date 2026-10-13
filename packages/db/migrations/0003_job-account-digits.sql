@@ -1,0 +1,3 @@
+ALTER TABLE "ingestion_jobs" ADD COLUMN "account_last4" text;--> statement-breakpoint
+ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_account_last4_check" CHECK ("ingestion_jobs"."account_last4" ~ '^[0-9]{4}$');--> statement-breakpoint
+ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_one_account_check" CHECK ("ingestion_jobs"."account_id" is null or "ingestion_jobs"."account_last4" is null);
