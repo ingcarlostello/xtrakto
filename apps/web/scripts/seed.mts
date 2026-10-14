@@ -9,14 +9,14 @@ import {
   prepareStatement,
 } from "@xtrakto/core";
 import {
-  type BalanceCheck,
   createDb,
   findOrCreateUser,
   resolveIdentifiedAccount,
   saveStatement,
   withUserContext,
 } from "@xtrakto/db";
-import { findParser, reconcile } from "@xtrakto/parsers";
+import { findParser } from "@xtrakto/parsers";
+import { balanceCheckOf } from "../src/features/ingestion/balance-check.helpers";
 
 const ROOT = new URL("../../../", import.meta.url);
 const ENV_FILE = new URL(".env.local", ROOT);
@@ -70,18 +70,6 @@ const last4 = fixtures.find(({ parsed }) => parsed.accountLast4)?.parsed
   .accountLast4;
 if (!last4) throw new Error("No fixture identifies the account.");
 
-// What `reconcile` found, as the statement keeps it.
-const balanceOf = (parsed: ParsedStatement): BalanceCheck => {
-  const { balanceVerified, issues, closingDifferenceMinor } = reconcile(parsed);
-  return {
-    verified: balanceVerified,
-    differenceMinor: closingDifferenceMinor,
-    breakPositions: issues.flatMap(({ position }) =>
-      position === undefined ? [] : [position],
-    ),
-  };
-};
-
 const { db, pool } = createDb({ connectionString: databaseUrl });
 try {
   const userId = await findOrCreateUser(db, clerkUserId);
@@ -101,7 +89,7 @@ try {
       return saveStatement(ctx, {
         accountId,
         statement,
-        balance: balanceOf(parsed),
+        balance: balanceCheckOf(parsed),
       });
     });
     if (!result.ok) throw new Error(`${file}: ${result.error.code}`);

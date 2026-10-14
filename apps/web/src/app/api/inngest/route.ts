@@ -1,5 +1,5 @@
 import { serve } from "inngest/next";
-import { ping } from "@/features/ingestion/ping.function";
+import { ingestStatement } from "@/features/ingestion/ingest-statement.function";
 import { inngest } from "@/lib/inngest";
 
 // Inngest syncs the app's functions (PUT) and runs them (POST) through this
@@ -8,4 +8,7 @@ import { inngest } from "@/lib/inngest";
 // Seconds; keep it above the client's checkpointing maxRuntime (lib/inngest.ts).
 export const maxDuration = 60;
 
-export const { GET, POST, PUT } = serve({ client: inngest, functions: [ping] });
+export const { GET, POST, PUT } = serve({
+  client: inngest,
+  functions: [ingestStatement],
+});

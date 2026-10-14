@@ -13,11 +13,17 @@ import {
 import { accounts } from "../accounts/account.schemas";
 import { isOneOf } from "../columns/check.utils";
 import { createdAt, primaryId } from "../columns/column.utils";
+import { statements } from "../statements/statement.schemas";
 import { users } from "../users/user.schemas";
-import { INGESTION_JOB_STATUS } from "./ingestion-job.constants";
-
-type IngestionJobStatus =
-  (typeof INGESTION_JOB_STATUS)[keyof typeof INGESTION_JOB_STATUS];
+import {
+  INGESTION_JOB_ERROR,
+  INGESTION_JOB_STATUS,
+} from "./ingestion-job.constants";
+import type {
+  IngestionJobError,
+  IngestionJobStatus,
+  IngestionStats,
+} from "./ingestion-job.types";
 
 export const ingestionJobs = pgTable(
   "ingestion_jobs",
@@ -37,11 +43,16 @@ export const ingestionJobs = pgTable(
       .notNull()
       .default(INGESTION_JOB_STATUS.PENDING),
     formatId: text("format_id"),
-    errorCode: text("error_code"),
+    errorCode: text("error_code").$type<IngestionJobError>(),
+    // The statement a finished job saved, or the one that already held it.
+    statementId: uuid("statement_id"),
     // Temporary: deleted when the job ends (system design §4).
     extractedContent: jsonb("extracted_content").$type<ExtractedContent>(),
-    // Counts only, never content.
-    stats: jsonb("stats").$type<Record<string, number>>().notNull().default({}),
+    // Counts only, never content; written when the job is done.
+    stats: jsonb("stats")
+      .$type<Partial<IngestionStats>>()
+      .notNull()
+      .default({}),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -54,10 +65,26 @@ export const ingestionJobs = pgTable(
       columns: [t.accountId, t.userId],
       foreignColumns: [accounts.id, accounts.userId],
     }).onDelete("cascade"),
+    // A statement the job saved, replaced later as a version that didn't
+    // reconcile, takes the job with it.
+    foreignKey({
+      name: "ingestion_jobs_statement_fk",
+      columns: [t.statementId, t.userId],
+      foreignColumns: [statements.id, statements.userId],
+    }).onDelete("cascade"),
     index("ingestion_jobs_user_created_idx").on(t.userId, t.createdAt),
     check(
       "ingestion_jobs_status_check",
       isOneOf(t.status, Object.values(INGESTION_JOB_STATUS)),
+    ),
+    check(
+      "ingestion_jobs_error_code_check",
+      isOneOf(t.errorCode, Object.values(INGESTION_JOB_ERROR)),
+    ),
+    // A failed job says why; a done one, which statement it saved.
+    check(
+      "ingestion_jobs_outcome_check",
+      sql`(${t.status} = 'failed') = (${t.errorCode} is not null) and (${t.status} <> 'done' or ${t.statementId} is not null)`,
     ),
     check(
       "ingestion_jobs_account_last4_check",

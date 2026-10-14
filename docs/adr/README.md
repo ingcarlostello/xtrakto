@@ -36,3 +36,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0016](0016-users-delete-only-their-own-row.md)                   | Users delete only their own row                                    | Accepted |
 | [0017](0017-content-minimized-before-sending.md)                  | Extracted content is minimized in the browser before sending       | Accepted |
 | [0018](0018-verified-quarterly-statement-covers-other-formats.md) | A verified quarterly statement covers the other format's movements | Accepted |
+| [0019](0019-two-inngest-steps-with-ids-codes-and-counts.md)       | Two Inngest steps that keep only ids, codes and counts             | Accepted |

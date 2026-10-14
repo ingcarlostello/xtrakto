@@ -73,10 +73,12 @@ On its first start, `docker/postgres/init.sql` creates the application role, `xt
 
 ### Background jobs
 
-The same `docker compose up --wait` starts the Inngest Dev Server, pinned like PostgreSQL. It calls the app at `http://host.docker.internal:3000/api/inngest`, so run `pnpm dev` on port 3000, and keeps runs in memory until it stops. Its UI, http://127.0.0.1:8288, lists the app's functions and every run with its steps; a test event can be sent from there, or with:
+The same `docker compose up --wait` starts the Inngest Dev Server, pinned like PostgreSQL. It calls the app at `http://host.docker.internal:3000/api/inngest`, so run `pnpm dev` on port 3000, and keeps runs in memory until it stops. Its UI, http://127.0.0.1:8288, lists the app's functions and every run with its steps: a file sent from `/upload` runs `ingest-statement`, whose steps `claim` and `ingest` keep only ids, codes and counts.
+
+Don't send a `PUT` to `/api/inngest` from your shell: the app would register as `localhost:3000`, which the Dev Server's container can't reach, and runs would wait. To register it again:
 
 ```bash
-curl -X POST http://127.0.0.1:8288/e/dev -d '{"name":"app/ping","data":{}}'
+curl -X PUT http://127.0.0.1:3000/api/inngest -H 'Host: host.docker.internal:3000'
 ```
 
 CI starts only PostgreSQL: the tests don't need the Dev Server.
@@ -100,6 +102,8 @@ CI starts only PostgreSQL: the tests don't need the Dev Server.
 CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request, with the database from `docker compose up --wait`.
 
 The integration tests of `packages/db` use the `xtrakto_test` database through `TEST_DATABASE_URL` (application role) and `TEST_DATABASE_MIGRATION_URL` (owner), read from `.env.local`. With both set, they need the local database running and fail if it isn't; without them, they are skipped, except in CI, which always runs them. Both must point to a local database whose name ends in `_test`.
+
+The app's database tests, such as the ingestion function's, use the same database. They run after `packages/db`'s, which rebuild it from the migrations, and never rebuild it themselves: run them through `pnpm turbo test`, or alone once the database tests have run, since they stop when a migration is missing.
 
 `pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/` or its folders, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 

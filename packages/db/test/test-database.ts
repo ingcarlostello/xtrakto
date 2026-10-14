@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { Client } from "pg";
+
 /**
  * The integration tests' database: TEST_DATABASE_URL connects as the
  * application role, TEST_DATABASE_MIGRATION_URL as the owner. Without them the
@@ -56,4 +59,37 @@ export const requireTestDatabase = (): TestDatabase => {
   if (!testDatabase)
     throw new Error("The database tests should have been skipped.");
   return testDatabase;
+};
+
+const CONNECTION_TIMEOUT_MS = 3_000;
+const MIGRATIONS_FOLDER = new URL("../migrations/", import.meta.url);
+
+/**
+ * For other workspaces' database tests, which run after these and never
+ * rebuild the database: fails unless it has every migration.
+ */
+export const assertMigrated = async (ownerUrl: string): Promise<void> => {
+  const expected = readdirSync(MIGRATIONS_FOLDER).filter((file) =>
+    file.endsWith(".sql"),
+  ).length;
+  const owner = new Client({
+    connectionString: ownerUrl,
+    connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+  });
+  let applied = 0;
+  try {
+    await owner.connect();
+    const { rows } = await owner.query<{ applied: number }>(
+      "select count(*)::int as applied from drizzle.__drizzle_migrations",
+    );
+    applied = rows[0]?.applied ?? 0;
+  } catch {
+    // Unreachable, or never migrated: the message below says what to do.
+  } finally {
+    await owner.end();
+  }
+  if (applied !== expected)
+    throw new Error(
+      "The test database isn't up to date: start it with `docker compose up --wait` and run `pnpm turbo test`, whose database tests rebuild it first.",
+    );
 };

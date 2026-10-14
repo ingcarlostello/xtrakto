@@ -1,0 +1,4 @@
+ALTER TABLE "ingestion_jobs" ADD COLUMN "statement_id" uuid;--> statement-breakpoint
+ALTER TABLE "statements" ADD CONSTRAINT "statements_id_user_key" UNIQUE("id","user_id");--> statement-breakpoint
+ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_error_code_check" CHECK ("ingestion_jobs"."error_code" in ('UNKNOWN_FORMAT', 'PARSE_FAILED', 'ACCOUNT_REQUIRED', 'INTERNAL_ERROR', 'CONTENT_EXPIRED'));--> statement-breakpoint
+ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_outcome_check" CHECK (("ingestion_jobs"."status" = 'failed') = ("ingestion_jobs"."error_code" is not null) and ("ingestion_jobs"."status" <> 'done' or "ingestion_jobs"."statement_id" is not null));
