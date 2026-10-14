@@ -1,5 +1,6 @@
 import { serve } from "inngest/next";
 import { ingestStatement } from "@/features/ingestion/ingest-statement.function";
+import { cleanUpStaleJobs } from "@/features/ingestion/stale-jobs.function";
 import { inngest } from "@/lib/inngest";
 
 // Inngest syncs the app's functions (PUT) and runs them (POST) through this
@@ -10,5 +11,5 @@ export const maxDuration = 60;
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [ingestStatement],
+  functions: [ingestStatement, cleanUpStaleJobs],
 });

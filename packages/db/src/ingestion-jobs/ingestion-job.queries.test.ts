@@ -1,5 +1,5 @@
 import type { ExtractedContent } from "@xtrakto/core";
-import { eq } from "drizzle-orm";
+import { eq, sql, TransactionRollbackError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
 import {
@@ -9,7 +9,7 @@ import {
   pgErrorCode,
 } from "../../test/test-rows";
 import { createDb } from "../client/db-client.queries";
-import type { DbClient } from "../client/db-client.types";
+import type { DbClient, DbTransaction } from "../client/db-client.types";
 import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
@@ -18,6 +18,7 @@ import {
   countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
+  expireStaleIngestionJobs,
   failIngestionJob,
   finishIngestionJob,
   lockIngestionJob,
@@ -368,6 +369,93 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
     expect(await readJob(doneJob)).toMatchObject({
       status: "done",
       errorCode: null,
+    });
+  });
+
+  describe("the daily cleanup", () => {
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR_MS);
+
+    // As the application role, in a transaction undone at the end: the
+    // cleanup reaches every user's jobs, other test files' included.
+    const inUndoneTransaction = async <T>(
+      work: (tx: DbTransaction) => Promise<T>,
+    ): Promise<T> => {
+      let outcome: { value: T } | undefined;
+      await app.db
+        .transaction(async (tx) => {
+          outcome = { value: await work(tx) };
+          tx.rollback();
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof TransactionRollbackError)) throw error;
+        });
+      if (!outcome) throw new Error("The transaction didn't run.");
+      return outcome.value;
+    };
+
+    // Each user's jobs as Row-Level Security shows them in that transaction.
+    const jobsSeenBy = async (tx: DbTransaction, users: readonly UserId[]) => {
+      const seen = new Map<string, unknown>();
+      for (const userId of users) {
+        await tx.execute(
+          sql`select set_config('app.user_id', ${userId}, true)`,
+        );
+        const { rows } = await tx.execute<{ id: string }>(sql`
+          select id, status, error_code as "errorCode",
+            extracted_content is null as "isContentDeleted"
+          from ingestion_jobs`);
+        for (const { id, ...job } of rows) seen.set(id, job);
+      }
+      return seen;
+    };
+
+    it("expires every user's jobs left open for more than 24 hours, and nothing else", async () => {
+      const [first, second] = [await newUser(), await newUser()];
+      const statementId = await insertStatement(owner.db, {
+        userId: first,
+        accountId: await insertAccount(owner.db, first),
+      });
+      const open = { extractedContent: CONTENT };
+      const stale = [
+        await insertJobId(first, { ...open, createdAt: hoursAgo(25) }),
+        await insertJobId(second, {
+          ...open,
+          status: "processing",
+          createdAt: hoursAgo(24.1),
+        }),
+      ];
+      const recent = await insertJobId(first, {
+        ...open,
+        createdAt: hoursAgo(23.9),
+      });
+      const done = await insertJobId(first, {
+        status: "done",
+        statementId,
+        createdAt: hoursAgo(48),
+      });
+      const failed = await insertJobId(second, {
+        status: "failed",
+        errorCode: "PARSE_FAILED",
+        createdAt: hoursAgo(48),
+      });
+
+      const { expired, seen } = await inUndoneTransaction(async (tx) => ({
+        expired: await expireStaleIngestionJobs(tx),
+        seen: await jobsSeenBy(tx, [first, second]),
+      }));
+
+      expect(expired).toBeGreaterThanOrEqual(stale.length);
+      const expiredJob = {
+        status: "failed",
+        errorCode: "CONTENT_EXPIRED",
+        isContentDeleted: true,
+      };
+      expect(stale.map((id) => seen.get(id))).toEqual([expiredJob, expiredJob]);
+      expect([recent, done, failed].map((id) => seen.get(id))).toEqual([
+        { status: "pending", errorCode: null, isContentDeleted: false },
+        { status: "done", errorCode: null, isContentDeleted: true },
+        { status: "failed", errorCode: "PARSE_FAILED", isContentDeleted: true },
+      ]);
     });
   });
 });
