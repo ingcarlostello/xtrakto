@@ -1,13 +1,17 @@
 import { APP_ERROR_CODE, err } from "@xtrakto/core";
 import type { Result } from "@xtrakto/core";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { Dispatch } from "react";
 import { itemsToStart, uploadQueueReducer } from "../upload-queue.helpers";
 import type { UploadQueueAction } from "../upload-queue.helpers";
-import { FILE_PROBLEM } from "../upload.constants";
+import { FILE_PROBLEM, NO_ANSWER } from "../upload.constants";
 import type {
+  AccountKey,
   ExtractedStatement,
   ExtractionWorker,
+  FileToSend,
+  SendOutcome,
+  SubmitStatement,
   UploadItem,
 } from "../upload.types";
 
@@ -42,18 +46,62 @@ const extractInWorker = ({ item, worker, dispatch }: Extraction): void => {
   );
 };
 
+const isLimitReached = (outcome: SendOutcome): boolean =>
+  outcome !== NO_ANSWER &&
+  !outcome.ok &&
+  outcome.error.code === APP_ERROR_CODE.LIMIT_REACHED;
+
+// One file at a time, in the list's order, so the month's limit stops the
+// rest. A rejected call (no connection, a server error, a new deployment) is
+// an answer the person can retry, not an exception.
+const sendInOrder = async (
+  files: readonly FileToSend[],
+  submit: SubmitStatement,
+  dispatch: Dispatch<UploadQueueAction>,
+): Promise<void> => {
+  for (const { id, input } of files) {
+    dispatch({ type: "sendStarted", id });
+    const outcome = await submit(input).catch((): SendOutcome => NO_ANSWER);
+    dispatch({ type: "sendFinished", id, outcome });
+    if (isLimitReached(outcome)) return;
+  }
+};
+
+const useSending = (
+  submit: SubmitStatement,
+  dispatch: Dispatch<UploadQueueAction>,
+) => {
+  const [isSending, setIsSending] = useState(false);
+  const send = async (files: readonly FileToSend[]) => {
+    setIsSending(true);
+    try {
+      await sendInOrder(files, submit, dispatch);
+    } finally {
+      setIsSending(false);
+    }
+  };
+  return { send, isSending };
+};
+
 type UploadQueueOptions = {
   /** A new worker for each file. */
   readonly createWorker: () => ExtractionWorker;
+  /** Queues one file on the server. */
+  readonly submit: SubmitStatement;
 };
 
 /**
  * The files chosen for upload, each read in its own worker, at most three at
- * a time. A worker ends when its file is read, removed, or the screen closes.
+ * a time, then sent one at a time. A worker ends when its file is read,
+ * removed, or the screen closes.
  */
-export const useUploadQueue = ({ createWorker }: UploadQueueOptions) => {
+export const useUploadQueue = ({
+  createWorker,
+  submit,
+}: UploadQueueOptions) => {
   const [items, dispatch] = useReducer(uploadQueueReducer, []);
   const workers = useRef(new Map<string, ExtractionWorker>());
+  const { send, isSending } = useSending(submit, dispatch);
 
   useEffect(() => {
     for (const item of itemsToStart(items)) {
@@ -83,8 +131,8 @@ export const useUploadQueue = ({ createWorker }: UploadQueueOptions) => {
     dispatch({ type: "removed", id });
   };
 
-  const chooseAccount = (id: string, key: string) =>
+  const chooseAccount = (id: string, key: AccountKey) =>
     dispatch({ type: "accountChosen", id, key });
 
-  return { items, addFiles, remove, chooseAccount };
+  return { items, addFiles, remove, chooseAccount, send, isSending };
 };

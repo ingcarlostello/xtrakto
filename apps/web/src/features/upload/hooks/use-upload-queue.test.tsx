@@ -6,13 +6,14 @@ import {
   PERIOD_SOURCE,
   periodSchema,
 } from "@xtrakto/core";
-import type { AppError } from "@xtrakto/core";
+import type { AppError, Result } from "@xtrakto/core";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   EXTRACTION_STAGE,
   FILE_PROBLEM,
+  NO_ANSWER,
   UPLOAD_STATUS,
 } from "../upload.constants";
 import type {
@@ -20,6 +21,9 @@ import type {
   ExtractionMessage,
   ExtractionWorker,
   ExtractRequest,
+  FileToSend,
+  SubmitStatement,
+  SubmittedStatement,
 } from "../upload.types";
 import { useUploadQueue } from "./use-upload-queue";
 
@@ -73,9 +77,11 @@ const createWorker = () => {
   workers.push(worker);
   return worker;
 };
+// Stands in for the server action.
+const submit = vi.fn<SubmitStatement>();
 
 function Harness({ onRender }: { onRender: (queue: Queue) => void }) {
-  onRender(useUploadQueue({ createWorker }));
+  onRender(useUploadQueue({ createWorker, submit }));
   return null;
 }
 
@@ -85,6 +91,7 @@ let isMounted: boolean;
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   workers = [];
+  submit.mockReset();
   root = createRoot(document.createElement("div"));
   act(() =>
     root.render(
@@ -265,6 +272,114 @@ describe("useUploadQueue", () => {
     expect(queue.items[0]).toMatchObject({
       status: UPLOAD_STATUS.READY,
       accountKey: "account:a",
+    });
+  });
+});
+
+describe("sending with useUploadQueue", () => {
+  // Chooses files and has their workers read them.
+  const readFiles = async (...names: string[]) => {
+    add(...names.map((name) => fileNamed(name)));
+    for (const worker of workers) {
+      await bytesSentTo(worker);
+      worker.post({ type: "done", result: ok(STATEMENT) });
+    }
+  };
+
+  const everyFile = (): FileToSend[] =>
+    queue.items.map(({ id }) => ({
+      id,
+      input: { content: STATEMENT.content },
+    }));
+
+  const sendAll = () => act(() => queue.send(everyFile()));
+
+  it("sends the files one at a time, in order, and lets go of what was sent", async () => {
+    await readFiles("a.xlsx", "b.xlsx");
+    let answerFirst: (result: Result<SubmittedStatement>) => void = () => {};
+    submit
+      .mockReturnValueOnce(new Promise((resolve) => (answerFirst = resolve)))
+      .mockResolvedValueOnce(ok({ jobId: "job-b" }));
+    let sending = Promise.resolve();
+
+    act(() => {
+      sending = queue.send(everyFile());
+    });
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(queue.isSending).toBe(true);
+    expect(statuses()).toEqual([UPLOAD_STATUS.SENDING, UPLOAD_STATUS.READY]);
+
+    await act(async () => {
+      answerFirst(ok({ jobId: "job-a" }));
+      await sending;
+    });
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(queue.isSending).toBe(false);
+    expect(queue.items).toMatchObject([
+      { status: UPLOAD_STATUS.SENT, jobId: "job-a" },
+      { status: UPLOAD_STATUS.SENT, jobId: "job-b" },
+    ]);
+    expect(queue.items[0]).not.toHaveProperty("statement");
+  });
+
+  it("stops at the month's limit and leaves the rest ready to send", async () => {
+    await readFiles("a.xlsx", "b.xlsx", "c.xlsx");
+    submit
+      .mockResolvedValueOnce(ok({ jobId: "job-a" }))
+      .mockResolvedValueOnce(err({ code: APP_ERROR_CODE.LIMIT_REACHED }));
+
+    await sendAll();
+
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(statuses()).toEqual([
+      UPLOAD_STATUS.SENT,
+      UPLOAD_STATUS.READY,
+      UPLOAD_STATUS.READY,
+    ]);
+    expect(queue.items[1]).not.toHaveProperty("sendProblem");
+  });
+
+  it("asks again for the account the server needs, until one is chosen", async () => {
+    await readFiles("movimientos.xlsx");
+    const accountRequired: AppError = {
+      code: APP_ERROR_CODE.ACCOUNT_REQUIRED,
+    };
+    submit.mockResolvedValueOnce(err(accountRequired));
+
+    await sendAll();
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.READY,
+      sendProblem: accountRequired,
+    });
+
+    act(() => queue.chooseAccount(queue.items[0]?.id ?? "", "account:a"));
+    expect(queue.items[0]).toMatchObject({ sendProblem: undefined });
+  });
+
+  it("keeps a file whose send got no answer, content and all, to try again", async () => {
+    await readFiles("extracto.xlsx");
+    submit.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await sendAll();
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.READY,
+      statement: STATEMENT,
+      sendProblem: NO_ANSWER,
+    });
+    expect(queue.isSending).toBe(false);
+  });
+
+  it("fails a file the server won't read", async () => {
+    await readFiles("extracto.xlsx");
+    const unknownFormat: AppError = { code: APP_ERROR_CODE.UNKNOWN_FORMAT };
+    submit.mockResolvedValueOnce(err(unknownFormat));
+
+    await sendAll();
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.FAILED,
+      error: unknownFormat,
     });
   });
 });

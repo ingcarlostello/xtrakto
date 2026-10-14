@@ -53,8 +53,13 @@ export const UPLOAD_STATUS = {
   WAITING: "waiting",
   EXTRACTING: "extracting",
   READY: "ready",
+  SENDING: "sending",
+  SENT: "sent",
   FAILED: "failed",
 } as const;
+
+/** A send that got no answer: the connection dropped, or the server failed. */
+export const NO_ANSWER = "no_answer";
 
 /** Reasons of the problems found in the browser, next to the extraction's. */
 export const FILE_PROBLEM = {
@@ -103,8 +108,14 @@ export const UPLOAD_COPY = {
   remove: "Quitar",
   submit: "Subir",
   files: { one: "archivo", other: "archivos" },
-  notSentYet:
-    "La subida llega muy pronto: por ahora solo los leemos en tu navegador.",
+  sending: "Subiendo…",
+  sent: "Subido · en cola para procesar",
+  retry: "Reintentar",
+  // The month's count, beside the title (docs/ui/v8-07).
+  available: "disponibles",
+  filesThisMonth: "Archivos este mes",
+  renewsOn: "Se renuevan el",
+  limitReached: "Llegaste al límite de este mes.",
   statementAccount: "cuenta",
   savedIn: "Se guardará en",
   chooseAccount: "¿En qué cuenta lo guardamos?",
@@ -202,5 +213,22 @@ export const PROBLEM_COPY = {
   unreadable: {
     title: "No pudimos abrir este archivo",
     detail: "Vuelve a elegirlo; si sigue igual, descárgalo de nuevo del banco.",
+  },
+  // Sending it.
+  noAnswer: {
+    title: "No se subió",
+    detail: "No tuvimos respuesta. Revisa tu conexión y vuelve a intentarlo.",
+  },
+  chooseAccount: {
+    title: "Elige en qué cuenta lo guardamos",
+    detail: "Tienes varias cuentas: elige una y vuelve a subirlo.",
+  },
+  accountGone: {
+    title: "Esa cuenta ya no está",
+    detail: "Elige otra cuenta y vuelve a subirlo.",
+  },
+  signedOut: {
+    title: "Tu sesión terminó",
+    detail: "Vuelve a iniciar sesión y súbelo de nuevo.",
   },
 } as const;

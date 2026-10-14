@@ -1,30 +1,31 @@
 import { useId } from "react";
-import type { AccountDestination } from "../account-destination.helpers";
+import type {
+  AccountDestination,
+  AccountOption,
+} from "../account-destination.helpers";
 import { UPLOAD_COPY as COPY } from "../upload.constants";
+import type { AccountKey } from "../upload.types";
 
-type AccountChoiceProps = {
-  destination: AccountDestination;
-  chosen: string | undefined;
-  onChoose: (key: string) => void;
+type AccountSelectProps = {
+  options: readonly AccountOption[];
+  chosen: AccountKey | undefined;
+  onChoose: (key: AccountKey) => void;
+  isBusy: boolean;
 };
 
-// A movements export doesn't name its account: say where it will go, or ask
-// when the person has several.
-export function AccountChoice({
-  destination,
+function AccountSelect({
+  options,
   chosen,
   onChoose,
-}: AccountChoiceProps) {
+  isBusy,
+}: AccountSelectProps) {
   const selectId = useId();
-  if (destination.kind === "known") {
-    return (
-      <p className="text-caption text-ink-muted">
-        {`${COPY.savedIn} ${destination.label}.`}
-      </p>
-    );
-  }
   // A choice that no longer fits (its statement was removed) asks again.
-  const isOffered = destination.options.some(({ key }) => key === chosen);
+  const isOffered = options.some(({ key }) => key === chosen);
+  const choose = (value: string) => {
+    const option = options.find(({ key }) => key === value);
+    if (option) onChoose(option.key);
+  };
   return (
     <div className="flex flex-col items-start gap-1.5">
       <label
@@ -36,18 +37,52 @@ export function AccountChoice({
       <select
         id={selectId}
         value={isOffered ? chosen : ""}
-        onChange={(event) => onChoose(event.target.value)}
-        className="h-11 max-w-full rounded-full border border-chart-axis bg-surface px-4 text-sm text-ink"
+        disabled={isBusy}
+        onChange={(event) => choose(event.target.value)}
+        className="h-11 max-w-full rounded-full border border-chart-axis bg-surface pr-2 pl-3.5 text-sm text-ink"
       >
         <option value="" disabled>
           {COPY.chooseAccountPlaceholder}
         </option>
-        {destination.options.map(({ key, label }) => (
+        {options.map(({ key, label }) => (
           <option key={key} value={key}>
             {label}
           </option>
         ))}
       </select>
     </div>
+  );
+}
+
+type AccountChoiceProps = {
+  destination: AccountDestination;
+  chosen: AccountKey | undefined;
+  onChoose: (key: AccountKey) => void;
+  /** While files go up, the choice waits. */
+  isBusy?: boolean;
+};
+
+// A movements export doesn't name its account: say where it will go, or ask
+// when the person has several.
+export function AccountChoice({
+  destination,
+  chosen,
+  onChoose,
+  isBusy = false,
+}: AccountChoiceProps) {
+  if (destination.kind === "known") {
+    return (
+      <p className="text-caption text-ink-muted">
+        {`${COPY.savedIn} ${destination.label}.`}
+      </p>
+    );
+  }
+  return (
+    <AccountSelect
+      options={destination.options}
+      chosen={chosen}
+      onChoose={onChoose}
+      isBusy={isBusy}
+    />
   );
 }

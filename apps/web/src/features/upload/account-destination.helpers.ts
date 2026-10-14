@@ -4,10 +4,17 @@ import {
   BANK_LABELS,
   MASKED_DIGITS,
 } from "./upload.constants";
-import type { StatementPreview, UploadAccount } from "./upload.types";
+import type {
+  AccountKey,
+  StatementPreview,
+  UploadAccount,
+} from "./upload.types";
 
 /** An account a movements export can go to; its key is what gets sent. */
-export type AccountOption = { readonly key: string; readonly label: string };
+export type AccountOption = {
+  readonly key: AccountKey;
+  readonly label: string;
+};
 
 /** Where a movements export will be saved: one account, or the person's choice. */
 export type AccountDestination =
@@ -15,7 +22,7 @@ export type AccountDestination =
   | { readonly kind: "choose"; readonly options: readonly AccountOption[] };
 
 type AccountKind = Pick<StatementPreview, "bankId" | "accountType">;
-type Candidate = { readonly key: string; readonly last4: string | null };
+type Candidate = { readonly key: AccountKey; readonly last4: string | null };
 type Labels = Readonly<Partial<Record<string, string>>>;
 
 const labelOf = (labels: Labels, id: string): string => labels[id] ?? id;
@@ -62,7 +69,7 @@ export const exportDestination = (
   const isSameKind = (other: AccountKind) =>
     other.bankId === preview.bankId &&
     other.accountType === preview.accountType;
-  const owned = accounts.filter(isSameKind).map(({ id, last4 }) => ({
+  const owned = accounts.filter(isSameKind).map(({ id, last4 }): Candidate => ({
     key: `${ACCOUNT_KEY_PREFIX.ACCOUNT}${id}`,
     last4,
   }));

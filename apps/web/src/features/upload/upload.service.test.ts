@@ -2,7 +2,11 @@ import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTENT_TOO_LARGE } from "./upload.constants";
-import { listUploadAccounts, queueStatement } from "./upload.service";
+import {
+  getMonthlyUsage,
+  listUploadAccounts,
+  queueStatement,
+} from "./upload.service";
 
 // Row-Level Security, the queries, the limit's lock and the parsers are
 // tested in their packages; here, what the service sends where. The parsers
@@ -11,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   findUserId: vi.fn(),
   findOrCreateUser: vi.fn(),
   listAccounts: vi.fn(),
+  countSlotsUsed: vi.fn(),
   createIngestionJobWithinLimit: vi.fn(),
   deletePendingIngestionJob: vi.fn(),
   withUserContext: vi.fn(),
@@ -21,6 +26,7 @@ vi.mock("@xtrakto/db", () => ({
   findUserId: mocks.findUserId,
   findOrCreateUser: mocks.findOrCreateUser,
   listAccounts: mocks.listAccounts,
+  countSlotsUsed: mocks.countSlotsUsed,
   createIngestionJobWithinLimit: mocks.createIngestionJobWithinLimit,
   deletePendingIngestionJob: mocks.deletePendingIngestionJob,
   withUserContext: mocks.withUserContext,
@@ -125,6 +131,31 @@ describe("listUploadAccounts", () => {
 
     expect(await listUploadAccounts("user_new")).toEqual([]);
     expect(mocks.withUserContext).not.toHaveBeenCalled();
+  });
+});
+
+describe("getMonthlyUsage", () => {
+  it("counts the slots the user's jobs hold this month in Bogotá", async () => {
+    mocks.findUserId.mockResolvedValue(USER_ID);
+    mocks.countSlotsUsed.mockResolvedValue(3);
+
+    expect(await getMonthlyUsage("user_clerk")).toEqual({
+      used: 3,
+      limit: 10,
+      resetsOn: "2026-11-01",
+    });
+    expect(mocks.countSlotsUsed).toHaveBeenCalledWith(CONTEXT, {
+      start: new Date("2026-10-01T05:00:00Z"),
+      end: new Date("2026-11-01T05:00:00Z"),
+    });
+  });
+
+  it("counts none for someone who never sent a file, without creating them", async () => {
+    mocks.findUserId.mockResolvedValue(undefined);
+
+    expect(await getMonthlyUsage("user_new")).toMatchObject({ used: 0 });
+    expect(mocks.withUserContext).not.toHaveBeenCalled();
+    expect(mocks.findOrCreateUser).not.toHaveBeenCalled();
   });
 });
 

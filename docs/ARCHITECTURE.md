@@ -127,7 +127,7 @@ sequenceDiagram
 - **Account resolution:** the quarterly statement identifies the account by its last 4 digits. The movements export has no account number, so its job is pinned when submitted: to the user's only account, or to the one chosen on the upload screen, which can be the digits of an account a quarterly statement of the same upload creates. A user with no account yet gets one when the job is processed.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
 - **Payload size:** only the minimized rows or text items travel. The browser refuses a file whose content would pass 3.5 MB, and the action checks the same cap; it accepts bodies of up to 4 MB, under Vercel's 4.5 MB request limit.
-- **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
+- **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. The upload screen sends them one at a time, so the monthly limit stops the rest, and a send that gets no answer can be retried. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
 
 ---
 

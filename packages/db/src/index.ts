@@ -15,6 +15,7 @@ export {
   listAccounts,
 } from "./accounts/account.queries";
 export {
+  countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
   type NewIngestionJob,

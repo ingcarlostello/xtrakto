@@ -4,9 +4,11 @@ import { cn } from "cn";
 import type { ReactNode } from "react";
 
 // design-system.md §9, Buttons. Pills with at least 44px of touch target; the
-// focus ring comes from globals.css. Icons are 18px (19px in icon buttons).
+// focus ring comes from globals.css. Icons are 18px (19px in icon buttons). A
+// button disabled with `focusableWhenDisabled` keeps its focus and is only
+// aria-disabled, so it fades the same way.
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full whitespace-nowrap transition-colors select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[18px]",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full whitespace-nowrap transition-colors select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[18px]",
   {
     variants: {
       variant: {

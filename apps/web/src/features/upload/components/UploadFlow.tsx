@@ -1,16 +1,26 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import { useRef } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { exportDestination } from "../account-destination.helpers";
-import { useUploadQueue } from "../hooks/use-upload-queue";
-import { countText, fileRowView } from "../upload-display.helpers";
-import { UPLOAD_COPY as COPY, UPLOAD_STATUS } from "../upload.constants";
+import { type FileActions, useUploadFlow } from "../hooks/use-upload-flow";
+import {
+  countText,
+  fileRowView,
+  isLimitReached,
+  limitText,
+} from "../upload-display.helpers";
+import { batchPreviews } from "../upload-send.helpers";
+import {
+  NO_ANSWER,
+  UPLOAD_COPY as COPY,
+  UPLOAD_STATUS,
+} from "../upload.constants";
 import type {
-  ExtractionWorker,
+  MonthlyUsage,
+  StatementPreview,
   UploadAccount,
   UploadItem,
 } from "../upload.types";
@@ -18,90 +28,94 @@ import { AccountChoice } from "./AccountChoice";
 import { DropZone } from "./DropZone";
 import { FileRow } from "./FileRow";
 
-// Turbopack bundles the worker, SheetJS included, into chunks of its own,
-// served from this origin; the browser loads them when the first file is
-// chosen, never with the page.
-const createExtractionWorker = (): ExtractionWorker =>
-  new Worker(new URL("../extract-statement.worker.ts", import.meta.url));
+type SubmitFilesProps = {
+  count: number;
+  usage: MonthlyUsage;
+  isBusy: boolean;
+  onSubmit: () => void;
+};
 
-// Sending arrives with Phase 5.4b; until then the button says why it waits.
-function SubmitFiles({ count }: { count: number }) {
+// Sends the files read whose account is settled. Once the month's statements
+// are used up, it waits and says when they renew.
+function SubmitFiles({ count, usage, isBusy, onSubmit }: SubmitFilesProps) {
+  const isUsedUp = isLimitReached(usage);
   return (
     <div className="flex flex-col items-start gap-2 border-t border-divider pt-4">
-      <Button disabled>
+      <Button
+        disabled={isBusy || isUsedUp || count === 0}
+        focusableWhenDisabled
+        onClick={onSubmit}
+      >
         <Upload aria-hidden />
-        {`${COPY.submit} ${countText(count, COPY.files)}`}
+        {isBusy
+          ? COPY.sending
+          : `${COPY.submit} ${countText(count, COPY.files)}`}
       </Button>
-      <p className="text-caption text-ink-muted">{COPY.notSentYet}</p>
+      {isUsedUp && (
+        <p className="text-caption text-ink-muted">{limitText(usage)}</p>
+      )}
     </div>
   );
 }
 
-type FileListProps = {
-  items: readonly UploadItem[];
+type QueuedFileProps = {
+  item: UploadItem;
   accounts: readonly UploadAccount[];
-  onRemove: (id: string) => void;
-  onChooseAccount: (id: string, key: string) => void;
+  batch: readonly StatementPreview[];
+  isBusy: boolean;
+  actions: FileActions;
 };
 
-function FileList({
-  items,
+// A file going up, or gone up, can no longer be removed; one whose send got
+// no answer can be tried again.
+function QueuedFile({
+  item,
   accounts,
-  onRemove,
-  onChooseAccount,
-}: FileListProps) {
-  const batch = items.flatMap((item) =>
-    item.status === UPLOAD_STATUS.READY ? [item.statement.preview] : [],
-  );
+  batch,
+  isBusy,
+  actions,
+}: QueuedFileProps) {
+  const isOnItsWay =
+    item.status === UPLOAD_STATUS.SENDING || item.status === UPLOAD_STATUS.SENT;
+  const isReady = item.status === UPLOAD_STATUS.READY;
+  const canRetry = isReady && item.sendProblem === NO_ANSWER;
   return (
-    <ul aria-label={COPY.fileList} className="flex flex-col">
-      {items.map((item) => (
-        <FileRow
-          key={item.id}
-          name={item.file.name}
-          view={fileRowView(item)}
-          onRemove={() => onRemove(item.id)}
-        >
-          {item.status === UPLOAD_STATUS.READY &&
-            item.statement.preview.accountLast4 === undefined && (
-              <AccountChoice
-                destination={exportDestination(
-                  item.statement.preview,
-                  accounts,
-                  batch,
-                )}
-                chosen={item.accountKey}
-                onChoose={(key) => onChooseAccount(item.id, key)}
-              />
-            )}
-        </FileRow>
-      ))}
-    </ul>
+    <FileRow
+      name={item.file.name}
+      view={fileRowView(item)}
+      isBusy={isBusy}
+      onRemove={isOnItsWay ? undefined : () => actions.onRemove(item.id)}
+      onRetry={canRetry ? () => actions.onRetry(item.id) : undefined}
+    >
+      {isReady && item.statement.preview.accountLast4 === undefined && (
+        <AccountChoice
+          destination={exportDestination(
+            item.statement.preview,
+            accounts,
+            batch,
+          )}
+          chosen={item.accountKey}
+          isBusy={isBusy}
+          onChoose={(key) => actions.onChooseAccount(item.id, key)}
+        />
+      )}
+    </FileRow>
   );
 }
 
 type UploadFlowProps = {
   /** The user's accounts, where a movements export can go. */
   accounts: readonly UploadAccount[];
+  /** The month's statements, counted on the server. */
+  usage: MonthlyUsage;
   /** Shown at the end of the card: the formats read today. */
   children?: ReactNode;
 };
 
-export function UploadFlow({ accounts, children }: UploadFlowProps) {
-  const { items, addFiles, remove, chooseAccount } = useUploadQueue({
-    createWorker: createExtractionWorker,
-  });
-  const chooseButton = useRef<HTMLButtonElement>(null);
-  const readyCount = items.filter(
-    (item) => item.status === UPLOAD_STATUS.READY,
-  ).length;
-
-  // A removed row takes the focus with it: hand it back to the picker.
-  const removeFile = (id: string) => {
-    remove(id);
-    chooseButton.current?.focus();
-  };
-
+export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
+  const { items, addFiles, files, isBusy, picker, actions, sendAll } =
+    useUploadFlow(accounts);
+  const batch = batchPreviews(items);
   return (
     <Card variant="card">
       <CardHeader>
@@ -110,16 +124,29 @@ export function UploadFlow({ accounts, children }: UploadFlowProps) {
         </h2>
         <CardDescription>{COPY.chooseDescription}</CardDescription>
       </CardHeader>
-      <DropZone ref={chooseButton} onFiles={addFiles} />
+      <DropZone ref={picker} onFiles={addFiles} />
       {items.length > 0 && (
-        <FileList
-          items={items}
-          accounts={accounts}
-          onRemove={removeFile}
-          onChooseAccount={chooseAccount}
+        <ul aria-label={COPY.fileList} className="flex flex-col">
+          {items.map((item) => (
+            <QueuedFile
+              key={item.id}
+              item={item}
+              accounts={accounts}
+              batch={batch}
+              isBusy={isBusy}
+              actions={actions}
+            />
+          ))}
+        </ul>
+      )}
+      {(files.length > 0 || isBusy) && (
+        <SubmitFiles
+          count={files.length}
+          usage={usage}
+          isBusy={isBusy}
+          onSubmit={sendAll}
         />
       )}
-      {readyCount > 0 && <SubmitFiles count={readyCount} />}
       {children}
     </Card>
   );

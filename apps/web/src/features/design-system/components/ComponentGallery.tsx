@@ -1,5 +1,6 @@
 import { Bell, ShoppingCart, Upload } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
 import {
@@ -105,6 +106,23 @@ function Badges() {
   );
 }
 
+function StatusPills() {
+  return (
+    <div className="flex flex-wrap gap-4">
+      <StatusPill
+        tone="ok"
+        title="7 de 10 disponibles"
+        detail="Archivos este mes"
+      />
+      <StatusPill
+        tone="attention"
+        title="0 de 10 disponibles"
+        detail="Se renuevan el 1 de noviembre"
+      />
+    </div>
+  );
+}
+
 export function ComponentGallery() {
   return (
     <>
@@ -113,6 +131,12 @@ export function ComponentGallery() {
       </GallerySection>
       <GallerySection title="Botones">
         <Buttons />
+      </GallerySection>
+      <GallerySection
+        title="Píldora de estado"
+        description="El punto repite lo que dicen las palabras: verde si está bien, naranja si hay algo que mirar."
+      >
+        <StatusPills />
       </GallerySection>
       <GallerySection
         title="Tarjetas"

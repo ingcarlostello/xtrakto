@@ -1,20 +1,28 @@
 import {
   APP_ERROR_CODE,
+  formatDayInWords,
   formatDayRange,
   formatMonthRange,
   PERIOD_SOURCE,
 } from "@xtrakto/core";
 import type { AppError } from "@xtrakto/core";
+import type { StatusTone } from "@/components/status-pill/StatusPill";
 import {
   BANK_LABELS,
   FILE_PROBLEM,
   FORMAT_LABELS,
+  NO_ANSWER,
   PROBLEM_COPY,
   UPLOAD_COPY as COPY,
   MASKED_DIGITS,
   UPLOAD_STATUS,
 } from "./upload.constants";
-import type { StatementPreview, UploadItem } from "./upload.types";
+import type {
+  MonthlyUsage,
+  SendProblem,
+  StatementPreview,
+  UploadItem,
+} from "./upload.types";
 
 type Labels = Readonly<Partial<Record<string, string>>>;
 type Noun = { readonly one: string; readonly other: string };
@@ -27,6 +35,8 @@ export type FileRowView =
       readonly kind: "ready";
       readonly tags: readonly string[];
       readonly count: string;
+      /** Once "Subir" is pressed: going up, or gone up. */
+      readonly note?: string;
     }
   | ({ readonly kind: "problem" } & ProblemText);
 
@@ -83,10 +93,29 @@ export const problemText = ({ code, details }: AppError): ProblemText => {
       return inputProblem(reason);
     case APP_ERROR_CODE.PARSE_FAILED:
       return parseProblem(reason);
+    case APP_ERROR_CODE.UNAUTHORIZED:
+      return PROBLEM_COPY.signedOut;
     default:
       return PROBLEM_COPY.unreadable;
   }
 };
+
+// The server refuses an account only when the person has several to choose
+// from, or chose one that's gone.
+const sendProblemText = (problem: SendProblem): ProblemText => {
+  if (problem === NO_ANSWER) return PROBLEM_COPY.noAnswer;
+  return problem.code === APP_ERROR_CODE.ACCOUNT_REQUIRED
+    ? PROBLEM_COPY.chooseAccount
+    : PROBLEM_COPY.accountGone;
+};
+
+const previewView = (preview: StatementPreview, note?: string) =>
+  ({
+    kind: "ready",
+    tags: previewTags(preview),
+    count: readyCount(preview),
+    note,
+  }) as const;
 
 export const fileRowView = (item: UploadItem): FileRowView => {
   switch (item.status) {
@@ -94,15 +123,42 @@ export const fileRowView = (item: UploadItem): FileRowView => {
       return { kind: "progress", text: COPY.waiting };
     case UPLOAD_STATUS.EXTRACTING:
       return { kind: "progress", text: COPY.stage[item.stage] };
-    case UPLOAD_STATUS.READY: {
-      const { preview } = item.statement;
-      return {
-        kind: "ready",
-        tags: previewTags(preview),
-        count: readyCount(preview),
-      };
-    }
+    case UPLOAD_STATUS.READY:
+      return item.sendProblem
+        ? { kind: "problem", ...sendProblemText(item.sendProblem) }
+        : previewView(item.statement.preview);
+    case UPLOAD_STATUS.SENDING:
+      return previewView(item.statement.preview, COPY.sending);
+    case UPLOAD_STATUS.SENT:
+      return previewView(item.preview, COPY.sent);
     case UPLOAD_STATUS.FAILED:
       return { kind: "problem", ...problemText(item.error) };
   }
 };
+
+/** Whether the month's statements are used up. */
+export const isLimitReached = ({ used, limit }: MonthlyUsage): boolean =>
+  used >= limit;
+
+const renewal = ({ resetsOn }: MonthlyUsage): string =>
+  `${COPY.renewsOn} ${formatDayInWords(resetsOn)}`;
+
+/** The month's count as its pill says it: how many are left, and when they renew once none are. */
+export const usagePill = (
+  usage: MonthlyUsage,
+): {
+  readonly tone: StatusTone;
+  readonly title: string;
+  readonly detail: string;
+} => {
+  const available = Math.max(0, usage.limit - usage.used);
+  return {
+    tone: available > 0 ? "ok" : "attention",
+    title: `${available} de ${usage.limit} ${COPY.available}`,
+    detail: available > 0 ? COPY.filesThisMonth : renewal(usage),
+  };
+};
+
+/** Why "Subir" waits once the month's statements are used up. */
+export const limitText = (usage: MonthlyUsage): string =>
+  `${COPY.limitReached} ${renewal(usage)}.`;
