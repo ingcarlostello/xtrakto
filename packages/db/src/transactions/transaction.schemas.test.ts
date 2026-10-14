@@ -64,6 +64,19 @@ describe.skipIf(!testDatabase)("transactions table", () => {
     );
   });
 
+  it("rejects a movement hidden by a statement of another account", async () => {
+    const mine = await newStatement();
+    const other = await newStatement(mine.account.userId);
+    const row = {
+      ...transactionRow(mine.account, mine.statementId),
+      coveredByStatementId: other.statementId,
+    };
+
+    expect(await pgErrorCode(insertTransaction(owner.db, row))).toBe(
+      FOREIGN_KEY_VIOLATION,
+    );
+  });
+
   it("stores a fingerprint once per account, and twins with their own", async () => {
     const { account, statementId } = await newStatement();
     const first = transactionRow(account, statementId);
@@ -88,6 +101,15 @@ describe.skipIf(!testDatabase)("transactions table", () => {
     ["a category without its source", { categoryId: "groceries" as const }],
     ["a fingerprint that isn't SHA-256 hex", { fingerprint: "ABC" }],
     ["a negative position", { position: -1 }],
+    [
+      "a reference's last digits that aren't 4",
+      {
+        referenceKind: "phone" as const,
+        referenceHash: sha256Hex(),
+        referenceLast4: "567",
+      },
+    ],
+    ["last digits without the reference's hash", { referenceLast4: "4567" }],
   ])("rejects %s", async (_, change) => {
     const { account, statementId } = await newStatement();
     const row = { ...transactionRow(account, statementId), ...change };

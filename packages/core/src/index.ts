@@ -81,3 +81,4 @@ export {
   transactionFingerprint,
 } from "./hashing/transaction-fingerprint.helpers";
 export { prepareStatement } from "./statements/prepared-statement.helpers";
+export { normalizeHolderName } from "./statements/holder-name.helpers";

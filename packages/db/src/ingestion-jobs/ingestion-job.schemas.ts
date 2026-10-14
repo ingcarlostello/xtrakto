@@ -36,7 +36,6 @@ export const ingestionJobs = pgTable(
       .$type<IngestionJobStatus>()
       .notNull()
       .default(INGESTION_JOB_STATUS.PENDING),
-    step: text("step"),
     formatId: text("format_id"),
     errorCode: text("error_code"),
     // Temporary: deleted when the job ends (system design §4).

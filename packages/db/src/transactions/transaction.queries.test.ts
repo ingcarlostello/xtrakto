@@ -1,8 +1,8 @@
 import type { LocalDate } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { preparedExport } from "../../test/prepared-statements";
+import { preparedExport, UNCHECKED } from "../../test/prepared-statements";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
-import { findOrCreateAccount } from "../accounts/account.queries";
+import { resolveIdentifiedAccount } from "../accounts/account.queries";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { saveStatement } from "../statements/statement.queries";
@@ -29,7 +29,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
 
   const saveAccount = async (last4: string) =>
     withUserContext(app.db, userId, async (ctx) => {
-      const accountId = await findOrCreateAccount(ctx, {
+      const accountId = await resolveIdentifiedAccount(ctx, {
         bankId: "bancolombia",
         accountType: "savings",
         last4,
@@ -37,7 +37,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
       });
       await saveStatement(ctx, {
         accountId,
-        balanceVerified: false,
+        balance: UNCHECKED,
         statement: await preparedExport(MOVEMENTS),
       });
       return accountId;
@@ -50,7 +50,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
     // Another user's identical movements must never show up.
     const other = await findOrCreateUser(app.db, `test_${crypto.randomUUID()}`);
     await withUserContext(app.db, other, async (ctx) => {
-      const accountId = await findOrCreateAccount(ctx, {
+      const accountId = await resolveIdentifiedAccount(ctx, {
         bankId: "bancolombia",
         accountType: "savings",
         last4: "1111",
@@ -58,7 +58,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
       });
       await saveStatement(ctx, {
         accountId,
-        balanceVerified: false,
+        balance: UNCHECKED,
         statement: await preparedExport(MOVEMENTS),
       });
     });

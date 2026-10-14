@@ -9,10 +9,12 @@ export { isUserId, toUserId } from "./user-context/user-context.helpers";
 export { withUserContext } from "./user-context/user-context.queries";
 export type { UserContext, UserId } from "./user-context/user-context.types";
 export {
+  type AccountKind,
   type AccountRow,
   type IdentifiedAccount,
-  findOrCreateAccount,
   listAccounts,
+  resolveIdentifiedAccount,
+  resolveUnidentifiedAccount,
 } from "./accounts/account.queries";
 export {
   countSlotsUsed,
@@ -24,6 +26,7 @@ export {
 } from "./ingestion-jobs/ingestion-job.queries";
 export { saveStatement } from "./statements/statement.queries";
 export type {
+  BalanceCheck,
   SavedStatement,
   SaveStatementInput,
 } from "./statements/statement.types";
