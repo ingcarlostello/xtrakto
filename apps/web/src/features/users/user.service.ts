@@ -2,20 +2,23 @@ import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
 import { deleteAllUserData, findUserId, withUserContext } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
+import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 
 /**
  * Deletes every row of a Clerk user's data: their user and, with it, their
  * accounts, statements, movements and ingestion jobs. A user who never used
  * the app has no row, and a second call finds none, so it can be repeated:
  * Clerk delivers each webhook at least once. The Clerk id must come from the
- * session or from a verified webhook, never from the browser.
+ * session or from a verified webhook, never from the browser. Errors are
+ * thrown without their message, which quotes the query's parameters.
  */
-export const deleteUserData = async (clerkUserId: string): Promise<void> => {
-  const db = getDb();
-  const userId = await findUserId(db, clerkUserId);
-  if (!userId) return;
-  await withUserContext(db, userId, deleteAllUserData);
-};
+export const deleteUserData = (clerkUserId: string): Promise<void> =>
+  withSanitizedErrors("USER_DATA_NOT_DELETED", async () => {
+    const db = getDb();
+    const userId = await findUserId(db, clerkUserId);
+    if (!userId) return;
+    await withUserContext(db, userId, deleteAllUserData);
+  });
 
 /**
  * Deletes the user's data, then their Clerk user. In that order: if Clerk

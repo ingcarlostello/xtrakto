@@ -1,6 +1,6 @@
 # 0005. Inngest for background work
 
-- **Status:** Accepted
+- **Status:** Accepted; its one step per stage is superseded by [0019](0019-two-inngest-steps-with-ids-codes-and-counts.md)
 - **Date:** 2026-10-07
 
 ## Context

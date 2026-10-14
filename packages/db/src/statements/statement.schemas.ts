@@ -57,6 +57,8 @@ export const statements = pgTable(
       foreignColumns: [accounts.id, accounts.userId],
     }).onDelete("cascade"),
     unique("statements_id_account_user_key").on(t.id, t.accountId, t.userId),
+    // Target of the ingestion job's key: a job and its statement share a user.
+    unique("statements_id_user_key").on(t.id, t.userId),
     unique("statements_account_content_key").on(t.accountId, t.contentHash),
     // One version of each period of a statement with balances: another one
     // replaces it while it doesn't reconcile, and stays out once it does.

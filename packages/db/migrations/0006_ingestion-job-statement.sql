@@ -1,0 +1,1 @@
+ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_statement_fk" FOREIGN KEY ("statement_id","user_id") REFERENCES "public"."statements"("id","user_id") ON DELETE cascade ON UPDATE no action;

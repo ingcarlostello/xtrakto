@@ -2,16 +2,25 @@ import type { ExtractedContent } from "@xtrakto/core";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
-import { insertAccount, insertUser, pgErrorCode } from "../../test/test-rows";
+import {
+  insertAccount,
+  insertStatement,
+  insertUser,
+  pgErrorCode,
+} from "../../test/test-rows";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
 import {
+  claimIngestionJob,
   countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
+  failIngestionJob,
+  finishIngestionJob,
+  lockIngestionJob,
   type NewIngestionJob,
   type SubmissionQuota,
 } from "./ingestion-job.queries";
@@ -76,6 +85,27 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
       createIngestionJobWithinLimit(ctx, job, quota),
     );
 
+  const insertJobId = async (
+    userId: string,
+    values: Partial<typeof ingestionJobs.$inferInsert> = {},
+  ): Promise<string> => {
+    const [job] = await insertJob(userId, values).returning({
+      id: ingestionJobs.id,
+    });
+    if (!job) throw new Error("No job inserted.");
+    return job.id;
+  };
+
+  // A done job and the statement it saved, in one of the user's accounts.
+  const insertDoneJob = async (
+    userId: string,
+    accountId: string,
+    stats: Partial<typeof ingestionJobs.$inferInsert>["stats"] = {},
+  ): Promise<string> => {
+    const statementId = await insertStatement(owner.db, { userId, accountId });
+    return insertJobId(userId, { status: "done", statementId, stats });
+  };
+
   const readJob = async (jobId: string) => {
     const [row] = await owner.db
       .select()
@@ -139,11 +169,12 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
 
   it("counts pending and processing jobs, and finished ones only if they added movements", async () => {
     const userId = await newUser();
+    const accountId = await insertAccount(owner.db, userId);
     await insertJob(userId, { status: "pending", extractedContent: CONTENT });
     await insertJob(userId, { status: "processing" });
-    await insertJob(userId, { status: "done", stats: { added: 2 } });
-    await insertJob(userId, { status: "done", stats: { added: 0 } });
-    await insertJob(userId, { status: "failed" });
+    await insertDoneJob(userId, accountId, { added: 2 });
+    await insertDoneJob(userId, accountId, { added: 0 });
+    await insertJob(userId, { status: "failed", errorCode: "PARSE_FAILED" });
     const { month } = quotaOf(0);
 
     expect(
@@ -215,5 +246,128 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
     expect(await deleteAs(userId, jobId)).toBe(true);
     expect(await readJob(jobId)).toBeUndefined();
     expect(await readJob(started?.id ?? "")).toBeDefined();
+  });
+
+  it("claims an open job, again on a retry, but never a finished job or another user's", async () => {
+    const userId = await newUser();
+    const jobId = await insertJobId(userId, { extractedContent: CONTENT });
+    const doneJob = await insertDoneJob(
+      userId,
+      await insertAccount(owner.db, userId),
+    );
+    const claimAs = (user: UserId, id: string) =>
+      withUserContext(app.db, user, (ctx) => claimIngestionJob(ctx, id));
+
+    expect(await claimAs(await newUser(), jobId)).toBe(false);
+    expect(await claimAs(userId, jobId)).toBe(true);
+    expect(await claimAs(userId, jobId)).toBe(true);
+    expect(await claimAs(userId, doneJob)).toBe(false);
+    expect(await readJob(jobId)).toMatchObject({ status: "processing" });
+    expect(await readJob(doneJob)).toMatchObject({ status: "done" });
+  });
+
+  it("reads an open job's pin and content, and nothing once it's finished or another user's", async () => {
+    const userId = await newUser();
+    const accountId = await insertAccount(owner.db, userId);
+    const jobId = await insertJobId(userId, {
+      accountId,
+      extractedContent: CONTENT,
+    });
+    const doneJob = await insertDoneJob(userId, accountId);
+    const lockAs = (user: UserId, id: string) =>
+      withUserContext(app.db, user, (ctx) => lockIngestionJob(ctx, id));
+
+    expect(await lockAs(userId, jobId)).toEqual({
+      accountId,
+      accountLast4: null,
+      extractedContent: CONTENT,
+    });
+    expect(await lockAs(userId, doneJob)).toBeUndefined();
+    expect(await lockAs(await newUser(), jobId)).toBeUndefined();
+  });
+
+  it("makes a user's jobs wait for each other while one is being ingested", async () => {
+    const userId = await newUser();
+    const first = await insertJobId(userId, { extractedContent: CONTENT });
+    const second = await insertJobId(userId, { extractedContent: CONTENT });
+    const firstLocked = signal();
+    const firstMayCommit = signal();
+    let isSecondLocked = false;
+
+    const ingesting = withUserContext(app.db, userId, async (ctx) => {
+      await lockIngestionJob(ctx, first);
+      firstLocked.resolve();
+      await firstMayCommit.promise;
+    });
+    await firstLocked.promise;
+    const waiting = withUserContext(app.db, userId, async (ctx) => {
+      await lockIngestionJob(ctx, second);
+      isSecondLocked = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(isSecondLocked).toBe(false);
+    firstMayCommit.resolve();
+    await Promise.all([ingesting, waiting]);
+    expect(isSecondLocked).toBe(true);
+  });
+
+  it("finishes a job with its statement and counts, and deletes its content", async () => {
+    const userId = await newUser();
+    const accountId = await insertAccount(owner.db, userId);
+    const statementId = await insertStatement(owner.db, { userId, accountId });
+    const jobId = await insertJobId(userId, {
+      status: "processing",
+      extractedContent: CONTENT,
+    });
+    const stats = {
+      total: 3,
+      added: 2,
+      skipped: 1,
+      covered: 0,
+      hidden: 0,
+      replaced: 0,
+    };
+
+    await withUserContext(app.db, userId, (ctx) =>
+      finishIngestionJob(ctx, jobId, { statementId, stats }),
+    );
+
+    expect(await readJob(jobId)).toMatchObject({
+      status: "done",
+      statementId,
+      stats,
+      errorCode: null,
+      extractedContent: null,
+    });
+  });
+
+  it("fails an open job with its code and deletes its content, but never a finished one", async () => {
+    const userId = await newUser();
+    const jobId = await insertJobId(userId, {
+      status: "processing",
+      extractedContent: CONTENT,
+    });
+    const doneJob = await insertDoneJob(
+      userId,
+      await insertAccount(owner.db, userId),
+    );
+    const failAs = (user: UserId, id: string) =>
+      withUserContext(app.db, user, (ctx) =>
+        failIngestionJob(ctx, id, "UNKNOWN_FORMAT"),
+      );
+
+    expect(await failAs(await newUser(), jobId)).toBe(false);
+    expect(await failAs(userId, jobId)).toBe(true);
+    expect(await failAs(userId, doneJob)).toBe(false);
+    expect(await readJob(jobId)).toMatchObject({
+      status: "failed",
+      errorCode: "UNKNOWN_FORMAT",
+      extractedContent: null,
+    });
+    expect(await readJob(doneJob)).toMatchObject({
+      status: "done",
+      errorCode: null,
+    });
   });
 });

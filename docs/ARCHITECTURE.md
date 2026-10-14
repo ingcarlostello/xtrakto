@@ -90,7 +90,7 @@ The original file and the PDF password never leave the browser. Each file is rea
 
 ## 3. Ingestion flow
 
-The upload request only validates and enqueues. Parsing, reconciliation, categorization and persistence run as separate Inngest steps, so each one retries on its own.
+The upload request only validates and enqueues. An Inngest function claims the job, then parses, reconciles, prepares and saves the statement in one step and one database transaction, so a retry redoes it all or nothing ([ADR 0019](adr/0019-two-inngest-steps-with-ids-codes-and-counts.md)).
 
 ```mermaid
 sequenceDiagram
@@ -108,12 +108,14 @@ sequenceDiagram
     S->>DB: pin the account, monthly limit, insert ingestion_job (content kept temporarily)
     S->>I: send statement/submitted with the job and user ids
     S-->>B: jobId
-    I->>F: invoke, step by step
-    F->>DB: load job in user context
-    F->>F: detect, parse, reconcile
-    F->>F: fingerprints, HMAC references, categorize
-    F->>DB: insert transactions ON CONFLICT DO NOTHING
-    F->>DB: delete extracted_content, status done
+    I->>F: invoke step claim
+    F->>DB: job processing, in user context
+    I->>F: invoke step ingest
+    F->>DB: lock the job and read its content (one transaction from here)
+    F->>F: detect, parse, resolve the account, reconcile
+    F->>F: fingerprints, HMAC references (categorize: Stage 6)
+    F->>DB: save the statement, insert transactions ON CONFLICT DO NOTHING
+    F->>DB: delete extracted_content, status done with counts
     loop every 2 s until done
         B->>S: getIngestionStatus(jobId)
         S->>DB: read job status
@@ -122,6 +124,7 @@ sequenceDiagram
 ```
 
 - **Events carry IDs only**, because Inngest stores and displays event payloads: the job's and its user's, since Row-Level Security shows the job only in its user's context. The content waits in the job row and is deleted as the last step, or by a daily cron if the job never finishes. An event that can't be sent deletes its job, content included, and the action fails.
+- **Two steps ([ADR 0019](adr/0019-two-inngest-steps-with-ids-codes-and-counts.md)):** `claim` marks the job as processing; `ingest` does the rest in one transaction. Steps return ids, codes and counts only, and their errors are sanitized, since Inngest keeps step outputs, results and errors. Content no parser recognizes or the parser can't read, and an export the user has to place among several accounts, fail the job at once with their code; anything else is retried 3 times, and then the job fails with `INTERNAL_ERROR`. A user's jobs run one at a time, by the function's concurrency key and a per-user lock, so each statement's coverage and versions see the ones saved before it.
 - **Monthly limit:** 10 statements per calendar month in Bogotá. Pending and processing jobs hold a slot; a finished one keeps it only if it added a movement, so a file already loaded costs nothing. The action counts and inserts under a per-user advisory lock, so two submissions can't both take the last slot.
 - **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account, and each statement a hash of its content. Re-running a job or re-uploading a file inserts nothing new; an overlapping upload inserts only the movements the account doesn't have.
 - **Account resolution:** the quarterly statement identifies the account by its last 4 digits: the user's account with them, else the only account without a number of its bank and type (an export created it), which takes the digits, else a new one; the holder's normalized name is kept on it. The movements export has no account number, so its job is pinned when submitted: to the user's only account, or to the one chosen on the upload screen, which can be the digits of an account a quarterly statement of the same upload creates. Unpinned, it goes to the only account the user has when it's processed, or to a new one without a number; with several, the job fails with `ACCOUNT_REQUIRED`.
@@ -140,7 +143,7 @@ sequenceDiagram
 | User's browser | Original file, PDF password, extracted content                                                                                                                | —                                                                                           | While the page is open                                                            |
 | Next.js server | Minimized extracted content: only what the parser reads ([ADR 0017](adr/0017-content-minimized-before-sending.md))                                            | Original file, PDF password, address, full account number                                   | Not kept; minimized again and written to the job row                              |
 | PostgreSQL     | Temporary minimized content, with raw references until the job ends; parsed transactions; normalized holder name; HMACs of references and their last 4 digits | Full account numbers, addresses, PDF password; raw references outside the temporary job row | Content: until the job ends (24 h max). Transactions: until the user deletes them |
-| Inngest Cloud  | Event names and IDs                                                                                                                                           | Any financial content                                                                       | Inngest run history                                                               |
+| Inngest Cloud  | Event names and IDs; step outputs and run results with statuses, error codes and counts; sanitized errors                                                     | Any financial content                                                                       | Inngest run history                                                               |
 | LLM providers  | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows                                                                      | Names, phone numbers, ID and account numbers                                                | Provider's API data policy                                                        |
 | Clerk          | Email, name, sign-in data                                                                                                                                     | Financial data                                                                              | Until the account is deleted                                                      |
 | Sentry         | Scrubbed errors and traces                                                                                                                                    | Request bodies, action arguments, descriptions, amounts                                     | Sentry retention                                                                  |
@@ -167,6 +170,7 @@ erDiagram
     ACCOUNTS ||--o{ STATEMENTS : has
     ACCOUNTS ||--o{ TRANSACTIONS : records
     STATEMENTS ||--o{ TRANSACTIONS : contains
+    STATEMENTS ||--o{ INGESTION_JOBS : "saved by"
     USERS {
         uuid id PK
         text clerk_user_id UK
@@ -216,7 +220,9 @@ erDiagram
     INGESTION_JOBS {
         uuid id PK
         uuid user_id FK
+        uuid statement_id FK
         text status
+        text error_code
         jsonb extracted_content "temporary"
         jsonb stats "counts only"
     }
@@ -228,7 +234,7 @@ erDiagram
     }
 ```
 
-Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account, and the statement that hides a movement (`covered_by_statement_id`) is of its account too, with no action on delete. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't; a partial unique index keeps one version of each period with balances, and another keeps one account without a number per bank and type. A statement that doesn't reconcile keeps its closing difference and the positions where its chain of balances breaks. `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content.
+Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account, and the statement that hides a movement (`covered_by_statement_id`) is of its account too, with no action on delete, checked when the transaction ends: a statement that hides movements can't be deleted without them, and a user's deletion removes both whatever order its cascades take. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't; a partial unique index keeps one version of each period with balances, and another keeps one account without a number per bank and type. A statement that doesn't reconcile keeps its closing difference and the positions where its chain of balances breaks. `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content: a failed one says why, and a done one names the statement it saved, or the one that already held its movements.
 
 Later stages add `llm_usage` (8), `format_mappings` without user data (11), `usury_rates` (12) and document chunks with embeddings in pgvector (15).
 
@@ -343,19 +349,20 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 10. Failure modes
 
-| Failure                       | Detected by                       | Behavior                                                                                                                                 |
-| ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Unknown format                | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                                                    |
-| Balances don't add up         | `reconcile()` issues              | Saved with `balance_verified = false`, so the user can see the affected rows; its numbers stay out of every summary until it reconciles. |
-| Same days in two formats      | A verified quarterly's days       | The movements export's movements on them are saved hidden, in either order (ADR 0018); nothing counts twice.                             |
-| Another version of a period   | One version per period, by index  | Replaces a version that doesn't reconcile; stays out when one does.                                                                      |
-| Duplicate upload              | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                                            |
-| Step fails mid-job            | Inngest error                     | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted.                         |
-| LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                                           |
-| Cost limit reached            | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                                                   |
-| Payload too large             | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                                            |
-| Event not sent                | `inngest.send` throws             | The job is deleted with its content and the action fails, so nothing waits for an event that never came.                                 |
-| Account deleted in Clerk      | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                                                |
+| Failure                          | Detected by                       | Behavior                                                                                                                                                             |
+| -------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unknown format                   | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                                                                                |
+| Balances don't add up            | `reconcile()` issues              | Saved with `balance_verified = false`, so the user can see the affected rows; its numbers stay out of every summary until it reconciles.                             |
+| Same days in two formats         | A verified quarterly's days       | The movements export's movements on them are saved hidden, in either order (ADR 0018); nothing counts twice.                                                         |
+| Another version of a period      | One version per period, by index  | Replaces a version that doesn't reconcile; stays out when one does.                                                                                                  |
+| Duplicate upload                 | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                                                                        |
+| Step fails mid-job               | Inngest error                     | The step's transaction rolls back and Inngest retries it, up to 3 times; writes are idempotent. Then the job fails with `INTERNAL_ERROR` and its content is deleted. |
+| Content unreadable on the server | Server parse, account resolution  | The job fails at once with `UNKNOWN_FORMAT`, `PARSE_FAILED` or `ACCOUNT_REQUIRED` and its content is deleted; it holds no slot of the monthly limit.                 |
+| LLM timeout or invalid output    | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                                                                       |
+| Cost limit reached               | `llm_usage` check before the call | LLM step skipped; the user sees when the limit renews.                                                                                                               |
+| Payload too large                | Size checks in browser and action | Rejected with a message; the server enforces the same bounds.                                                                                                        |
+| Event not sent                   | `inngest.send` throws             | The job is deleted with its content and the action fails, so nothing waits for an event that never came.                                                             |
+| Account deleted in Clerk         | `user.deleted` webhook            | All the user's rows are deleted; repeated deliveries delete nothing more.                                                                                            |
 
 ---
 
@@ -363,25 +370,26 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 | Load                  | What changes                                                                                                              |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Private beta          | One database. Summaries computed in TypeScript from a period's transactions.                                              |
-| Thousands of users    | Aggregates move to SQL with monthly rollups per account. Inngest concurrency keyed by user. Connection pooling tuned.     |
+| Private beta          | One database. One ingestion job per user at a time. Summaries computed in TypeScript from a period's transactions.        |
+| Thousands of users    | Aggregates move to SQL with monthly rollups per account. Connection pooling tuned.                                        |
 | Hundreds of thousands | Partition `transactions` by user or month. Read replica for dashboards. Model inference in a dedicated service if needed. |
 
 ---
 
 ## 12. Key decisions
 
-| Decision                                    | Why                                                                                                     | Alternative considered                                     | ADR                                                                                                   |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| TypeScript backend in Next.js               | One language and one deployment; types shared from UI to database.                                      | Python API with FastAPI                                    | [0002](adr/0002-typescript-backend-python-for-ml.md)                                                  |
-| PostgreSQL with Drizzle                     | Tabular, analytical data; RLS; pgvector.                                                                | Convex                                                     | [0003](adr/0003-postgresql-with-drizzle.md)                                                           |
-| Neon, through `pg` and a pool               | Serverless; a branch per preview; only the database is needed.                                          | Supabase; Neon's HTTP driver (no interactive transactions) | [0013](adr/0013-neon-for-postgresql.md)                                                               |
-| Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                                                 | pg-boss (needs an always-on worker)                        | [0005](adr/0005-inngest-for-background-work.md)                                                       |
-| Files read in the browser                   | Original file and PDF password never leave the device; no file storage.                                 | Upload to object storage and parse on the server           | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
-| Content minimized before sending            | Only what the parser reads leaves the browser; references are the only identifiers, until the job ends. | Send the whole content and document it                     | [0017](adr/0017-content-minimized-before-sending.md)                                                  |
-| A verified quarterly covers other formats   | The same movements in two formats count once, in either order, until 10.1 matches them.                 | Match movements now; delete the export's movements         | [0018](adr/0018-verified-quarterly-statement-covers-other-formats.md)                                 |
-| SheetJS for spreadsheets                    | Reads XLSX and CSV in the browser and Node; date cells stay serials.                                    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
-| Events carry IDs only                       | Event payloads are stored and shown by the queue provider.                                              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
-| Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                                                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
-| Integer minor units and date-only dates     | No floating-point drift; no time-zone shifts.                                                           | Decimals and timestamps                                    | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
-| Forced RLS with a transaction-local setting | A second barrier when a query forgets its filter.                                                       | Application-level filtering only                           | [0014](adr/0014-forced-rls-with-transaction-local-user.md)                                            |
+| Decision                                     | Why                                                                                                     | Alternative considered                                     | ADR                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| TypeScript backend in Next.js                | One language and one deployment; types shared from UI to database.                                      | Python API with FastAPI                                    | [0002](adr/0002-typescript-backend-python-for-ml.md)                                                  |
+| PostgreSQL with Drizzle                      | Tabular, analytical data; RLS; pgvector.                                                                | Convex                                                     | [0003](adr/0003-postgresql-with-drizzle.md)                                                           |
+| Neon, through `pg` and a pool                | Serverless; a branch per preview; only the database is needed.                                          | Supabase; Neon's HTTP driver (no interactive transactions) | [0013](adr/0013-neon-for-postgresql.md)                                                               |
+| Inngest for background work                  | Long, retryable, step-based jobs on serverless hosting.                                                 | pg-boss (needs an always-on worker)                        | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Files read in the browser                    | Original file and PDF password never leave the device; no file storage.                                 | Upload to object storage and parse on the server           | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
+| Content minimized before sending             | Only what the parser reads leaves the browser; references are the only identifiers, until the job ends. | Send the whole content and document it                     | [0017](adr/0017-content-minimized-before-sending.md)                                                  |
+| A verified quarterly covers other formats    | The same movements in two formats count once, in either order, until 10.1 matches them.                 | Match movements now; delete the export's movements         | [0018](adr/0018-verified-quarterly-statement-covers-other-formats.md)                                 |
+| SheetJS for spreadsheets                     | Reads XLSX and CSV in the browser and Node; date cells stay serials.                                    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
+| Two Inngest steps with ids, codes and counts | Inngest keeps step outputs and errors; one transaction saves a statement all or nothing.                | One step per stage                                         | [0019](adr/0019-two-inngest-steps-with-ids-codes-and-counts.md)                                       |
+| Events carry IDs only                        | Event payloads are stored and shown by the queue provider.                                              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Deterministic first, LLM as fallback         | Exact, free and testable for known formats.                                                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
+| Integer minor units and date-only dates      | No floating-point drift; no time-zone shifts.                                                           | Decimals and timestamps                                    | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
+| Forced RLS with a transaction-local setting  | A second barrier when a query forgets its filter.                                                       | Application-level filtering only                           | [0014](adr/0014-forced-rls-with-transaction-local-user.md)                                            |

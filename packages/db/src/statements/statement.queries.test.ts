@@ -449,23 +449,32 @@ describe.skipIf(!testDatabase)(
       expect(await statementsOf(account.accountId)).toHaveLength(1);
     });
 
-    it("deletes a user whose movements a quarterly statement hides", async () => {
-      const account = await newAccount();
-      await saveIn(
-        account,
-        await preparedExport(EXPORT_ACROSS_EDGES),
-        UNCHECKED,
-      );
-      await saveIn(account, await preparedQuarterly(QUARTER), VERIFIED);
+    // Saved in this order, the cascade from the user reaches the quarterly
+    // statement before or after the export's movements it hides.
+    it.each([
+      { first: "the export", exportFirst: true },
+      { first: "the quarterly statement", exportFirst: false },
+    ])(
+      "deletes a user whose movements a quarterly statement hides, $first saved first",
+      async ({ exportFirst }) => {
+        const account = await newAccount();
+        const saveExport = async () =>
+          saveIn(account, await preparedExport(EXPORT_ACROSS_EDGES), UNCHECKED);
+        const saveQuarter = async () =>
+          saveIn(account, await preparedQuarterly(QUARTER), VERIFIED);
+        if (exportFirst) await saveExport();
+        await saveQuarter();
+        if (!exportFirst) await saveExport();
 
-      const deleted = await withUserContext(
-        app.db,
-        account.userId,
-        deleteAllUserData,
-      );
+        const deleted = await withUserContext(
+          app.db,
+          account.userId,
+          deleteAllUserData,
+        );
 
-      expect(deleted).toBe(true);
-      expect(await hiddenDates(account.accountId)).toEqual([]);
-    });
+        expect(deleted).toBe(true);
+        expect(await hiddenDates(account.accountId)).toEqual([]);
+      },
+    );
   },
 );

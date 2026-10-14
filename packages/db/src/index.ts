@@ -17,13 +17,27 @@ export {
   resolveUnidentifiedAccount,
 } from "./accounts/account.queries";
 export {
+  INGESTION_JOB_ERROR,
+  INGESTION_JOB_STATUS,
+} from "./ingestion-jobs/ingestion-job.constants";
+export {
+  claimIngestionJob,
   countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
+  failIngestionJob,
+  finishIngestionJob,
+  lockIngestionJob,
   type NewIngestionJob,
+  type OpenIngestionJob,
   type QuotaUsed,
   type SubmissionQuota,
 } from "./ingestion-jobs/ingestion-job.queries";
+export type {
+  IngestionJobError,
+  IngestionJobStatus,
+  IngestionStats,
+} from "./ingestion-jobs/ingestion-job.types";
 export { saveStatement } from "./statements/statement.queries";
 export type {
   BalanceCheck,

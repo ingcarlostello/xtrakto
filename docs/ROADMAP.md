@@ -164,7 +164,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.4a Submit action and ingestion job
 - [x] 5.4b Submit from the upload screen
 - [x] 5.5a Persistence rules for ingestion
-- [ ] 5.5b Ingestion function
+- [x] 5.5b Ingestion function
 - [ ] 5.5c Daily cleanup of stale jobs
 - [ ] 5.6a Status polling
 - [ ] 5.6b Upload result
@@ -1042,7 +1042,7 @@ Phase 5.7 was split in three, with the human's approval; its detail panel moved 
 - Categories as design v8 shows them (`docs/ui/v8-05`), confirmed by the human, changing `categories.json` and its generated constants: a new `payment_gateways` ("Pasarelas de pago": Bold, Ebanx, dLocal, where the bank doesn't say the store); `transfers_to_people` becomes "Pagos a personas" and takes in `digital_wallet` (a Nequi send is a payment to a person unless the number is the user's, then it moved); labels "Créditos", "Efectivo", "Restaurantes y domicilios", "Servicios del hogar", "Costos del banco" (4x1000, fees and adjustments) and "Otros".
 - A rule gives its best guess and says whether the movement needs review: Bre-B _llave_ payments, PSE payments to fintechs, transfers to the holder's truncated name, deposits at a _corresponsal_, money in from the user's name or Nequi. Stored so the quick review (6.3) can group them, which changes the schema.
 - Each rule carries the reason shown in the movement's detail ("Regla del sistema, sin IA"), and the channel tag comes from the description's prefix (design system §9).
-- Add it as a step of the ingestion function with `category_source = "rule"`.
+- Add it to the ingestion function, inside its `ingest` transaction or as a step that reads and writes by ids (ADR 0019), with `category_source = "rule"`.
 - A private test reports, as a percentage only, how many real movements get a category and how many need review.
 
 **Done when:** every pattern in Appendix B has a test.

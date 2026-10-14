@@ -14,6 +14,7 @@ import {
 } from "../../test/test-rows";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
+import { statements } from "../statements/statement.schemas";
 import { transactions } from "./transaction.schemas";
 
 const FOREIGN_KEY_VIOLATION = "23503";
@@ -75,6 +76,21 @@ describe.skipIf(!testDatabase)("transactions table", () => {
     expect(await pgErrorCode(insertTransaction(owner.db, row))).toBe(
       FOREIGN_KEY_VIOLATION,
     );
+  });
+
+  it("never deletes a statement while movements it hides stay", async () => {
+    const quarter = await newStatement();
+    const exported = await insertStatement(owner.db, quarter.account);
+    const hidden = {
+      ...transactionRow(quarter.account, exported),
+      coveredByStatementId: quarter.statementId,
+    };
+    await insertTransaction(owner.db, hidden);
+    const deleteQuarter = owner.db
+      .delete(statements)
+      .where(eq(statements.id, quarter.statementId));
+
+    expect(await pgErrorCode(deleteQuarter)).toBe(FOREIGN_KEY_VIOLATION);
   });
 
   it("stores a fingerprint once per account, and twins with their own", async () => {

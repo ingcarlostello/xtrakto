@@ -48,6 +48,20 @@ describe("deleteUserData", () => {
     );
   });
 
+  it("throws a database error without the data its message quotes", async () => {
+    const violation = Object.assign(new Error("violates foreign key"), {
+      code: "23503",
+      constraint: "transactions_covered_by_fk",
+    });
+    mocks.withUserContext.mockRejectedValue(
+      new Error(`delete from "users" params: ${USER_ID}`, { cause: violation }),
+    );
+
+    await expect(deleteUserData("user_clerk")).rejects.toThrow(
+      /^USER_DATA_NOT_DELETED: Error 23503 transactions_covered_by_fk$/,
+    );
+  });
+
   it("does nothing for a Clerk user who never used the app", async () => {
     mocks.findUserId.mockResolvedValue(undefined);
 
