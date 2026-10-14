@@ -5,7 +5,14 @@ import {
   type Currency,
 } from "@xtrakto/core";
 import { sql } from "drizzle-orm";
-import { check, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { isOneOf } from "../columns/check.utils";
 import { createdAt, primaryId } from "../columns/column.utils";
 import { users } from "../users/user.schemas";
@@ -30,13 +37,17 @@ export const accounts = pgTable(
   (t) => [
     // Target of the composite foreign keys that keep rows on their user's accounts.
     unique("accounts_id_user_id_key").on(t.id, t.userId),
-    // NULLs stay distinct: two accounts without last4 are allowed.
+    // NULLs stay distinct here, so the next index allows one account without
+    // last4 per bank and type: the one a quarterly statement adopts later.
     unique("accounts_user_bank_type_last4_key").on(
       t.userId,
       t.bankId,
       t.accountType,
       t.last4,
     ),
+    uniqueIndex("accounts_one_unnumbered_key")
+      .on(t.userId, t.bankId, t.accountType)
+      .where(sql`${t.last4} is null`),
     check(
       "accounts_account_type_check",
       isOneOf(t.accountType, Object.values(ACCOUNT_TYPE)),

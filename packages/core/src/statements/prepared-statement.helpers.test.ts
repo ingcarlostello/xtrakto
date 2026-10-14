@@ -47,6 +47,30 @@ const statement = (movements: readonly object[] = MOVEMENTS) =>
   });
 
 describe("prepareStatement", () => {
+  it.each([
+    { name: "a phone number", kind: "phone", raw: "3001234567", last4: "4567" },
+    { name: "a code", kind: "code", raw: "0000123456", last4: "3456" },
+    { name: "contract numbers", kind: "code", raw: "123 4567", last4: "4567" },
+    {
+      name: "a code of 5 digits",
+      kind: "code",
+      raw: "12345",
+      last4: undefined,
+    },
+    { name: "an ATM", kind: "atm", raw: "ATM 123456 CENTRO", last4: undefined },
+  ])("keeps the last 4 digits of $name", async ({ kind, raw, last4 }) => {
+    const [movement] = (
+      await prepareStatement(
+        statement([
+          { ...MOVEMENTS[0], referenceKind: kind, referenceRaw: raw },
+        ]),
+        KEY,
+      )
+    ).transactions;
+
+    expect(movement?.referenceLast4).toBe(last4);
+  });
+
   it("replaces raw references with their HMAC, and keeps no source rows", async () => {
     const [first, , interest] = (await prepareStatement(statement(), KEY))
       .transactions;

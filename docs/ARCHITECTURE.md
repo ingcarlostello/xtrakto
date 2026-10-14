@@ -124,7 +124,9 @@ sequenceDiagram
 - **Events carry IDs only**, because Inngest stores and displays event payloads: the job's and its user's, since Row-Level Security shows the job only in its user's context. The content waits in the job row and is deleted as the last step, or by a daily cron if the job never finishes. An event that can't be sent deletes its job, content included, and the action fails.
 - **Monthly limit:** 10 statements per calendar month in Bogotá. Pending and processing jobs hold a slot; a finished one keeps it only if it added a movement, so a file already loaded costs nothing. The action counts and inserts under a per-user advisory lock, so two submissions can't both take the last slot.
 - **Idempotency:** each transaction has a fingerprint (date, normalized description, amount, balance after, occurrence index) with a unique index per account, and each statement a hash of its content. Re-running a job or re-uploading a file inserts nothing new; an overlapping upload inserts only the movements the account doesn't have.
-- **Account resolution:** the quarterly statement identifies the account by its last 4 digits. The movements export has no account number, so its job is pinned when submitted: to the user's only account, or to the one chosen on the upload screen, which can be the digits of an account a quarterly statement of the same upload creates. A user with no account yet gets one when the job is processed.
+- **Account resolution:** the quarterly statement identifies the account by its last 4 digits: the user's account with them, else the only account without a number of its bank and type (an export created it), which takes the digits, else a new one; the holder's normalized name is kept on it. The movements export has no account number, so its job is pinned when submitted: to the user's only account, or to the one chosen on the upload screen, which can be the digits of an account a quarterly statement of the same upload creates. Unpinned, it goes to the only account the user has when it's processed, or to a new one without a number; with several, the job fails with `ACCOUNT_REQUIRED`.
+- **Coverage ([ADR 0018](adr/0018-verified-quarterly-statement-covers-other-formats.md)):** the two formats give the same movements with different fingerprints, since only the quarterly statement prints balances. A verified quarterly statement covers its days, those after its opening balance's day through its closing balance's: a movements export's movements on them are saved hidden (`covered_by_statement_id`), in either upload order, until Phase 10.1 matches them. A movement counts when no statement hides it and its statement reconciles or prints no balances; every reader uses that predicate.
+- **Versions of a period:** another version of a quarterly statement replaces one that doesn't reconcile; one that reconciles keeps later versions out. Movements exports have no versions.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
 - **Payload size:** only the minimized rows or text items travel. The browser refuses a file whose content would pass 3.5 MB, and the action checks the same cap; it accepts bodies of up to 4 MB, under Vercel's 4.5 MB request limit.
 - **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. The upload screen sends them one at a time, so the monthly limit stops the rest, and a send that gets no answer can be retried. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
@@ -189,6 +191,8 @@ erDiagram
         bigint opening_balance_minor
         bigint closing_balance_minor
         boolean balance_verified
+        bigint balance_difference_minor
+        int_array balance_break_positions
         text content_hash "unique per account"
     }
     TRANSACTIONS {
@@ -201,6 +205,8 @@ erDiagram
         bigint balance_after_minor
         text description_normalized
         text reference_hash
+        text reference_last4
+        uuid covered_by_statement_id FK
         text category_id
         text category_source
         text fingerprint "unique per account"
@@ -222,7 +228,7 @@ erDiagram
     }
 ```
 
-Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't. `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content.
+Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account, and the statement that hides a movement (`covered_by_statement_id`) is of its account too, with no action on delete. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't; a partial unique index keeps one version of each period with balances, and another keeps one account without a number per bank and type. A statement that doesn't reconcile keeps its closing difference and the positions where its chain of balances breaks. `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content.
 
 Later stages add `llm_usage` (8), `format_mappings` without user data (11), `usury_rates` (12) and document chunks with embeddings in pgvector (15).
 
@@ -341,6 +347,8 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Unknown format                | No parser matches                 | MVP: clear message. Stage 11: the ingestion agent proposes a mapping.                                                                    |
 | Balances don't add up         | `reconcile()` issues              | Saved with `balance_verified = false`, so the user can see the affected rows; its numbers stay out of every summary until it reconciles. |
+| Same days in two formats      | A verified quarterly's days       | The movements export's movements on them are saved hidden, in either order (ADR 0018); nothing counts twice.                             |
+| Another version of a period   | One version per period, by index  | Replaces a version that doesn't reconcile; stays out when one does.                                                                      |
 | Duplicate upload              | Fingerprint conflict              | Nothing new inserted; the user is told it was already loaded.                                                                            |
 | Step fails mid-job            | Inngest error                     | Retries of that step only; idempotent writes. On final failure the job is marked failed and its content deleted.                         |
 | LLM timeout or invalid output | Timeout or Zod validation         | One retry on the fallback model; then rows stay uncategorized.                                                                           |
@@ -371,6 +379,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | Inngest for background work                 | Long, retryable, step-based jobs on serverless hosting.                                                 | pg-boss (needs an always-on worker)                        | [0005](adr/0005-inngest-for-background-work.md)                                                       |
 | Files read in the browser                   | Original file and PDF password never leave the device; no file storage.                                 | Upload to object storage and parse on the server           | [0008](adr/0008-files-read-in-the-browser.md)                                                         |
 | Content minimized before sending            | Only what the parser reads leaves the browser; references are the only identifiers, until the job ends. | Send the whole content and document it                     | [0017](adr/0017-content-minimized-before-sending.md)                                                  |
+| A verified quarterly covers other formats   | The same movements in two formats count once, in either order, until 10.1 matches them.                 | Match movements now; delete the export's movements         | [0018](adr/0018-verified-quarterly-statement-covers-other-formats.md)                                 |
 | SheetJS for spreadsheets                    | Reads XLSX and CSV in the browser and Node; date cells stay serials.                                    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
 | Events carry IDs only                       | Event payloads are stored and shown by the queue provider.                                              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
 | Deterministic first, LLM as fallback        | Exact, free and testable for known formats.                                                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |

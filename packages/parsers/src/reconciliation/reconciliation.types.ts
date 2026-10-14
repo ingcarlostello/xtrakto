@@ -1,3 +1,4 @@
+import type { AmountMinor } from "@xtrakto/core";
 import type { RECONCILIATION_ISSUE } from "./reconciliation.constants";
 
 export type ReconciliationIssueCode =
@@ -11,10 +12,17 @@ export type ReconciliationIssue = {
   readonly code: ReconciliationIssueCode;
   /** For `ROW_BALANCE`: the row in the extracted content. */
   readonly sourceRow?: number;
+  /** For `ROW_BALANCE`: the movement's index in the statement, as it's saved. */
+  readonly position?: number;
 };
 
 export type Reconciliation = {
   /** Whether the balances were checked and every check passed. */
   readonly balanceVerified: boolean;
   readonly issues: readonly ReconciliationIssue[];
+  /**
+   * The closing balance minus the opening balance and every amount, when the
+   * statement prints both balances: zero when they add up.
+   */
+  readonly closingDifferenceMinor?: AmountMinor;
 };

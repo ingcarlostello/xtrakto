@@ -19,7 +19,11 @@ const {
   NO_BALANCE_DATA,
 } = RECONCILIATION_ISSUE;
 
-const VERIFIED = { balanceVerified: true, issues: [] };
+const VERIFIED = {
+  balanceVerified: true,
+  issues: [],
+  closingDifferenceMinor: 0,
+};
 
 const parsedFixture = (fixture: unknown): ParsedStatement => {
   const result = bancolombiaQuarterlyParser.parse(fixtureContent(fixture));
@@ -64,6 +68,12 @@ const statement = (changes: object = {}): ParsedStatement =>
 
 const failing = (...issues: object[]) => ({ balanceVerified: false, issues });
 
+// Failing checks of a statement whose closing balance adds up.
+const failingTotals = (...issues: object[]) => ({
+  ...failing(...issues),
+  closingDifferenceMinor: 0,
+});
+
 describe("reconcile", () => {
   it.each([
     { name: "quarterly-basic", fixture: quarterlyBasic },
@@ -74,14 +84,15 @@ describe("reconcile", () => {
     expect(reconcile(parsedFixture(fixture))).toEqual(VERIFIED);
   });
 
-  it("reports the exact row of a misprinted amount, and the checks it breaks", () => {
-    expect(reconcile(parsedFixture(quarterlyBrokenBalance))).toEqual(
-      failing(
-        { code: ROW_BALANCE, sourceRow: 20 },
+  it("reports the exact row of a misprinted amount, the checks it breaks and how far off the closing balance is", () => {
+    expect(reconcile(parsedFixture(quarterlyBrokenBalance))).toEqual({
+      ...failing(
+        { code: ROW_BALANCE, sourceRow: 20, position: 5 },
         { code: CLOSING_BALANCE },
         { code: TOTAL_DEBITS },
       ),
-    );
+      closingDifferenceMinor: -81_000,
+    });
   });
 
   it("verifies a statement whose balances follow from its movements", () => {
@@ -100,7 +111,9 @@ describe("reconcile", () => {
       }),
     );
 
-    expect(result).toEqual(failing({ code: ROW_BALANCE, sourceRow: 5 }));
+    expect(result).toEqual(
+      failing({ code: ROW_BALANCE, sourceRow: 5, position: 0 }),
+    );
   });
 
   it("checks each row against the balance printed on the previous one", () => {
@@ -113,7 +126,9 @@ describe("reconcile", () => {
       }),
     );
 
-    expect(result).toEqual(failing({ code: ROW_BALANCE, sourceRow: 6 }));
+    expect(result).toEqual(
+      failing({ code: ROW_BALANCE, sourceRow: 6, position: 1 }),
+    );
   });
 
   it("can't check the row after one without a balance", () => {
@@ -129,17 +144,18 @@ describe("reconcile", () => {
     expect(result).toEqual(VERIFIED);
   });
 
-  it("compares the closing balance with the opening balance plus every amount", () => {
-    expect(reconcile(statement({ closingBalanceMinor: 91_000 }))).toEqual(
-      failing({ code: CLOSING_BALANCE }),
-    );
+  it("compares the closing balance with the opening balance plus every amount, and says by how much it's off", () => {
+    expect(reconcile(statement({ closingBalanceMinor: 91_000 }))).toEqual({
+      ...failing({ code: CLOSING_BALANCE }),
+      closingDifferenceMinor: -1_000,
+    });
   });
 
   it("compares the credits with their printed total", () => {
     const totals = { creditsMinor: 3_000, debitsMinor: 10_000 };
 
     expect(reconcile(statement({ totals }))).toEqual(
-      failing({ code: TOTAL_CREDITS }),
+      failingTotals({ code: TOTAL_CREDITS }),
     );
   });
 
@@ -152,7 +168,7 @@ describe("reconcile", () => {
       const totals = { creditsMinor: 2_000, debitsMinor };
 
       expect(reconcile(statement({ totals }))).toEqual(
-        failing({ code: TOTAL_DEBITS }),
+        failingTotals({ code: TOTAL_DEBITS }),
       );
     },
   );

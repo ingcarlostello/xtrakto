@@ -1,5 +1,5 @@
-import { sumAmounts } from "@xtrakto/core";
-import type { ParsedStatement } from "@xtrakto/core";
+import { isAmountMinor, sumAmounts } from "@xtrakto/core";
+import type { AmountMinor, ParsedStatement } from "@xtrakto/core";
 import { RECONCILIATION_ISSUE } from "./reconciliation.constants";
 import type {
   Reconciliation,
@@ -24,31 +24,39 @@ const rowIssues = ({
 }: ParsedStatement): ReconciliationIssue[] => {
   const issues: ReconciliationIssue[] = [];
   let previous = openingBalanceMinor;
-  for (const { amountMinor, balanceAfterMinor, sourceRow } of transactions) {
-    if (
-      previous !== undefined &&
-      balanceAfterMinor !== undefined &&
-      sumAmounts([previous, amountMinor]) !== balanceAfterMinor
-    ) {
-      issues.push({ code: RECONCILIATION_ISSUE.ROW_BALANCE, sourceRow });
-    }
-    previous = balanceAfterMinor;
-  }
+  transactions.forEach(
+    ({ amountMinor, balanceAfterMinor, sourceRow }, position) => {
+      if (
+        previous !== undefined &&
+        balanceAfterMinor !== undefined &&
+        sumAmounts([previous, amountMinor]) !== balanceAfterMinor
+      ) {
+        issues.push({
+          code: RECONCILIATION_ISSUE.ROW_BALANCE,
+          sourceRow,
+          position,
+        });
+      }
+      previous = balanceAfterMinor;
+    },
+  );
   return issues;
 };
 
-const closingIssues = ({
+// What the closing balance has that the movements don't explain.
+const closingDifference = ({
   openingBalanceMinor,
   closingBalanceMinor,
   transactions,
-}: ParsedStatement): ReconciliationIssue[] => {
+}: ParsedStatement): AmountMinor | undefined => {
   if (openingBalanceMinor === undefined || closingBalanceMinor === undefined) {
-    return [];
+    return undefined;
   }
   const amounts = transactions.map(({ amountMinor }) => amountMinor);
-  return sumAmounts([openingBalanceMinor, ...amounts]) === closingBalanceMinor
-    ? []
-    : [{ code: RECONCILIATION_ISSUE.CLOSING_BALANCE }];
+  const difference =
+    closingBalanceMinor - sumAmounts([openingBalanceMinor, ...amounts]);
+  // Two sums of safe integers: their difference stays one as well.
+  return isAmountMinor(difference) ? difference : undefined;
 };
 
 const totalIssues = ({
@@ -71,18 +79,26 @@ const totalIssues = ({
 
 /**
  * Checks a statement's balances and totals against its movements, with exact
- * integer sums. A statement that prints no balances can't be verified; that
- * isn't an error, just the `NO_BALANCE_DATA` issue.
+ * integer sums, and says by how much the closing balance is off and at which
+ * movements the chain of balances breaks. A statement that prints no balances
+ * can't be verified; that isn't an error, just the `NO_BALANCE_DATA` issue.
  */
 export const reconcile = (statement: ParsedStatement): Reconciliation => {
   if (!hasBalanceData(statement)) {
     const issues = [{ code: RECONCILIATION_ISSUE.NO_BALANCE_DATA }];
     return { balanceVerified: false, issues };
   }
+  const closingDifferenceMinor = closingDifference(statement);
   const issues = [
     ...rowIssues(statement),
-    ...closingIssues(statement),
+    ...(closingDifferenceMinor === undefined || closingDifferenceMinor === 0
+      ? []
+      : [{ code: RECONCILIATION_ISSUE.CLOSING_BALANCE }]),
     ...totalIssues(statement),
   ];
-  return { balanceVerified: issues.length === 0, issues };
+  return {
+    balanceVerified: issues.length === 0,
+    issues,
+    closingDifferenceMinor,
+  };
 };

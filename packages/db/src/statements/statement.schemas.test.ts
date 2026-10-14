@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
 import {
+  asAmount,
   asLocalDate,
   insertAccount,
   insertStatement,
@@ -62,6 +63,33 @@ describe.skipIf(!testDatabase)("statements table", () => {
     expect(await pgErrorCode(owner.db.insert(statements).values(row))).toBe(
       CHECK_VIOLATION,
     );
+  });
+
+  it.each([
+    ["a difference", { balanceDifferenceMinor: asAmount(-1_000) }],
+    ["a movement that breaks the chain", { balanceBreakPositions: [3] }],
+  ])("rejects a verified statement with %s", async (_case, change) => {
+    const row = { ...statementRow(await newAccount()), ...change };
+
+    expect(await pgErrorCode(owner.db.insert(statements).values(row))).toBe(
+      CHECK_VIOLATION,
+    );
+  });
+
+  it("keeps one version of each period with balances, and any number without", async () => {
+    const account = await newAccount();
+    const withBalances = () => ({
+      ...statementRow(account),
+      openingBalanceMinor: asAmount(0),
+    });
+    await owner.db.insert(statements).values(withBalances());
+    await owner.db
+      .insert(statements)
+      .values([statementRow(account), statementRow(account)]);
+
+    expect(
+      await pgErrorCode(owner.db.insert(statements).values(withBalances())),
+    ).toBe(UNIQUE_VIOLATION);
   });
 
   it("rejects a balance JavaScript can't represent exactly", async () => {

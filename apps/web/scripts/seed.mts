@@ -4,13 +4,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
   extractedContentSchema,
+  normalizeHolderName,
   type ParsedStatement,
   prepareStatement,
 } from "@xtrakto/core";
 import {
+  type BalanceCheck,
   createDb,
-  findOrCreateAccount,
   findOrCreateUser,
+  resolveIdentifiedAccount,
   saveStatement,
   withUserContext,
 } from "@xtrakto/db";
@@ -68,29 +70,43 @@ const last4 = fixtures.find(({ parsed }) => parsed.accountLast4)?.parsed
   .accountLast4;
 if (!last4) throw new Error("No fixture identifies the account.");
 
+// What `reconcile` found, as the statement keeps it.
+const balanceOf = (parsed: ParsedStatement): BalanceCheck => {
+  const { balanceVerified, issues, closingDifferenceMinor } = reconcile(parsed);
+  return {
+    verified: balanceVerified,
+    differenceMinor: closingDifferenceMinor,
+    breakPositions: issues.flatMap(({ position }) =>
+      position === undefined ? [] : [position],
+    ),
+  };
+};
+
 const { db, pool } = createDb({ connectionString: databaseUrl });
 try {
   const userId = await findOrCreateUser(db, clerkUserId);
   for (const { file, parsed } of fixtures) {
     const statement = await prepareStatement(parsed, identifierHashKey);
     const result = await withUserContext(db, userId, async (ctx) => {
-      const accountId = await findOrCreateAccount(ctx, {
+      const accountId = await resolveIdentifiedAccount(ctx, {
         bankId: parsed.bankId,
         accountType: parsed.accountType,
         last4: parsed.accountLast4 ?? last4,
         currency: parsed.currency,
+        holderNameNormalized:
+          parsed.holderName === undefined
+            ? undefined
+            : normalizeHolderName(parsed.holderName),
       });
       return saveStatement(ctx, {
         accountId,
-        balanceVerified: reconcile(parsed).balanceVerified,
         statement,
+        balance: balanceOf(parsed),
       });
     });
     if (!result.ok) throw new Error(`${file}: ${result.error.code}`);
-    const { inserted, skipped } = result.value;
-    process.stdout.write(
-      `${file}: ${inserted} inserted, ${skipped} already saved\n`,
-    );
+    const { added, skipped } = result.value;
+    process.stdout.write(`${file}: ${added} added, ${skipped} already saved\n`);
   }
 } finally {
   await pool.end();

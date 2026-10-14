@@ -163,7 +163,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.3b Accounts, formats and privacy panel
 - [x] 5.4a Submit action and ingestion job
 - [x] 5.4b Submit from the upload screen
-- [ ] 5.5a Persistence rules for ingestion
+- [x] 5.5a Persistence rules for ingestion
 - [ ] 5.5b Ingestion function
 - [ ] 5.5c Daily cleanup of stale jobs
 - [ ] 5.6a Status polling
@@ -916,7 +916,7 @@ Phase 5.5 was split in three, with the human's approval.
 - A reference's last 4 digits next to its HMAC (phone and code references with at least 6 digits), as decided with the human for design v8; the raw reference is still discarded.
 - Account resolution: the quarterly statement by its last 4 digits, adopting the account an earlier export created; the export's pinned account (or the one with its pinned `account_last4`, found or created), else the only account the user has when it's processed (a quarterly statement of the same batch may have just created it), or one created without a number. The holder's normalized name stored on the account.
 - Statement versions: another version of a period replaces an unverified statement; a verified one keeps later versions out.
-- Coverage (the verified quarterly statement wins, in both orders) and the predicate every reader uses for what counts.
+- Coverage (the verified quarterly statement wins, in both orders, on its days after its opening balance's day, ADR 0018) and the predicate every reader uses for what counts.
 - The balance check stored at ingest: the closing difference and the rows where the chain breaks, as `reconcile` reports them.
 - Drop the unused `ingestion_jobs.step`.
 

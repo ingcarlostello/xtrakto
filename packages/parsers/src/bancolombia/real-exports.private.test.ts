@@ -216,6 +216,7 @@ describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
       expect(reconcile(statement)).toEqual({
         balanceVerified: true,
         issues: [],
+        closingDifferenceMinor: 0,
       });
     }
   });

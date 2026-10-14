@@ -3,9 +3,11 @@ import {
   boolean,
   check,
   foreignKey,
+  integer,
   pgTable,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { accounts } from "../accounts/account.schemas";
@@ -34,6 +36,14 @@ export const statements = pgTable(
     withholdingMinor: amountMinor("withholding_minor"),
     averageBalanceMinor: amountMinor("average_balance_minor"),
     balanceVerified: boolean("balance_verified").notNull(),
+    // Where it doesn't add up, as `reconcile` found it: the closing balance
+    // minus the opening balance and every amount, and the positions of the
+    // movements whose balance breaks the chain.
+    balanceDifferenceMinor: amountMinor("balance_difference_minor"),
+    balanceBreakPositions: integer("balance_break_positions")
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
     // Identifies the upload by its content: the same file saved twice
     // matches, a corrected statement for the same period doesn't.
     contentHash: text("content_hash").notNull(),
@@ -48,7 +58,17 @@ export const statements = pgTable(
     }).onDelete("cascade"),
     unique("statements_id_account_user_key").on(t.id, t.accountId, t.userId),
     unique("statements_account_content_key").on(t.accountId, t.contentHash),
+    // One version of each period of a statement with balances: another one
+    // replaces it while it doesn't reconcile, and stays out once it does.
+    uniqueIndex("statements_one_version_key")
+      .on(t.accountId, t.periodFrom, t.periodTo)
+      .where(sql`${t.openingBalanceMinor} is not null`),
     check("statements_period_check", sql`${t.periodFrom} <= ${t.periodTo}`),
+    // A statement that reconciles has nothing off.
+    check(
+      "statements_verified_balance_check",
+      sql`not ${t.balanceVerified} or (coalesce(${t.balanceDifferenceMinor}, 0) = 0 and cardinality(${t.balanceBreakPositions}) = 0)`,
+    ),
     check("statements_content_hash_check", isSha256Hex(t.contentHash)),
     ...[
       t.openingBalanceMinor,
@@ -58,6 +78,7 @@ export const statements = pgTable(
       t.interestMinor,
       t.withholdingMinor,
       t.averageBalanceMinor,
+      t.balanceDifferenceMinor,
     ].map((column) => safeIntegerCheck("statements", column)),
   ],
 );

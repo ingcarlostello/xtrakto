@@ -28,6 +28,8 @@ export type PreparedTransaction = Omit<
   "referenceRaw" | "sourceRow"
 > & {
   readonly referenceHash: string | undefined;
+  /** For a phone or code reference of 6 digits or more. */
+  readonly referenceLast4: string | undefined;
   readonly fingerprint: string;
   readonly occurrenceIndex: number;
   /** Order within the statement, oldest first. */
