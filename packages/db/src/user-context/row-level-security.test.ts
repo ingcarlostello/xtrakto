@@ -124,11 +124,28 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
     ).toEqual(EXPECTED_PRIVILEGES);
   });
 
-  it("has no SECURITY DEFINER function, which would run with its owner's rights", async () => {
+  // A SECURITY DEFINER function runs with its owner's rights. Only the daily
+  // cleanup may: without parameters, with a fixed search_path, an owner that
+  // bypasses Row-Level Security (or it would expire nothing) and only the
+  // application allowed to run it.
+  it("has one SECURITY DEFINER function, the daily cleanup of ingestion jobs", async () => {
     const functions = await rowsOf(sql`
-      select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      select p.proname as name, p.pronargs as parameters, p.proconfig as settings,
+        (select r.rolsuper or r.rolbypassrls from pg_roles r where r.oid = p.proowner) as "ownerBypassesRls",
+        has_function_privilege(${APP_ROLE}, p.oid, 'EXECUTE') as "appRunsIt",
+        has_function_privilege('public', p.oid, 'EXECUTE') as "anyoneRunsIt"
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and p.prosecdef`);
 
-    expect(functions).toEqual([]);
+    expect(functions).toEqual([
+      {
+        name: "expire_stale_ingestion_jobs",
+        parameters: 0,
+        settings: ["search_path=pg_catalog, pg_temp"],
+        ownerBypassesRls: true,
+        appRunsIt: true,
+        anyoneRunsIt: false,
+      },
+    ]);
   });
 });

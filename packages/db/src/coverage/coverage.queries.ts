@@ -61,7 +61,11 @@ export type CoveredDays = {
 };
 
 /** The account's verified quarterly statements whose days meet `period`. */
-export const coveringStatements = ({ tx, userId }: UserContext, accountId: string, period: Period): Promise<CoveredDays[]> =>
+export const coveringStatements = (
+  { tx, userId }: UserContext,
+  accountId: string,
+  period: Period,
+): Promise<CoveredDays[]> =>
   tx
     .select({
       statementId: statements.id,

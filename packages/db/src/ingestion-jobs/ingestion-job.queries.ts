@@ -1,5 +1,6 @@
 import { type ExtractedContent, err, ok, type Result } from "@xtrakto/core";
 import { and, count, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
+import type { Database, DbTransaction } from "../client/db-client.types";
 import type { UserContext } from "../user-context/user-context.types";
 import { INGESTION_JOB_STATUS } from "./ingestion-job.constants";
 import { ingestionJobs } from "./ingestion-job.schemas";
@@ -192,4 +193,20 @@ export const failIngestionJob = async (
     .where(and(ownJob(ctx, jobId), inArray(ingestionJobs.status, OPEN)))
     .returning({ id: ingestionJobs.id });
   return failed.length > 0;
+};
+
+/**
+ * The daily cleanup, across users: every job pending or processing for more
+ * than 24 hours fails with `CONTENT_EXPIRED` and loses its content. The one
+ * query without a user context: it calls a database function that runs with
+ * its owner's rights and takes no parameters (ADR 0014). Returns how many
+ * jobs it expired.
+ */
+export const expireStaleIngestionJobs = async (
+  db: Database | DbTransaction,
+): Promise<number> => {
+  const { rows } = await db.execute<{ expired: number }>(
+    sql`select public.expire_stale_ingestion_jobs() as expired`,
+  );
+  return rows[0]?.expired ?? 0;
 };

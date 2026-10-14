@@ -1,6 +1,9 @@
 pnpm-lock.yaml
 .next/
-coverage/
+# Vitest's reports, not the domain's coverage modules.
+/coverage/
+/apps/*/coverage/
+/packages/*/coverage/
 .turbo/
 next-env.d.ts
 .remember/

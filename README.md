@@ -73,7 +73,7 @@ On its first start, `docker/postgres/init.sql` creates the application role, `xt
 
 ### Background jobs
 
-The same `docker compose up --wait` starts the Inngest Dev Server, pinned like PostgreSQL. It calls the app at `http://host.docker.internal:3000/api/inngest`, so run `pnpm dev` on port 3000, and keeps runs in memory until it stops. Its UI, http://127.0.0.1:8288, lists the app's functions and every run with its steps: a file sent from `/upload` runs `ingest-statement`, whose steps `claim` and `ingest` keep only ids, codes and counts.
+The same `docker compose up --wait` starts the Inngest Dev Server, pinned like PostgreSQL. It calls the app at `http://host.docker.internal:3000/api/inngest`, so run `pnpm dev` on port 3000, and keeps runs in memory until it stops. Its UI, http://127.0.0.1:8288, lists the app's functions and every run with its steps: a file sent from `/upload` runs `ingest-statement`, whose steps `claim` and `ingest` keep only ids, codes and counts. `clean-up-stale-jobs` runs every day at 03:00 in Bogotá and expires the jobs left open for more than 24 hours; its page's "Invoke" button runs it at once.
 
 Don't send a `PUT` to `/api/inngest` from your shell: the app would register as `localhost:3000`, which the Dev Server's container can't reach, and runs would wait. To register it again:
 

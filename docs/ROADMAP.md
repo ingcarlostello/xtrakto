@@ -165,7 +165,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.4b Submit from the upload screen
 - [x] 5.5a Persistence rules for ingestion
 - [x] 5.5b Ingestion function
-- [ ] 5.5c Daily cleanup of stale jobs
+- [x] 5.5c Daily cleanup of stale jobs
 - [ ] 5.6a Status polling
 - [ ] 5.6b Upload result
 - [ ] 5.6c Uploaded files and "Encadenado"

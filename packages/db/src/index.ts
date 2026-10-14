@@ -25,6 +25,7 @@ export {
   countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
+  expireStaleIngestionJobs,
   failIngestionJob,
   finishIngestionJob,
   lockIngestionJob,

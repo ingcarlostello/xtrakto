@@ -57,6 +57,13 @@
       "when": 1792012183077,
       "tag": "0007_covered-by-deferred",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792013533482,
+      "tag": "0008_expire-stale-jobs",
+      "breakpoints": true
     }
   ]
 }
