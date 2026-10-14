@@ -9,6 +9,7 @@ import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
 import {
+  countSlotsUsed,
   createIngestionJobWithinLimit,
   deletePendingIngestionJob,
   type NewIngestionJob,
@@ -143,7 +144,13 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
     await insertJob(userId, { status: "done", stats: { added: 2 } });
     await insertJob(userId, { status: "done", stats: { added: 0 } });
     await insertJob(userId, { status: "failed" });
+    const { month } = quotaOf(0);
 
+    expect(
+      await withUserContext(app.db, userId, (ctx) =>
+        countSlotsUsed(ctx, month),
+      ),
+    ).toBe(3);
     expect(await submit(userId, quotaOf(3))).toEqual({
       ok: false,
       error: { used: 3 },

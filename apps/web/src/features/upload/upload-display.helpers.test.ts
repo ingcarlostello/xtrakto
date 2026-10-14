@@ -1,14 +1,30 @@
-import { APP_ERROR_CODE, PERIOD_SOURCE, periodSchema } from "@xtrakto/core";
+import {
+  APP_ERROR_CODE,
+  localDateSchema,
+  PERIOD_SOURCE,
+  periodSchema,
+} from "@xtrakto/core";
 import type { AppError } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
 import {
   countText,
   fileRowView,
+  limitText,
   previewTags,
   problemText,
+  usagePill,
 } from "./upload-display.helpers";
-import { PROBLEM_COPY, UPLOAD_COPY, UPLOAD_STATUS } from "./upload.constants";
-import type { UploadItem } from "./upload.types";
+import {
+  NO_ANSWER,
+  PROBLEM_COPY,
+  UPLOAD_COPY,
+  UPLOAD_STATUS,
+} from "./upload.constants";
+import type {
+  ExtractedStatement,
+  SendProblem,
+  UploadItem,
+} from "./upload.types";
 
 describe("previewTags", () => {
   it("names a quarterly statement's bank, format, file type and months", () => {
@@ -40,27 +56,99 @@ describe("previewTags", () => {
 });
 
 describe("fileRowView", () => {
-  it("names a quarterly statement's account next to its count", () => {
-    const preview = {
-      bankId: "bancolombia",
-      formatId: "bancolombia-savings-quarterly",
-      accountType: "savings",
-      accountLast4: "8901",
-      period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
-      periodSource: PERIOD_SOURCE.STATEMENT,
-      movementCount: 33,
-    } as const;
-    const item: UploadItem = {
-      id: "1",
-      file: new File([], "extracto.xlsx"),
-      status: UPLOAD_STATUS.READY,
-      statement: { content: { type: "spreadsheet", sheets: [] }, preview },
-    };
+  const preview = {
+    bankId: "bancolombia",
+    formatId: "bancolombia-savings-quarterly",
+    accountType: "savings",
+    accountLast4: "8901",
+    period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+    periodSource: PERIOD_SOURCE.STATEMENT,
+    movementCount: 33,
+  } as const;
+  const file = new File([], "extracto.xlsx");
+  const statement: ExtractedStatement = {
+    content: { type: "spreadsheet", sheets: [] },
+    preview,
+  };
+  const readyItem = (sendProblem?: SendProblem): UploadItem => ({
+    id: "1",
+    file,
+    status: UPLOAD_STATUS.READY,
+    statement,
+    sendProblem,
+  });
 
-    expect(fileRowView(item)).toMatchObject({
+  it("names a quarterly statement's account next to its count", () => {
+    expect(fileRowView(readyItem())).toMatchObject({
       kind: "ready",
       count: "33 movimientos · cuenta ••••8901",
+      note: undefined,
     });
+  });
+
+  it.each<[string, UploadItem, string]>([
+    [
+      "going up",
+      { id: "1", file, status: UPLOAD_STATUS.SENDING, statement },
+      "Subiendo…",
+    ],
+    [
+      "gone up",
+      { id: "1", file, status: UPLOAD_STATUS.SENT, preview, jobId: "job" },
+      "Subido · en cola para procesar",
+    ],
+  ])("keeps a file's tags while it's %s, and says so", (_case, item, note) => {
+    expect(fileRowView(item)).toMatchObject({
+      kind: "ready",
+      tags: ["Bancolombia", "Extracto trimestral", "Excel", "jul–sep 2026"],
+      note,
+    });
+  });
+
+  it.each<[string, SendProblem, { title: string; detail: string }]>([
+    ["a send that got no answer", NO_ANSWER, PROBLEM_COPY.noAnswer],
+    [
+      "an account to choose",
+      { code: APP_ERROR_CODE.ACCOUNT_REQUIRED },
+      PROBLEM_COPY.chooseAccount,
+    ],
+    [
+      "a chosen account that's gone",
+      { code: APP_ERROR_CODE.NOT_FOUND },
+      PROBLEM_COPY.accountGone,
+    ],
+  ])("explains %s", (_case, sendProblem, expected) => {
+    expect(fileRowView(readyItem(sendProblem))).toEqual({
+      kind: "problem",
+      ...expected,
+    });
+  });
+});
+
+describe("usagePill", () => {
+  const usage = (used: number) => ({
+    used,
+    limit: 10,
+    resetsOn: localDateSchema.parse("2026-11-01"),
+  });
+
+  it("counts the statements left this month", () => {
+    expect(usagePill(usage(3))).toEqual({
+      tone: "ok",
+      title: "7 de 10 disponibles",
+      detail: "Archivos este mes",
+    });
+  });
+
+  it("says when they renew once none are left", () => {
+    expect(usagePill(usage(10))).toEqual({
+      tone: "attention",
+      title: "0 de 10 disponibles",
+      detail: "Se renuevan el 1 de noviembre",
+    });
+    expect(limitText(usage(10))).toBe(
+      "Llegaste al límite de este mes. Se renuevan el 1 de noviembre.",
+    );
   });
 });
 
@@ -119,6 +207,11 @@ describe("problemText", () => {
       "a statement with a part missing",
       problem(APP_ERROR_CODE.PARSE_FAILED, "missing_column"),
       PROBLEM_COPY.incomplete,
+    ],
+    [
+      "a session that ended while sending",
+      problem(APP_ERROR_CODE.UNAUTHORIZED),
+      PROBLEM_COPY.signedOut,
     ],
     [
       "any other error",

@@ -36,11 +36,13 @@ const lockSubmissions = async ({ tx, userId }: UserContext): Promise<void> => {
   );
 };
 
-// Pending and processing jobs hold a slot. A finished job keeps it only if it
-// added at least one movement (`stats.added`, which the ingestion function
-// writes), so sending a file already loaded costs nothing; a failed job never
-// holds one.
-const countSlotsUsed = async (
+/**
+ * How many of the month's slots the context user's jobs hold. Pending and
+ * processing jobs hold one. A finished job keeps it only if it added at least
+ * one movement (`stats.added`, which the ingestion function writes), so
+ * sending a file already loaded costs nothing; a failed job never holds one.
+ */
+export const countSlotsUsed = async (
   { tx, userId }: UserContext,
   month: SubmissionQuota["month"],
 ): Promise<number> => {

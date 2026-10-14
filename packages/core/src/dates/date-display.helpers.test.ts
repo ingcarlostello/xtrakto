@@ -1,8 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { formatDayRange, formatMonthRange } from "./date-display.helpers";
-import { periodSchema } from "./date.schemas";
+import {
+  formatDayInWords,
+  formatDayRange,
+  formatMonthRange,
+} from "./date-display.helpers";
+import { localDateSchema, periodSchema } from "./date.schemas";
 
 const period = (from: string, to: string) => periodSchema.parse({ from, to });
+
+describe("formatDayInWords", () => {
+  it.each([
+    ["2026-11-01", "1 de noviembre"],
+    ["2027-01-01", "1 de enero"],
+    ["2026-09-30", "30 de septiembre"],
+  ])("writes %s as %s", (date, expected) => {
+    expect(formatDayInWords(localDateSchema.parse(date))).toBe(expected);
+  });
+});
 
 describe("formatMonthRange", () => {
   it.each([

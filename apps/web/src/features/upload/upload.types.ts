@@ -2,13 +2,18 @@ import type {
   AccountType,
   AppError,
   ExtractedContent,
+  LocalDate,
   Period,
   PeriodSource,
   Result,
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
 import type { z } from "zod";
-import type { EXTRACTION_STAGE, UPLOAD_STATUS } from "./upload.constants";
+import type {
+  EXTRACTION_STAGE,
+  NO_ANSWER,
+  UPLOAD_STATUS,
+} from "./upload.constants";
 import type { submitStatementSchema } from "./upload.schemas";
 
 export type ExtractionStage =
@@ -53,6 +58,46 @@ export type ExtractionWorker = {
   onerror: ((event: ErrorEvent) => void) | null;
 };
 
+/** What the upload screen sends for a file: its content and, for an export, the account key. */
+export type SubmitStatementInput = z.input<typeof submitStatementSchema>;
+
+/** A submission once validated: the account key is now the account it pins. */
+export type SubmitStatementRequest = z.output<typeof submitStatementSchema>;
+
+/** The account chosen for a movements export, as the job will hold it. */
+export type AccountChoice = NonNullable<SubmitStatementRequest["account"]>;
+
+/** How the account selector names an account: `account:<id>` or `last4:<digits>`. */
+export type AccountKey = NonNullable<SubmitStatementInput["account"]>;
+
+/** A statement sent and waiting for the ingestion function. */
+export type SubmittedStatement = { readonly jobId: string };
+
+/** The server action that queues one file, or a stand-in in tests. */
+export type SubmitStatement = (
+  input: SubmitStatementInput,
+) => Promise<Result<SubmittedStatement>>;
+
+/** A file ready to send, with what goes up for it. */
+export type FileToSend = {
+  readonly id: string;
+  readonly input: SubmitStatementInput;
+};
+
+/** What sending a file came to: the action's result, or no answer at all. */
+export type SendOutcome = Result<SubmittedStatement> | typeof NO_ANSWER;
+
+/** Why a file read is still waiting after an attempt to send it. */
+export type SendProblem = AppError | typeof NO_ANSWER;
+
+/** The month's statements, as the upload screen counts them. */
+export type MonthlyUsage = {
+  readonly used: number;
+  readonly limit: number;
+  /** The first day of next month in Bogotá, when the count starts again. */
+  readonly resetsOn: LocalDate;
+};
+
 type UploadState =
   | { readonly status: typeof UPLOAD_STATUS.WAITING }
   | {
@@ -63,7 +108,20 @@ type UploadState =
       readonly status: typeof UPLOAD_STATUS.READY;
       readonly statement: ExtractedStatement;
       /** The account chosen for a movements export, when it had to be asked. */
-      readonly accountKey?: string;
+      readonly accountKey?: AccountKey;
+      /** Why the last attempt to send it didn't go through, if there was one. */
+      readonly sendProblem?: SendProblem;
+    }
+  | {
+      readonly status: typeof UPLOAD_STATUS.SENDING;
+      readonly statement: ExtractedStatement;
+      readonly accountKey?: AccountKey;
+    }
+  | {
+      // Its content is let go: only the preview stays, with the job's id.
+      readonly status: typeof UPLOAD_STATUS.SENT;
+      readonly preview: StatementPreview;
+      readonly jobId: string;
     }
   | { readonly status: typeof UPLOAD_STATUS.FAILED; readonly error: AppError };
 
@@ -72,15 +130,3 @@ export type UploadItem = {
   readonly id: string;
   readonly file: File;
 } & UploadState;
-
-/** What the upload screen sends for a file: its content and, for an export, the account key. */
-export type SubmitStatementInput = z.input<typeof submitStatementSchema>;
-
-/** A submission once validated: the account key is now the account it pins. */
-export type SubmitStatementRequest = z.output<typeof submitStatementSchema>;
-
-/** The account chosen for a movements export, as the job will hold it. */
-export type AccountChoice = NonNullable<SubmitStatementRequest["account"]>;
-
-/** A statement sent and waiting for the ingestion function. */
-export type SubmittedStatement = { readonly jobId: string };

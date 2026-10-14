@@ -13,7 +13,11 @@ export type {
   CategorySource,
 } from "./categories/category.types";
 export { DEFAULT_TIME_ZONE } from "./dates/date.constants";
-export { formatDayRange, formatMonthRange } from "./dates/date-display.helpers";
+export {
+  formatDayInWords,
+  formatDayRange,
+  formatMonthRange,
+} from "./dates/date-display.helpers";
 export {
   compareLocalDates,
   inferDayMonthDate,

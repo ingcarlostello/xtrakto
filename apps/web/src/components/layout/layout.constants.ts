@@ -17,6 +17,13 @@ export const HEADER_COPY = {
   navigation: "Navegación principal",
 } as const;
 
+// What a page that failed says: what happened and what to do (v8-13).
+export const PAGE_ERROR_COPY = {
+  title: "No pudimos mostrar esta página",
+  detail: "Puede ser algo pasajero. Inténtalo de nuevo en un momento.",
+  retry: "Intentar de nuevo",
+} as const;
+
 type NavItem = { href: Route; label: string; icon: LucideIcon };
 
 // Only the routes that exist; Categorías and Pregúntale arrive with their

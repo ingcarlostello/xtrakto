@@ -162,7 +162,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.3a Drop zone and pre-upload preview
 - [x] 5.3b Accounts, formats and privacy panel
 - [x] 5.4a Submit action and ingestion job
-- [ ] 5.4b Submit from the upload screen
+- [x] 5.4b Submit from the upload screen
 - [ ] 5.5a Persistence rules for ingestion
 - [ ] 5.5b Ingestion function
 - [ ] 5.5c Daily cleanup of stale jobs
@@ -899,8 +899,8 @@ Phase 5.4 was split in two, with the human's approval.
 
 **Tasks**
 
-- "Subir N archivos" sends the files one at a time, one job per file, and shows each file's outcome; a rejected send offers "Reintentar".
-- How many statements are left this month ("7 de 10 disponibles"), moved here from 5.3.
+- "Subir N archivos" sends the files one at a time, one job per file, and shows each file's outcome; a rejected send offers "Reintentar". A movements export whose account the screen asks for waits for the choice: sent without one, it could land in the user's only account instead of the one a quarterly statement of the batch creates.
+- How many statements are left this month ("7 de 10 disponibles"), moved here from 5.3, counted on the server and asked for again after each batch.
 - An error boundary for the app's pages.
 
 **Done when:** files are sent in order with per-file outcomes, and the count reflects pending jobs.

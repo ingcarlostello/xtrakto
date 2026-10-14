@@ -29,6 +29,10 @@ export const formatMonthRange = ({ from, to }: Period): string => {
   return `${formatDate(start, "MMM yyyy")} – ${formatDate(end, "MMM yyyy")}`;
 };
 
+/** A day in running text, without its year: `"1 de noviembre"`. */
+export const formatDayInWords = (date: LocalDate): string =>
+  formatDate(toDate(date), "d 'de' MMMM");
+
 /**
  * A range of days, such as the movements of a file: `"1–15 ago 2026"`,
  * `"3 ago 2026"`, `"28 jul – 3 ago 2026"`, `"28 dic 2026 – 3 ene 2027"`.

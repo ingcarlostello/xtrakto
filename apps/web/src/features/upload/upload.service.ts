@@ -10,6 +10,7 @@ import {
   type Result,
 } from "@xtrakto/core";
 import {
+  countSlotsUsed,
   createIngestionJobWithinLimit,
   type Database,
   deletePendingIngestionJob,
@@ -32,10 +33,20 @@ import { fitsInUpload } from "./upload-size.helpers";
 import { CONTENT_TOO_LARGE, MONTHLY_STATEMENT_LIMIT } from "./upload.constants";
 import type {
   AccountChoice,
+  MonthlyUsage,
   SubmitStatementRequest,
   SubmittedStatement,
   UploadAccount,
 } from "./upload.types";
+
+// The calendar month in Bogotá the limit counts, and the day it renews.
+const currentMonth = () => {
+  const month = monthBoundsInTimeZone(new Date(), DEFAULT_TIME_ZONE);
+  return {
+    month,
+    resetsOn: localDateFromInstant(month.end, DEFAULT_TIME_ZONE),
+  };
+};
 
 /**
  * The signed-in user's accounts, where a movements export can go. Someone
@@ -50,21 +61,37 @@ export const listUploadAccounts = async (
   return userId ? withUserContext(db, userId, listAccounts) : [];
 };
 
+/**
+ * How many of the month's statements the signed-in user has used: pending
+ * and processing jobs, and finished ones that added movements. Someone who
+ * never sent a file has used none; reading never creates their row.
+ */
+export const getMonthlyUsage = async (
+  clerkUserId: string,
+): Promise<MonthlyUsage> => {
+  const { month, resetsOn } = currentMonth();
+  const db = getDb();
+  const userId = await findUserId(db, clerkUserId);
+  const used = userId
+    ? await withUserContext(db, userId, (ctx) => countSlotsUsed(ctx, month))
+    : 0;
+  return { used, limit: MONTHLY_STATEMENT_LIMIT, resetsOn };
+};
+
 type JobRequest = {
   readonly parser: BankParser;
   readonly content: ExtractedContent;
   readonly choice?: AccountChoice;
-  readonly now: Date;
 };
 
 // Pins the account and takes one of the month's slots, in one transaction.
 const createJob = async (
   ctx: UserContext,
-  { parser, content, choice, now }: JobRequest,
+  { parser, content, choice }: JobRequest,
 ): Promise<Result<string>> => {
   const pin = pinAccount(parser, choice, await listAccounts(ctx));
   if (!pin.ok) return pin;
-  const month = monthBoundsInTimeZone(now, DEFAULT_TIME_ZONE);
+  const { month, resetsOn } = currentMonth();
   const created = await createIngestionJobWithinLimit(
     ctx,
     { formatId: parser.id, extractedContent: content, ...pin.value },
@@ -76,7 +103,7 @@ const createJob = async (
     details: {
       limit: MONTHLY_STATEMENT_LIMIT,
       used: created.error.used,
-      resetsOn: localDateFromInstant(month.end, DEFAULT_TIME_ZONE),
+      resetsOn,
     },
   });
 };
@@ -133,7 +160,6 @@ export const queueStatement = async (
         parser: parser.value,
         content,
         choice: request.account,
-        now: new Date(),
       }),
     ),
   );
