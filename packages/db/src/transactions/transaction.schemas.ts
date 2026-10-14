@@ -59,7 +59,9 @@ type CoverageColumns = {
 
 // The statement that hides a movement must be of its account and user. No
 // action on delete: deleting a statement that hides movements fails, unless
-// they go with it, as when a user's data is deleted.
+// they go with it, as when a user's data is deleted. Migration 0007 defers
+// the check to the transaction's end, which Drizzle can't declare, so that a
+// user's deletion works whatever order the cascade takes.
 const coverageConstraints = (t: CoverageColumns) => [
   foreignKey({
     name: "transactions_covered_by_fk",
