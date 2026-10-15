@@ -4,10 +4,13 @@ import { eq, sql, TransactionRollbackError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
 import {
+  asAmount,
+  asLocalDate,
   insertAccount,
   insertStatement,
   insertUser,
   pgErrorCode,
+  statementRow,
 } from "../../test/test-rows";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient, DbTransaction } from "../client/db-client.types";
@@ -27,6 +30,7 @@ import {
   type NewIngestionJob,
   type SubmissionQuota,
 } from "./ingestion-job.queries";
+import { statements } from "../statements/statement.schemas";
 import { ingestionJobs } from "./ingestion-job.schemas";
 
 const FOREIGN_KEY_VIOLATION = "23503";
@@ -374,42 +378,95 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
     });
   });
 
-  it("lists the user's jobs asked for, with their statement's period, never their content", async () => {
+  it("lists the user's jobs asked for, with their statement's balance, never their content", async () => {
     const userId = await newUser();
-    const statementId = await insertStatement(owner.db, {
-      userId,
-      accountId: await insertAccount(owner.db, userId),
-    });
-    const queued = await insertJobId(userId, { extractedContent: CONTENT });
+    const owned = { userId, accountId: await insertAccount(owner.db, userId) };
+    // A quarterly statement that reconciles, one that doesn't, and an export.
+    const statementIds = await Promise.all(
+      [
+        { openingBalanceMinor: asAmount(100_000) },
+        {
+          openingBalanceMinor: asAmount(100_000),
+          balanceVerified: false,
+          balanceDifferenceMinor: asAmount(-1_000),
+          balanceBreakPositions: [3],
+        },
+        { balanceVerified: false },
+      ].map(async (balance, index) => {
+        const [row] = await owner.db
+          .insert(statements)
+          .values({
+            ...statementRow(owned),
+            ...balance,
+            periodFrom: asLocalDate(`2026-0${index + 1}-01`),
+          })
+          .returning({ id: statements.id });
+        return row?.id ?? "";
+      }),
+    );
+    const stats = {
+      total: 3,
+      added: 3,
+      skipped: 0,
+      covered: 0,
+      hidden: 0,
+      replaced: 0,
+    };
+    const doneJobs = await Promise.all(
+      statementIds.map((statementId) =>
+        insertJobId(userId, { status: "done", statementId, stats }),
+      ),
+    );
     const late = await insertJobId(userId, {
       status: "processing",
       extractedContent: CONTENT,
       createdAt: new Date(Date.now() - 3 * 60_000),
     });
-    const done = await insertJobId(userId, {
-      status: "done",
-      statementId,
+    const failed = await insertJobId(userId, {
+      status: "failed",
+      errorCode: "PARSE_FAILED",
       createdAt: new Date(Date.now() - 3 * 60_000),
     });
     const theirs = await insertJobId(await newUser());
 
     const results = await withUserContext(app.db, userId, (ctx) =>
-      listIngestionJobResults(ctx, [queued, late, done, theirs, randomUUID()]),
+      listIngestionJobResults(ctx, [
+        ...doneJobs,
+        late,
+        failed,
+        theirs,
+        randomUUID(),
+      ]),
     );
 
-    const job = { formatId: null, isSlow: false, period: null };
+    const job = {
+      formatId: null,
+      isSlow: false,
+      errorCode: null,
+      stats: {},
+      statement: null,
+    };
+    const done = (
+      month: number,
+      balance: string,
+      differenceMinor: number | null,
+    ) => ({
+      ...job,
+      status: "done",
+      stats,
+      statement: {
+        period: { from: `2026-0${month}-01`, to: "2026-09-30" },
+        balance,
+        differenceMinor,
+      },
+    });
     expect(new Map(results.map(({ id, ...result }) => [id, result]))).toEqual(
-      new Map([
-        [queued, { ...job, status: "pending" }],
+      new Map<string | undefined, unknown>([
+        [doneJobs[0], done(1, "verified", null)],
+        [doneJobs[1], done(2, "unverified", -1_000)],
+        [doneJobs[2], done(3, "none", null)],
         [late, { ...job, status: "processing", isSlow: true }],
-        [
-          done,
-          {
-            ...job,
-            status: "done",
-            period: { from: "2026-06-30", to: "2026-09-30" },
-          },
-        ],
+        [failed, { ...job, status: "failed", errorCode: "PARSE_FAILED" }],
       ]),
     );
   });

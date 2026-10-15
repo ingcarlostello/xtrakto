@@ -10,8 +10,10 @@ import type { StatusTone } from "@/components/status-pill/StatusPill";
 import {
   BANK_LABELS,
   FILE_PROBLEM,
+  FORMAT_BANKS,
   FORMAT_LABELS,
   FORMAT_PERIOD_SOURCE,
+  JOB_PROBLEMS,
   JOB_STATUS,
   NO_ANSWER,
   PROBLEM_COPY,
@@ -75,10 +77,22 @@ const PERIOD_SOURCES: Readonly<Partial<Record<string, PeriodSource>>> =
  * What names a job the page didn't read, after a reload: its format and, once
  * saved, its period. A file's name never leaves the browser.
  */
-export const jobLabel = ({ formatId, period }: UploadJob): string => {
+/** What the server recognized in a job's file: bank, format and period. */
+export const recognizedText = (formatId: string, period: Period): string => {
+  const banks: Labels = FORMAT_BANKS;
+  const source = PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS;
+  return [
+    labelOf(BANK_LABELS, labelOf(banks, formatId)),
+    labelOf(FORMAT_LABELS, formatId),
+    periodText(period, source),
+  ].join(" · ");
+};
+
+export const jobLabel = ({ formatId, outcome }: UploadJob): string => {
   if (formatId === undefined) return COPY.statement;
   const format = labelOf(FORMAT_LABELS, formatId);
-  if (period === undefined) return format;
+  if (outcome === undefined) return format;
+  const { period } = outcome;
   const source = PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS;
   return `${format} ${periodText(period, source)}`;
 };
@@ -153,7 +167,12 @@ export const jobView = (
   preview?: StatementPreview,
 ): FileRowView => {
   if (job?.status === JOB_STATUS.FAILED)
-    return { kind: "problem", ...PROBLEM_COPY.notProcessed };
+    return {
+      kind: "problem",
+      ...(job.errorCode
+        ? JOB_PROBLEMS[job.errorCode]
+        : PROBLEM_COPY.notProcessed),
+    };
   return {
     ...(preview ? previewView(preview) : { kind: "ready", tags: [] }),
     note: jobNote(job),

@@ -4,7 +4,8 @@ import {
   PERIOD_SOURCE,
   periodSchema,
 } from "@xtrakto/core";
-import type { AppError } from "@xtrakto/core";
+import type { AppError, Period } from "@xtrakto/core";
+import type { IngestionJobError } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import {
   countText,
@@ -24,6 +25,7 @@ import {
 } from "./upload.constants";
 import type {
   ExtractedStatement,
+  JobOutcome,
   SendProblem,
   UploadItem,
   UploadJob,
@@ -144,6 +146,18 @@ describe("a sent file's job", () => {
     preview,
     jobId: "job",
   };
+  const outcomeIn = (period: Period): JobOutcome => ({
+    stats: {
+      total: 1,
+      added: 1,
+      skipped: 0,
+      covered: 0,
+      hidden: 0,
+      replaced: 0,
+    },
+    period,
+    balance: "none",
+  });
   const job = (status: UploadJob["status"], isSlow = false): UploadJob => ({
     jobId: "job",
     status,
@@ -176,12 +190,24 @@ describe("a sent file's job", () => {
     });
   });
 
-  it("explains a job that failed, on the attention surface", () => {
-    expect(fileRowView(sent, job("failed"))).toEqual({
-      kind: "problem",
-      ...PROBLEM_COPY.notProcessed,
-    });
-  });
+  it.each<[IngestionJobError | undefined, { title: string; detail: string }]>([
+    ["UNKNOWN_FORMAT", PROBLEM_COPY.notAStatement],
+    ["PARSE_FAILED", PROBLEM_COPY.incomplete],
+    ["ACCOUNT_REQUIRED", PROBLEM_COPY.chooseAccount],
+    ["INTERNAL_ERROR", PROBLEM_COPY.notProcessed],
+    ["CONTENT_EXPIRED", PROBLEM_COPY.expired],
+    [undefined, PROBLEM_COPY.notProcessed],
+  ])(
+    "explains a job that failed with %s, on the attention surface",
+    (errorCode, problem) => {
+      expect(
+        fileRowView(sent, {
+          ...job("failed"),
+          ...(errorCode ? { errorCode } : {}),
+        }),
+      ).toEqual({ kind: "problem", ...problem });
+    },
+  );
 
   it("shows a job of an earlier visit without the file it came from", () => {
     expect(jobView(job("processing"))).toEqual({
@@ -196,7 +222,7 @@ describe("a sent file's job", () => {
     ["a format alone while pending", job("pending"), "Movimientos"],
     [
       "a range of movements by its days",
-      { ...job("done"), period: preview.period },
+      { ...job("done"), outcome: outcomeIn(preview.period) },
       "Movimientos 1–15 ago 2026",
     ],
     [
@@ -204,7 +230,9 @@ describe("a sent file's job", () => {
       {
         ...job("done"),
         formatId: "bancolombia-savings-quarterly",
-        period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+        outcome: outcomeIn(
+          periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+        ),
       },
       "Extracto trimestral jul–sep 2026",
     ],

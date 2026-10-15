@@ -1,4 +1,5 @@
 import {
+  type AmountMinor,
   type ExtractedContent,
   err,
   ok,
@@ -15,6 +16,7 @@ import type {
   IngestionJobError,
   IngestionJobStatus,
   IngestionStats,
+  StatementBalance,
 } from "./ingestion-job.types";
 
 const { PENDING, PROCESSING, DONE, FAILED } = INGESTION_JOB_STATUS;
@@ -46,8 +48,17 @@ export type IngestionJobResult = {
   readonly formatId: string | null;
   /** Open for longer than an ingestion usually takes. */
   readonly isSlow: boolean;
-  /** The period of the statement it saved, once done. */
-  readonly period: Period | null;
+  readonly errorCode: IngestionJobError | null;
+  /** Counts only, once done. */
+  readonly stats: Partial<IngestionStats>;
+  /** Once done: the statement it saved, or the one that already held it. */
+  readonly statement: {
+    readonly period: Period;
+    /** It reconciles, it doesn't, or it prints no balances (an export). */
+    readonly balance: StatementBalance;
+    /** The closing balance minus the opening balance and every amount. */
+    readonly differenceMinor: AmountMinor | null;
+  } | null;
 };
 
 /** How many statements a user may submit in a month, and that month's bounds. */
@@ -237,6 +248,29 @@ export const expireStaleIngestionJobs = async (
   return rows[0]?.expired ?? 0;
 };
 
+// What the upload screen reads of a job and its statement: never the content.
+const RESULT_COLUMNS = {
+  id: ingestionJobs.id,
+  status: ingestionJobs.status,
+  formatId: ingestionJobs.formatId,
+  isSlow: sql<boolean>`${inArray(ingestionJobs.status, OPEN)} and ${ingestionJobs.createdAt} < now() - ${SLOW_AFTER}`,
+  errorCode: ingestionJobs.errorCode,
+  stats: ingestionJobs.stats,
+  from: statements.periodFrom,
+  to: statements.periodTo,
+  isVerified: statements.balanceVerified,
+  hasBalances: sql<boolean>`${statements.openingBalanceMinor} is not null`,
+  differenceMinor: statements.balanceDifferenceMinor,
+};
+
+const balanceOf = (
+  isVerified: boolean | null,
+  hasBalances: boolean,
+): StatementBalance => {
+  if (isVerified) return "verified";
+  return hasBalances ? "unverified" : "none";
+};
+
 /**
  * The context user's jobs among `jobIds`, as the upload screen follows them;
  * never their content. Other users' jobs, and jobs that are gone, are left
@@ -248,14 +282,7 @@ export const listIngestionJobResults = async (
 ): Promise<IngestionJobResult[]> => {
   if (jobIds.length === 0) return [];
   const rows = await tx
-    .select({
-      id: ingestionJobs.id,
-      status: ingestionJobs.status,
-      formatId: ingestionJobs.formatId,
-      isSlow: sql<boolean>`${inArray(ingestionJobs.status, OPEN)} and ${ingestionJobs.createdAt} < now() - ${SLOW_AFTER}`,
-      from: statements.periodFrom,
-      to: statements.periodTo,
-    })
+    .select(RESULT_COLUMNS)
     .from(ingestionJobs)
     .leftJoin(
       statements,
@@ -270,8 +297,17 @@ export const listIngestionJobResults = async (
         inArray(ingestionJobs.id, [...jobIds]),
       ),
     );
-  return rows.map(({ from, to, ...job }) => ({
-    ...job,
-    period: from && to ? { from, to } : null,
-  }));
+  return rows.map(
+    ({ from, to, isVerified, hasBalances, differenceMinor, ...job }) => ({
+      ...job,
+      statement:
+        from && to
+          ? {
+              period: { from, to },
+              balance: balanceOf(isVerified, hasBalances),
+              differenceMinor,
+            }
+          : null,
+    }),
+  );
 };

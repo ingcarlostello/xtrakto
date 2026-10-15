@@ -40,6 +40,7 @@ export type {
   IngestionJobError,
   IngestionJobStatus,
   IngestionStats,
+  StatementBalance,
 } from "./ingestion-jobs/ingestion-job.types";
 export { saveStatement } from "./statements/statement.queries";
 export type {

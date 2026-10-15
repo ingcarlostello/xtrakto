@@ -168,25 +168,55 @@ describe("listUploadJobs", () => {
 
   it("gives the user's jobs in the order asked, with only what the screen shows", async () => {
     mocks.findUserId.mockResolvedValue(USER_ID);
+    const statement = {
+      period,
+      balance: "unverified",
+      differenceMinor: -1_000,
+    };
     mocks.listIngestionJobResults.mockResolvedValue([
-      { id: OTHER_JOB, status: "done", formatId: "f", isSlow: false, period },
+      {
+        id: OTHER_JOB,
+        status: "done",
+        formatId: "f",
+        isSlow: false,
+        errorCode: null,
+        stats: { total: 3, skipped: 3 },
+        statement,
+      },
       {
         id: JOB_ID,
-        status: "pending",
+        status: "failed",
         formatId: null,
-        isSlow: true,
-        period: null,
+        isSlow: false,
+        errorCode: "PARSE_FAILED",
+        stats: {},
+        statement: null,
       },
     ]);
 
     expect(await listUploadJobs("user_clerk", [JOB_ID, OTHER_JOB])).toEqual([
-      { jobId: JOB_ID, status: "pending", isSlow: true },
+      {
+        jobId: JOB_ID,
+        status: "failed",
+        isSlow: false,
+        errorCode: "PARSE_FAILED",
+      },
       {
         jobId: OTHER_JOB,
         status: "done",
         isSlow: false,
         formatId: "f",
-        period,
+        outcome: {
+          stats: {
+            total: 3,
+            added: 0,
+            skipped: 3,
+            covered: 0,
+            hidden: 0,
+            replaced: 0,
+          },
+          ...statement,
+        },
       },
     ]);
     expect(mocks.listIngestionJobResults).toHaveBeenCalledWith(
