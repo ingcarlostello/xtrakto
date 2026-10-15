@@ -1,8 +1,6 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { AUTH_ROUTES } from "@/lib/auth-routes";
-import { clerkAppearance, clerkLocalization } from "@/lib/clerk";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // Google Fonts' variable files, Latin subset, kept in the repository: with
@@ -26,7 +24,7 @@ const manrope = localFont({
 // From docs/brand.md §8. The icons and the social image are files in this
 // folder, which Next.js picks up on its own.
 export const metadata: Metadata = {
-  metadataBase: new URL("https://xtrakto.site"),
+  metadataBase: new URL(SITE_URL),
   title: { default: "Xtrakto", template: "%s · Xtrakto" },
   description:
     "Entiende tu extracto bancario: en qué gastaste, qué solo moviste y cuánto entró.",
@@ -45,18 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${outfit.variable} ${manrope.variable} antialiased`}
     >
-      <body className="flex min-h-dvh flex-col">
-        {/* Inside <body>, as Clerk Core 3 requires. */}
-        <ClerkProvider
-          appearance={clerkAppearance}
-          localization={clerkLocalization}
-          signInUrl={AUTH_ROUTES.signIn}
-          signUpUrl={AUTH_ROUTES.signUp}
-          afterSignOutUrl={AUTH_ROUTES.signIn}
-        >
-          {children}
-        </ClerkProvider>
-      </body>
+      {/* Clerk wraps only the app and sign-in, inside <body> as Clerk Core 3
+          requires (components/layout/ClerkRoot.tsx). */}
+      <body className="flex min-h-dvh flex-col">{children}</body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { MIN_IDENTIFIER_HASH_KEY_LENGTH } from "@xtrakto/core";
 import { z } from "zod";
+import { isWaitlistOnly } from "./site";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -113,15 +114,18 @@ const serverEnvSchema = serverEnvShape.superRefine((env, context) => {
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
-/**
- * Validates the server's environment variables and keeps only those. The
- * error names each invalid variable and why, never its value: it ends up in
- * logs, and the values are secrets.
- */
-export const parseServerEnv = (
-  source: Readonly<Record<string, string | undefined>>,
-): ServerEnv => {
-  const result = serverEnvSchema.safeParse(source);
+// A waitlist-only deployment (16.0d, ADR 0022) reaches the database and
+// nothing else: no Clerk, no Inngest, no hashes.
+const waitlistEnvSchema = serverEnvShape.pick({ DATABASE_URL: true });
+
+export type WaitlistEnv = z.infer<typeof waitlistEnvSchema>;
+
+type EnvSource = Readonly<Record<string, string | undefined>>;
+
+// The error names each invalid variable and why, never its value: it ends up
+// in logs, and the values are secrets.
+const parseWith = <T>(schema: z.ZodType<T>, source: EnvSource): T => {
+  const result = schema.safeParse(source);
   if (result.success) return result.data;
   const problems = result.error.issues.map(
     (issue) => `- ${issue.path.join(".")}: ${issue.message}`,
@@ -130,6 +134,14 @@ export const parseServerEnv = (
     `Invalid environment variables. Locally they come from the root .env.local.\n${problems.join("\n")}`,
   );
 };
+
+/** Validates the server's environment variables and keeps only those. */
+export const parseServerEnv = (source: EnvSource): ServerEnv =>
+  parseWith(serverEnvSchema, source);
+
+/** The same for a waitlist-only deployment: the database URL alone. */
+export const parseWaitlistEnv = (source: EnvSource): WaitlistEnv =>
+  parseWith(waitlistEnvSchema, source);
 
 /** `next dev` sets NODE_ENV to development; Next.js inlines it at compile time. */
 // Set by Next.js per command, not by the deployment, so turbo.json doesn't list it.
@@ -140,9 +152,23 @@ let serverEnv: ServerEnv | undefined;
 
 /**
  * The validated environment, parsed on first use so that `next build` and
- * tests don't need it. src/instrumentation.ts calls it when a server starts.
+ * tests don't need it. src/instrumentation.ts checks it when a server starts.
  */
 export const getServerEnv = (): ServerEnv => {
   serverEnv ??= parseServerEnv(process.env);
   return serverEnv;
+};
+
+/**
+ * The application role's database URL. A waitlist-only deployment validates
+ * only that; anything else asking for the whole environment there fails.
+ */
+export const getDatabaseUrl = (): string =>
+  isWaitlistOnly()
+    ? parseWaitlistEnv(process.env).DATABASE_URL
+    : getServerEnv().DATABASE_URL;
+
+/** Checks, when a server starts, the variables its deployment needs. */
+export const checkServerEnv = (): void => {
+  void getDatabaseUrl();
 };

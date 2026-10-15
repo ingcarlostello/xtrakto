@@ -27,12 +27,17 @@ const PUBLIC_PATH_PREFIXES = [
   WAITLIST_ROUTES.join,
 ];
 
+const isUnder = (pathname: string, prefix: string): boolean =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
 /**
  * Whether a signed-out visitor may open this path. Only the proxy's early
  * redirect uses it: every page, action and route handler still checks the
  * session itself.
  */
 export const isPublicPath = (pathname: string): boolean =>
-  PUBLIC_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  PUBLIC_PATH_PREFIXES.some((prefix) => isUnder(pathname, prefix));
+
+/** The waitlist's pages: all a waitlist-only deployment serves (16.0d). */
+export const isWaitlistPath = (pathname: string): boolean =>
+  isUnder(pathname, WAITLIST_ROUTES.join);

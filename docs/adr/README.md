@@ -39,3 +39,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0019](0019-two-inngest-steps-with-ids-codes-and-counts.md)       | Two Inngest steps that keep only ids, codes and counts             | Accepted |
 | [0020](0020-promo-video-rendered-with-remotion.md)                | Promo video rendered with Remotion                                 | Accepted |
 | [0021](0021-insert-only-public-waitlist.md)                       | An insert-only public waitlist                                     | Accepted |
+| [0022](0022-waitlist-only-deployment.md)                          | A waitlist-only deployment                                         | Accepted |

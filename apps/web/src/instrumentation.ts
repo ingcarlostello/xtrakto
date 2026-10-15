@@ -6,7 +6,7 @@ export async function register(): Promise<void> {
   // Set by Next.js per bundle, not by the deployment, so turbo.json doesn't list it.
   // eslint-disable-next-line turbo/no-undeclared-env-vars
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { getServerEnv } = await import("./lib/env");
-    getServerEnv();
+    const { checkServerEnv } = await import("./lib/env");
+    checkServerEnv();
   }
 }
