@@ -46,7 +46,7 @@ function RowBody({ view }: { view: FileRowView }) {
 }
 
 // On the attention surface, the chip turns white and gets the orange dot.
-function FileIcon({ isProblem }: { isProblem: boolean }) {
+export function FileIcon({ isProblem }: { isProblem: boolean }) {
   return (
     <span
       className={cn(

@@ -168,7 +168,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.5c Daily cleanup of stale jobs
 - [x] 5.6a Status polling
 - [x] 5.6b Upload result
-- [ ] 5.6c Uploaded files and "Encadenado"
+- [x] 5.6c Uploaded files and "Encadenado"
 - [ ] 5.7a Movements by day
 - [ ] 5.7b Period selector and account switch
 - [ ] 5.7c Search and "No cuadra"
@@ -1337,7 +1337,7 @@ Observed on real files. Values below are illustrative; no real data.
      - `SALDO`: balance after the movement, as text.
 - The statement is split into **pages** of about 50 movements. Each new page repeats the `Información Cliente:`, `Información General:` and `Movimientos:` blocks (not `Resumen:`) right after the last movement, without an empty row; the repeated `DESDE` header puts the word `SUCURSAL` in the `VALOR` column. Skip rows whose `FECHA` doesn't match `d/mm`.
 - The table ends with a row that has `FIN ESTADO DE CUENTA` in the `DESCRIPCIÓN` column.
-- The period can start on the last day of the previous month (`2026/06/30`, first movement on `1/07`).
+- The period can start on the last day of the previous month (`2026/06/30`, first movement on `1/07`). Back-to-back statements share that day: one ends on the day the next starts, and the next opens with its closing balance (three pairs of real files, 5.6c).
 - One `ABONO INTERESES AHORROS` row on most days (about 90 per quarter, very small amounts), not always the first row of its day; after a day without one, the next row covers both days.
 - **Invariants verified on a real file:** every row satisfies previous balance + `VALOR` = `SALDO` to the cent; the sum of positive values equals `TOTAL ABONOS`; the sum of negative values equals `TOTAL CARGOS` with the opposite sign; `SALDO ANTERIOR` + sum = `SALDO ACTUAL`.
 

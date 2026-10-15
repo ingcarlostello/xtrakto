@@ -30,6 +30,7 @@ export {
   finishIngestionJob,
   type IngestionJobResult,
   listIngestionJobResults,
+  listRecentIngestionJobs,
   lockIngestionJob,
   type NewIngestionJob,
   type OpenIngestionJob,

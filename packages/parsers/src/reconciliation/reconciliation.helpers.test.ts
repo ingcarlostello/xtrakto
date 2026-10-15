@@ -5,6 +5,7 @@ import { fixtureContent } from "../../fixtures/fixture.utils";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyLarge from "../../fixtures/quarterly-large.json";
+import quarterlyPrevious from "../../fixtures/quarterly-previous.json";
 import quarterlyRepeatedHeader from "../../fixtures/quarterly-repeated-header.json";
 import quarterlyYearRollover from "../../fixtures/quarterly-year-rollover.json";
 import { bancolombiaQuarterlyParser } from "../bancolombia/quarterly-parser.helpers";
@@ -77,6 +78,7 @@ const failingTotals = (...issues: object[]) => ({
 describe("reconcile", () => {
   it.each([
     { name: "quarterly-basic", fixture: quarterlyBasic },
+    { name: "quarterly-previous", fixture: quarterlyPrevious },
     { name: "quarterly-year-rollover", fixture: quarterlyYearRollover },
     { name: "quarterly-repeated-header", fixture: quarterlyRepeatedHeader },
     { name: "quarterly-large", fixture: quarterlyLarge },

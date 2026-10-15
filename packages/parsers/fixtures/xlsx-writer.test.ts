@@ -7,12 +7,14 @@ import movementsOverlap from "./movements-overlap.json";
 import quarterlyBasic from "./quarterly-basic.json";
 import quarterlyBrokenBalance from "./quarterly-broken-balance.json";
 import quarterlyLarge from "./quarterly-large.json";
+import quarterlyPrevious from "./quarterly-previous.json";
 import quarterlyRepeatedHeader from "./quarterly-repeated-header.json";
 import quarterlyYearRollover from "./quarterly-year-rollover.json";
 import { contentToXlsx } from "./xlsx-writer.mjs";
 
 const FIXTURES = {
   "quarterly-basic": quarterlyBasic,
+  "quarterly-previous": quarterlyPrevious,
   "quarterly-year-rollover": quarterlyYearRollover,
   "quarterly-repeated-header": quarterlyRepeatedHeader,
   "quarterly-broken-balance": quarterlyBrokenBalance,

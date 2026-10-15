@@ -2,11 +2,25 @@ import {
   type AmountMinor,
   type ExtractedContent,
   err,
+  type LocalDate,
   ok,
   type Period,
   type Result,
 } from "@xtrakto/core";
-import { and, count, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  ne,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
+import { alias, QueryBuilder } from "drizzle-orm/pg-core";
 import type { Database, DbTransaction } from "../client/db-client.types";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -58,6 +72,11 @@ export type IngestionJobResult = {
     readonly balance: StatementBalance;
     /** The closing balance minus the opening balance and every amount. */
     readonly differenceMinor: AmountMinor | null;
+    /**
+     * The period of the account's previous quarterly statement, when this
+     * one reconciles and opens with that one's verified closing balance.
+     */
+    readonly chainedTo: Period | null;
   } | null;
 };
 
@@ -248,6 +267,26 @@ export const expireStaleIngestionJobs = async (
   return rows[0]?.expired ?? 0;
 };
 
+// A statement that reconciles is chained when it opens with the closing
+// balance of the account's verified statement that ends the day it starts.
+// Found when read, so the order the two were uploaded in doesn't matter.
+const previous = alias(statements, "previous");
+const PREVIOUS_START = new QueryBuilder()
+  .select({ from: previous.periodFrom })
+  .from(previous)
+  .where(
+    and(
+      eq(previous.accountId, statements.accountId),
+      eq(previous.userId, statements.userId),
+      ne(previous.id, statements.id),
+      eq(previous.balanceVerified, true),
+      eq(previous.periodTo, statements.periodFrom),
+      eq(previous.closingBalanceMinor, statements.openingBalanceMinor),
+    ),
+  )
+  .orderBy(previous.periodFrom)
+  .limit(1);
+
 // What the upload screen reads of a job and its statement: never the content.
 const RESULT_COLUMNS = {
   id: ingestionJobs.id,
@@ -261,6 +300,7 @@ const RESULT_COLUMNS = {
   isVerified: statements.balanceVerified,
   hasBalances: sql<boolean>`${statements.openingBalanceMinor} is not null`,
   differenceMinor: statements.balanceDifferenceMinor,
+  chainedFrom: sql<LocalDate | null>`case when ${statements.balanceVerified} then (${PREVIOUS_START}) end`,
 };
 
 const balanceOf = (
@@ -271,17 +311,9 @@ const balanceOf = (
   return hasBalances ? "unverified" : "none";
 };
 
-/**
- * The context user's jobs among `jobIds`, as the upload screen follows them;
- * never their content. Other users' jobs, and jobs that are gone, are left
- * out.
- */
-export const listIngestionJobResults = async (
-  { tx, userId }: UserContext,
-  jobIds: readonly string[],
-): Promise<IngestionJobResult[]> => {
-  if (jobIds.length === 0) return [];
-  const rows = await tx
+// The context user's jobs, newest first, each with the statement it saved.
+const selectJobResults = ({ tx, userId }: UserContext, filter?: SQL) =>
+  tx
     .select(RESULT_COLUMNS)
     .from(ingestionJobs)
     .leftJoin(
@@ -291,23 +323,59 @@ export const listIngestionJobResults = async (
         eq(statements.userId, ingestionJobs.userId),
       ),
     )
-    .where(
-      and(
-        eq(ingestionJobs.userId, userId),
-        inArray(ingestionJobs.id, [...jobIds]),
-      ),
-    );
-  return rows.map(
-    ({ from, to, isVerified, hasBalances, differenceMinor, ...job }) => ({
-      ...job,
-      statement:
-        from && to
-          ? {
-              period: { from, to },
-              balance: balanceOf(isVerified, hasBalances),
-              differenceMinor,
-            }
-          : null,
-    }),
+    .where(and(eq(ingestionJobs.userId, userId), filter))
+    .orderBy(desc(ingestionJobs.createdAt), desc(ingestionJobs.id))
+    .$dynamic();
+
+type JobResultRow = Awaited<ReturnType<typeof selectJobResults>>[number];
+
+const toJobResult = ({
+  from,
+  to,
+  isVerified,
+  hasBalances,
+  differenceMinor,
+  chainedFrom,
+  ...job
+}: JobResultRow): IngestionJobResult => ({
+  ...job,
+  statement:
+    from && to
+      ? {
+          period: { from, to },
+          balance: balanceOf(isVerified, hasBalances),
+          differenceMinor,
+          // The previous statement ends the day this one starts.
+          chainedTo: chainedFrom ? { from: chainedFrom, to: from } : null,
+        }
+      : null,
+});
+
+/**
+ * The context user's jobs among `jobIds`, as the upload screen follows them;
+ * never their content. Other users' jobs, and jobs that are gone, are left
+ * out.
+ */
+export const listIngestionJobResults = async (
+  ctx: UserContext,
+  jobIds: readonly string[],
+): Promise<IngestionJobResult[]> => {
+  if (jobIds.length === 0) return [];
+  const rows = await selectJobResults(
+    ctx,
+    inArray(ingestionJobs.id, [...jobIds]),
   );
+  return rows.map(toJobResult);
+};
+
+/**
+ * The context user's latest `limit` jobs, newest first, as the upload screen
+ * lists the files sent; never their content.
+ */
+export const listRecentIngestionJobs = async (
+  ctx: UserContext,
+  limit: number,
+): Promise<IngestionJobResult[]> => {
+  const rows = await selectJobResults(ctx).limit(limit);
+  return rows.map(toJobResult);
 };

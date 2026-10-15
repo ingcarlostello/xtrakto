@@ -100,6 +100,7 @@ function Badges() {
       <Badge variant="spending">Gasto real</Badge>
       <Badge variant="moved">Movido</Badge>
       <Badge variant="attention">Revisar</Badge>
+      <Badge variant="ok">Verificado</Badge>
       <Badge variant="tag">PSE</Badge>
       <Badge variant="tag">Extracto trimestral</Badge>
     </div>
@@ -118,6 +119,11 @@ function StatusPills() {
         tone="attention"
         title="0 de 10 disponibles"
         detail="Se renuevan el 1 de noviembre"
+      />
+      <StatusPill
+        tone="ok"
+        title="Encadenado"
+        detail="Empieza donde terminó abr–jun 2026"
       />
     </div>
   );

@@ -6,6 +6,10 @@ import { RESULT_COPY } from "./upload.constants";
 import type { JobOutcome, UploadJob } from "./upload.types";
 
 const QUARTER = periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" });
+const PREVIOUS_QUARTER = periodSchema.parse({
+  from: "2026-03-31",
+  to: "2026-06-30",
+});
 const JULY = periodSchema.parse({ from: "2026-07-01", to: "2026-07-31" });
 
 const quarterly: UploadJob = {
@@ -79,6 +83,19 @@ describe("resultView", () => {
           isOk: true,
         },
       ],
+    });
+  });
+
+  it("says a quarterly statement starts where the previous quarter's ended", () => {
+    const chained = outcome({}, { chainedTo: PREVIOUS_QUARTER });
+
+    expect(resultView(quarterly, chained).pill).toEqual({
+      tone: "ok",
+      title: "Encadenado",
+      detail: "Empieza donde terminó abr–jun 2026",
+    });
+    expect(resultView(quarterly, chained).steps.at(-1)).toMatchObject({
+      title: "Saldo verificado",
     });
   });
 

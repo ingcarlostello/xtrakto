@@ -1,4 +1,9 @@
-import { CURRENCY, formatAmount, isAmountMinor } from "@xtrakto/core";
+import {
+  CURRENCY,
+  formatAmount,
+  formatMonthRange,
+  isAmountMinor,
+} from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { countText, recognizedText } from "./upload-display.helpers";
 import {
@@ -38,8 +43,8 @@ const NUMBER = new Intl.NumberFormat("es-CO");
 const noun = <T>(count: number, words: { one: T; other: T }): T =>
   count === 1 ? words.one : words.other;
 
-// How far off a statement that doesn't reconcile is, when it says.
-const offBy = ({ differenceMinor }: JobOutcome): string | undefined => {
+/** How far off a statement that doesn't reconcile is, when it says: `"$810"`. */
+export const offBy = ({ differenceMinor }: JobOutcome): string | undefined => {
   const amount = Math.abs(differenceMinor ?? 0);
   return amount !== 0 && isAmountMinor(amount)
     ? formatAmount(amount, CURRENCY.COP)
@@ -70,14 +75,23 @@ const countsOf = ({ stats, balance }: JobOutcome): ResultView["counts"] => {
   ];
 };
 
+// Chained says more than verified: it also opens where the previous closed.
+const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
+  chainedTo
+    ? {
+        tone: "ok",
+        title: COPY.chained,
+        detail: `${COPY.chainedTo} ${formatMonthRange(chainedTo)}`,
+      }
+    : {
+        tone: "ok",
+        title: COPY.verified,
+        detail: `${countText(stats.total, UPLOAD_COPY.movements)} ${noun(stats.total, COPY.reconcile)}`,
+      };
+
 const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
-  const { balance, stats } = outcome;
-  if (balance === STATEMENT_BALANCE.VERIFIED)
-    return {
-      tone: "ok",
-      title: COPY.verified,
-      detail: `${countText(stats.total, UPLOAD_COPY.movements)} ${noun(stats.total, COPY.reconcile)}`,
-    };
+  const { balance } = outcome;
+  if (balance === STATEMENT_BALANCE.VERIFIED) return verifiedPill(outcome);
   if (balance === STATEMENT_BALANCE.NONE)
     return { tone: "none", title: COPY.noBalance, detail: COPY.movementsFile };
   const amount = offBy(outcome);

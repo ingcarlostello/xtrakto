@@ -7,6 +7,7 @@ import movementsOverlap from "../../fixtures/movements-overlap.json";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyLarge from "../../fixtures/quarterly-large.json";
+import quarterlyPrevious from "../../fixtures/quarterly-previous.json";
 import quarterlyRepeatedHeader from "../../fixtures/quarterly-repeated-header.json";
 import quarterlyYearRollover from "../../fixtures/quarterly-year-rollover.json";
 import { DEFAULT_PARSERS, findParser } from "./default-registry.helpers";
@@ -62,6 +63,7 @@ const recognizedBy = (content: ExtractedContent) =>
 
 const FIXTURES = [
   { name: "quarterly-basic", fixture: quarterlyBasic, id: QUARTERLY },
+  { name: "quarterly-previous", fixture: quarterlyPrevious, id: QUARTERLY },
   {
     name: "quarterly-year-rollover",
     fixture: quarterlyYearRollover,

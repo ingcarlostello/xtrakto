@@ -5,6 +5,7 @@ import { CONTENT_TOO_LARGE } from "./upload.constants";
 import {
   getMonthlyUsage,
   listUploadAccounts,
+  listUploadedFiles,
   listUploadJobs,
   queueStatement,
 } from "./upload.service";
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   createIngestionJobWithinLimit: vi.fn(),
   deletePendingIngestionJob: vi.fn(),
   listIngestionJobResults: vi.fn(),
+  listRecentIngestionJobs: vi.fn(),
   withUserContext: vi.fn(),
   send: vi.fn(),
 }));
@@ -32,6 +34,7 @@ vi.mock("@xtrakto/db", () => ({
   createIngestionJobWithinLimit: mocks.createIngestionJobWithinLimit,
   deletePendingIngestionJob: mocks.deletePendingIngestionJob,
   listIngestionJobResults: mocks.listIngestionJobResults,
+  listRecentIngestionJobs: mocks.listRecentIngestionJobs,
   withUserContext: mocks.withUserContext,
 }));
 vi.mock("@/lib/db", () => ({ getDb: () => "db" }));
@@ -172,6 +175,7 @@ describe("listUploadJobs", () => {
       period,
       balance: "unverified",
       differenceMinor: -1_000,
+      chainedTo: null,
     };
     mocks.listIngestionJobResults.mockResolvedValue([
       {
@@ -215,7 +219,9 @@ describe("listUploadJobs", () => {
             hidden: 0,
             replaced: 0,
           },
-          ...statement,
+          period,
+          balance: "unverified",
+          differenceMinor: -1_000,
         },
       },
     ]);
@@ -231,6 +237,62 @@ describe("listUploadJobs", () => {
     expect(await listUploadJobs("user_clerk", [])).toEqual([]);
     expect(await listUploadJobs("user_new", [JOB_ID])).toEqual([]);
     expect(mocks.withUserContext).not.toHaveBeenCalled();
+  });
+});
+
+describe("listUploadedFiles", () => {
+  const period = { from: "2026-06-30", to: "2026-09-30" };
+  const previous = { from: "2026-03-31", to: "2026-06-30" };
+
+  it("gives the user's latest files, with the quarter a statement is chained to", async () => {
+    mocks.findUserId.mockResolvedValue(USER_ID);
+    mocks.listRecentIngestionJobs.mockResolvedValue([
+      {
+        id: JOB_ID,
+        status: "done",
+        formatId: "f",
+        isSlow: false,
+        errorCode: null,
+        stats: { total: 3, added: 3 },
+        statement: {
+          period,
+          balance: "verified",
+          differenceMinor: null,
+          chainedTo: previous,
+        },
+      },
+    ]);
+
+    expect(await listUploadedFiles("user_clerk")).toEqual([
+      {
+        jobId: JOB_ID,
+        status: "done",
+        isSlow: false,
+        formatId: "f",
+        outcome: {
+          stats: {
+            total: 3,
+            added: 3,
+            skipped: 0,
+            covered: 0,
+            hidden: 0,
+            replaced: 0,
+          },
+          period,
+          balance: "verified",
+          chainedTo: previous,
+        },
+      },
+    ]);
+    expect(mocks.listRecentIngestionJobs).toHaveBeenCalledWith(CONTEXT, 30);
+  });
+
+  it("lists nothing for someone who never sent a file, without creating them", async () => {
+    mocks.findUserId.mockResolvedValue(undefined);
+
+    expect(await listUploadedFiles("user_new")).toEqual([]);
+    expect(mocks.withUserContext).not.toHaveBeenCalled();
+    expect(mocks.findOrCreateUser).not.toHaveBeenCalled();
   });
 });
 
