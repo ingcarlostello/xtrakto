@@ -236,6 +236,7 @@ export type UploadStatementInput = z.infer<typeof uploadStatementSchema>;
 
 - **Always** add `import "server-only";` at the top of every `*.service.ts` and of modules in `lib/` that use secrets.
 - **Always** check the session and that the resource belongs to the user inside every action and every service. Never trust a `userId` coming from the client.
+  - The one exception is an action a public page needs that touches no user's data: today `joinWaitlist` (ADR 0021). It still validates its input with Zod, answers the same whatever the database holds, and logs nothing of its input.
 - **Never** call the database from a component. Components call services.
 - **Prefer** server actions over route handlers for the app's own mutations.
 - **Never** import an external SDK (OpenAI, Anthropic, AWS) directly outside `lib/` or its service. The rest of the code depends on the abstraction.
@@ -358,7 +359,7 @@ export async function uploadStatement(
 
 ## 13. Privacy and security
 
-- **Never** log to logs, Sentry, PostHog or Langfuse: transaction descriptions, amounts, names, ID numbers, account numbers or phone numbers. Log internal identifiers and counts.
+- **Never** log to logs, Sentry, PostHog or Langfuse: transaction descriptions, amounts, names, emails, ID numbers, account numbers or phone numbers. Log internal identifiers and counts.
 - **Always** run text through `redactPii()` (from `packages/core`) before sending it to an LLM.
 - **Never** send or store a PDF's password. It is used only in the browser to open the file.
 - **Always** isolate data per user: filter by `userId` in every query, with Row-Level Security in Postgres as a second barrier.

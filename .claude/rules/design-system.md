@@ -198,7 +198,7 @@ Use compact amounts in cards and exact amounts in lists and detail views.
 
 | Token             | Value   | Use                                                                 |
 | ----------------- | ------- | ------------------------------------------------------------------- |
-| `--radius-pill`   | `999px` | Buttons, chips, segmented control, inputs                           |
+| `--radius-pill`   | `999px` | Buttons, chips, segmented control, the chat input                   |
 | `--radius-xl`     | `30px`  | Navigation dock                                                     |
 | `--radius-lg`     | `26px`  | Large panels and cards (chart, account, chat, translated statement) |
 | `--radius-md`     | `22px`  | Stat cards, tiles, navigation items                                 |
@@ -439,13 +439,13 @@ A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` b
 
 Pills without a border, Manrope 600 12px, on a soft background:
 
-| Badge                         | Background        | Text                 |
-| ----------------------------- | ----------------- | -------------------- |
-| Por revisar (`circle-alert`)  | `--spending-soft` | `--spending-on-soft` |
-| Subió (`arrow-up-right`)      | `--spending-soft` | `--spending-on-soft` |
-| Estable, Verificado           | `--income-soft`   | `--income-on-soft`   |
-| Varios canales, Completado    | `--primary-soft`  | `--primary-strong`   |
-| Monto variable, Sin verificar | `--surface-muted` | `--text-secondary`   |
+| Badge                                           | Background        | Text                 |
+| ----------------------------------------------- | ----------------- | -------------------- |
+| Por revisar (`circle-alert`)                    | `--spending-soft` | `--spending-on-soft` |
+| Subió (`arrow-up-right`)                        | `--spending-soft` | `--spending-on-soft` |
+| Estable, Verificado                             | `--income-soft`   | `--income-on-soft`   |
+| Varios canales, Completado, Muy pronto (`info`) | `--primary-soft`  | `--primary-strong`   |
+| Monto variable, Sin verificar                   | `--surface-muted` | `--text-secondary`   |
 
 ### Raw-text chip
 
@@ -520,6 +520,18 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 
 For "Es mío" and the email notices: `--primary` when on, `--ring-track` when off, always with a visible label.
 
+### Text field
+
+As the waitlist design draws it (`Input`): `--surface`, a 1px `--chart-axis` border, radius 12px, 48px tall, padding 0 16px, `--text` with a `--text-muted` placeholder, and 16px text on phones (15px from `sm`), so iOS doesn't zoom in. Its `<label>` sits above it (Caption, 700, `--text`). An error turns the border `--danger` and shows below in Caption 600 `--danger`, joined to the field by `aria-describedby`, with `aria-invalid`. The focus ring is the global one. The chat input keeps its pill.
+
+### Checkbox
+
+22px, radius 6px, a 1.5px `--text-faint` border on `--surface` (3.7:1, enough for a control's edge), and `--primary` with a white check when on (`Checkbox`, Base UI). Never checked by default. A long label wraps it, so the text toggles it too.
+
+### Waitlist form
+
+The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box, the consent in Caption `--text-secondary`, and the deletion line in `--text-muted`. Until the box is checked, the full-width primary button is grey (`--chart-axis`, `--text-secondary`, no shadow), focusable, with "Marca la casilla para poder enviar." below it in Caption `--text-muted` as its description. A failure sits on the attention surface with its dot, saying what to do. "Ya estás en la lista" is a centered card with an 80px `--income-soft` circle and its check, then the deletion line below it.
+
 ### Chat ("Pregúntale a tu extracto")
 
 - Panel: `--surface-panel`, `--radius-lg`, `--shadow-panel`.
@@ -569,6 +581,7 @@ For "Es mío" and the email notices: `--primary` when on, `--ring-track` when of
 - Touch targets of at least 44×44px.
 - Focus ring: `3px solid #2563EB` with a 3px offset, on every interactive element.
 - Real `<button>`, `<a href>` and `<input>` with `<label>`. Icon-only buttons have an `aria-label`.
+- A field's error is joined to it with `aria-describedby` and `aria-invalid`, and the focus goes to the first wrong field. A button disabled until something happens stays focusable and says why.
 - Toggle groups use `role="group"` with `aria-label`, and options use `aria-pressed`. The active navigation item uses `aria-current="page"`.
 - Switches use `role="switch"` with a label that names what they change ("Es mío: Nequi terminado en 1270").
 - The coverage timeline has a text alternative that states it ("Enero a septiembre completo y verificado; octubre sin saldo").
@@ -705,7 +718,7 @@ const manrope = localFont({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
-Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral`, `attention`, `tag` and `ok` for verified states). The development page `/design-system` shows every token and component.
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`), `Badge` (one variant per kind, plus `neutral`, `attention`, `tag`, `ok` for verified states and `info`), `Input` and `Checkbox`. The development page `/design-system` shows every token and component.
 
 v8 needs no new color tokens: the grey status dot is `ink-faint`, and the coverage timeline uses `income`, `moved`, `ink-faint`, `chart-axis` and `ring-track`. Each v8 component (§9) is built with its first consumer: `Button` gains the white destructive variant and `Badge` the status badges of §9 then, and the development page shows them.
 
