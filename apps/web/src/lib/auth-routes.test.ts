@@ -10,6 +10,8 @@ describe("isPublicPath", () => {
     "/sign-up/verify-email-address",
     "/api/webhooks/clerk",
     "/api/inngest",
+    "/waitlist",
+    "/waitlist/joined",
   ])("lets a signed-out visitor open %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -25,6 +27,8 @@ describe("isPublicPath", () => {
     "/api/webhooks",
     "/api/webhooks/clerkx",
     "/api/inngestx",
+    "/waitlistx",
+    "/waitlist-admin",
   ])("asks for a session on %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });

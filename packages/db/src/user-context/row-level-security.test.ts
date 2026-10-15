@@ -21,10 +21,26 @@ const TABLE_PRIVILEGES = [
 const READ_WRITE = ["SELECT", "INSERT", "UPDATE", "DELETE"];
 const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   users: ["SELECT", "INSERT", "DELETE"],
+  waitlist_entries: ["INSERT"],
   accounts: READ_WRITE,
   statements: READ_WRITE,
   transactions: READ_WRITE,
   ingestion_jobs: READ_WRITE,
+};
+
+// The tables that hold no user's data, each with its own policies. Every
+// other table holds one user's rows and has the per-user policy.
+const POLICIES_WITHOUT_USER: Readonly<Record<string, readonly string[]>> = {
+  // Anyone may be read or added; only a user's own row deleted.
+  users: [
+    `PERMISSIVE DELETE ${APP_ROLE} same_check=false uses_setting=true`,
+    `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+    `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
+  ],
+  // People may be added, never read back (ADR 0021).
+  waitlist_entries: [
+    `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+  ],
 };
 
 describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
@@ -64,19 +80,15 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
 
     const expected = Object.keys(EXPECTED_PRIVILEGES)
       .sort()
-      .map((name) =>
-        name === "users"
+      .map((name) => {
+        const policies = POLICIES_WITHOUT_USER[name];
+        return policies
           ? {
-              // Anyone may be read or added; only a user's own row deleted.
               name,
               enabled: true,
               forced: true,
               user_id_type: null,
-              policies: [
-                `PERMISSIVE DELETE ${APP_ROLE} same_check=false uses_setting=true`,
-                `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
-                `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
-              ].join("; "),
+              policies: policies.join("; "),
             }
           : {
               name,
@@ -84,8 +96,8 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
               forced: true,
               user_id_type: "uuid not null",
               policies: `PERMISSIVE ALL ${APP_ROLE} same_check=true uses_setting=true`,
-            },
-      );
+            };
+      });
     expect(tables).toEqual(expected);
   });
 

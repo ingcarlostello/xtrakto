@@ -18,6 +18,7 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 - Explain cryptic lines in plain Spanish (Stage 8).
 - Answer questions about the user's own data (Stage 13).
 - Delete or export all of a user's data on request.
+- Before the private beta, a public waitlist takes the name and email of whoever wants to try it, with their consent (16.0b).
 
 ### Constraints
 
@@ -74,7 +75,7 @@ flowchart LR
     Vercel -- "no PII" --> OBS
 ```
 
-The original file and the PDF password never leave the browser. Each file is read in its own Web Worker, at most three at a time, so the page never freezes; the worker gets the file's bytes, never its name. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path.
+The original file and the PDF password never leave the browser. Each file is read in its own Web Worker, at most three at a time, so the page never freezes; the worker gets the file's bytes, never its name. All database access goes through `@xtrakto/db`, inside a transaction that sets `app.user_id` wherever there is a user. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path. The exception is the waitlist (`/waitlist` and `/waitlist/joined`) and its action, public by design: the action only adds a name and an email to a table the application can't read ([ADR 0021](adr/0021-insert-only-public-waitlist.md)).
 
 | Package or app     | Responsibility                                                                                                                       | Runs in                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
@@ -140,29 +141,30 @@ sequenceDiagram
 
 ## 4. Privacy boundaries
 
-| Party          | Receives                                                                                                                                                      | Never receives                                                                              | Kept for                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| User's browser | Original file, PDF password, extracted content                                                                                                                | —                                                                                           | While the page is open                                                            |
-| Next.js server | Minimized extracted content: only what the parser reads ([ADR 0017](adr/0017-content-minimized-before-sending.md))                                            | Original file, PDF password, address, full account number                                   | Not kept; minimized again and written to the job row                              |
-| PostgreSQL     | Temporary minimized content, with raw references until the job ends; parsed transactions; normalized holder name; HMACs of references and their last 4 digits | Full account numbers, addresses, PDF password; raw references outside the temporary job row | Content: until the job ends (24 h max). Transactions: until the user deletes them |
-| Inngest Cloud  | Event names and IDs; step outputs and run results with statuses, error codes and counts; sanitized errors                                                     | Any financial content                                                                       | Inngest run history                                                               |
-| LLM providers  | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows                                                                      | Names, phone numbers, ID and account numbers                                                | Provider's API data policy                                                        |
-| Clerk          | Email, name, sign-in data                                                                                                                                     | Financial data                                                                              | Until the account is deleted                                                      |
-| Sentry         | Scrubbed errors and traces                                                                                                                                    | Request bodies, action arguments, descriptions, amounts                                     | Sentry retention                                                                  |
-| PostHog        | Event names, format ids, count buckets, error codes (after consent)                                                                                           | Descriptions, amounts, names                                                                | PostHog retention                                                                 |
-| Langfuse       | Model, tokens, cost, latency                                                                                                                                  | Prompt and response content (masked)                                                        | Langfuse retention                                                                |
+| Party                | Receives                                                                                                                                                                       | Never receives                                                                              | Kept for                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| User's browser       | Original file, PDF password, extracted content                                                                                                                                 | —                                                                                           | While the page is open                                                            |
+| Next.js server       | Minimized extracted content: only what the parser reads ([ADR 0017](adr/0017-content-minimized-before-sending.md)); the waitlist's names and emails                            | Original file, PDF password, address, full account number                                   | Not kept; minimized again and written to the job row                              |
+| PostgreSQL           | Temporary minimized content, with raw references until the job ends; parsed transactions; normalized holder name; HMACs of references and their last 4 digits                  | Full account numbers, addresses, PDF password; raw references outside the temporary job row | Content: until the job ends (24 h max). Transactions: until the user deletes them |
+| PostgreSQL, waitlist | The name, normalized email, consent version and consent time of each person who joins; the application may only add them ([ADR 0021](adr/0021-insert-only-public-waitlist.md)) | Any link to an account                                                                      | Until the launch notice is sent, or until the person asks (hola@xtrakto.site)     |
+| Inngest Cloud        | Event names and IDs; step outputs and run results with statuses, error codes and counts; sanitized errors                                                                      | Any financial content                                                                       | Inngest run history                                                               |
+| LLM providers        | Redacted descriptions; for unknown formats, the header and up to 10 redacted sample rows                                                                                       | Names, phone numbers, ID and account numbers                                                | Provider's API data policy                                                        |
+| Clerk                | Email, name, sign-in data                                                                                                                                                      | Financial data                                                                              | Until the account is deleted                                                      |
+| Sentry               | Scrubbed errors and traces                                                                                                                                                     | Request bodies, action arguments, descriptions, amounts                                     | Sentry retention                                                                  |
+| PostHog              | Event names, format ids, count buckets, error codes (after consent)                                                                                                            | Descriptions, amounts, names                                                                | PostHog retention                                                                 |
+| Langfuse             | Model, tokens, cost, latency                                                                                                                                                   | Prompt and response content (masked)                                                        | Langfuse retention                                                                |
 
 **Why HMAC and not a plain hash:** Colombian mobile numbers have 10 digits and start with 3, so a plain SHA-256 can be reversed by trying every number. References are hashed with HMAC-SHA-256 and a secret key, which still allows grouping transfers to the same person. Their last 4 digits are kept too, so the user can recognize their own Nequi ("ref ••• 1270"); 4 digits can't rebuild the number.
 
 **Long numbers in descriptions:** a description can carry an account or phone number (`INTERES INV VIRT 27608017525`). Parsers hide all but the last four digits of every run of six or more, keeping the text's length (`INTERES INV VIRT *******7525`), so full numbers never reach the database ([ADR 0012](adr/0012-long-numbers-masked-when-parsed.md)). The browser already masks them when it minimizes the content, before sending it ([ADR 0017](adr/0017-content-minimized-before-sending.md)).
 
-**Errors:** a database error's message lists its query's parameters, which can hold a statement's content, and Next.js logs whatever an action throws. So the server throws errors that name only what failed (the error's class, a SQLSTATE or system code, a constraint) before any log sees them.
+**Errors:** a database error's message lists its query's parameters, which can hold a statement's content, and Next.js logs whatever an action throws. So the server throws errors that name only what failed (the error's class, a SQLSTATE or system code, a constraint) before any log sees them. In development, Next.js also logs every action with its arguments (a statement's content, a waitlist email): `next.config.ts` turns that off.
 
 ---
 
 ## 5. Data model
 
-Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table has forced RLS: the four with a user's data on `user_id`, and `users` so that a user can delete only their own row, which takes all their data with it through the cascades ([ADR 0016](adr/0016-users-delete-only-their-own-row.md)).
+Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table has forced RLS: the four with a user's data on `user_id`, `users` so that a user can delete only their own row, which takes all their data with it through the cascades ([ADR 0016](adr/0016-users-delete-only-their-own-row.md)), and `waitlist_entries`, which the application may only add to ([ADR 0021](adr/0021-insert-only-public-waitlist.md)).
 
 ```mermaid
 erDiagram
@@ -233,6 +235,13 @@ erDiagram
         uuid user_id FK
         text pattern
         text category_id
+    }
+    WAITLIST_ENTRIES {
+        uuid id PK
+        text name
+        text email UK
+        timestamptz consent_accepted_at
+        text consent_version
     }
 ```
 
@@ -393,6 +402,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | SheetJS for spreadsheets                     | Reads XLSX and CSV in the browser and Node; date cells stay serials.                                    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
 | Two Inngest steps with ids, codes and counts | Inngest keeps step outputs and errors; one transaction saves a statement all or nothing.                | One step per stage                                         | [0019](adr/0019-two-inngest-steps-with-ids-codes-and-counts.md)                                       |
 | Events carry IDs only                        | Event payloads are stored and shown by the queue provider.                                              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Insert-only public waitlist                  | The list can't leak through the app, and every email gets the same answer.                              | A form service; a conflict target with a read policy       | [0021](adr/0021-insert-only-public-waitlist.md)                                                       |
 | Promo video in Remotion                      | The screens it shows don't exist yet; drawn from the design and versioned with it.                      | Screen recording; AI-generated video                       | [0020](adr/0020-promo-video-rendered-with-remotion.md)                                                |
 | Deterministic first, LLM as fallback         | Exact, free and testable for known formats.                                                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
 | Integer minor units and date-only dates      | No floating-point drift; no time-zone shifts.                                                           | Decimals and timestamps                                    | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |

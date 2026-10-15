@@ -64,6 +64,20 @@
       "when": 1792013533482,
       "tag": "0008_expire-stale-jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792095789538,
+      "tag": "0009_waitlist-entries",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792095798860,
+      "tag": "0010_waitlist-insert-only",
+      "breakpoints": true
     }
   ]
 }

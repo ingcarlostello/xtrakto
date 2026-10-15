@@ -18,6 +18,8 @@ const badgeVariants = cva(
         attention: "bg-spending-surface text-spending-on-soft",
         // A verified state, outside data: "Verificado", "Estable".
         ok: "bg-income-soft text-income-on-soft",
+        // Information, outside data: "Varios canales", "Muy pronto".
+        info: "bg-primary-soft text-primary-strong",
         // A white pill with a border: a movement's channel, a file's tags.
         tag: "h-5.5 border border-chart-axis bg-surface px-2 text-[11px] text-ink-secondary",
       },

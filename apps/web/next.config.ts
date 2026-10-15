@@ -13,6 +13,10 @@ if (existsSync(rootEnvFile)) process.loadEnvFile(rootEnvFile);
 const nextConfig: NextConfig = {
   // A link to a route that doesn't exist fails `check-types`.
   typedRoutes: true,
+  // In development, Next.js logs every server action with its arguments: a
+  // statement's content, or a name and an email from the waitlist. Logs
+  // never carry personal or financial data (system design §4).
+  logging: { serverFunctions: false },
   experimental: {
     serverActions: {
       // A statement's content goes up to 3.5 MB (MAX_UPLOAD_CONTENT_BYTES)

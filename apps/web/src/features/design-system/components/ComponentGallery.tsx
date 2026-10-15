@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { GallerySection } from "./GallerySection";
 
 // Sample figures from docs/ui: fictional, never real statement data.
@@ -101,8 +103,39 @@ function Badges() {
       <Badge variant="moved">Movido</Badge>
       <Badge variant="attention">Revisar</Badge>
       <Badge variant="ok">Verificado</Badge>
+      <Badge variant="info">Muy pronto</Badge>
       <Badge variant="tag">PSE</Badge>
       <Badge variant="tag">Extracto trimestral</Badge>
+    </div>
+  );
+}
+
+// The waitlist's fields (16.0b): a labeled box, its error in danger red, and
+// the checkbox, never checked by default.
+function Forms() {
+  return (
+    <div className="grid max-w-md gap-4">
+      <label className="grid gap-1.5">
+        <span className="text-caption font-bold">Correo</span>
+        <Input type="email" placeholder="tu@correo.com" />
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-caption font-bold">Correo</span>
+        <Input type="email" defaultValue="ana@" aria-invalid />
+        <span className="text-caption font-semibold text-danger">
+          Revisa tu correo: parece que le falta algo.
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-6 text-caption">
+        <label className="flex items-center gap-3">
+          <Checkbox />
+          Sin marcar
+        </label>
+        <label className="flex items-center gap-3">
+          <Checkbox defaultChecked />
+          Marcada
+        </label>
+      </div>
     </div>
   );
 }
@@ -152,6 +185,12 @@ export function ComponentGallery() {
       </GallerySection>
       <GallerySection title="Etiquetas">
         <Badges />
+      </GallerySection>
+      <GallerySection
+        title="Formularios"
+        description="Cada campo con su etiqueta; el error, en rojo debajo. La casilla nunca viene marcada."
+      >
+        <Forms />
       </GallerySection>
     </>
   );
