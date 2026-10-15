@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import { FileSpreadsheet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";

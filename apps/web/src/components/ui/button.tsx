@@ -1,6 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import type { ReactNode } from "react";
 
 // design-system.md §9, Buttons. Pills with at least 44px of touch target; the

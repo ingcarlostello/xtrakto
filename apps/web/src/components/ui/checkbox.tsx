@@ -1,7 +1,7 @@
 "use client";
 
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import { CheckIcon } from "lucide-react";
 
 // A 22px box (design-system.md §9): a faint-ink border, 3.7:1 on white, which

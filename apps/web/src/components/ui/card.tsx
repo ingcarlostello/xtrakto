@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import type { ComponentProps } from "react";
 
 // design-system.md §5 and §9. No borders: a translucent surface and a soft
