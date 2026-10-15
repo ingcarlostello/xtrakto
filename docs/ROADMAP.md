@@ -268,7 +268,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 16 — Portfolio polish** _(outline)_
 
 - [x] 16.0a Promo video _(pulled forward, before 5.7a)_
-- [ ] 16.0b Waitlist entries and join form _(pulled forward, before 5.7a)_
+- [x] 16.0b Waitlist entries and join form _(pulled forward, before 5.7a)_
 - [ ] 16.0c Waitlist landing page _(pulled forward, before 5.7a)_
 - [ ] 16.1 Landing page
 - [ ] 16.2 Final README with architecture and results

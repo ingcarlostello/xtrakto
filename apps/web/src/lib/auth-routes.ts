@@ -12,11 +12,19 @@ export const CLERK_WEBHOOK_ROUTE = "/api/webhooks/clerk";
 // mode the SDK verifies Inngest's signature on every request (5.1).
 export const INNGEST_ROUTE = "/api/inngest";
 
+// The waitlist and its "joined" page, for anyone, with their action: it adds
+// to the list and reads nothing back (16.0b, ADR 0021).
+export const WAITLIST_ROUTES = {
+  join: "/waitlist",
+  joined: "/waitlist/joined",
+} as const;
+
 const PUBLIC_PATH_PREFIXES = [
   AUTH_ROUTES.signIn,
   AUTH_ROUTES.signUp,
   CLERK_WEBHOOK_ROUTE,
   INNGEST_ROUTE,
+  WAITLIST_ROUTES.join,
 ];
 
 /**

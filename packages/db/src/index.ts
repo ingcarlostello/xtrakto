@@ -60,3 +60,7 @@ export {
   findOrCreateUser,
   findUserId,
 } from "./users/user.queries";
+export {
+  addWaitlistEntry,
+  type NewWaitlistEntry,
+} from "./waitlist-entries/waitlist-entry.queries";
