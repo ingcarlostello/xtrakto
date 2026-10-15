@@ -1,6 +1,6 @@
 import "server-only";
 import { createDb, type Database } from "@xtrakto/db";
-import { getServerEnv } from "./env";
+import { getDatabaseUrl } from "./env";
 
 let database: Database | undefined;
 
@@ -9,6 +9,6 @@ let database: Database | undefined;
  * instance, opened on first use, so builds and tests don't need it.
  */
 export const getDb = (): Database => {
-  database ??= createDb({ connectionString: getServerEnv().DATABASE_URL }).db;
+  database ??= createDb({ connectionString: getDatabaseUrl() }).db;
   return database;
 };

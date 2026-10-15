@@ -169,7 +169,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.6a Status polling
 - [x] 5.6b Upload result
 - [x] 5.6c Uploaded files and "Encadenado"
-- [ ] 5.7a Movements by day _(after 16.0a to 16.0c, pulled forward by the human)_
+- [ ] 5.7a Movements by day _(after 16.0a to 16.0d, pulled forward by the human)_
 - [ ] 5.7b Period selector and account switch
 - [ ] 5.7c Search and "No cuadra"
 - [ ] 5.8 Onboarding _(design v8)_
@@ -270,6 +270,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 16.0a Promo video _(pulled forward, before 5.7a)_
 - [x] 16.0b Waitlist entries and join form _(pulled forward, before 5.7a)_
 - [x] 16.0c Waitlist landing page _(pulled forward, before 5.7a)_
+- [x] 16.0d Waitlist-only deployment _(pulled forward, before 5.7a)_
 - [ ] 16.1 Landing page
 - [ ] 16.2 Final README with architecture and results
 - [ ] 16.3 [HUMAN] Technical write-up and demo video
@@ -1314,7 +1315,7 @@ Follows the `ml/` rules.
 
 ### Stage 16 — Portfolio polish _(outline)_
 
-Phases 16.0a to 16.0c were pulled forward by the human on 2026-10-15 and come before 5.7a: a promo video and a waitlist page, to gather the first people who will try the private beta and give feedback. The other stages keep their order.
+Phases 16.0a to 16.0d were pulled forward by the human on 2026-10-15 and come before 5.7a: a promo video and a waitlist page, published on its own, to gather the first people who will try the private beta and give feedback. The other stages keep their order.
 
 #### 16.0a Promo video
 
@@ -1353,6 +1354,20 @@ Phases 16.0a to 16.0c were pulled forward by the human on 2026-10-15 and come be
 **Done when:** the page matches the design at desktop and phone widths, the video plays without a session, and the page's metadata carries Open Graph.
 
 **Commit:** `feat(web): waitlist landing page`
+
+#### 16.0d Waitlist-only deployment
+
+Pulled forward by the human on 2026-10-15: only the waitlist goes public on xtrakto.site, before Stage 7 (ADR 0022). It takes from 7.1 the Vercel project, the domain and `docs/deployment.md`, and from 7.2 the production database; Clerk, Inngest, the webhook and the CI migrations job stay in 7.2.
+
+**Tasks**
+
+- `WAITLIST_ONLY=1`: the proxy sends every path but the waitlist's to it, without Clerk, and the server validates only `DATABASE_URL`.
+- Clerk out of the root layout, into the app's and sign-in's; `robots.txt` and a sitemap.
+- **Human-assisted:** the production database on Neon's `main` (application role, migrations), the Vercel project from `main` with `apps/web` as its root, xtrakto.site and www in Hostinger's DNS.
+
+**Done when:** `https://xtrakto.site` shows the waitlist without a session, any other path leads to it, someone can join, and the application role still can't read the list.
+
+**Commit:** `feat(web): waitlist-only deployment`
 
 #### Later phases
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseServerEnv } from "./env";
+import { parseServerEnv, parseWaitlistEnv } from "./env";
 
 // Invented values. The passwords and keys are marked so that a test can prove
 // they never reach the error message, which ends up in logs. The keys are put
@@ -208,5 +208,35 @@ describe("parseServerEnv", () => {
 
     expect(message).toContain("DATABASE_URL");
     expect(message).not.toContain("secret");
+  });
+});
+
+describe("parseWaitlistEnv", () => {
+  const VERIFIED_URL = `${HOSTED_URL}?sslmode=verify-full`;
+
+  it("needs only the database URL, without Clerk, Inngest or the hash key", () => {
+    expect(
+      parseWaitlistEnv({
+        DATABASE_URL: VERIFIED_URL,
+        NODE_ENV: "production",
+        VERCEL: "1",
+      }),
+    ).toEqual({ DATABASE_URL: VERIFIED_URL });
+  });
+
+  it("still refuses a hosted database without verify-full, without printing it", () => {
+    let message = "";
+    try {
+      parseWaitlistEnv({ DATABASE_URL: `${HOSTED_URL}?sslmode=require` });
+    } catch (error) {
+      message = error instanceof Error ? error.message : "";
+    }
+
+    expect(message).toContain("DATABASE_URL");
+    expect(message).not.toContain("secret");
+  });
+
+  it("refuses a deployment without a database URL", () => {
+    expect(() => parseWaitlistEnv({})).toThrow(/DATABASE_URL/);
   });
 });

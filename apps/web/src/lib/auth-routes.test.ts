@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath } from "./auth-routes";
+import { isPublicPath, isWaitlistPath } from "./auth-routes";
+
+describe("isWaitlistPath", () => {
+  it.each(["/waitlist", "/waitlist/joined"])(
+    "serves %s in a waitlist-only deployment",
+    (path) => {
+      expect(isWaitlistPath(path)).toBe(true);
+    },
+  );
+
+  it.each([
+    "/",
+    "/upload",
+    "/sign-in",
+    "/api/inngest",
+    "/api/webhooks/clerk",
+    "/waitlistx",
+    "/waitlist-admin",
+  ])("sends %s to the waitlist in a waitlist-only deployment", (path) => {
+    expect(isWaitlistPath(path)).toBe(false);
+  });
+});
 
 describe("isPublicPath", () => {
   it.each([
