@@ -40,7 +40,8 @@ If a rule conflicts with code clarity in a specific case, clarity wins. The exce
 ```text
 xtrakto/
 ├── apps/
-│   └── web/                 Next.js: routes, UI, server actions, Inngest functions
+│   ├── web/                 Next.js: routes, UI, server actions, Inngest functions
+│   └── video/               Remotion: the promo video, rendered locally
 ├── packages/
 │   ├── parsers/             Per-bank statement reading + ingestion agent
 │   ├── core/                Domain types, Zod schemas, money, dates, PII redaction
