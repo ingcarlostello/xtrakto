@@ -29,6 +29,10 @@ next-env.d.ts
 # Synthetic XLSX files generated for manual checks (`generate:xlsx`)
 **/fixtures/xlsx/
 
+# The promo video's music: its license (Pixabay) forbids redistributing the
+# track on its own, so only the rendered video is committed (ADR 0020)
+apps/video/public/audio/music/
+
 # ML data and artifacts (ml/)
 ml/data/
 ml/artifacts/

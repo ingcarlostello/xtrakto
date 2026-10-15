@@ -1,0 +1,33 @@
+{
+  "name": "video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio --port=3001",
+    "render": "pnpm render:landing && pnpm render:poster && pnpm render:vertical",
+    "render:landing": "remotion render Promo ../web/public/video/xtrakto-promo.mp4",
+    "render:poster": "remotion still Promo ../web/public/video/xtrakto-promo-poster.jpg --frame=520 --image-format=jpeg --jpeg-quality=90",
+    "render:vertical": "remotion render PromoVertical out/xtrakto-promo-vertical.mp4",
+    "generate:sfx": "node scripts/generate-sfx.mjs",
+    "lint": "eslint",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "@remotion/fonts": "4.0.535",
+    "@remotion/media": "4.0.535",
+    "@remotion/transitions": "4.0.535",
+    "lucide-react": "1.52.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.535"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@xtrakto/eslint-config": "workspace:*",
+    "@xtrakto/typescript-config": "workspace:*",
+    "eslint": "9.39.5",
+    "typescript": "6.0.3"
+  }
+}
