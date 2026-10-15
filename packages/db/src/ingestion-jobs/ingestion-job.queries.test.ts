@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { ExtractedContent } from "@xtrakto/core";
 import { eq, sql, TransactionRollbackError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -21,6 +22,7 @@ import {
   expireStaleIngestionJobs,
   failIngestionJob,
   finishIngestionJob,
+  listIngestionJobResults,
   lockIngestionJob,
   type NewIngestionJob,
   type SubmissionQuota,
@@ -370,6 +372,46 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
       status: "done",
       errorCode: null,
     });
+  });
+
+  it("lists the user's jobs asked for, with their statement's period, never their content", async () => {
+    const userId = await newUser();
+    const statementId = await insertStatement(owner.db, {
+      userId,
+      accountId: await insertAccount(owner.db, userId),
+    });
+    const queued = await insertJobId(userId, { extractedContent: CONTENT });
+    const late = await insertJobId(userId, {
+      status: "processing",
+      extractedContent: CONTENT,
+      createdAt: new Date(Date.now() - 3 * 60_000),
+    });
+    const done = await insertJobId(userId, {
+      status: "done",
+      statementId,
+      createdAt: new Date(Date.now() - 3 * 60_000),
+    });
+    const theirs = await insertJobId(await newUser());
+
+    const results = await withUserContext(app.db, userId, (ctx) =>
+      listIngestionJobResults(ctx, [queued, late, done, theirs, randomUUID()]),
+    );
+
+    const job = { formatId: null, isSlow: false, period: null };
+    expect(new Map(results.map(({ id, ...result }) => [id, result]))).toEqual(
+      new Map([
+        [queued, { ...job, status: "pending" }],
+        [late, { ...job, status: "processing", isSlow: true }],
+        [
+          done,
+          {
+            ...job,
+            status: "done",
+            period: { from: "2026-06-30", to: "2026-09-30" },
+          },
+        ],
+      ]),
+    );
   });
 
   describe("the daily cleanup", () => {

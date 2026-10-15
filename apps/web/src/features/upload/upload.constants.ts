@@ -1,5 +1,6 @@
-import { APP_ERROR_CODE } from "@xtrakto/core";
-import type { AccountType, AppError } from "@xtrakto/core";
+import { APP_ERROR_CODE, PERIOD_SOURCE } from "@xtrakto/core";
+import type { AccountType, AppError, PeriodSource } from "@xtrakto/core";
+import type { IngestionJobStatus } from "@xtrakto/db";
 import type { FormatId } from "@xtrakto/parsers";
 
 // Reading statement files in the browser before sending them. The Spanish copy
@@ -61,6 +62,28 @@ export const UPLOAD_STATUS = {
 /** A send that got no answer: the connection dropped, or the server failed. */
 export const NO_ANSWER = "no_answer";
 
+/** The search param that keeps the jobs sent, so a reload shows them again. */
+export const JOBS_PARAM = "jobs";
+
+/** Jobs the screen follows at most: the month's statements. */
+export const MAX_TRACKED_JOBS = 10;
+
+/** How often the screen asks how its jobs go. */
+export const POLL_INTERVAL_MS = 2_000;
+
+/** Asking stops after this long without any job changing, or 3 failures in a row. */
+export const POLL_FOR_MS = 10 * 60_000;
+export const MAX_POLL_FAILURES = 3;
+
+// The ingestion job's statuses, for the browser, which imports no values
+// from @xtrakto/db.
+export const JOB_STATUS = {
+  PENDING: "pending",
+  PROCESSING: "processing",
+  DONE: "done",
+  FAILED: "failed",
+} as const satisfies Record<Uppercase<IngestionJobStatus>, IngestionJobStatus>;
+
 /** Reasons of the problems found in the browser, next to the extraction's. */
 export const FILE_PROBLEM = {
   TYPE: "file_type",
@@ -74,6 +97,12 @@ export const FORMAT_LABELS = {
   "bancolombia-savings-quarterly": "Extracto trimestral",
   "bancolombia-movements-export": "Movimientos",
 } as const satisfies Record<FormatId, string>;
+
+// A statement's own period reads as months, a range of movements as days.
+export const FORMAT_PERIOD_SOURCE = {
+  "bancolombia-savings-quarterly": PERIOD_SOURCE.STATEMENT,
+  "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
+} as const satisfies Record<FormatId, PeriodSource>;
 
 export const BANK_LABELS = { bancolombia: "Bancolombia" } as const;
 
@@ -111,6 +140,16 @@ export const UPLOAD_COPY = {
   sending: "Subiendo…",
   sent: "Subido · en cola para procesar",
   retry: "Reintentar",
+  // Once sent, until 5.6b shows each result.
+  statement: "Extracto",
+  checking: "Consultando cómo va…",
+  processing: "Procesando…",
+  processed: "Procesado",
+  slow: "Está tardando más de lo normal; seguimos revisando.",
+  checkAgain: "Revisar de nuevo",
+  checkFailed:
+    "No pudimos consultar cómo van tus archivos. Revisa tu conexión.",
+  checkTimedOut: "Tus archivos siguen en proceso después de 10 minutos.",
   // The month's count, beside the title (docs/ui/v8-07).
   available: "disponibles",
   filesThisMonth: "Archivos este mes",
@@ -230,5 +269,10 @@ export const PROBLEM_COPY = {
   signedOut: {
     title: "Tu sesión terminó",
     detail: "Vuelve a iniciar sesión y súbelo de nuevo.",
+  },
+  // Processing it.
+  notProcessed: {
+    title: "No pudimos procesarlo",
+    detail: "Vuelve a subirlo. Lo que ya tenías sigue igual.",
   },
 } as const;

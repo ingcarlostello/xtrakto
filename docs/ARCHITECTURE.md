@@ -116,10 +116,10 @@ sequenceDiagram
     F->>F: fingerprints, HMAC references (categorize: Stage 6)
     F->>DB: save the statement, insert transactions ON CONFLICT DO NOTHING
     F->>DB: delete extracted_content, status done with counts
-    loop every 2 s until done
-        B->>S: getIngestionStatus(jobId)
-        S->>DB: read job status
-        S-->>B: steps and counts
+    loop every 2 s until every job ends
+        B->>S: getUploadStatuses(jobIds)
+        S->>DB: read the jobs' status, never their content
+        S-->>B: status, format, period, slow or not
     end
 ```
 
@@ -132,6 +132,7 @@ sequenceDiagram
 - **Versions of a period:** another version of a quarterly statement replaces one that doesn't reconcile; one that reconciles keeps later versions out. Movements exports have no versions.
 - **Authoritative parse:** the browser parse is only a preview; the server parses again from the same content.
 - **Payload size:** only the minimized rows or text items travel. The browser refuses a file whose content would pass 3.5 MB, and the action checks the same cap; it accepts bodies of up to 4 MB, under Vercel's 4.5 MB request limit.
+- **Status:** the upload screen asks about its open jobs every 2 seconds, in one call, until they end; it stops after 3 failures in a row or 10 minutes without a change, until the person asks again. The jobs' ids live in the URL's fragment (`#jobs=…`), so a reload shows them again; a search param would make Next.js mount the page anew after each refresh, losing the files on screen. A job open for more than 2 minutes, by the database's clock, is shown as late.
 - **Several files at once:** each file becomes its own job, so one unreadable file doesn't hold back the rest. The upload screen sends them one at a time, so the monthly limit stops the rest, and a send that gets no answer can be retried. Overlapping ranges deduplicate through the fingerprints, and the result says how many movements the user already had.
 
 ---

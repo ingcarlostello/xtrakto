@@ -1,6 +1,6 @@
 import { extractedContentSchema } from "@xtrakto/core";
 import { z } from "zod";
-import { ACCOUNT_KEY_PREFIX } from "./upload.constants";
+import { ACCOUNT_KEY_PREFIX, MAX_TRACKED_JOBS } from "./upload.constants";
 
 const { ACCOUNT, LAST4 } = ACCOUNT_KEY_PREFIX;
 
@@ -20,3 +20,6 @@ export const submitStatementSchema = z.strictObject({
   content: extractedContentSchema,
   account: accountChoiceSchema.optional(),
 });
+
+/** The jobs the upload screen asks about: its own, at most the month's. */
+export const jobIdsSchema = z.array(z.uuid()).min(1).max(MAX_TRACKED_JOBS);

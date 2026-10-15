@@ -5,6 +5,7 @@ import { CONTENT_TOO_LARGE } from "./upload.constants";
 import {
   getMonthlyUsage,
   listUploadAccounts,
+  listUploadJobs,
   queueStatement,
 } from "./upload.service";
 
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   countSlotsUsed: vi.fn(),
   createIngestionJobWithinLimit: vi.fn(),
   deletePendingIngestionJob: vi.fn(),
+  listIngestionJobResults: vi.fn(),
   withUserContext: vi.fn(),
   send: vi.fn(),
 }));
@@ -29,6 +31,7 @@ vi.mock("@xtrakto/db", () => ({
   countSlotsUsed: mocks.countSlotsUsed,
   createIngestionJobWithinLimit: mocks.createIngestionJobWithinLimit,
   deletePendingIngestionJob: mocks.deletePendingIngestionJob,
+  listIngestionJobResults: mocks.listIngestionJobResults,
   withUserContext: mocks.withUserContext,
 }));
 vi.mock("@/lib/db", () => ({ getDb: () => "db" }));
@@ -156,6 +159,48 @@ describe("getMonthlyUsage", () => {
     expect(await getMonthlyUsage("user_new")).toMatchObject({ used: 0 });
     expect(mocks.withUserContext).not.toHaveBeenCalled();
     expect(mocks.findOrCreateUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("listUploadJobs", () => {
+  const OTHER_JOB = "8e2f4d6b-3c5a-4f7b-9d0e-1f2a3b4c5d6e";
+  const period = { from: "2026-06-30", to: "2026-09-30" };
+
+  it("gives the user's jobs in the order asked, with only what the screen shows", async () => {
+    mocks.findUserId.mockResolvedValue(USER_ID);
+    mocks.listIngestionJobResults.mockResolvedValue([
+      { id: OTHER_JOB, status: "done", formatId: "f", isSlow: false, period },
+      {
+        id: JOB_ID,
+        status: "pending",
+        formatId: null,
+        isSlow: true,
+        period: null,
+      },
+    ]);
+
+    expect(await listUploadJobs("user_clerk", [JOB_ID, OTHER_JOB])).toEqual([
+      { jobId: JOB_ID, status: "pending", isSlow: true },
+      {
+        jobId: OTHER_JOB,
+        status: "done",
+        isSlow: false,
+        formatId: "f",
+        period,
+      },
+    ]);
+    expect(mocks.listIngestionJobResults).toHaveBeenCalledWith(
+      { tx: "tx", userId: USER_ID },
+      [JOB_ID, OTHER_JOB],
+    );
+  });
+
+  it("reads nothing for no jobs, or for someone who never sent a file", async () => {
+    mocks.findUserId.mockResolvedValue(undefined);
+
+    expect(await listUploadJobs("user_clerk", [])).toEqual([]);
+    expect(await listUploadJobs("user_new", [JOB_ID])).toEqual([]);
+    expect(mocks.withUserContext).not.toHaveBeenCalled();
   });
 });
 

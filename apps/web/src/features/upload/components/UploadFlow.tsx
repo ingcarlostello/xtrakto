@@ -10,8 +10,11 @@ import {
   countText,
   fileRowView,
   isLimitReached,
+  jobLabel,
+  jobView,
   limitText,
 } from "../upload-display.helpers";
+import type { PollingStop } from "../upload-jobs.helpers";
 import { batchPreviews } from "../upload-send.helpers";
 import {
   NO_ANSWER,
@@ -23,6 +26,7 @@ import type {
   StatementPreview,
   UploadAccount,
   UploadItem,
+  UploadJob,
 } from "../upload.types";
 import { AccountChoice } from "./AccountChoice";
 import { DropZone } from "./DropZone";
@@ -60,6 +64,8 @@ function SubmitFiles({ count, usage, isBusy, onSubmit }: SubmitFilesProps) {
 
 type QueuedFileProps = {
   item: UploadItem;
+  /** Once sent, how its job goes. */
+  job?: UploadJob;
   accounts: readonly UploadAccount[];
   batch: readonly StatementPreview[];
   isBusy: boolean;
@@ -70,6 +76,7 @@ type QueuedFileProps = {
 // no answer can be tried again.
 function QueuedFile({
   item,
+  job,
   accounts,
   batch,
   isBusy,
@@ -82,7 +89,7 @@ function QueuedFile({
   return (
     <FileRow
       name={item.file.name}
-      view={fileRowView(item)}
+      view={fileRowView(item, job)}
       isBusy={isBusy}
       onRemove={isOnItsWay ? undefined : () => actions.onRemove(item.id)}
       onRetry={canRetry ? () => actions.onRetry(item.id) : undefined}
@@ -103,6 +110,73 @@ function QueuedFile({
   );
 }
 
+type FileListProps = {
+  items: readonly UploadItem[];
+  /** Jobs of an earlier visit, which the URL kept: named by format and period. */
+  restored: readonly string[];
+  jobs: ReadonlyMap<string, UploadJob>;
+  accounts: readonly UploadAccount[];
+  isBusy: boolean;
+  actions: FileActions;
+};
+
+function FileList({ items, restored, jobs, ...rest }: FileListProps) {
+  if (items.length + restored.length === 0) return null;
+  const batch = batchPreviews(items);
+  return (
+    <ul aria-label={COPY.fileList} className="flex flex-col">
+      {items.map((item) => (
+        <QueuedFile
+          key={item.id}
+          item={item}
+          job={
+            item.status === UPLOAD_STATUS.SENT
+              ? jobs.get(item.jobId)
+              : undefined
+          }
+          batch={batch}
+          {...rest}
+        />
+      ))}
+      {restored.map((jobId) => {
+        const job = jobs.get(jobId);
+        return job ? (
+          <FileRow key={jobId} name={jobLabel(job)} view={jobView(job)} />
+        ) : (
+          <FileRow
+            key={jobId}
+            name={COPY.statement}
+            view={{ kind: "progress", text: COPY.checking }}
+          />
+        );
+      })}
+    </ul>
+  );
+}
+
+type StatusCheckProps = {
+  stopped?: PollingStop;
+  onCheckAgain: () => void;
+};
+
+// Announced when the screen stops asking how its jobs go.
+function StatusCheck({ stopped, onCheckAgain }: StatusCheckProps) {
+  return (
+    <div role="status">
+      {stopped && (
+        <div className="flex flex-wrap items-center gap-x-3">
+          <p className="text-caption text-ink-secondary">
+            {stopped === "failures" ? COPY.checkFailed : COPY.checkTimedOut}
+          </p>
+          <Button variant="link" onClick={onCheckAgain}>
+            {COPY.checkAgain}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type UploadFlowProps = {
   /** The user's accounts, where a movements export can go. */
   accounts: readonly UploadAccount[];
@@ -113,9 +187,9 @@ type UploadFlowProps = {
 };
 
 export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
-  const { items, addFiles, files, isBusy, picker, actions, sendAll } =
+  const { items, restored, statuses, files, isBusy, ...flow } =
     useUploadFlow(accounts);
-  const batch = batchPreviews(items);
+  const { picker, addFiles, actions, sendAll } = flow;
   return (
     <Card variant="card">
       <CardHeader>
@@ -125,20 +199,14 @@ export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
         <CardDescription>{COPY.chooseDescription}</CardDescription>
       </CardHeader>
       <DropZone ref={picker} onFiles={addFiles} />
-      {items.length > 0 && (
-        <ul aria-label={COPY.fileList} className="flex flex-col">
-          {items.map((item) => (
-            <QueuedFile
-              key={item.id}
-              item={item}
-              accounts={accounts}
-              batch={batch}
-              isBusy={isBusy}
-              actions={actions}
-            />
-          ))}
-        </ul>
-      )}
+      <FileList
+        {...{ items, restored, accounts, isBusy, actions }}
+        jobs={statuses.jobs}
+      />
+      <StatusCheck
+        stopped={statuses.stopped}
+        onCheckAgain={statuses.checkAgain}
+      />
       {(files.length > 0 || isBusy) && (
         <SubmitFiles
           count={files.length}

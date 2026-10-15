@@ -13,18 +13,25 @@ function RowBody({ view }: { view: FileRowView }) {
     case "ready":
       return (
         <>
-          <div className="flex flex-wrap gap-1.5">
-            {view.tags.map((tag) => (
-              <Badge key={tag} variant="tag">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-caption text-ink-muted">{view.count}</p>
+          {view.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {view.tags.map((tag) => (
+                <Badge key={tag} variant="tag">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {view.count && (
+            <p className="text-caption text-ink-muted">{view.count}</p>
+          )}
           {view.note && (
             <p className="text-caption font-semibold text-ink-secondary">
               {view.note}
             </p>
+          )}
+          {view.notice && (
+            <p className="text-caption text-ink-muted">{view.notice}</p>
           )}
         </>
       );
