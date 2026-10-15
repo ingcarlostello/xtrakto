@@ -166,7 +166,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.5a Persistence rules for ingestion
 - [x] 5.5b Ingestion function
 - [x] 5.5c Daily cleanup of stale jobs
-- [ ] 5.6a Status polling
+- [x] 5.6a Status polling
 - [ ] 5.6b Upload result
 - [ ] 5.6c Uploaded files and "Encadenado"
 - [ ] 5.7a Movements by day
@@ -953,7 +953,7 @@ Phase 5.6 was split in three, with the human's approval.
 
 **Tasks**
 
-- Poll the jobs every 2 seconds with one batched server action until they end; results survive a reload (job ids in the URL).
+- Poll the jobs every 2 seconds with one batched server action until they end; results survive a reload (job ids in the URL's fragment).
 - A notice when a job takes longer than usual.
 
 **Done when:** results appear without reloading and survive a reload.

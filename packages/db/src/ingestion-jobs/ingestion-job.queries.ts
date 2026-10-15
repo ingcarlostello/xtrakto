@@ -1,10 +1,21 @@
-import { type ExtractedContent, err, ok, type Result } from "@xtrakto/core";
+import {
+  type ExtractedContent,
+  err,
+  ok,
+  type Period,
+  type Result,
+} from "@xtrakto/core";
 import { and, count, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 import type { Database, DbTransaction } from "../client/db-client.types";
+import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 import { INGESTION_JOB_STATUS } from "./ingestion-job.constants";
 import { ingestionJobs } from "./ingestion-job.schemas";
-import type { IngestionJobError, IngestionStats } from "./ingestion-job.types";
+import type {
+  IngestionJobError,
+  IngestionJobStatus,
+  IngestionStats,
+} from "./ingestion-job.types";
 
 const { PENDING, PROCESSING, DONE, FAILED } = INGESTION_JOB_STATUS;
 // A job is open while the ingestion function hasn't finished it.
@@ -26,6 +37,17 @@ export type OpenIngestionJob = {
   readonly accountId: string | null;
   readonly accountLast4: string | null;
   readonly extractedContent: ExtractedContent;
+};
+
+/** A job as the upload screen follows it: never its content. */
+export type IngestionJobResult = {
+  readonly id: string;
+  readonly status: IngestionJobStatus;
+  readonly formatId: string | null;
+  /** Open for longer than an ingestion usually takes. */
+  readonly isSlow: boolean;
+  /** The period of the statement it saved, once done. */
+  readonly period: Period | null;
 };
 
 /** How many statements a user may submit in a month, and that month's bounds. */
@@ -52,6 +74,10 @@ const lockForUser = async (
     sql`select pg_advisory_xact_lock(${lock}, hashtext(${userId}))`,
   );
 };
+
+// An ingestion takes seconds; open after two minutes, a job is late. Measured
+// with the database's clock, the one that stamped the job.
+const SLOW_AFTER = sql`interval '2 minutes'`;
 
 // The context user's job with that id.
 const ownJob = ({ userId }: UserContext, jobId: string) =>
@@ -209,4 +235,43 @@ export const expireStaleIngestionJobs = async (
     sql`select public.expire_stale_ingestion_jobs() as expired`,
   );
   return rows[0]?.expired ?? 0;
+};
+
+/**
+ * The context user's jobs among `jobIds`, as the upload screen follows them;
+ * never their content. Other users' jobs, and jobs that are gone, are left
+ * out.
+ */
+export const listIngestionJobResults = async (
+  { tx, userId }: UserContext,
+  jobIds: readonly string[],
+): Promise<IngestionJobResult[]> => {
+  if (jobIds.length === 0) return [];
+  const rows = await tx
+    .select({
+      id: ingestionJobs.id,
+      status: ingestionJobs.status,
+      formatId: ingestionJobs.formatId,
+      isSlow: sql<boolean>`${inArray(ingestionJobs.status, OPEN)} and ${ingestionJobs.createdAt} < now() - ${SLOW_AFTER}`,
+      from: statements.periodFrom,
+      to: statements.periodTo,
+    })
+    .from(ingestionJobs)
+    .leftJoin(
+      statements,
+      and(
+        eq(statements.id, ingestionJobs.statementId),
+        eq(statements.userId, ingestionJobs.userId),
+      ),
+    )
+    .where(
+      and(
+        eq(ingestionJobs.userId, userId),
+        inArray(ingestionJobs.id, [...jobIds]),
+      ),
+    );
+  return rows.map(({ from, to, ...job }) => ({
+    ...job,
+    period: from && to ? { from, to } : null,
+  }));
 };

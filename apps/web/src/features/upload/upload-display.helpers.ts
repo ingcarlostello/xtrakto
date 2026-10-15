@@ -5,12 +5,14 @@ import {
   formatMonthRange,
   PERIOD_SOURCE,
 } from "@xtrakto/core";
-import type { AppError } from "@xtrakto/core";
+import type { AppError, Period, PeriodSource } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import {
   BANK_LABELS,
   FILE_PROBLEM,
   FORMAT_LABELS,
+  FORMAT_PERIOD_SOURCE,
+  JOB_STATUS,
   NO_ANSWER,
   PROBLEM_COPY,
   UPLOAD_COPY as COPY,
@@ -22,6 +24,7 @@ import type {
   SendProblem,
   StatementPreview,
   UploadItem,
+  UploadJob,
 } from "./upload.types";
 
 type Labels = Readonly<Partial<Record<string, string>>>;
@@ -34,9 +37,11 @@ export type FileRowView =
   | {
       readonly kind: "ready";
       readonly tags: readonly string[];
-      readonly count: string;
-      /** Once "Subir" is pressed: going up, or gone up. */
+      readonly count?: string;
+      /** Once "Subir" is pressed: going up, gone up, then how its job goes. */
       readonly note?: string;
+      /** When its job takes longer than usual. */
+      readonly notice?: string;
     }
   | ({ readonly kind: "problem" } & ProblemText);
 
@@ -49,15 +54,34 @@ export const countText = (count: number, noun: Noun): string =>
 // An id without a label is shown as it is: no parser returns one today.
 const labelOf = (labels: Labels, id: string): string => labels[id] ?? id;
 
+const periodText = (period: Period, source: PeriodSource): string =>
+  source === PERIOD_SOURCE.STATEMENT
+    ? formatMonthRange(period)
+    : formatDayRange(period);
+
 /** The tags of a file read in the browser: bank, format, file type, period. */
 export const previewTags = (preview: StatementPreview): readonly string[] => [
   labelOf(BANK_LABELS, preview.bankId),
   labelOf(FORMAT_LABELS, preview.formatId),
   COPY.excel,
-  preview.periodSource === PERIOD_SOURCE.STATEMENT
-    ? formatMonthRange(preview.period)
-    : formatDayRange(preview.period),
+  periodText(preview.period, preview.periodSource),
 ];
+
+// Any other format's period reads as days, as a range of movements does.
+const PERIOD_SOURCES: Readonly<Partial<Record<string, PeriodSource>>> =
+  FORMAT_PERIOD_SOURCE;
+
+/**
+ * What names a job the page didn't read, after a reload: its format and, once
+ * saved, its period. A file's name never leaves the browser.
+ */
+export const jobLabel = ({ formatId, period }: UploadJob): string => {
+  if (formatId === undefined) return COPY.statement;
+  const format = labelOf(FORMAT_LABELS, formatId);
+  if (period === undefined) return format;
+  const source = PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS;
+  return `${format} ${periodText(period, source)}`;
+};
 
 // A quarterly statement names its account; a movements export gets its
 // account below, from the destination.
@@ -117,7 +141,27 @@ const previewView = (preview: StatementPreview, note?: string) =>
     note,
   }) as const;
 
-export const fileRowView = (item: UploadItem): FileRowView => {
+const jobNote = (job: UploadJob | undefined): string => {
+  if (job?.status === JOB_STATUS.PROCESSING) return COPY.processing;
+  if (job?.status === JOB_STATUS.DONE) return COPY.processed;
+  return COPY.sent;
+};
+
+/** A sent file's row as its job goes, under its preview when the page read it. */
+export const jobView = (
+  job: UploadJob | undefined,
+  preview?: StatementPreview,
+): FileRowView => {
+  if (job?.status === JOB_STATUS.FAILED)
+    return { kind: "problem", ...PROBLEM_COPY.notProcessed };
+  return {
+    ...(preview ? previewView(preview) : { kind: "ready", tags: [] }),
+    note: jobNote(job),
+    notice: job?.isSlow ? COPY.slow : undefined,
+  };
+};
+
+export const fileRowView = (item: UploadItem, job?: UploadJob): FileRowView => {
   switch (item.status) {
     case UPLOAD_STATUS.WAITING:
       return { kind: "progress", text: COPY.waiting };
@@ -130,7 +174,7 @@ export const fileRowView = (item: UploadItem): FileRowView => {
     case UPLOAD_STATUS.SENDING:
       return previewView(item.statement.preview, COPY.sending);
     case UPLOAD_STATUS.SENT:
-      return previewView(item.preview, COPY.sent);
+      return jobView(job, item.preview);
     case UPLOAD_STATUS.FAILED:
       return { kind: "problem", ...problemText(item.error) };
   }

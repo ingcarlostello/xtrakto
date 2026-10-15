@@ -7,7 +7,7 @@ import type {
   PeriodSource,
   Result,
 } from "@xtrakto/core";
-import type { AccountRow } from "@xtrakto/db";
+import type { AccountRow, IngestionJobStatus } from "@xtrakto/db";
 import type { z } from "zod";
 import type {
   EXTRACTION_STAGE,
@@ -130,3 +130,19 @@ export type UploadItem = {
   readonly id: string;
   readonly file: File;
 } & UploadState;
+
+/** A job as the upload screen follows it: never its content. */
+export type UploadJob = {
+  readonly jobId: string;
+  readonly status: IngestionJobStatus;
+  readonly formatId?: string;
+  /** Open for longer than an ingestion usually takes. */
+  readonly isSlow: boolean;
+  /** The period of the statement it saved, once done. */
+  readonly period?: Period;
+};
+
+/** The server action that reports how some jobs go, or a stand-in in tests. */
+export type GetUploadStatuses = (
+  jobIds: readonly string[],
+) => Promise<Result<readonly UploadJob[]>>;

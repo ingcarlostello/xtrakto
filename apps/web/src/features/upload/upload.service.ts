@@ -16,7 +16,9 @@ import {
   deletePendingIngestionJob,
   findOrCreateUser,
   findUserId,
+  type IngestionJobResult,
   listAccounts,
+  listIngestionJobResults,
   type UserContext,
   type UserId,
   withUserContext,
@@ -37,6 +39,7 @@ import type {
   SubmitStatementRequest,
   SubmittedStatement,
   UploadAccount,
+  UploadJob,
 } from "./upload.types";
 
 // The calendar month in Bogotá the limit counts, and the day it renews.
@@ -166,4 +169,38 @@ export const queueStatement = async (
   if (!job.ok) return job;
   await announceJob(db, userId, job.value);
   return ok({ jobId: job.value });
+};
+
+// Only what the screen shows of a job (system design §4).
+const uploadJob = (job: IngestionJobResult): UploadJob => ({
+  jobId: job.id,
+  status: job.status,
+  isSlow: job.isSlow,
+  ...(job.formatId === null ? {} : { formatId: job.formatId }),
+  ...(job.period === null ? {} : { period: job.period }),
+});
+
+/**
+ * The signed-in user's jobs among `jobIds`, in that order, as the upload
+ * screen follows them: never their content. Other users' jobs, and jobs that
+ * are gone, are left out; reading never creates the user's row.
+ */
+export const listUploadJobs = async (
+  clerkUserId: string,
+  jobIds: readonly string[],
+): Promise<readonly UploadJob[]> => {
+  if (jobIds.length === 0) return [];
+  const jobs = await withSanitizedErrors("JOBS_NOT_READ", async () => {
+    const db = getDb();
+    const userId = await findUserId(db, clerkUserId);
+    if (!userId) return [];
+    return withUserContext(db, userId, (ctx) =>
+      listIngestionJobResults(ctx, jobIds),
+    );
+  });
+  const byId = new Map(jobs.map((job) => [job.id, job]));
+  return jobIds.flatMap((id) => {
+    const job = byId.get(id);
+    return job ? [uploadJob(job)] : [];
+  });
 };

@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 import {
   countText,
   fileRowView,
+  jobLabel,
+  jobView,
   limitText,
   previewTags,
   problemText,
@@ -24,6 +26,7 @@ import type {
   ExtractedStatement,
   SendProblem,
   UploadItem,
+  UploadJob,
 } from "./upload.types";
 
 describe("previewTags", () => {
@@ -122,6 +125,96 @@ describe("fileRowView", () => {
       kind: "problem",
       ...expected,
     });
+  });
+});
+
+describe("a sent file's job", () => {
+  const preview = {
+    bankId: "bancolombia",
+    formatId: "bancolombia-movements-export",
+    accountType: "savings",
+    period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-15" }),
+    periodSource: PERIOD_SOURCE.ROWS,
+    movementCount: 48,
+  } as const;
+  const sent: UploadItem = {
+    id: "1",
+    file: new File([], "movimientos.xlsx"),
+    status: UPLOAD_STATUS.SENT,
+    preview,
+    jobId: "job",
+  };
+  const job = (status: UploadJob["status"], isSlow = false): UploadJob => ({
+    jobId: "job",
+    status,
+    isSlow,
+    formatId: preview.formatId,
+  });
+
+  it.each<[string, UploadJob | undefined, string]>([
+    ["not asked about yet", undefined, UPLOAD_COPY.sent],
+    ["pending", job("pending"), UPLOAD_COPY.sent],
+    ["processing", job("processing"), UPLOAD_COPY.processing],
+    ["done", job("done"), UPLOAD_COPY.processed],
+  ])(
+    "keeps the file's tags and says when its job is %s",
+    (_case, job, note) => {
+      expect(fileRowView(sent, job)).toEqual({
+        kind: "ready",
+        tags: ["Bancolombia", "Movimientos", "Excel", "1–15 ago 2026"],
+        count: "48 movimientos",
+        note,
+        notice: undefined,
+      });
+    },
+  );
+
+  it("says when its job takes longer than usual", () => {
+    expect(fileRowView(sent, job("pending", true))).toMatchObject({
+      note: UPLOAD_COPY.sent,
+      notice: UPLOAD_COPY.slow,
+    });
+  });
+
+  it("explains a job that failed, on the attention surface", () => {
+    expect(fileRowView(sent, job("failed"))).toEqual({
+      kind: "problem",
+      ...PROBLEM_COPY.notProcessed,
+    });
+  });
+
+  it("shows a job of an earlier visit without the file it came from", () => {
+    expect(jobView(job("processing"))).toEqual({
+      kind: "ready",
+      tags: [],
+      note: UPLOAD_COPY.processing,
+      notice: undefined,
+    });
+  });
+
+  it.each<[string, UploadJob, string]>([
+    ["a format alone while pending", job("pending"), "Movimientos"],
+    [
+      "a range of movements by its days",
+      { ...job("done"), period: preview.period },
+      "Movimientos 1–15 ago 2026",
+    ],
+    [
+      "a quarterly statement by its months",
+      {
+        ...job("done"),
+        formatId: "bancolombia-savings-quarterly",
+        period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+      },
+      "Extracto trimestral jul–sep 2026",
+    ],
+    [
+      "a job without a format",
+      { jobId: "job", status: "pending", isSlow: false },
+      "Extracto",
+    ],
+  ])("names %s", (_case, job, label) => {
+    expect(jobLabel(job)).toBe(label);
   });
 });
 

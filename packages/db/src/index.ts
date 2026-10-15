@@ -28,6 +28,8 @@ export {
   expireStaleIngestionJobs,
   failIngestionJob,
   finishIngestionJob,
+  type IngestionJobResult,
+  listIngestionJobResults,
   lockIngestionJob,
   type NewIngestionJob,
   type OpenIngestionJob,
