@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import { useId } from "react";
 
 // The "cinta plegada" mark on its 64 × 64 grid (docs/brand.md §3). The colors

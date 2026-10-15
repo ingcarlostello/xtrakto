@@ -158,6 +158,8 @@ Both come from Google Fonts, as variable files kept in `apps/web/src/fonts/` (La
 | Style                           | Family  | Weight           | Size / line height | Notes                      |
 | ------------------------------- | ------- | ---------------- | ------------------ | -------------------------- |
 | Page title (H1)                 | Outfit  | 500              | 34 / 1.15          | letter-spacing `-0.01em`   |
+| Landing headline (waitlist)     | Outfit  | 600              | 46 / 1.08          | 34 on phones; `-0.02em`    |
+| Landing section (waitlist)      | Outfit  | 600              | 28 / 1.2           | centered                   |
 | Amount XL (stat cards, balance) | Outfit  | 500              | 34 / 1.1           | letter-spacing `-0.01em`   |
 | Amount L (tiles)                | Outfit  | 500              | 24 / 1.2           |                            |
 | Amount M (chat answer)          | Outfit  | 500              | 22 / 1.2           |                            |
@@ -528,6 +530,17 @@ As the waitlist design draws it (`Input`): `--surface`, a 1px `--chart-axis` bor
 
 22px, radius 6px, a 1.5px `--text-faint` border on `--surface` (3.7:1, enough for a control's edge), and `--primary` with a white check when on (`Checkbox`, Base UI). Never checked by default. A long label wraps it, so the text toggles it too.
 
+### Waitlist page
+
+The landing of the human's design, `/waitlist`, max width 1120px:
+
+- **Header:** the logo, which links nowhere, and a Secondary small "Unirme a la lista" ("Unirme" on phones) that leads to the form's card (`#lista`).
+- **Hero:** the `info` badge "Para extractos de Bancolombia · Muy pronto", the Landing headline with "gastaste" in `--spending` text and "moviste" in `--moved` text (their kinds' colors, with their words), and the pitch in Body `--text-secondary` (18px from `sm`).
+- **"Tu trimestre, de un vistazo":** a tile with "Ejemplo con datos ficticios" (Meta `--text-muted`), a 12px bar of what went out (real spending, then moved, `role="img"` with its reading), and three figures (Entró, Gasto real, Solo movido) in their kinds' text colors, the label in Meta 700 and the amount in Amount L.
+- **"Míralo en un minuto":** the promo video, 16:9, at most 640px wide, `--radius-lg`, `--shadow-panel`; its poster until a 64px `--primary` circle with a play icon is pressed (nothing downloads before), then the browser's controls, with the focus on the video and a description for screen readers. Never plays on its own.
+- **"Lo que vas a poder hacer":** three cards (`--surface`), each with a small visual (the kinds' three dots, the raw-text chip, the privacy chip), a title in Outfit 600 22px and its line in Body `--text-secondary`.
+- From `lg`, the form's card sits beside the hero and its example; on phones, one column: hero, form, example, video, benefits.
+
 ### Waitlist form
 
 The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box, the consent in Caption `--text-secondary`, and the deletion line in `--text-muted`. Until the box is checked, the full-width primary button is grey (`--chart-axis`, `--text-secondary`, no shadow), focusable, with "Marca la casilla para poder enviar." below it in Caption `--text-muted` as its description. A failure sits on the attention surface with its dot, saying what to do. "Ya estás en la lista" is a centered card with an 80px `--income-soft` circle and its check, then the deletion line below it.
@@ -718,7 +731,7 @@ const manrope = localFont({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
-Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`), `Badge` (one variant per kind, plus `neutral`, `attention`, `tag`, `ok` for verified states and `info`), `Input` and `Checkbox`. The development page `/design-system` shows every token and component.
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`), `Badge` (one variant per kind, plus `neutral`, `attention`, `tag`, `ok` for verified states and `info`), `Input` and `Checkbox`. Classes are merged with `cn` from `@/utils/cn.utils` (the shadcn CLI writes that import): it knows the text sizes of this section, and a new `--text-*` token joins its list, or `cn` drops it whenever a text color follows (a test checks they match). The development page `/design-system` shows every token and component.
 
 v8 needs no new color tokens: the grey status dot is `ink-faint`, and the coverage timeline uses `income`, `moved`, `ink-faint`, `chart-axis` and `ring-track`. Each v8 component (§9) is built with its first consumer: `Button` gains the white destructive variant and `Badge` the status badges of §9 then, and the development page shows them.
 

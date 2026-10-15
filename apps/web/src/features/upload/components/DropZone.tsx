@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import { FileText, Upload } from "lucide-react";
 import { useRef } from "react";
 import type { ChangeEvent, Ref } from "react";

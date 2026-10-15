@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import { Check, CircleCheck, FileSpreadsheet } from "lucide-react";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";

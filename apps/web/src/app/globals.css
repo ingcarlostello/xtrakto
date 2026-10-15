@@ -57,6 +57,12 @@
   --text-title: 34px;
   --text-title--line-height: 1.15;
   --text-title--letter-spacing: -0.01em;
+  /* The waitlist page's headline and section titles, larger than the app's */
+  --text-landing: 46px;
+  --text-landing--line-height: 1.08;
+  --text-landing--letter-spacing: -0.02em;
+  --text-landing-section: 28px;
+  --text-landing-section--line-height: 1.2;
   --text-amount-xl: 34px;
   --text-amount-xl--line-height: 1.1;
   --text-amount-xl--letter-spacing: -0.01em;

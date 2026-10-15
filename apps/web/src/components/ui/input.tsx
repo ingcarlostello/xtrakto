@@ -1,5 +1,5 @@
 import { Input as InputPrimitive } from "@base-ui/react/input";
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 import type * as React from "react";
 
 // A text field as the waitlist design draws it (design-system.md §9): a

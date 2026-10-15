@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/utils/cn.utils";
 
 // design-system.md §3.5 and §9: the status dot, with its halo. The words say
 // the status; the dot only repeats it.

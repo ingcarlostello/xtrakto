@@ -15,10 +15,11 @@ export default clerkMiddleware(
 );
 
 // Clerk's recommended matcher: every route except Next.js internals and
-// static files, plus API routes and Clerk's own endpoints.
+// static files, plus API routes and Clerk's own endpoints. MP4 joins the
+// static files, so the waitlist's video plays without a session (16.0c).
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|mp4)).*)",
     "/(api|trpc)(.*)",
     "/__clerk/:path*",
   ],
