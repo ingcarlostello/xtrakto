@@ -1,5 +1,5 @@
 // Writes real files from the synthetic fixtures into fixtures/xlsx/, which git
-// ignores, for manual checks of the upload screens: every fixture as XLSX, two
+// ignores, for manual checks of the upload screens: every fixture as XLSX,
 // quarterly statements under other account numbers (so they don't land on the
 // seeded account), files the app must reject, and one of about 10 MB. Invented
 // data only. Run with `pnpm --filter @xtrakto/parsers generate:xlsx`.
@@ -146,6 +146,12 @@ const accountVariants = () => [
   writeOutput(
     "quarterly-basic-account-2.xlsx",
     contentToXlsx(withAccount(readFixture("quarterly-basic"), "98765432109")),
+  ),
+  writeOutput(
+    "quarterly-previous-account-2.xlsx",
+    contentToXlsx(
+      withAccount(readFixture("quarterly-previous"), "98765432109"),
+    ),
   ),
   writeOutput(
     "quarterly-broken-balance-account-3.xlsx",

@@ -12,6 +12,7 @@ import {
   type DbClient,
   findOrCreateUser,
   listAccounts,
+  listIngestionJobResults,
   type NewIngestionJob,
   resolveIdentifiedAccount,
   saveStatement,
@@ -85,6 +86,7 @@ const withoutEndMarker = (content: ExtractedContent): ExtractedContent =>
     : content;
 
 const QUARTERLY = fixture("quarterly-basic");
+const PREVIOUS_QUARTERLY = fixture("quarterly-previous");
 const BROKEN_QUARTERLY = fixture("quarterly-broken-balance");
 const JULY_EXPORT = fixture("movements-overlap");
 const OCTOBER_EXPORT = fixture("movements-basic");
@@ -240,6 +242,44 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
       stats: { ...allNew(QUARTERLY_MOVEMENTS), replaced: 1 },
     });
   });
+
+  it.each([
+    {
+      order: "the previous quarter first",
+      files: [PREVIOUS_QUARTERLY, QUARTERLY],
+    },
+    {
+      order: "the previous quarter last",
+      files: [QUARTERLY, PREVIOUS_QUARTERLY],
+    },
+  ])(
+    "chains a quarter to the one before it, uploading $order",
+    async ({ files: [first, second] }) => {
+      const userId = await newUser();
+      const firstJob = await submit(userId, first ?? QUARTERLY);
+      await run(firstJob);
+      const secondJob = await submit(userId, second ?? QUARTERLY);
+      await run(secondJob);
+
+      const results = await withUserContext(app.db, userId, (ctx) =>
+        listIngestionJobResults(ctx, [firstJob.jobId, secondJob.jobId]),
+      );
+
+      expect(
+        new Map(
+          results.map(({ statement }) => [
+            statement?.period.from,
+            statement?.chainedTo,
+          ]),
+        ),
+      ).toEqual(
+        new Map([
+          ["2026-06-30", { from: "2026-03-31", to: "2026-06-30" }],
+          ["2026-03-31", null],
+        ]),
+      );
+    },
+  );
 
   it("gives an export a new account when the user has none", async () => {
     const userId = await newUser();

@@ -108,6 +108,23 @@ export const BASIC_MOVEMENTS = [
   ["2026-09-30", INTEREST, 520],
 ];
 
+// The quarter before BASIC_MOVEMENTS. generate-fixtures.mjs ends it on the
+// balance quarterly-basic opens with, so the two statements are chained.
+export const PREVIOUS_MOVEMENTS = [
+  ["2026-04-01", INTEREST, 241],
+  ["2026-04-10", "PAGO INTERBANC EMPRESA EJEMPLO", 320_000_000],
+  ["2026-04-11", "PAGO SUC VIRT TC VISA PESOS", -180_000_000],
+  ["2026-04-15", "IMPTO GOBIERNO 4X1000", -720_000],
+  ["2026-05-10", "PAGO INTERBANC EMPRESA EJEMPLO", 320_000_000],
+  ["2026-05-12", "PAGO PSE EMPRESA DE ENERGIA", -17_250_000],
+  ["2026-05-20", "APERTURA INV VIRTUAL SVP", -400_000_000],
+  ["2026-05-31", INTEREST, 268],
+  ["2026-06-10", "PAGO INTERBANC EMPRESA EJEMPLO", 320_000_000],
+  ["2026-06-11", "PAGO SUC VIRT TC VISA PESOS", -150_000_000],
+  ["2026-06-18", "COMPRA EN  MERCADO XYZ", -21_480_000],
+  ["2026-06-30", INTEREST, 275],
+];
+
 // From the period's first day, the last of 2026, into 2027.
 export const ROLLOVER_MOVEMENTS = [
   ["2026-12-31", INTEREST, 98],

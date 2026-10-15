@@ -12,6 +12,7 @@ import {
   INTEREST,
   LARGE_TEMPLATES,
   OCTOBER_MOVEMENTS,
+  PREVIOUS_MOVEMENTS,
   ROLLOVER_MOVEMENTS,
 } from "./fixture-data.mjs";
 
@@ -239,6 +240,13 @@ const basic = {
 };
 const fixtures = {
   "quarterly-basic": quarterlyStatement(basic),
+  // Closes on the balance quarterly-basic opens with: the two are chained.
+  "quarterly-previous": quarterlyStatement({
+    period: { from: "2026-03-31", to: "2026-06-30" },
+    opening:
+      basic.opening - sum(PREVIOUS_MOVEMENTS.map(([, , amount]) => amount)),
+    movements: PREVIOUS_MOVEMENTS,
+  }),
   "quarterly-year-rollover": quarterlyStatement({
     period: { from: "2026-12-31", to: "2027-03-31" },
     opening: 120_000_000,

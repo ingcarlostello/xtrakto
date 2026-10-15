@@ -20,6 +20,7 @@ import {
   type IngestionStats,
   listAccounts,
   listIngestionJobResults,
+  listRecentIngestionJobs,
   type UserContext,
   type UserId,
   withUserContext,
@@ -43,6 +44,7 @@ import type {
   UploadAccount,
   UploadJob,
 } from "./upload.types";
+import { MAX_LISTED_FILES } from "./uploaded-files.constants";
 
 // The calendar month in Bogotá the limit counts, and the day it renews.
 const currentMonth = () => {
@@ -196,6 +198,9 @@ const outcomeOf = ({
         ...(statement.differenceMinor === null
           ? {}
           : { differenceMinor: statement.differenceMinor }),
+        ...(statement.chainedTo === null
+          ? {}
+          : { chainedTo: statement.chainedTo }),
       };
 
 const uploadJob = (job: IngestionJobResult): UploadJob => {
@@ -233,4 +238,22 @@ export const listUploadJobs = async (
     const job = byId.get(id);
     return job ? [uploadJob(job)] : [];
   });
+};
+
+/**
+ * The signed-in user's latest files sent, newest first, each with what its
+ * job came to: never their content. Reading never creates the user's row.
+ */
+export const listUploadedFiles = async (
+  clerkUserId: string,
+): Promise<readonly UploadJob[]> => {
+  const jobs = await withSanitizedErrors("FILES_NOT_READ", async () => {
+    const db = getDb();
+    const userId = await findUserId(db, clerkUserId);
+    if (!userId) return [];
+    return withUserContext(db, userId, (ctx) =>
+      listRecentIngestionJobs(ctx, MAX_LISTED_FILES),
+    );
+  });
+  return jobs.map(uploadJob);
 };

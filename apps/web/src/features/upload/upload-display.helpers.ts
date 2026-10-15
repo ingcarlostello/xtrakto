@@ -73,10 +73,6 @@ export const previewTags = (preview: StatementPreview): readonly string[] => [
 const PERIOD_SOURCES: Readonly<Partial<Record<string, PeriodSource>>> =
   FORMAT_PERIOD_SOURCE;
 
-/**
- * What names a job the page didn't read, after a reload: its format and, once
- * saved, its period. A file's name never leaves the browser.
- */
 /** What the server recognized in a job's file: bank, format and period. */
 export const recognizedText = (formatId: string, period: Period): string => {
   const banks: Labels = FORMAT_BANKS;
@@ -88,6 +84,10 @@ export const recognizedText = (formatId: string, period: Period): string => {
   ].join(" · ");
 };
 
+/**
+ * What names a job the page didn't read: its format and, once saved, its
+ * period. A file's name never leaves the browser.
+ */
 export const jobLabel = ({ formatId, outcome }: UploadJob): string => {
   if (formatId === undefined) return COPY.statement;
   const format = labelOf(FORMAT_LABELS, formatId);

@@ -4,6 +4,7 @@ import { fixtureContent, fixtureRows } from "../../fixtures/fixture.utils";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyLarge from "../../fixtures/quarterly-large.json";
+import quarterlyPrevious from "../../fixtures/quarterly-previous.json";
 import quarterlyRepeatedHeader from "../../fixtures/quarterly-repeated-header.json";
 import quarterlyYearRollover from "../../fixtures/quarterly-year-rollover.json";
 import { findParser } from "../registry/default-registry.helpers";
@@ -13,6 +14,7 @@ import { bancolombiaQuarterlyParser } from "./quarterly-parser.helpers";
 
 const FIXTURES = {
   "quarterly-basic": quarterlyBasic,
+  "quarterly-previous": quarterlyPrevious,
   "quarterly-year-rollover": quarterlyYearRollover,
   "quarterly-repeated-header": quarterlyRepeatedHeader,
   "quarterly-broken-balance": quarterlyBrokenBalance,

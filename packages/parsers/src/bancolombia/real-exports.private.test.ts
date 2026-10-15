@@ -199,6 +199,20 @@ const overlaps = movementExports.flatMap((exported) => {
   return quarter ? [{ quarter, exported }] : [];
 });
 
+// Each quarterly statement with the next one of its account that starts the
+// day it ends or the day after: back to back, as a chain needs them (5.6c).
+const backToBack = quarterlies.flatMap((previous) =>
+  quarterlies
+    .filter(
+      ({ accountLast4, period }) =>
+        accountLast4 === previous.accountLast4 &&
+        [previous.period.to, shiftDays(previous.period.to, 1)].includes(
+          period.from,
+        ),
+    )
+    .map((next) => ({ previous, next })),
+);
+
 describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
   it("reads every file as a supported format", () => {
     expect(files.map(({ failure }) => failure)).toEqual(
@@ -230,6 +244,21 @@ describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
       minimizedFiles.map((file) => file?.longNumbers ?? 0).filter(Boolean),
     ).toEqual([]);
   });
+
+  // The app chains a statement to the one ending the day it starts, on its
+  // closing balance: true only if the bank's periods share that day.
+  it.skipIf(backToBack.length === 0)(
+    "starts each quarterly statement the day the previous one ends, on its closing balance",
+    () => {
+      expect(
+        backToBack.filter(
+          ({ previous, next }) =>
+            next.period.from !== previous.period.to ||
+            next.openingBalanceMinor !== previous.closingBalanceMinor,
+        ).length,
+      ).toBe(0);
+    },
+  );
 
   it("finds no unexpected rows in the quarterly statements", () => {
     for (const { warnings } of quarterlies) expect(warnings).toEqual([]);

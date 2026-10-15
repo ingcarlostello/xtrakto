@@ -155,7 +155,7 @@ export const UPLOAD_COPY = {
   sending: "Subiendo…",
   sent: "Subido · en cola para procesar",
   retry: "Reintentar",
-  // Once sent, until 5.6b shows each result.
+  // Once sent: how its job goes.
   statement: "Extracto",
   checking: "Consultando cómo va…",
   processing: "Procesando…",
@@ -328,6 +328,8 @@ export const RESULT_COPY = {
   new: { one: "nuevo", other: "nuevos" },
   verified: "Saldo verificado",
   reconcile: { one: "cuadra", other: "cuadran" },
+  chained: "Encadenado",
+  chainedTo: "Empieza donde terminó",
   notReconciledShort: "No cuadra",
   notReconciledShortBy: "No cuadra por",
   checkTheFile: "Revisa el archivo",

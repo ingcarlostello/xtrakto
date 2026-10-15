@@ -9,6 +9,7 @@ import {
   insertAccount,
   insertStatement,
   insertUser,
+  type Owner,
   pgErrorCode,
   statementRow,
 } from "../../test/test-rows";
@@ -26,6 +27,7 @@ import {
   failIngestionJob,
   finishIngestionJob,
   listIngestionJobResults,
+  listRecentIngestionJobs,
   lockIngestionJob,
   type NewIngestionJob,
   type SubmissionQuota,
@@ -458,6 +460,7 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
         period: { from: `2026-0${month}-01`, to: "2026-09-30" },
         balance,
         differenceMinor,
+        chainedTo: null,
       },
     });
     expect(new Map(results.map(({ id, ...result }) => [id, result]))).toEqual(
@@ -469,6 +472,134 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
         [failed, { ...job, status: "failed", errorCode: "PARSE_FAILED" }],
       ]),
     );
+  });
+
+  it("lists the user's latest jobs first, as many as asked for", async () => {
+    const userId = await newUser();
+    const minutesAgo = (minutes: number) =>
+      new Date(Date.now() - minutes * 60_000);
+    const [, newest, middle] = await Promise.all(
+      [30, 10, 20].map((minutes) =>
+        insertJobId(userId, {
+          status: "failed",
+          errorCode: "PARSE_FAILED",
+          createdAt: minutesAgo(minutes),
+        }),
+      ),
+    );
+    await insertJobId(await newUser());
+
+    const recent = await withUserContext(app.db, userId, (ctx) =>
+      listRecentIngestionJobs(ctx, 2),
+    );
+
+    expect(recent.map(({ id }) => id)).toEqual([newest, middle]);
+  });
+
+  describe("a chained statement", () => {
+    // Jul–sep opens with the balance abr–jun closes with.
+    const QUARTER = {
+      periodFrom: asLocalDate("2026-06-30"),
+      periodTo: asLocalDate("2026-09-30"),
+      openingBalanceMinor: asAmount(150_000),
+      closingBalanceMinor: asAmount(180_000),
+    };
+    const PREVIOUS = {
+      periodFrom: asLocalDate("2026-03-31"),
+      periodTo: asLocalDate("2026-06-30"),
+      openingBalanceMinor: asAmount(90_000),
+      closingBalanceMinor: asAmount(150_000),
+    };
+
+    // A done job and the statement it saved.
+    const upload = async (
+      owned: Owner,
+      values: Partial<typeof statements.$inferInsert>,
+    ): Promise<string> => {
+      const [row] = await owner.db
+        .insert(statements)
+        .values({ ...statementRow(owned), ...values })
+        .returning({ id: statements.id });
+      return insertJobId(owned.userId, {
+        status: "done",
+        statementId: row?.id,
+      });
+    };
+
+    const chainOf = async (userId: UserId, jobId: string) => {
+      const [result] = await withUserContext(app.db, userId, (ctx) =>
+        listIngestionJobResults(ctx, [jobId]),
+      );
+      return result?.statement?.chainedTo;
+    };
+
+    const newOwner = async () => {
+      const userId = await newUser();
+      return { userId, accountId: await insertAccount(owner.db, userId) };
+    };
+
+    it("is chained to the previous quarter, whichever was uploaded first", async () => {
+      const owned = await newOwner();
+      const quarter = await upload(owned, QUARTER);
+      expect(await chainOf(owned.userId, quarter)).toBeNull();
+
+      const earlier = await upload(owned, PREVIOUS);
+
+      expect(await chainOf(owned.userId, quarter)).toEqual({
+        from: "2026-03-31",
+        to: "2026-06-30",
+      });
+      expect(await chainOf(owned.userId, earlier)).toBeNull();
+    });
+
+    it.each([
+      {
+        case: "the previous one doesn't reconcile",
+        previous: { balanceVerified: false },
+      },
+      {
+        case: "the previous one closes on another balance",
+        previous: { closingBalanceMinor: asAmount(149_999) },
+      },
+      {
+        case: "a day is missing in between",
+        previous: { periodTo: asLocalDate("2026-06-29") },
+      },
+      {
+        case: "it doesn't reconcile itself",
+        quarter: { balanceVerified: false },
+      },
+    ])("isn't chained when $case", async ({ previous = {}, quarter = {} }) => {
+      const owned = await newOwner();
+      await upload(owned, { ...PREVIOUS, ...previous });
+
+      const job = await upload(owned, { ...QUARTER, ...quarter });
+
+      expect(await chainOf(owned.userId, job)).toBeNull();
+    });
+
+    it("is never chained to itself", async () => {
+      const owned = await newOwner();
+      // One day without movements: it opens and closes on the same balance.
+      const job = await upload(owned, {
+        periodFrom: asLocalDate("2026-06-30"),
+        openingBalanceMinor: asAmount(150_000),
+        periodTo: asLocalDate("2026-06-30"),
+        closingBalanceMinor: asAmount(150_000),
+      });
+
+      expect(await chainOf(owned.userId, job)).toBeNull();
+    });
+
+    it("is never chained to another account's statement", async () => {
+      const owned = await newOwner();
+      const other = await insertAccount(owner.db, owned.userId);
+      await upload({ ...owned, accountId: other }, PREVIOUS);
+
+      const job = await upload(owned, QUARTER);
+
+      expect(await chainOf(owned.userId, job)).toBeNull();
+    });
   });
 
   describe("the daily cleanup", () => {

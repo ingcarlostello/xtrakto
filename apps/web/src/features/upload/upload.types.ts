@@ -158,6 +158,8 @@ export type JobOutcome = {
   readonly balance: StatementBalance;
   /** When it doesn't reconcile: the closing difference. */
   readonly differenceMinor?: AmountMinor;
+  /** When it opens where the account's previous quarterly statement closed: that one's period. */
+  readonly chainedTo?: Period;
 };
 
 /** The server action that reports how some jobs go, or a stand-in in tests. */

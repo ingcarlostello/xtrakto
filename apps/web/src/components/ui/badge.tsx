@@ -16,6 +16,8 @@ const badgeVariants = cva(
         moved: "bg-moved-soft text-moved-on-soft",
         // Something to review, such as the 4x1000 charges.
         attention: "bg-spending-surface text-spending-on-soft",
+        // A verified state, outside data: "Verificado", "Estable".
+        ok: "bg-income-soft text-income-on-soft",
         // A white pill with a border: a movement's channel, a file's tags.
         tag: "h-5.5 border border-chart-axis bg-surface px-2 text-[11px] text-ink-secondary",
       },
