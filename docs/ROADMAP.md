@@ -169,7 +169,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.6a Status polling
 - [x] 5.6b Upload result
 - [x] 5.6c Uploaded files and "Encadenado"
-- [ ] 5.7a Movements by day
+- [ ] 5.7a Movements by day _(after 16.0a to 16.0c, pulled forward by the human)_
 - [ ] 5.7b Period selector and account switch
 - [ ] 5.7c Search and "No cuadra"
 - [ ] 5.8 Onboarding _(design v8)_
@@ -267,6 +267,9 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 16 — Portfolio polish** _(outline)_
 
+- [x] 16.0a Promo video _(pulled forward, before 5.7a)_
+- [ ] 16.0b Waitlist entries and join form _(pulled forward, before 5.7a)_
+- [ ] 16.0c Waitlist landing page _(pulled forward, before 5.7a)_
 - [ ] 16.1 Landing page
 - [ ] 16.2 Final README with architecture and results
 - [ ] 16.3 [HUMAN] Technical write-up and demo video
@@ -1311,9 +1314,51 @@ Follows the `ml/` rules.
 
 ### Stage 16 — Portfolio polish _(outline)_
 
-- **16.1 Landing page:** in Spanish, with a clear privacy message.
+Phases 16.0a to 16.0c were pulled forward by the human on 2026-10-15 and come before 5.7a: a promo video and a waitlist page, to gather the first people who will try the private beta and give feedback. The other stages keep their order.
+
+#### 16.0a Promo video
+
+**Goal:** a video of under a minute that shows what the first version will do, for the waitlist page and social networks.
+
+**Tasks**
+
+- `apps/video`, a Remotion app (ADR 0020) that renders locally and is never deployed: Remotion Studio and a render script; CI only checks its types and lint.
+- Seven scenes built from design v8 with invented data: the bank's cryptic lines, uploading the Excel (read in the browser, balance verified), the three colors (income, real spending, moved), categories, recurring payments, movements with the bank's text, category and channel, and a closing with the tagline and the waitlist. Only what stages 0 to 7 bring, "Ejemplo con datos ficticios" on screen, and no logo of another bank or company.
+- Two compositions, 16:9 (1920×1080) for the page and 9:16 (1080×1920) for social networks, with a calm track from Pixabay (git-ignored: its license forbids sharing it on its own) and effects a script synthesizes. A voice-over can come later.
+- The 16:9 render and its poster go to `apps/web/public/video/`; the vertical one stays out of the repository.
+
+**Done when:** both formats render under 60 seconds, the 16:9 file weighs under about 6 MB and plays in Chrome and Safari, and the human approved it in Remotion Studio.
+
+**Commit:** `feat(video): promo video for the waitlist`
+
+#### 16.0b Waitlist entries and join form
+
+**Tasks**
+
+- `waitlist_entries` in `@xtrakto/db`: name, normalized and unique email, and the consent's time and version, set by the server. Forced RLS and only `INSERT` for the application, which can't read, change or delete the list (ADR 0021); the insert names no conflict target, since one needs `SELECT`.
+- A public `joinWaitlist` action, the first without a session (an exception in the rules, decided by the human): Zod with a required consent, the same answer for a repeated email, and nothing logged.
+- `/waitlist` with the form of the human's design (PDF "Xtrakto — Landing lista de espera": name, email, the consent and its text, the button disabled until it is checked) and `/waitlist/joined`, both public. Text input and checkbox join the design system.
+
+**Done when:** database tests prove the application can only add entries and a repeated email changes nothing; the action rejects a missing consent; the form works with the keyboard and at phone width.
+
+**Commit:** `feat(web): join the waitlist`
+
+#### 16.0c Waitlist landing page
+
+**Tasks**
+
+- The rest of the human's design: the header with "Unirme a la lista", the hero with the colored headline and "Tu trimestre, de un vistazo", the video ("Míralo en un minuto") with its poster and no autoplay, "Lo que vas a poder hacer" and the footer.
+- The proxy lets the video through without a session.
+
+**Done when:** the page matches the design at desktop and phone widths, the video plays without a session, and the page's metadata carries Open Graph.
+
+**Commit:** `feat(web): waitlist landing page`
+
+#### Later phases
+
+- **16.1 Landing page:** in Spanish, with a clear privacy message. It grows from the waitlist page (16.0c).
 - **16.2 Final README:** architecture diagram, ADR index, eval results, cost per statement, p50 and p95 latency.
-- **16.3 [HUMAN] Write-up and video:** a technical post and a short demo.
+- **16.3 [HUMAN] Write-up and video:** a technical post and a short demo, which can start from the promo video (16.0a).
 - **16.4 Public launch checklist:** scan the git history for secrets and real data (for example with gitleaks), rotate keys, legal review of the privacy page, make the repository public.
 
 ---

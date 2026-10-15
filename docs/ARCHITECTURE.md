@@ -76,15 +76,16 @@ flowchart LR
 
 The original file and the PDF password never leave the browser. Each file is read in its own Web Worker, at most three at a time, so the page never freezes; the worker gets the file's bytes, never its name. All database access goes through `@xtrakto/db` inside a transaction that sets `app.user_id`. Clerk's middleware runs in `proxy.ts` and only redirects signed-out visitors early: every page, layout, server action and route handler checks the session itself, since server actions are called by id, not by path.
 
-| Package or app     | Responsibility                                                                          | Runs in                                      |
-| ------------------ | --------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `apps/web`         | Routes, UI, server actions, webhooks, Inngest functions                                 | Browser and Vercel                           |
-| `@xtrakto/core`    | Domain types, Zod schemas, money, dates, categories, PII redaction, summaries, insights | Anywhere (pure)                              |
-| `@xtrakto/parsers` | Spreadsheet and PDF extraction, bank parsers, reconciliation, format detection          | Browser (preview) and server (authoritative) |
-| `@xtrakto/db`      | Drizzle schema, migrations, RLS policies, persistence functions                         | Server only                                  |
-| `@xtrakto/models`  | Exported ONNX models with manifests and golden files (Stage 14)                         | Server                                       |
-| `@xtrakto/evals`   | Labeled datasets and evaluation runners for LLM features (Stage 8)                      | CI and local                                 |
-| `ml/`              | Training, evaluation and export of models in Python                                     | Offline only                                 |
+| Package or app     | Responsibility                                                                                                                       | Runs in                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `apps/web`         | Routes, UI, server actions, webhooks, Inngest functions                                                                              | Browser and Vercel                           |
+| `apps/video`       | The promo video in Remotion, with the design's tokens and invented data ([ADR 0020](adr/0020-promo-video-rendered-with-remotion.md)) | Locally only: rendered, never deployed       |
+| `@xtrakto/core`    | Domain types, Zod schemas, money, dates, categories, PII redaction, summaries, insights                                              | Anywhere (pure)                              |
+| `@xtrakto/parsers` | Spreadsheet and PDF extraction, bank parsers, reconciliation, format detection                                                       | Browser (preview) and server (authoritative) |
+| `@xtrakto/db`      | Drizzle schema, migrations, RLS policies, persistence functions                                                                      | Server only                                  |
+| `@xtrakto/models`  | Exported ONNX models with manifests and golden files (Stage 14)                                                                      | Server                                       |
+| `@xtrakto/evals`   | Labeled datasets and evaluation runners for LLM features (Stage 8)                                                                   | CI and local                                 |
+| `ml/`              | Training, evaluation and export of models in Python                                                                                  | Offline only                                 |
 
 ---
 
@@ -392,6 +393,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | SheetJS for spreadsheets                     | Reads XLSX and CSV in the browser and Node; date cells stay serials.                                    | ExcelJS (turns dates into `Date` objects)                  | [0011](adr/0011-sheetjs-for-spreadsheet-extraction.md)                                                |
 | Two Inngest steps with ids, codes and counts | Inngest keeps step outputs and errors; one transaction saves a statement all or nothing.                | One step per stage                                         | [0019](adr/0019-two-inngest-steps-with-ids-codes-and-counts.md)                                       |
 | Events carry IDs only                        | Event payloads are stored and shown by the queue provider.                                              | Content in the event                                       | [0005](adr/0005-inngest-for-background-work.md)                                                       |
+| Promo video in Remotion                      | The screens it shows don't exist yet; drawn from the design and versioned with it.                      | Screen recording; AI-generated video                       | [0020](adr/0020-promo-video-rendered-with-remotion.md)                                                |
 | Deterministic first, LLM as fallback         | Exact, free and testable for known formats.                                                             | LLM extraction for everything                              | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
 | Integer minor units and date-only dates      | No floating-point drift; no time-zone shifts.                                                           | Decimals and timestamps                                    | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
 | Forced RLS with a transaction-local setting  | A second barrier when a query forgets its filter.                                                       | Application-level filtering only                           | [0014](adr/0014-forced-rls-with-transaction-local-user.md)                                            |

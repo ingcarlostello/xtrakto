@@ -18,6 +18,7 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 - Zod for every trust boundary, environment variables included
 - Clerk for sign-in, in Spanish ([ADR 0004](docs/adr/0004-clerk-for-authentication.md))
 - Inngest for background jobs, with its Dev Server in Docker Compose locally ([ADR 0005](docs/adr/0005-inngest-for-background-work.md))
+- Remotion 4 for the promo video, rendered locally ([ADR 0020](docs/adr/0020-promo-video-rendered-with-remotion.md))
 - Planned: Vercel (see the [system design](docs/ARCHITECTURE.md))
 
 ## Monorepo layout
@@ -25,6 +26,7 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 ```text
 apps/
   web/                 Next.js app: routes, UI, server actions
+  video/               Promo video in Remotion, in 16:9 and 9:16 (rendered locally, never deployed)
 packages/
   core/                Domain types, money and dates (pure TypeScript)
   parsers/             Bank statement parsers and their registry (pure TypeScript)
@@ -104,6 +106,8 @@ CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull
 The integration tests of `packages/db` use the `xtrakto_test` database through `TEST_DATABASE_URL` (application role) and `TEST_DATABASE_MIGRATION_URL` (owner), read from `.env.local`. With both set, they need the local database running and fail if it isn't; without them, they are skipped, except in CI, which always runs them. Both must point to a local database whose name ends in `_test`.
 
 The app's database tests, such as the ingestion function's, use the same database. They run after `packages/db`'s, which rebuild it from the migrations, and never rebuild it themselves: run them through `pnpm turbo test`, or alone once the database tests have run, since they stop when a migration is missing.
+
+`pnpm --filter video studio` previews the promo video in Remotion Studio, on http://localhost:3001, and `pnpm --filter video render` writes the landing's MP4 and poster to `apps/web/public/video/` and the 9:16 cut to the git-ignored `apps/video/out/`. Before rendering, download the music, "Calm Corporate Background Music" by JoyInSound from Pixabay, to `apps/video/public/audio/music/calm-corporate-background-music.mp3`: its license forbids sharing the track on its own, so git ignores that folder. The sound effects are synthesized by `pnpm --filter video generate:sfx`. Rendering downloads a headless Chrome the first time; CI never renders.
 
 `pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/` or its folders, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 
