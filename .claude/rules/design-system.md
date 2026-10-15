@@ -494,9 +494,27 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 
 - Header: a 44px chip (`--income-soft` with `circle-check` in `--income-on-soft`), the outcome as Card title ("Listo: leímos tu archivo", "Ya tenías todo este archivo", "Listo: reemplazamos el extracto que no cuadraba"), the file's name in Caption `--text-muted` (its format and period after a reload) and its tags.
 - Count tiles: `--surface-muted`, `--radius-md`, padding 12px 16px; the number in Amount L with `tabular-nums` and its meaning in Caption `--text-muted`: "movimientos en el archivo", "ya los tenías: no se duplican", "nuevos". Three columns, two on phones.
-- The status pill: "Saldo verificado" · "33 movimientos cuadran", "Sin saldo para verificar" · "Archivo de movimientos" (`--text-faint` dot) or "No cuadra por $810" · "Revisa el archivo".
+- The status pill: "Saldo verificado" · "33 movimientos cuadran", "Sin saldo para verificar" · "Archivo de movimientos" (`--text-faint` dot) or "No cuadra por $810" · "Revisa el archivo". A verified quarterly statement that opens with the closing balance of the account's previous one reads "Encadenado" · "Empieza donde terminó abr–jun 2026", whichever was uploaded first.
 - The steps, in order: "Leído en tu navegador", "Reconocido", "Revisando duplicados" and the balance check. Each has a 24px mark (`--income-soft` with a check), its title (Manrope 700 14px) and one Caption `--text-muted` line, joined to the next by a 1px `--divider` line.
 - A statement that doesn't reconcile sits on the attention surface: white chip with the orange dot, the title "El saldo final no cuadra por $810", "Puede faltar una página o una fila. No mostramos sus números hasta que cuadre.", only the file's count (nothing of it counts), white tiles, and its balance step marked with the orange dot on `--spending-soft`.
+
+### Uploaded files
+
+"Archivos subidos", beside the upload card on the upload screen (below it on phones), once the user has sent a file (`UploadedFiles`, `v8-07`): a card with its title, "Los más recientes primero." and one row per file sent, newest first, each with a `--divider` line above it.
+
+- Each row: the 44px file chip, the file named by format and period in Card title with `text-wrap: balance` ("Extracto trimestral jul–sep 2026"; its name never leaves the browser), one Caption `--text-muted` line with what came of it, and a badge on the right, under the text on phones:
+
+| What came of it                          | Line                                           | Badge                         |
+| ---------------------------------------- | ---------------------------------------------- | ----------------------------- |
+| A quarterly statement that reconciles    | "Excel · 379 movimientos · cuadra al centavo"  | "Verificado" (`ok`)           |
+| One that starts where the previous ended | "Excel · 355 movimientos · encadenado"         | "Verificado" (`ok`)           |
+| A movements export with new movements    | "Excel · 21 nuevos · sin saldo para verificar" | "Sin verificar"               |
+| A file the account already had           | "Excel · 63 ya los tenías · nada nuevo"        | "Sin cambios"                 |
+| A statement that doesn't reconcile       | "Excel · 33 movimientos · no cuadra por $810"  | "No cuadra" (`attention`)     |
+| A failed job                             | What happened, as its error code says it       | "No se procesó" (`attention`) |
+| A job still open                         | "Excel"                                        | "En proceso"                  |
+
+- The first 5 rows show; a link action "Ver N más" shows the rest (the latest 30) and then reads "Ver menos", with `aria-expanded` and the focus kept on it.
 
 ### Switch
 
@@ -687,7 +705,7 @@ const manrope = localFont({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
-Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral` and `attention`). The development page `/design-system` shows every token and component.
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`) and `Badge` (one variant per kind, plus `neutral`, `attention`, `tag` and `ok` for verified states). The development page `/design-system` shows every token and component.
 
 v8 needs no new color tokens: the grey status dot is `ink-faint`, and the coverage timeline uses `income`, `moved`, `ink-faint`, `chart-axis` and `ring-track`. Each v8 component (§9) is built with its first consumer: `Button` gains the white destructive variant and `Badge` the status badges of §9 then, and the development page shows them.
 
