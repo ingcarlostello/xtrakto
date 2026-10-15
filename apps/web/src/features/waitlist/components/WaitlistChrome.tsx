@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Badge } from "@/components/ui/badge";
-import { WAITLIST_COPY } from "../waitlist.constants";
+import { Button } from "@/components/ui/button";
+import { LANDING_COPY, WAITLIST_COPY } from "../waitlist.constants";
 
 // The frame both waitlist pages share. The logo links nowhere: without a
 // session, the app's home only sends people to sign in.
@@ -14,6 +15,22 @@ export function WaitlistHeader({ action }: { action?: ReactNode }) {
       <Logo size={40} className="hidden sm:inline-flex" />
       {action}
     </header>
+  );
+}
+
+/** Down to the form's card (#lista); shorter on phones, as the design draws it. */
+export function JoinLink() {
+  const { full, short } = LANDING_COPY.join;
+  return (
+    <Button
+      variant="secondary"
+      size="sm"
+      nativeButton={false}
+      render={<a href="#lista" />}
+    >
+      <span className="sm:hidden">{short}</span>
+      <span className="hidden sm:inline">{full}</span>
+    </Button>
   );
 }
 
