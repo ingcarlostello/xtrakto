@@ -1,5 +1,6 @@
 import type {
   AccountType,
+  AmountMinor,
   AppError,
   ExtractedContent,
   LocalDate,
@@ -7,7 +8,13 @@ import type {
   PeriodSource,
   Result,
 } from "@xtrakto/core";
-import type { AccountRow, IngestionJobStatus } from "@xtrakto/db";
+import type {
+  AccountRow,
+  IngestionJobError,
+  IngestionJobStatus,
+  IngestionStats,
+  StatementBalance,
+} from "@xtrakto/db";
 import type { z } from "zod";
 import type {
   EXTRACTION_STAGE,
@@ -138,8 +145,19 @@ export type UploadJob = {
   readonly formatId?: string;
   /** Open for longer than an ingestion usually takes. */
   readonly isSlow: boolean;
-  /** The period of the statement it saved, once done. */
-  readonly period?: Period;
+  /** Why it failed. */
+  readonly errorCode?: IngestionJobError;
+  /** Once done, what it came to. */
+  readonly outcome?: JobOutcome;
+};
+
+/** What a done job came to: its counts and its statement's balances. */
+export type JobOutcome = {
+  readonly stats: IngestionStats;
+  readonly period: Period;
+  readonly balance: StatementBalance;
+  /** When it doesn't reconcile: the closing difference. */
+  readonly differenceMinor?: AmountMinor;
 };
 
 /** The server action that reports how some jobs go, or a stand-in in tests. */

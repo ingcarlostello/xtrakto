@@ -17,6 +17,7 @@ import {
   findOrCreateUser,
   findUserId,
   type IngestionJobResult,
+  type IngestionStats,
   listAccounts,
   listIngestionJobResults,
   type UserContext,
@@ -38,6 +39,7 @@ import type {
   MonthlyUsage,
   SubmitStatementRequest,
   SubmittedStatement,
+  JobOutcome,
   UploadAccount,
   UploadJob,
 } from "./upload.types";
@@ -172,13 +174,41 @@ export const queueStatement = async (
 };
 
 // Only what the screen shows of a job (system design §4).
-const uploadJob = (job: IngestionJobResult): UploadJob => ({
-  jobId: job.id,
-  status: job.status,
-  isSlow: job.isSlow,
-  ...(job.formatId === null ? {} : { formatId: job.formatId }),
-  ...(job.period === null ? {} : { period: job.period }),
-});
+const NO_COUNTS: IngestionStats = {
+  total: 0,
+  added: 0,
+  skipped: 0,
+  covered: 0,
+  hidden: 0,
+  replaced: 0,
+};
+
+const outcomeOf = ({
+  stats,
+  statement,
+}: IngestionJobResult): JobOutcome | undefined =>
+  statement === null
+    ? undefined
+    : {
+        stats: { ...NO_COUNTS, ...stats },
+        period: statement.period,
+        balance: statement.balance,
+        ...(statement.differenceMinor === null
+          ? {}
+          : { differenceMinor: statement.differenceMinor }),
+      };
+
+const uploadJob = (job: IngestionJobResult): UploadJob => {
+  const outcome = outcomeOf(job);
+  return {
+    jobId: job.id,
+    status: job.status,
+    isSlow: job.isSlow,
+    ...(job.formatId === null ? {} : { formatId: job.formatId }),
+    ...(job.errorCode === null ? {} : { errorCode: job.errorCode }),
+    ...(outcome ? { outcome } : {}),
+  };
+};
 
 /**
  * The signed-in user's jobs among `jobIds`, in that order, as the upload

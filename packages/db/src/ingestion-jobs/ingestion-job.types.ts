@@ -21,3 +21,6 @@ export type IngestionStats = {
   readonly hidden: number;
   readonly replaced: number;
 };
+
+/** What a statement's balances say: it reconciles, it doesn't, or it has none. */
+export type StatementBalance = "verified" | "unverified" | "none";

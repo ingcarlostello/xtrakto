@@ -5,6 +5,8 @@ import { cn } from "cn";
 const DOT_TONES = {
   ok: "bg-income ring-income/18",
   attention: "bg-spending ring-spending/18",
+  // A file without balances to verify, such as a movements export.
+  none: "bg-ink-faint ring-ink-faint/18",
 } as const;
 
 export type StatusTone = keyof typeof DOT_TONES;

@@ -1,6 +1,10 @@
 import { APP_ERROR_CODE, PERIOD_SOURCE } from "@xtrakto/core";
 import type { AccountType, AppError, PeriodSource } from "@xtrakto/core";
-import type { IngestionJobStatus } from "@xtrakto/db";
+import type {
+  IngestionJobError,
+  IngestionJobStatus,
+  StatementBalance,
+} from "@xtrakto/db";
 import type { FormatId } from "@xtrakto/parsers";
 
 // Reading statement files in the browser before sending them. The Spanish copy
@@ -84,6 +88,12 @@ export const JOB_STATUS = {
   FAILED: "failed",
 } as const satisfies Record<Uppercase<IngestionJobStatus>, IngestionJobStatus>;
 
+export const STATEMENT_BALANCE = {
+  VERIFIED: "verified",
+  UNVERIFIED: "unverified",
+  NONE: "none",
+} as const satisfies Record<Uppercase<StatementBalance>, StatementBalance>;
+
 /** Reasons of the problems found in the browser, next to the extraction's. */
 export const FILE_PROBLEM = {
   TYPE: "file_type",
@@ -105,6 +115,11 @@ export const FORMAT_PERIOD_SOURCE = {
 } as const satisfies Record<FormatId, PeriodSource>;
 
 export const BANK_LABELS = { bancolombia: "Bancolombia" } as const;
+
+export const FORMAT_BANKS = {
+  "bancolombia-savings-quarterly": "bancolombia",
+  "bancolombia-movements-export": "bancolombia",
+} as const satisfies Record<FormatId, keyof typeof BANK_LABELS>;
 
 export const ACCOUNT_TYPE_LABELS = {
   savings: "Cuenta de ahorros",
@@ -275,4 +290,59 @@ export const PROBLEM_COPY = {
     title: "No pudimos procesarlo",
     detail: "Vuelve a subirlo. Lo que ya tenías sigue igual.",
   },
+  expired: {
+    title: "No alcanzamos a procesarlo",
+    detail: "Pasaron 24 horas y borramos lo que enviaste. Súbelo de nuevo.",
+  },
+} as const;
+
+// Why a job failed, in plain words (docs/ui/v8-13).
+export const JOB_PROBLEMS = {
+  UNKNOWN_FORMAT: PROBLEM_COPY.notAStatement,
+  PARSE_FAILED: PROBLEM_COPY.incomplete,
+  ACCOUNT_REQUIRED: PROBLEM_COPY.chooseAccount,
+  INTERNAL_ERROR: PROBLEM_COPY.notProcessed,
+  CONTENT_EXPIRED: PROBLEM_COPY.expired,
+} as const satisfies Record<
+  IngestionJobError,
+  { readonly title: string; readonly detail: string }
+>;
+
+// A file's result once processed (docs/ui/v8-08, within Stage 5).
+export const RESULT_COPY = {
+  read: "Listo: leímos tu archivo",
+  alreadyHad: "Ya tenías todo este archivo",
+  replaced: "Listo: reemplazamos el extracto que no cuadraba",
+  notReconciled: "El saldo final no cuadra",
+  notReconciledBy: "El saldo final no cuadra por",
+  notReconciledNote:
+    "Puede faltar una página o una fila. No mostramos sus números hasta que cuadre.",
+  inFile: {
+    one: "movimiento en el archivo",
+    other: "movimientos en el archivo",
+  },
+  had: {
+    one: "ya lo tenías: no se duplica",
+    other: "ya los tenías: no se duplican",
+  },
+  new: { one: "nuevo", other: "nuevos" },
+  verified: "Saldo verificado",
+  reconcile: { one: "cuadra", other: "cuadran" },
+  notReconciledShort: "No cuadra",
+  notReconciledShortBy: "No cuadra por",
+  checkTheFile: "Revisa el archivo",
+  noBalance: "Sin saldo para verificar",
+  movementsFile: "Archivo de movimientos",
+  stepRead: "Leído en tu navegador",
+  stepRecognized: "Reconocido",
+  stepDuplicates: "Revisando duplicados",
+  noneHad: "Ninguno estaba en tu cuenta.",
+  hadIn: "ya estaban en tu cuenta: no se duplican.",
+  coveredNote: "Tu extracto trimestral ya los traía.",
+  hiddenNote: "Ahora cuentan los de este extracto, que trae saldos.",
+  keptApart: "Quedan guardados, pero no cuentan hasta que el saldo cuadre.",
+  verifiedDetail: "Cada movimiento cuadra con su saldo, al centavo.",
+  notReconciledDetail:
+    "Revisa que el archivo esté completo, o sube una versión que cuadre.",
+  noBalanceDetail: "Los movimientos de la Sucursal Virtual no traen saldos.",
 } as const;

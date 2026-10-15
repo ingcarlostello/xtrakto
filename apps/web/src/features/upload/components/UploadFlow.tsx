@@ -13,8 +13,10 @@ import {
   jobLabel,
   jobView,
   limitText,
+  previewTags,
 } from "../upload-display.helpers";
 import type { PollingStop } from "../upload-jobs.helpers";
+import { resultView } from "../upload-result.helpers";
 import { batchPreviews } from "../upload-send.helpers";
 import {
   NO_ANSWER,
@@ -31,6 +33,7 @@ import type {
 import { AccountChoice } from "./AccountChoice";
 import { DropZone } from "./DropZone";
 import { FileRow } from "./FileRow";
+import { UploadResult } from "./UploadResult";
 
 type SubmitFilesProps = {
   count: number;
@@ -120,28 +123,50 @@ type FileListProps = {
   actions: FileActions;
 };
 
+type SentFileProps = {
+  name: string;
+  tags: readonly string[];
+  job: UploadJob;
+};
+
+// A sent file whose job is done shows its result; until then, its row.
+function SentFile({ name, tags, job }: SentFileProps) {
+  return job.outcome ? (
+    <UploadResult name={name} tags={tags} view={resultView(job, job.outcome)} />
+  ) : (
+    <FileRow name={name} view={jobView(job)} />
+  );
+}
+
 function FileList({ items, restored, jobs, ...rest }: FileListProps) {
   if (items.length + restored.length === 0) return null;
   const batch = batchPreviews(items);
   return (
     <ul aria-label={COPY.fileList} className="flex flex-col">
-      {items.map((item) => (
-        <QueuedFile
-          key={item.id}
-          item={item}
-          job={
-            item.status === UPLOAD_STATUS.SENT
-              ? jobs.get(item.jobId)
-              : undefined
-          }
-          batch={batch}
-          {...rest}
-        />
-      ))}
+      {items.map((item) => {
+        const job =
+          item.status === UPLOAD_STATUS.SENT ? jobs.get(item.jobId) : undefined;
+        return item.status === UPLOAD_STATUS.SENT && job?.outcome ? (
+          <SentFile
+            key={item.id}
+            name={item.file.name}
+            tags={previewTags(item.preview)}
+            job={job}
+          />
+        ) : (
+          <QueuedFile
+            key={item.id}
+            item={item}
+            job={job}
+            batch={batch}
+            {...rest}
+          />
+        );
+      })}
       {restored.map((jobId) => {
         const job = jobs.get(jobId);
         return job ? (
-          <FileRow key={jobId} name={jobLabel(job)} view={jobView(job)} />
+          <SentFile key={jobId} name={jobLabel(job)} tags={[]} job={job} />
         ) : (
           <FileRow
             key={jobId}

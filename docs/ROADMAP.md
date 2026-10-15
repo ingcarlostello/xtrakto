@@ -167,7 +167,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.5b Ingestion function
 - [x] 5.5c Daily cleanup of stale jobs
 - [x] 5.6a Status polling
-- [ ] 5.6b Upload result
+- [x] 5.6b Upload result
 - [ ] 5.6c Uploaded files and "Encadenado"
 - [ ] 5.7a Movements by day
 - [ ] 5.7b Period selector and account switch
