@@ -13,6 +13,10 @@ import {
   or,
 } from "drizzle-orm";
 import { statements } from "../statements/statement.schemas";
+import {
+  matchesSearch,
+  type MovementSearch,
+} from "../transactions/transaction-search.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 
@@ -39,12 +43,13 @@ export type CountedFilter = {
   readonly accountId?: string;
   /** Inclusive on both ends. */
   readonly period?: Period;
+  readonly search?: MovementSearch;
 };
 
 /** How many of the user's movements count, within `filter`. */
 export const countCountedMovements = async (
   { tx, userId }: UserContext,
-  { accountId, period }: CountedFilter = {},
+  { accountId, period, search }: CountedFilter = {},
 ): Promise<number> => {
   const [row] = await tx
     .select({ counted: count() })
@@ -58,6 +63,7 @@ export const countCountedMovements = async (
           : eq(transactions.accountId, accountId),
         period === undefined ? undefined : gte(transactions.date, period.from),
         period === undefined ? undefined : lte(transactions.date, period.to),
+        search === undefined ? undefined : matchesSearch(search),
         countedMovement,
       ),
     );

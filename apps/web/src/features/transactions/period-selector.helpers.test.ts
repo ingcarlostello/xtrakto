@@ -108,6 +108,19 @@ describe("options", () => {
     ]);
   });
 
+  it("keeps the search in every period's link", () => {
+    const searching = { ...view(AUGUST), search: "nequi" };
+
+    expect(quarterOptions(searching)[0]?.href.query).toEqual({
+      period: "2026-q3",
+      q: "nequi",
+    });
+    expect(monthOptions(searching)[0]?.href.query).toEqual({
+      period: "2026-07",
+      q: "nequi",
+    });
+  });
+
   it("keeps the account in links only when there are several", () => {
     expect(listLinkOf(view(AUGUST))).toEqual({ period: AUGUST });
     expect(listLinkOf(view(AUGUST, [ACCOUNT, OTHER]))).toEqual({

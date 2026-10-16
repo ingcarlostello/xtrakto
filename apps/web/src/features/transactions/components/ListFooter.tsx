@@ -21,7 +21,9 @@ export function ListFooter({ shown, status, next }: ListFooterProps) {
       ref={footerRef}
       className="flex flex-wrap items-center justify-between gap-x-4 border-t border-divider pt-1"
     >
-      <p className="text-meta text-ink-muted">{status}</p>
+      <p aria-live="polite" className="text-meta text-ink-muted">
+        {status}
+      </p>
       {next && (
         <Button
           variant="link"

@@ -68,12 +68,17 @@ describe("periodOfStatement", () => {
 });
 
 describe("transactionsHref", () => {
-  it("names the account, the period and how many show", () => {
+  it("names the account, the period, the search and how many show", () => {
     expect(
-      transactionsHref({ accountId: "a1", period: QUARTER, shown: 60 }),
+      transactionsHref({
+        accountId: "a1",
+        period: QUARTER,
+        search: "nequi",
+        shown: 60,
+      }),
     ).toEqual({
       pathname: "/transactions",
-      query: { account: "a1", period: "2026-q3", show: 60 },
+      query: { account: "a1", period: "2026-q3", q: "nequi", show: 60 },
     });
   });
 

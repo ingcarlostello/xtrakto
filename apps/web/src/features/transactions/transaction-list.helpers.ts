@@ -5,8 +5,9 @@ import {
   formatSignedAmount,
   formatWeekdayInWords,
   type LocalDate,
+  parseTypedAmount,
 } from "@xtrakto/core";
-import type { TransactionListItem } from "@xtrakto/db";
+import type { MovementSearch, TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
   type MovementPeriod,
@@ -76,9 +77,17 @@ export const descriptionView = (raw: string): DescriptionView =>
 export const amountText = (amount: AmountMinor): string =>
   formatSignedAmount(amount, CURRENCY_SHOWN);
 
-/** `"312 movimientos del banco."` */
-export const totalText = (total: number): string =>
-  `${countText(total, COPY.movements)} ${COPY.ofTheBank}`;
+/** `"312 movimientos del banco."`, or how many match a search. */
+export const totalText = (total: number, search?: string): string =>
+  search === undefined
+    ? `${countText(total, COPY.movements)} ${COPY.ofTheBank}`
+    : `${countText(total, COPY.search.matches)} ${COPY.search.with} “${search}”.`;
+
+/** What a search looks for: its text, and the amount it is when it reads as one. */
+export const movementSearchOf = (text: string): MovementSearch => {
+  const amount = parseTypedAmount(text);
+  return amount.ok ? { text, amountMinor: amount.value } : { text };
+};
 
 /** `"Mostrando 30 de 312"`. */
 export const shownText = (shown: number, total: number): string =>
@@ -89,6 +98,7 @@ export type ListLink = {
   /** Only when the user has more than one account. */
   readonly accountId?: string;
   readonly period: MovementPeriod;
+  readonly search?: string;
 };
 
 /**

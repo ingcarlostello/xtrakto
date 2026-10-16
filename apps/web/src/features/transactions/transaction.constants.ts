@@ -12,6 +12,9 @@ export const MAX_MOVEMENTS_SHOWN = 2_000;
 /** The attribute that marks each movement's row, to focus the new ones. */
 export const MOVEMENT_ROW_ATTRIBUTE = "data-movement";
 
+/** The longest search the list takes: a bank's text is about 30 characters. */
+export const MAX_SEARCH_LENGTH = 60;
+
 /** What the bank writes for a movement it didn't describe. */
 export const NO_DESCRIPTION_TEXT = "0";
 
@@ -29,6 +32,18 @@ export const TRANSACTIONS_COPY = {
   noDescription: "Sin descripción del banco",
   shown: { before: "Mostrando", of: "de" },
   more: { before: "Mostrar", after: "más" },
+  // The search (docs/ui/v8-03) and its empty result (v8-13). References are
+  // stored as hashes, so it reads descriptions and amounts only.
+  search: {
+    label: "Buscar movimientos",
+    placeholder: "Busca por descripción o monto",
+    matches: { one: "movimiento coincide", other: "movimientos coinciden" },
+    with: "con",
+    noMatches: "No encontramos",
+    noMatchesDetail:
+      "Busca por otra palabra o por el monto, o quita la búsqueda.",
+    clear: "Quitar búsqueda",
+  },
   // The period selector (docs/ui/v8-03), without "Año" until Phase 10.2.
   period: {
     quarter: "Trimestre",

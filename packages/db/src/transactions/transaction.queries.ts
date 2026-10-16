@@ -10,6 +10,10 @@ import { accounts } from "../accounts/account.schemas";
 import { countedMovement } from "../coverage/coverage.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
+import {
+  matchesSearch,
+  type MovementSearch,
+} from "./transaction-search.queries";
 import { transactions } from "./transaction.schemas";
 
 /** A movement as the movements list shows it, and nothing more. */
@@ -27,6 +31,7 @@ export type TransactionFilter = {
   readonly accountId: string;
   /** Inclusive on both ends. */
   readonly period?: Period;
+  readonly search?: MovementSearch;
   readonly limit: number;
   readonly offset: number;
 };
@@ -44,7 +49,7 @@ export type TransactionPage = {
  */
 export const listTransactions = async (
   { tx, userId }: UserContext,
-  { accountId, period, limit, offset }: TransactionFilter,
+  { accountId, period, search, limit, offset }: TransactionFilter,
 ): Promise<TransactionPage> => {
   const rows = await tx
     .select({
@@ -63,6 +68,7 @@ export const listTransactions = async (
         countedMovement,
         period === undefined ? undefined : gte(transactions.date, period.from),
         period === undefined ? undefined : lte(transactions.date, period.to),
+        search === undefined ? undefined : matchesSearch(search),
       ),
     )
     .orderBy(
