@@ -421,6 +421,15 @@ On the upload screen the same pill counts the month's statements, beside the pag
 - A raw text of `0` is titled "Sin descripción del banco", with a link to name it.
 - On Movimientos the rows are grouped by day, each header with the day's balance ("Saldo del día $6.482.310"), and a row opens a detail panel: "Así lo escribe el banco", "También aparece como" (the other ways the bank wrote it), channel, reference, source files, balance after, kind and category with the reason ("Regla del sistema, sin IA").
 
+### Movements list ("Todos los movimientos")
+
+As Phase 5.7a builds it, before kinds and categories exist (`TransactionList`):
+
+- A card (`--surface-card`, `--radius-lg`) at most 896px wide, its title and one line naming the account ("Cuenta de ahorros · Bancolombia ••••8901. Los más recientes primero.").
+- Day headers: the weekday and the date in Manrope 700 14px ("Miércoles 30 de septiembre", with the year when it isn't the current one), and "Saldo del día $6.482.310" in Caption `--text-muted` on the right, under it on phones. A day of a file without balances has no balance.
+- Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. The amount in Amount S, ink, with its sign. No icon chip until a category gives one.
+- Footer: "Mostrando 30 de 312" (Meta, `--text-muted`) and the link action "Mostrar 30 más" (fewer when fewer are left). The count lives in the URL (`?show=60`), the page keeps its scroll, and the focus moves to the first movement the link brought, also when the link goes away because every movement shows.
+
 ### Channel tag
 
 A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary` (`Badge` variant `tag`, which a file's tags use too). It comes from the bank's text:
