@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   formatDayInWords,
   formatDayRange,
+  formatMonthName,
   formatMonthRange,
+  formatQuarter,
   formatWeekdayInWords,
 } from "./date-display.helpers";
 import { localDateSchema, periodSchema } from "./date.schemas";
@@ -16,6 +18,23 @@ describe("formatDayInWords", () => {
     ["2026-09-30", "30 de septiembre"],
   ])("writes %s as %s", (date, expected) => {
     expect(formatDayInWords(localDateSchema.parse(date))).toBe(expected);
+  });
+});
+
+describe("formatQuarter", () => {
+  it.each([
+    [1, "Ene – mar 2026"],
+    [3, "Jul – sep 2026"],
+    [4, "Oct – dic 2026"],
+  ])("names quarter %i of 2026 %s", (quarter, expected) => {
+    expect(formatQuarter({ year: 2026, quarter })).toBe(expected);
+  });
+
+  it.each([
+    [7, "Julio"],
+    [9, "Septiembre"],
+  ])("names month %i %s", (month, expected) => {
+    expect(formatMonthName({ year: 2026, month })).toBe(expected);
   });
 });
 

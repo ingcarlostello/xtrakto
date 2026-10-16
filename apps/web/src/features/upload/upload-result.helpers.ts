@@ -6,6 +6,10 @@ import {
 } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { countText } from "@/utils/count-text.utils";
+import {
+  periodOfStatement,
+  transactionsHref,
+} from "@/utils/transactions-url.helpers";
 import { recognizedText } from "./upload-display.helpers";
 import {
   RESULT_COPY as COPY,
@@ -38,6 +42,8 @@ export type ResultView = {
     readonly detail: string;
   };
   readonly steps: readonly ResultStep[];
+  /** Its movements, when they count: not those of a statement that doesn't reconcile. */
+  readonly movementsHref?: ReturnType<typeof transactionsHref>;
 };
 
 const NUMBER = new Intl.NumberFormat("es-CO");
@@ -156,5 +162,13 @@ export const resultView = (job: UploadJob, outcome: JobOutcome): ResultView => {
     counts: countsOf(outcome),
     pill: pillOf(outcome),
     steps: stepsOf(job, outcome),
+    ...(isOk
+      ? {
+          movementsHref: transactionsHref({
+            accountId: outcome.accountId,
+            period: periodOfStatement(outcome.period),
+          }),
+        }
+      : {}),
   };
 };

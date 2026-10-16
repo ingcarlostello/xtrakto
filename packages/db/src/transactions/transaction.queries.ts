@@ -1,5 +1,10 @@
-import type { AmountMinor, LocalDate, Period } from "@xtrakto/core";
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import type {
+  AmountMinor,
+  CalendarQuarter,
+  LocalDate,
+  Period,
+} from "@xtrakto/core";
+import { and, asc, desc, eq, gte, lte, max, sql } from "drizzle-orm";
 import type { AccountRow } from "../accounts/account.queries";
 import { accounts } from "../accounts/account.schemas";
 import { countedMovement } from "../coverage/coverage.queries";
@@ -71,15 +76,15 @@ export const listTransactions = async (
 };
 
 /**
- * The account whose latest movement that counts is the most recent, where
- * the movements list opens; the oldest account wins a tie. `undefined` when
- * no movement counts yet.
+ * The accounts with movements that count, the one whose latest movement is
+ * the most recent first: where the movements list opens. The oldest account
+ * wins a tie.
  */
-export const findLatestMovementAccount = async ({
+export const listMovementAccounts = ({
   tx,
   userId,
-}: UserContext): Promise<AccountRow | undefined> => {
-  const [account] = await tx
+}: UserContext): Promise<AccountRow[]> =>
+  tx
     .select({
       id: accounts.id,
       bankId: accounts.bankId,
@@ -90,7 +95,44 @@ export const findLatestMovementAccount = async ({
     .innerJoin(statements, eq(statements.id, transactions.statementId))
     .innerJoin(accounts, eq(accounts.id, transactions.accountId))
     .where(and(eq(transactions.userId, userId), countedMovement))
-    .orderBy(desc(transactions.date), asc(accounts.createdAt), asc(accounts.id))
-    .limit(1);
-  return account;
+    .groupBy(accounts.id)
+    .orderBy(
+      desc(max(transactions.date)),
+      asc(accounts.createdAt),
+      asc(accounts.id),
+    );
+
+/**
+ * A quarter with movements that count. It is verified when every one of
+ * them carries the balance a verified quarterly statement printed: none
+ * comes from a file without balances.
+ */
+export type MovementQuarter = CalendarQuarter & {
+  readonly verified: boolean;
+};
+
+/** An account's quarters with movements that count, the latest first. */
+export const listMovementQuarters = (
+  { tx, userId }: UserContext,
+  accountId: string,
+): Promise<MovementQuarter[]> => {
+  const year = sql<number>`extract(year from ${transactions.date})::int`;
+  const quarter = sql<number>`extract(quarter from ${transactions.date})::int`;
+  return tx
+    .select({
+      year,
+      quarter,
+      verified: sql<boolean>`bool_and(${transactions.balanceAfterMinor} is not null)`,
+    })
+    .from(transactions)
+    .innerJoin(statements, eq(statements.id, transactions.statementId))
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.accountId, accountId),
+        countedMovement,
+      ),
+    )
+    .groupBy(year, quarter)
+    .orderBy(desc(year), desc(quarter));
 };

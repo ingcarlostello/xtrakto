@@ -38,6 +38,7 @@ const outcome = (
   rest: Partial<JobOutcome> = {},
 ): JobOutcome => ({
   stats: stats(counts),
+  accountId: "a1",
   period: QUARTER,
   balance: "verified",
   ...rest,
@@ -83,6 +84,25 @@ describe("resultView", () => {
           isOk: true,
         },
       ],
+      movementsHref: {
+        pathname: "/transactions",
+        query: { account: "a1", period: "2026-q3" },
+      },
+    });
+  });
+
+  it("links an export to its account's movements in its month", () => {
+    const augustFirstHalf = outcome(
+      {},
+      {
+        balance: "none",
+        period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-15" }),
+      },
+    );
+
+    expect(resultView(quarterly, augustFirstHalf).movementsHref).toEqual({
+      pathname: "/transactions",
+      query: { account: "a1", period: "2026-08" },
     });
   });
 
@@ -180,6 +200,8 @@ describe("resultView", () => {
       title: RESULT_COPY.notReconciled,
       isOk: false,
     });
+    // Its movements count nowhere, so there are none to see yet (5.7c).
+    expect(resultView(quarterly, offBy).movementsHref).toBeUndefined();
   });
 
   it("says a statement doesn't reconcile when its closing balance matches but a row breaks", () => {

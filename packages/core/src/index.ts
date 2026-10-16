@@ -16,7 +16,9 @@ export { DEFAULT_TIME_ZONE } from "./dates/date.constants";
 export {
   formatDayInWords,
   formatDayRange,
+  formatMonthName,
   formatMonthRange,
+  formatQuarter,
   formatWeekdayInWords,
 } from "./dates/date-display.helpers";
 export {
@@ -27,10 +29,19 @@ export {
   localDateFromExcelSerial,
   localDateFromInstant,
   monthBoundsInTimeZone,
+  monthPeriod,
   parseSlashDate,
+  quarterOfMonth,
+  quarterPeriod,
 } from "./dates/date.helpers";
 export { localDateSchema, periodSchema } from "./dates/date.schemas";
-export type { ExcelDateTimeZones, LocalDate, Period } from "./dates/date.types";
+export type {
+  CalendarMonth,
+  CalendarQuarter,
+  ExcelDateTimeZones,
+  LocalDate,
+  Period,
+} from "./dates/date.types";
 export { extractedContentSchema } from "./extracted-content/extracted-content.schemas";
 export type {
   ExtractedContent,

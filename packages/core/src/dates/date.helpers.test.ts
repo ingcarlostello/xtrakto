@@ -9,7 +9,10 @@ import {
   localDateFromExcelSerial,
   localDateFromInstant,
   monthBoundsInTimeZone,
+  monthPeriod,
   parseSlashDate,
+  quarterOfMonth,
+  quarterPeriod,
 } from "./date.helpers";
 import type { ExcelDateTimeZones, LocalDate, Period } from "./date.types";
 import { err, ok } from "../result/result.utils";
@@ -103,6 +106,37 @@ describe("localDateFromInstant", () => {
     expect(() =>
       localDateFromInstant(new Date(Number.NaN), DEFAULT_TIME_ZONE),
     ).toThrow(RangeError);
+  });
+});
+
+describe("monthPeriod", () => {
+  it.each([
+    [{ year: 2026, month: 8 }, "2026-08-01", "2026-08-31"],
+    [{ year: 2028, month: 2 }, "2028-02-01", "2028-02-29"],
+    [{ year: 2027, month: 2 }, "2027-02-01", "2027-02-28"],
+    [{ year: 2026, month: 12 }, "2026-12-01", "2026-12-31"],
+  ])("gives %o its days", (month, from, to) => {
+    expect(monthPeriod(month)).toEqual({ from, to });
+  });
+});
+
+describe("quarterPeriod", () => {
+  it.each([
+    [1, "2026-01-01", "2026-03-31"],
+    [3, "2026-07-01", "2026-09-30"],
+    [4, "2026-10-01", "2026-12-31"],
+  ])("gives quarter %i of 2026 its days", (quarter, from, to) => {
+    expect(quarterPeriod({ year: 2026, quarter })).toEqual({ from, to });
+  });
+
+  it.each([
+    [1, 1],
+    [3, 1],
+    [4, 2],
+    [8, 3],
+    [12, 4],
+  ])("puts month %i in quarter %i", (month, quarter) => {
+    expect(quarterOfMonth(month)).toBe(quarter);
   });
 });
 

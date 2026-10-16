@@ -12,6 +12,18 @@ export type Period = {
   readonly to: LocalDate;
 };
 
+/** A month of a year, 1 to 12. */
+export type CalendarMonth = {
+  readonly year: number;
+  readonly month: number;
+};
+
+/** A quarter of a year, 1 to 4: the third is July to September. */
+export type CalendarQuarter = {
+  readonly year: number;
+  readonly quarter: number;
+};
+
 /** How a spreadsheet stores its date cells. See `localDateFromExcelSerial`. */
 export type ExcelDateTimeZones = {
   /** Time zone of the wall-clock time stored in the cell. */

@@ -302,6 +302,8 @@ export const JOB_PROBLEMS = {
 // A file's result once processed (docs/ui/v8-08, within Stage 5).
 export const RESULT_COPY = {
   read: "Listo: leímos tu archivo",
+  // The movements of its account in its period (v8-08's "Lo que sigue").
+  viewMovements: "Ver movimientos",
   alreadyHad: "Ya tenías todo este archivo",
   replaced: "Listo: reemplazamos el extracto que no cuadraba",
   notReconciled: "El saldo final no cuadra",

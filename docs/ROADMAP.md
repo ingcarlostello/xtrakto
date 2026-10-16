@@ -170,7 +170,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.6b Upload result
 - [x] 5.6c Uploaded files and "Encadenado"
 - [x] 5.7a Movements by day _(after 16.0a to 16.0d, pulled forward by the human)_
-- [ ] 5.7b Period selector and account switch
+- [x] 5.7b Period selector and account switch
 - [ ] 5.7c Search and "No cuadra"
 - [ ] 5.8 Onboarding _(design v8)_
 

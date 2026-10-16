@@ -67,6 +67,8 @@ export type IngestionJobResult = {
   readonly stats: Partial<IngestionStats>;
   /** Once done: the statement it saved, or the one that already held it. */
   readonly statement: {
+    /** The account it was saved to. */
+    readonly accountId: string;
     readonly period: Period;
     /** It reconciles, it doesn't, or it prints no balances (an export). */
     readonly balance: StatementBalance;
@@ -295,6 +297,7 @@ const RESULT_COLUMNS = {
   isSlow: sql<boolean>`${inArray(ingestionJobs.status, OPEN)} and ${ingestionJobs.createdAt} < now() - ${SLOW_AFTER}`,
   errorCode: ingestionJobs.errorCode,
   stats: ingestionJobs.stats,
+  accountId: statements.accountId,
   from: statements.periodFrom,
   to: statements.periodTo,
   isVerified: statements.balanceVerified,
@@ -330,6 +333,7 @@ const selectJobResults = ({ tx, userId }: UserContext, filter?: SQL) =>
 type JobResultRow = Awaited<ReturnType<typeof selectJobResults>>[number];
 
 const toJobResult = ({
+  accountId,
   from,
   to,
   isVerified,
@@ -340,8 +344,9 @@ const toJobResult = ({
 }: JobResultRow): IngestionJobResult => ({
   ...job,
   statement:
-    from && to
+    accountId && from && to
       ? {
+          accountId,
           period: { from, to },
           balance: balanceOf(isVerified, hasBalances),
           differenceMinor,

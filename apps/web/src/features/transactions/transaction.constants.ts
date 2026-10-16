@@ -9,9 +9,6 @@ export const MOVEMENTS_STEP = 30;
 /** The most the list shows at once, whatever the URL asks: about a year. */
 export const MAX_MOVEMENTS_SHOWN = 2_000;
 
-/** The search param that keeps how many movements show across reloads. */
-export const SHOWN_PARAM = "show";
-
 /** The attribute that marks each movement's row, to focus the new ones. */
 export const MOVEMENT_ROW_ATTRIBUTE = "data-movement";
 
@@ -27,11 +24,21 @@ export const TRANSACTIONS_COPY = {
   emptyDescription:
     "Cuando subas un extracto, cada movimiento aparece aquí, día por día, con el texto del banco.",
   listTitle: "Todos los movimientos",
-  listOrder: "Los más recientes primero.",
+  emptyPeriod: "No hay movimientos en este periodo.",
   dayBalance: "Saldo del día",
   noDescription: "Sin descripción del banco",
   shown: { before: "Mostrando", of: "de" },
   more: { before: "Mostrar", after: "más" },
+  // The period selector (docs/ui/v8-03), without "Año" until Phase 10.2.
+  period: {
+    quarter: "Trimestre",
+    months: "Mes del trimestre",
+    verified: "Verificado",
+    unverified: "Sin verificar",
+    from: "Del",
+    to: "al",
+    ofYear: "de",
+  },
   // The summary, once movements count and before Phase 6.7 builds it.
   ready: {
     title: "Ya tienes",

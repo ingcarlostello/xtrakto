@@ -49,10 +49,15 @@ export type {
   SavedStatement,
   SaveStatementInput,
 } from "./statements/statement.types";
-export { countCountedMovements } from "./coverage/coverage.queries";
 export {
-  findLatestMovementAccount,
+  type CountedFilter,
+  countCountedMovements,
+} from "./coverage/coverage.queries";
+export {
+  listMovementAccounts,
+  listMovementQuarters,
   listTransactions,
+  type MovementQuarter,
   type TransactionFilter,
   type TransactionListItem,
   type TransactionPage,

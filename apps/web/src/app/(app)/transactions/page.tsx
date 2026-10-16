@@ -2,26 +2,31 @@ import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { UploadStatementLink } from "@/components/empty-state/UploadStatementLink";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PeriodControls } from "@/features/transactions/components/PeriodControls";
 import { TransactionList } from "@/features/transactions/components/TransactionList";
 import { totalText } from "@/features/transactions/transaction-list.helpers";
-import {
-  SHOWN_PARAM,
-  TRANSACTIONS_COPY as COPY,
-} from "@/features/transactions/transaction.constants";
-import { shownCountSchema } from "@/features/transactions/transaction.schemas";
+import { TRANSACTIONS_COPY as COPY } from "@/features/transactions/transaction.constants";
+import { transactionsSearchSchema } from "@/features/transactions/transaction.schemas";
 import { getAccountTransactions } from "@/features/transactions/transaction.service";
 import { requireSignedIn } from "@/lib/auth";
 
 export const metadata: Metadata = { title: COPY.title };
 
-// docs/ui/v8-03 within 5.7a: the movements that count, by day; until one
-// counts, the invitation to upload.
+// docs/ui/v8-03 within Stage 5: an account's movements that count in a
+// quarter or one of its months, by day; until one counts, the invitation to
+// upload. The filters live in the URL.
 export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
   const clerkUserId = await requireSignedIn();
-  const shown = shownCountSchema.parse((await searchParams)[SHOWN_PARAM]);
-  const transactions = await getAccountTransactions(clerkUserId, shown);
+  const { account, period, show } = transactionsSearchSchema.parse(
+    await searchParams,
+  );
+  const transactions = await getAccountTransactions(clerkUserId, {
+    ...(account === undefined ? {} : { accountId: account }),
+    ...(period === undefined ? {} : { period }),
+    shown: show,
+  });
   if (!transactions)
     return (
       <>
@@ -36,6 +41,7 @@ export default async function TransactionsPage({
   return (
     <>
       <PageHeader title={COPY.title} subtitle={totalText(transactions.total)} />
+      <PeriodControls view={transactions} />
       <TransactionList transactions={transactions} />
     </>
   );
