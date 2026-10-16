@@ -500,7 +500,7 @@ The months the user has, on the upload screen, the upload result and the profile
 
 ### Drop zone
 
-On the upload screen, inside the card "Elige uno o varios archivos": `--radius-md`, a 2px dashed border in `--primary` at 30%, padding 40px 20px, centered. A 72px `--primary-soft` circle with the `upload` icon (28px, `--primary`), the title "Arrastra tus extractos aquí" (Outfit 500 24px), the Primary "Elegir archivos" button with `file-text`, and a caption with the size limit and where files are read. While files are dragged over it, the border turns solid `--primary` on `--primary-soft`. The button is the way in with a keyboard and on phones; a file dropped elsewhere on the page is ignored, so the browser never opens it.
+On the upload screen, inside the card "Elige uno o varios archivos": `--radius-md`, a 2px dashed border in `--primary` at 30%, padding 40px 20px, centered. A 72px `--primary-soft` circle with the `upload` icon (28px, `--primary`), the title "Arrastra tus extractos aquí" (Outfit 500 24px), the Primary "Elegir archivos" button with `file-text`, and a caption with the size limit and where files are read. While files are dragged over it, the border turns solid `--primary` on `--primary-soft`. The button is the way in with a keyboard and on phones; a file dropped elsewhere on the page is ignored, so the browser never opens it. The welcome's last step (below) shows the same zone in a card "Súbelos aquí": the files chosen there go to the upload screen, which reads and sends them (`UploadShortcut`).
 
 ### File row
 
@@ -539,6 +539,15 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 | A job still open                         | "Excel"                                        | "En proceso"                  |
 
 - The first 5 rows show; a link action "Ver N más" shows the rest (the latest 30) and then reads "Ver menos", with `aria-expanded` and the focus kept on it.
+
+### Welcome (onboarding)
+
+As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a new account: signed in, without the app's header and dock, in the waitlist's 1120px column.
+
+- **Header:** the logo, which links nowhere; "Paso 1 de 3" in Caption `--text-muted` and the link action "Saltar" (read "Saltar la bienvenida"), which goes to the upload screen from every step. Below, three 6px segments 8px apart, at most 420px wide (the full width on phones): `--primary` up to the current step, then `--chart-axis`, since `--ring-track` vanishes on the page's background. They only repeat the step's text (`aria-hidden`).
+- **Step 1:** the Landing headline, the subtitle in Body `--text-secondary` (18px from `sm`), what works today as a list with neutral 44px chips (`--surface` at 80% with `--shadow-chip`, ink icons), and the Primary "Empezar" with "Gratis. Sin conectar tu banco: tú subes el archivo." beside it. Beside them from `lg`, below on phones, an example panel: the neutral badge "Ejemplo", "Julio a septiembre", the statement object and the verified status pill. v8's kind rings come back with the summary (6.7).
+- **Step 2:** a card at most 820px wide whose page title is the question. Each file is a radio card (`--surface`, `--radius-md`, `--shadow-card`, padding 20): a 44px chip, `--primary-soft` with a `--primary` icon once chosen and `--surface-muted` with ink before; the title in Body 700, with the `ok` badge "Recomendado" on the quarterly statement; its line in Caption `--text-muted`; and, once chosen, a 2px `--primary` border and a 24px `--primary` circle with a white check. The radios are native, so the arrow keys move the choice, and the focus ring goes around the card. Then "No te pedimos tu nombre…" in Caption `--text-secondary` on `--primary-soft-2` (radius 16, padding 16, `user-round` in `--primary-strong`), and a Secondary "Atrás" and a Primary "Continuar" at each end.
+- **Step 3:** two cards side by side from `lg` (5:4), stacked on phones: the guides (the page title; a subtitle that follows the step 2 choice; one `--surface-muted` panel per file, the chosen one first, with its icon, its name in Body 700 and its numbered steps, 28px `--primary-soft` circles with `--primary-strong` numbers) and "Súbelos aquí" with the drop zone.
 
 ### Switch
 
@@ -763,5 +772,5 @@ v8 needs no new color tokens: the grey status dot is `ink-faint`, and the covera
 
 - **Dark mode:** not designed yet. When it is, every token above gets a dark value; components keep using tokens only.
 - **Phone layout:** follows §7; every v8 screen has a 390px capture (`docs/ui/v8-*-movil.png`), with the bottom tab bar Resumen, Movimientos, Subir, Pregúntale and "Más".
-- **States:** ingestion in progress follows the processing steps of `v8-08`; notices and errors follow `v8-13`. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Ir a Subir", a link to the upload screen, the only place where files are uploaded; `v8-12` adds the bank's download paths.
+- **States:** ingestion in progress follows the processing steps of `v8-08`; notices and errors follow `v8-13`. The empty states (Phase 4.6) use the statement illustration of §2 in a translucent panel, with one action: "Ir a Subir", a link to the upload screen, the only place where files are uploaded (the welcome's drop zone takes them there); `v8-12` adds the bank's download paths.
 - **Screens:** v8 covers every MVP screen, including the quick review, the upload result, the profile and onboarding. `docs/ROADMAP.md` says which phase builds each.
