@@ -7,8 +7,9 @@ import {
 } from "@xtrakto/core";
 import type { AppError, Period, PeriodSource } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
+import { BANK_LABELS, MASKED_DIGITS } from "@/utils/account-label.constants";
+import { countText } from "@/utils/count-text.utils";
 import {
-  BANK_LABELS,
   FILE_PROBLEM,
   FORMAT_BANKS,
   FORMAT_LABELS,
@@ -18,7 +19,6 @@ import {
   NO_ANSWER,
   PROBLEM_COPY,
   UPLOAD_COPY as COPY,
-  MASKED_DIGITS,
   UPLOAD_STATUS,
 } from "./upload.constants";
 import type {
@@ -30,7 +30,6 @@ import type {
 } from "./upload.types";
 
 type Labels = Readonly<Partial<Record<string, string>>>;
-type Noun = { readonly one: string; readonly other: string };
 type ProblemText = { readonly title: string; readonly detail: string };
 
 /** What a chosen file's row shows: its stage, its preview or its problem. */
@@ -46,12 +45,6 @@ export type FileRowView =
       readonly notice?: string;
     }
   | ({ readonly kind: "problem" } & ProblemText);
-
-const COUNT_FORMAT = new Intl.NumberFormat("es-CO");
-
-/** A count with its noun: `"1 movimiento"`, `"1.234 movimientos"`. */
-export const countText = (count: number, noun: Noun): string =>
-  `${COUNT_FORMAT.format(count)} ${count === 1 ? noun.one : noun.other}`;
 
 // An id without a label is shown as it is: no parser returns one today.
 const labelOf = (labels: Labels, id: string): string => labels[id] ?? id;

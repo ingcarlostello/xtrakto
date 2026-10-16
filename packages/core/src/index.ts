@@ -17,6 +17,7 @@ export {
   formatDayInWords,
   formatDayRange,
   formatMonthRange,
+  formatWeekdayInWords,
 } from "./dates/date-display.helpers";
 export {
   compareLocalDates,
@@ -42,6 +43,7 @@ export { CURRENCY } from "./money/money.constants";
 export {
   amountFromNumber,
   formatAmount,
+  formatSignedAmount,
   isAmountMinor,
   parseAmountText,
   sumAmounts,

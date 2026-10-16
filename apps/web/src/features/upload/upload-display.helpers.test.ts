@@ -8,7 +8,6 @@ import type { AppError, Period } from "@xtrakto/core";
 import type { IngestionJobError } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import {
-  countText,
   fileRowView,
   jobLabel,
   jobView,
@@ -270,17 +269,6 @@ describe("usagePill", () => {
     expect(limitText(usage(10))).toBe(
       "Llegaste al límite de este mes. Se renuevan el 1 de noviembre.",
     );
-  });
-});
-
-describe("countText", () => {
-  it.each([
-    [0, "0 movimientos"],
-    [1, "1 movimiento"],
-    [33, "33 movimientos"],
-    [1234, "1.234 movimientos"],
-  ])("writes %i as %s", (count, expected) => {
-    expect(countText(count, UPLOAD_COPY.movements)).toBe(expected);
   });
 });
 

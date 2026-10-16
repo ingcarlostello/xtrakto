@@ -34,10 +34,10 @@ export const countedMovement = and(
   ),
 );
 
-/** How many of an account's movements count. */
+/** How many movements count: of one account, or of all the user's. */
 export const countCountedMovements = async (
   { tx, userId }: UserContext,
-  accountId: string,
+  accountId?: string,
 ): Promise<number> => {
   const [row] = await tx
     .select({ counted: count() })
@@ -46,7 +46,9 @@ export const countCountedMovements = async (
     .where(
       and(
         eq(transactions.userId, userId),
-        eq(transactions.accountId, accountId),
+        accountId === undefined
+          ? undefined
+          : eq(transactions.accountId, accountId),
         countedMovement,
       ),
     );

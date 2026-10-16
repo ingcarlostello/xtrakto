@@ -1,9 +1,5 @@
-import {
-  ACCOUNT_KEY_PREFIX,
-  ACCOUNT_TYPE_LABELS,
-  BANK_LABELS,
-  MASKED_DIGITS,
-} from "./upload.constants";
+import { accountLabel } from "@/utils/account-label.helpers";
+import { ACCOUNT_KEY_PREFIX } from "./upload.constants";
 import type {
   AccountKey,
   StatementPreview,
@@ -23,18 +19,6 @@ export type AccountDestination =
 
 type AccountKind = Pick<StatementPreview, "bankId" | "accountType">;
 type Candidate = { readonly key: AccountKey; readonly last4: string | null };
-type Labels = Readonly<Partial<Record<string, string>>>;
-
-const labelOf = (labels: Labels, id: string): string => labels[id] ?? id;
-
-/** `"Cuenta de ahorros · Bancolombia ••••8901"`, without digits until a statement names them. */
-export const accountLabel = (
-  { bankId, accountType }: AccountKind,
-  last4: string | null,
-): string => {
-  const name = `${labelOf(ACCOUNT_TYPE_LABELS, accountType)} · ${labelOf(BANK_LABELS, bankId)}`;
-  return last4 ? `${name} ${MASKED_DIGITS}${last4}` : name;
-};
 
 // A quarterly statement chosen in the same batch names its account by its
 // last 4 digits: an account the user has, the only one without a number,

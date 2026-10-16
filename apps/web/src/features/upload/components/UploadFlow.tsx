@@ -4,10 +4,10 @@ import { Upload } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
+import { countText } from "@/utils/count-text.utils";
 import { exportDestination } from "../account-destination.helpers";
 import { type FileActions, useUploadFlow } from "../hooks/use-upload-flow";
 import {
-  countText,
   fileRowView,
   isLimitReached,
   jobLabel,

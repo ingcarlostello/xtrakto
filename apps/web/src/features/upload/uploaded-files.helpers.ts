@@ -1,4 +1,5 @@
-import { countText, jobLabel } from "./upload-display.helpers";
+import { countText } from "@/utils/count-text.utils";
+import { jobLabel } from "./upload-display.helpers";
 import { offBy } from "./upload-result.helpers";
 import {
   JOB_PROBLEMS,
