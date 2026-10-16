@@ -80,22 +80,28 @@ const createWorker = () => {
 // Stands in for the server action.
 const submit = vi.fn<SubmitStatement>();
 
-function Harness({ onRender }: { onRender: (queue: Queue) => void }) {
-  onRender(useUploadQueue({ createWorker, submit }));
+type TakeHandedFiles = () => readonly File[];
+
+function Harness({
+  onRender,
+  takeHandedFiles,
+}: {
+  onRender: (queue: Queue) => void;
+  takeHandedFiles?: TakeHandedFiles;
+}) {
+  onRender(useUploadQueue({ createWorker, submit, takeHandedFiles }));
   return null;
 }
 
 let root: Root;
 let isMounted: boolean;
 
-beforeEach(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  workers = [];
-  submit.mockReset();
+const mount = (takeHandedFiles?: TakeHandedFiles) => {
   root = createRoot(document.createElement("div"));
   act(() =>
     root.render(
       <Harness
+        takeHandedFiles={takeHandedFiles}
         onRender={(current) => {
           queue = current;
         }}
@@ -103,6 +109,13 @@ beforeEach(() => {
     ),
   );
   isMounted = true;
+};
+
+beforeEach(() => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  workers = [];
+  submit.mockReset();
+  mount();
 });
 
 afterEach(() => {
@@ -145,6 +158,18 @@ describe("useUploadQueue", () => {
       UPLOAD_STATUS.EXTRACTING,
       UPLOAD_STATUS.EXTRACTING,
     ]);
+  });
+
+  it("reads the files chosen on another screen as soon as it starts", () => {
+    act(() => root.unmount());
+    const handed = [fileNamed("trimestral.xlsx"), fileNamed("julio.xlsx")];
+    const takeHandedFiles = vi.fn(() => handed);
+
+    mount(takeHandedFiles);
+
+    expect(takeHandedFiles).toHaveBeenCalledOnce();
+    expect(queue.items.map((item) => item.file)).toEqual(handed);
+    expect(workers).toHaveLength(2);
   });
 
   it("hands each worker its file's bytes, transferred, and never its name", async () => {

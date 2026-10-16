@@ -83,11 +83,32 @@ const useSending = (
   return { send, isSending };
 };
 
+const added = (files: readonly File[]): UploadQueueAction => ({
+  type: "added",
+  files: files.map((file) => ({ id: crypto.randomUUID(), file })),
+});
+
+type TakeHandedFiles = () => readonly File[];
+
+// Files chosen on another screen join the queue when it starts. In an
+// effect, not while rendering: taking them empties their store.
+const useHandedFiles = (
+  takeHandedFiles: TakeHandedFiles | undefined,
+  dispatch: Dispatch<UploadQueueAction>,
+) => {
+  useEffect(() => {
+    const handed = takeHandedFiles?.() ?? [];
+    if (handed.length > 0) dispatch(added(handed));
+  }, [takeHandedFiles, dispatch]);
+};
+
 type UploadQueueOptions = {
   /** A new worker for each file. */
   readonly createWorker: () => ExtractionWorker;
   /** Queues one file on the server. */
   readonly submit: SubmitStatement;
+  /** The files chosen on another screen, such as the welcome's last step. */
+  readonly takeHandedFiles?: TakeHandedFiles;
 };
 
 /**
@@ -98,10 +119,12 @@ type UploadQueueOptions = {
 export const useUploadQueue = ({
   createWorker,
   submit,
+  takeHandedFiles,
 }: UploadQueueOptions) => {
   const [items, dispatch] = useReducer(uploadQueueReducer, []);
   const workers = useRef(new Map<string, ExtractionWorker>());
   const { send, isSending } = useSending(submit, dispatch);
+  useHandedFiles(takeHandedFiles, dispatch);
 
   useEffect(() => {
     for (const item of itemsToStart(items)) {
@@ -119,11 +142,7 @@ export const useUploadQueue = ({
     };
   }, []);
 
-  const addFiles = (files: readonly File[]) =>
-    dispatch({
-      type: "added",
-      files: files.map((file) => ({ id: crypto.randomUUID(), file })),
-    });
+  const addFiles = (files: readonly File[]) => dispatch(added(files));
 
   const remove = (id: string) => {
     workers.current.get(id)?.terminate();
