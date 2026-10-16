@@ -304,6 +304,8 @@ export const RESULT_COPY = {
   read: "Listo: leímos tu archivo",
   // The movements of its account in its period (v8-08's "Lo que sigue").
   viewMovements: "Ver movimientos",
+  // Where its balance breaks (v8-13), for a statement that doesn't reconcile.
+  viewBreaks: "Ver dónde no cuadra",
   alreadyHad: "Ya tenías todo este archivo",
   replaced: "Listo: reemplazamos el extracto que no cuadraba",
   notReconciled: "El saldo final no cuadra",

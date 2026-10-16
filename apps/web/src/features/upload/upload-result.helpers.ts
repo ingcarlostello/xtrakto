@@ -7,6 +7,7 @@ import {
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { countText } from "@/utils/count-text.utils";
 import {
+  breaksHref,
   periodOfStatement,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
@@ -44,6 +45,8 @@ export type ResultView = {
   readonly steps: readonly ResultStep[];
   /** Its movements, when they count: not those of a statement that doesn't reconcile. */
   readonly movementsHref?: ReturnType<typeof transactionsHref>;
+  /** Where its balance breaks, for a statement that doesn't reconcile. */
+  readonly breaksHref?: ReturnType<typeof breaksHref>;
 };
 
 const NUMBER = new Intl.NumberFormat("es-CO");
@@ -169,6 +172,6 @@ export const resultView = (job: UploadJob, outcome: JobOutcome): ResultView => {
             period: periodOfStatement(outcome.period),
           }),
         }
-      : {}),
+      : { breaksHref: breaksHref(outcome.statementId) }),
   };
 };

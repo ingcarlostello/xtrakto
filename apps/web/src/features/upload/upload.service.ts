@@ -193,6 +193,7 @@ const outcomeOf = ({
     ? undefined
     : {
         stats: { ...NO_COUNTS, ...stats },
+        statementId: statement.id,
         accountId: statement.accountId,
         period: statement.period,
         balance: statement.balance,

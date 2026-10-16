@@ -1,6 +1,7 @@
 import { cn } from "@/utils/cn.utils";
 import { Check, CircleCheck, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
+import type { ReactElement } from "react";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,19 +87,39 @@ function Steps({ steps }: { steps: readonly ResultStep[] }) {
   );
 }
 
-// Its account's movements in its period, once they count (5.7b).
-function MovementsLink({ href }: { href: ResultView["movementsHref"] }) {
-  if (!href) return null;
+type ResultActionProps = { render: ReactElement; label: string };
+
+function ResultAction({ render, label }: ResultActionProps) {
   return (
     <Button
       variant="link"
       nativeButton={false}
-      render={<Link href={href} />}
+      render={render}
       className="self-start"
     >
-      {RESULT_COPY.viewMovements}
+      {label}
     </Button>
   );
+}
+
+// Its account's movements in its period, once they count (5.7b), or where
+// its balance breaks, when it doesn't reconcile (5.7d).
+function ResultLink({ view }: { view: ResultView }) {
+  if (view.movementsHref)
+    return (
+      <ResultAction
+        render={<Link href={view.movementsHref} />}
+        label={RESULT_COPY.viewMovements}
+      />
+    );
+  if (view.breaksHref)
+    return (
+      <ResultAction
+        render={<Link href={view.breaksHref} />}
+        label={RESULT_COPY.viewBreaks}
+      />
+    );
+  return null;
 }
 
 type UploadResultProps = {
@@ -141,7 +162,7 @@ export function UploadResult({ name, tags, view }: UploadResultProps) {
       <Counts counts={view.counts} isOk={view.isOk} />
       <StatusPill {...view.pill} className="self-start" />
       <Steps steps={view.steps} />
-      <MovementsLink href={view.movementsHref} />
+      <ResultLink view={view} />
     </li>
   );
 }

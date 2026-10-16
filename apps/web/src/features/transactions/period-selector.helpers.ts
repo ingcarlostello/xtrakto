@@ -1,9 +1,16 @@
 import {
+  type CalendarQuarter,
   formatDayInWords,
   formatMonthName,
   formatQuarter,
+  type Period,
+  quarterOfMonth,
 } from "@xtrakto/core";
-import type { AccountRow, MovementQuarter } from "@xtrakto/db";
+import type {
+  AccountRow,
+  MovementQuarter,
+  UnreconciledStatement,
+} from "@xtrakto/db";
 import { accountLabel } from "@/utils/account-label.helpers";
 import {
   type MovementPeriod,
@@ -14,11 +21,21 @@ import {
 } from "@/utils/transactions-url.helpers";
 import type { ListLink } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type { AccountTransactions, PeriodOption } from "./transaction.types";
+import type {
+  AccountTransactions,
+  PeriodOption,
+  QuarterChoice,
+} from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.period;
 
-const isSameQuarter = (period: MovementPeriod, quarter: MovementQuarter) => {
+const QUARTER_BADGES = {
+  verified: { label: COPY.verified, variant: "ok" },
+  unverified: { label: COPY.unverified, variant: "neutral" },
+  unreconciled: { label: COPY.unreconciled, variant: "attention" },
+} as const;
+
+const isSameQuarter = (period: MovementPeriod, quarter: CalendarQuarter) => {
   const { year, quarter: number } = quarterOf(period);
   return year === quarter.year && number === quarter.quarter;
 };
@@ -30,13 +47,52 @@ const isSameQuarter = (period: MovementPeriod, quarter: MovementQuarter) => {
  */
 export const selectPeriod = (
   requested: MovementPeriod | undefined,
-  quarters: readonly MovementQuarter[],
+  quarters: readonly CalendarQuarter[],
 ): MovementPeriod | undefined => {
   if (requested && quarters.some((q) => isSameQuarter(requested, q)))
     return requested;
   const latest = quarters[0];
   return (
     latest && { kind: "quarter", year: latest.year, quarter: latest.quarter }
+  );
+};
+
+/**
+ * Whether a statement's days, those after its opening balance's, meet a
+ * period's days.
+ */
+export const meetsPeriod = (statement: Period, period: Period): boolean =>
+  statement.from < period.to && statement.to >= period.from;
+
+const quarterOfDate = (date: string): CalendarQuarter => ({
+  year: Number(date.slice(0, 4)),
+  quarter: quarterOfMonth(Number(date.slice(5, 7))),
+});
+
+/**
+ * The quarters to choose from, the latest first: those with movements, and
+ * those of a statement that doesn't reconcile, which the picker marks
+ * whether or not something else counts on their days.
+ */
+export const quarterChoices = (
+  counted: readonly MovementQuarter[],
+  unreconciled: readonly UnreconciledStatement[],
+): readonly QuarterChoice[] => {
+  const choices = new Map<string, QuarterChoice>();
+  for (const { verified, ...quarter } of counted)
+    choices.set(`${quarter.year}-${quarter.quarter}`, {
+      ...quarter,
+      status: verified ? "verified" : "unverified",
+    });
+  for (const { period } of unreconciled) {
+    const quarter = quarterOfDate(period.to);
+    choices.set(`${quarter.year}-${quarter.quarter}`, {
+      ...quarter,
+      status: "unreconciled",
+    });
+  }
+  return [...choices.values()].sort(
+    (a, b) => b.year - a.year || b.quarter - a.quarter,
   );
 };
 
@@ -64,16 +120,17 @@ export const quarterOptions = (
 ): readonly PeriodOption[] => {
   const { accountId, search } = listLinkOf(view);
   return view.quarters.map((quarter) => {
-    const period: MovementPeriod = { kind: "quarter", ...quarter };
+    const period: MovementPeriod = {
+      kind: "quarter",
+      year: quarter.year,
+      quarter: quarter.quarter,
+    };
     return {
       key: periodParam(period),
       label: formatQuarter(quarter),
       href: transactionsHref({ accountId, period, search }),
       isCurrent: isSameQuarter(view.period, quarter),
-      badge: {
-        label: quarter.verified ? COPY.verified : COPY.unverified,
-        isOk: quarter.verified,
-      },
+      badge: QUARTER_BADGES[quarter.status],
     };
   });
 };

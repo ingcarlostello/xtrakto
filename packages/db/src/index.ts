@@ -43,6 +43,12 @@ export type {
   IngestionStats,
   StatementBalance,
 } from "./ingestion-jobs/ingestion-job.types";
+export {
+  findStatementBreaks,
+  listUnreconciledStatements,
+  type StatementBreaks,
+  type UnreconciledStatement,
+} from "./statements/statement-breaks.queries";
 export { saveStatement } from "./statements/statement.queries";
 export type {
   BalanceCheck,

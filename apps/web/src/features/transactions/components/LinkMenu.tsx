@@ -23,9 +23,7 @@ function LinkMenuOption({ option }: { option: PeriodOption }) {
     >
       <span className="whitespace-nowrap">{option.label}</span>
       {option.badge && (
-        <Badge variant={option.badge.isOk ? "ok" : "neutral"}>
-          {option.badge.label}
-        </Badge>
+        <Badge variant={option.badge.variant}>{option.badge.label}</Badge>
       )}
     </Menu.LinkItem>
   );
