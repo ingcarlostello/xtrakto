@@ -1,11 +1,12 @@
 import { APP_ERROR_CODE, PERIOD_SOURCE } from "@xtrakto/core";
-import type { AccountType, AppError, PeriodSource } from "@xtrakto/core";
+import type { AppError, PeriodSource } from "@xtrakto/core";
 import type {
   IngestionJobError,
   IngestionJobStatus,
   StatementBalance,
 } from "@xtrakto/db";
 import type { FormatId } from "@xtrakto/parsers";
+import type { BANK_LABELS } from "@/utils/account-label.constants";
 
 // Reading statement files in the browser before sending them. The Spanish copy
 // lives here, in one place (project rules §5).
@@ -114,20 +115,10 @@ export const FORMAT_PERIOD_SOURCE = {
   "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
 } as const satisfies Record<FormatId, PeriodSource>;
 
-export const BANK_LABELS = { bancolombia: "Bancolombia" } as const;
-
 export const FORMAT_BANKS = {
   "bancolombia-savings-quarterly": "bancolombia",
   "bancolombia-movements-export": "bancolombia",
 } as const satisfies Record<FormatId, keyof typeof BANK_LABELS>;
-
-export const ACCOUNT_TYPE_LABELS = {
-  savings: "Cuenta de ahorros",
-  credit_card: "Tarjeta de crédito",
-} as const satisfies Record<AccountType, string>;
-
-/** How an account number shows: only its last 4 digits. */
-export const MASKED_DIGITS = "••••";
 
 export const UPLOAD_COPY = {
   title: "Subir extracto",

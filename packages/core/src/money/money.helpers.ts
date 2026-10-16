@@ -124,3 +124,16 @@ export const formatAmount = (
     .map(toDisplayPart)
     .join("");
 };
+
+/**
+ * An amount with its direction, as a movement shows it: `+$420`,
+ * `−$90.000`, and `$0` without a sign.
+ */
+export const formatSignedAmount = (
+  amount: AmountMinor,
+  currency: Currency,
+  locale = "es-CO",
+): string => {
+  const formatted = formatAmount(amount, currency, locale);
+  return amount > 0 ? `+${formatted}` : formatted;
+};

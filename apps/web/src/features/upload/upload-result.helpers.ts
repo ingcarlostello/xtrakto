@@ -5,7 +5,8 @@ import {
   isAmountMinor,
 } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
-import { countText, recognizedText } from "./upload-display.helpers";
+import { countText } from "@/utils/count-text.utils";
+import { recognizedText } from "./upload-display.helpers";
 import {
   RESULT_COPY as COPY,
   STATEMENT_BALANCE,

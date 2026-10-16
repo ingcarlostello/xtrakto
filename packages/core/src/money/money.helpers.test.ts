@@ -4,6 +4,7 @@ import { CURRENCY } from "./money.constants";
 import {
   amountFromNumber,
   formatAmount,
+  formatSignedAmount,
   isAmountMinor,
   parseAmountText,
   sumAmounts,
@@ -184,6 +185,17 @@ describe("formatAmount", () => {
     expect(formatAmount(amount(8_119_555.5), CURRENCY.COP, "en-US")).toBe(
       "$8,119,555.50",
     );
+  });
+});
+
+describe("formatSignedAmount", () => {
+  it.each([
+    { value: 420, display: "+$420" },
+    { value: 12.34, display: "+$12,34" },
+    { value: -90_000, display: "\u2212$90.000" },
+    { value: 0, display: "$0" },
+  ])("shows $value as $display", ({ value, display }) => {
+    expect(formatSignedAmount(amount(value), CURRENCY.COP)).toBe(display);
   });
 });
 

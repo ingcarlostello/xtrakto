@@ -34,6 +34,19 @@ export const formatDayInWords = (date: LocalDate): string =>
   formatDate(toDate(date), "d 'de' MMMM");
 
 /**
+ * A day with its weekday, as a heading: `"Miércoles 30 de septiembre"`, or
+ * `"Miércoles 31 de diciembre de 2025"` with its year.
+ */
+export const formatWeekdayInWords = (
+  date: LocalDate,
+  { withYear }: { readonly withYear: boolean },
+): string => {
+  const pattern = withYear ? "EEEE d 'de' MMMM 'de' yyyy" : "EEEE d 'de' MMMM";
+  const text = formatDate(toDate(date), pattern);
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+};
+
+/**
  * A range of days, such as the movements of a file: `"1–15 ago 2026"`,
  * `"3 ago 2026"`, `"28 jul – 3 ago 2026"`, `"28 dic 2026 – 3 ene 2027"`.
  */

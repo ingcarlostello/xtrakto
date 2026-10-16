@@ -3,6 +3,7 @@ import {
   formatDayInWords,
   formatDayRange,
   formatMonthRange,
+  formatWeekdayInWords,
 } from "./date-display.helpers";
 import { localDateSchema, periodSchema } from "./date.schemas";
 
@@ -15,6 +16,26 @@ describe("formatDayInWords", () => {
     ["2026-09-30", "30 de septiembre"],
   ])("writes %s as %s", (date, expected) => {
     expect(formatDayInWords(localDateSchema.parse(date))).toBe(expected);
+  });
+});
+
+describe("formatWeekdayInWords", () => {
+  it.each([
+    ["2026-09-30", "Miércoles 30 de septiembre"],
+    ["2026-10-03", "Sábado 3 de octubre"],
+    ["2026-01-01", "Jueves 1 de enero"],
+  ])("heads %s as %s", (date, expected) => {
+    expect(
+      formatWeekdayInWords(localDateSchema.parse(date), { withYear: false }),
+    ).toBe(expected);
+  });
+
+  it("adds the year when asked", () => {
+    expect(
+      formatWeekdayInWords(localDateSchema.parse("2025-12-31"), {
+        withYear: true,
+      }),
+    ).toBe("Miércoles 31 de diciembre de 2025");
   });
 });
 
