@@ -10,6 +10,7 @@ import {
 } from "../upload-jobs.helpers";
 import { filesToSend } from "../upload-send.helpers";
 import { JOBS_PARAM } from "../upload.constants";
+import { takeHandedFiles } from "../upload.store";
 import type {
   AccountKey,
   ExtractionWorker,
@@ -115,14 +116,16 @@ export type FileActions = {
 };
 
 /**
- * The upload card's state: the files chosen, the ones ready to send, whether
- * files are going up (until the page has the server's new count), and how
- * the jobs sent go, those of earlier visits to the page included.
+ * The upload card's state: the files chosen, here or on the welcome's last
+ * step, the ones ready to send, whether files are going up (until the page
+ * has the server's new count), and how the jobs sent go, those of earlier
+ * visits to the page included.
  */
 export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
   const queue = useUploadQueue({
     createWorker: createExtractionWorker,
     submit: submitStatement,
+    takeHandedFiles,
   });
   const { sendFiles, isRefreshing } = useRefreshingSend(queue.send);
   const isBusy = queue.isSending || isRefreshing;

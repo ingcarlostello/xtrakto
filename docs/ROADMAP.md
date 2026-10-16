@@ -173,7 +173,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.7b Period selector and account switch
 - [x] 5.7c Search
 - [x] 5.7d "Ver dónde no cuadra"
-- [ ] 5.8 Onboarding _(design v8)_
+- [x] 5.8 Onboarding _(design v8)_
 
 **Stage 6 — Deterministic insights**
 
@@ -1042,6 +1042,7 @@ Phase 5.7c was split in two (about 500 changed lines), with the human's approval
 **Tasks**
 
 - The three steps of `docs/ui/v8-15` to `v8-17`, each with "Saltar", with copy true today: what Xtrakto does; what to upload first (the quarterly statement, recommended, or the month's movements) for a Bancolombia savings account, without asking for the name, which comes from the statement; then the download paths of both formats next to the drop zone. No credit cards, other banks or sample data yet.
+- The drop zone takes the files chosen to the upload screen, still the only one that reads and sends them, in the browser's memory; the choice of the second step travels in the URL and puts its file's guide first.
 - Shown once: Clerk sends the user there right after sign-up, and nothing is stored (decided with the human).
 
 **Done when:** a new user goes through the steps or skips them and lands on the upload screen; the steps work at phone width and with the keyboard.

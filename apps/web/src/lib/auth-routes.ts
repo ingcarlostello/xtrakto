@@ -5,6 +5,9 @@ export const AUTH_ROUTES = {
   signUp: "/sign-up",
 } as const;
 
+// Where Clerk sends a new account, right after sign-up: the welcome (5.8).
+export const ONBOARDING_ROUTE = "/onboarding";
+
 // Called by Clerk, without a session: its signature is the check (4.5).
 export const CLERK_WEBHOOK_ROUTE = "/api/webhooks/clerk";
 

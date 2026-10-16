@@ -8,7 +8,7 @@ import { ACCEPTED_EXTENSION, UPLOAD_COPY as COPY } from "../upload.constants";
 
 type DropZoneProps = {
   /** The "Elegir archivos" button, so the focus can come back to it. */
-  ref: Ref<HTMLButtonElement>;
+  ref?: Ref<HTMLButtonElement>;
   onFiles: (files: readonly File[]) => void;
 };
 
