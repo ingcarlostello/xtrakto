@@ -2,41 +2,52 @@ import "server-only";
 import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
 import {
   countCountedMovements,
-  findLatestMovementAccount,
   findUserId,
+  listMovementAccounts,
+  listMovementQuarters,
   listTransactions,
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
-import type { AccountTransactions } from "./transaction.types";
+import { periodDays } from "@/utils/transactions-url.helpers";
+import { selectPeriod } from "./period-selector.helpers";
+import type {
+  AccountTransactions,
+  TransactionsRequest,
+} from "./transaction.types";
 
 /**
- * The signed-in user's movements that count, newest first, as many as
- * `shown`: of the account with the most recent one, until 5.7b lets the user
- * switch. `null` until a movement counts; reading never creates the user's
- * row. The Clerk id must come from the session.
+ * The signed-in user's movements that count, newest first: of the account
+ * the URL asks, when it's theirs and has movements, else of the one with the
+ * latest; in the period it asks, when that falls in a quarter with
+ * movements, else in the latest one. `null` until a movement counts; reading
+ * never creates the user's row. The Clerk id must come from the session.
  */
 export const getAccountTransactions = async (
   clerkUserId: string,
-  shown: number,
+  request: TransactionsRequest,
 ): Promise<AccountTransactions | null> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
   if (!userId) return null;
-  const currentYear = localDateFromInstant(new Date(), DEFAULT_TIME_ZONE).slice(
-    0,
-    4,
-  );
+  const today = localDateFromInstant(new Date(), DEFAULT_TIME_ZONE);
   return withUserContext(db, userId, async (ctx) => {
-    const account = await findLatestMovementAccount(ctx);
+    const accounts = await listMovementAccounts(ctx);
+    const account =
+      accounts.find(({ id }) => id === request.accountId) ?? accounts[0];
     if (!account) return null;
-    const total = await countCountedMovements(ctx, account.id);
-    const { items } = await listTransactions(ctx, {
-      accountId: account.id,
-      limit: shown,
+    const quarters = await listMovementQuarters(ctx, account.id);
+    const period = selectPeriod(request.period, quarters);
+    if (!period) return null;
+    const filter = { accountId: account.id, period: periodDays(period) };
+    const total = await countCountedMovements(ctx, filter);
+    const page = await listTransactions(ctx, {
+      ...filter,
+      limit: request.shown,
       offset: 0,
     });
-    return { account, total, items, currentYear };
+    const currentYear = today.slice(0, 4);
+    return { accounts, account, quarters, period, total, ...page, currentYear };
   });
 };
 

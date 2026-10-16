@@ -34,10 +34,17 @@ export const countedMovement = and(
   ),
 );
 
-/** How many movements count: of one account, or of all the user's. */
+/** Which movements to count: an account's, a period's, or every one. */
+export type CountedFilter = {
+  readonly accountId?: string;
+  /** Inclusive on both ends. */
+  readonly period?: Period;
+};
+
+/** How many of the user's movements count, within `filter`. */
 export const countCountedMovements = async (
   { tx, userId }: UserContext,
-  accountId?: string,
+  { accountId, period }: CountedFilter = {},
 ): Promise<number> => {
   const [row] = await tx
     .select({ counted: count() })
@@ -49,6 +56,8 @@ export const countCountedMovements = async (
         accountId === undefined
           ? undefined
           : eq(transactions.accountId, accountId),
+        period === undefined ? undefined : gte(transactions.date, period.from),
+        period === undefined ? undefined : lte(transactions.date, period.to),
         countedMovement,
       ),
     );

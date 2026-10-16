@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useFocusNewMovements } from "../hooks/use-focus-new-movements";
-import { SHOWN_PARAM } from "../transaction.constants";
 import type { NextStep } from "../transaction.types";
 
 type ListFooterProps = {
@@ -13,8 +12,8 @@ type ListFooterProps = {
   readonly next: NextStep | undefined;
 };
 
-// How many show, and "Mostrar 30 más". The count lives in the URL, so a
-// reload keeps it; the page stays where it was.
+// How many show, and "Mostrar 30 más". The count lives in the URL with the
+// other filters, so a reload keeps it; the page stays where it was.
 export function ListFooter({ shown, status, next }: ListFooterProps) {
   const { footerRef, markLoading } = useFocusNewMovements(shown);
   return (
@@ -28,14 +27,7 @@ export function ListFooter({ shown, status, next }: ListFooterProps) {
           variant="link"
           nativeButton={false}
           render={
-            <Link
-              href={{
-                pathname: "/transactions",
-                query: { [SHOWN_PARAM]: next.count },
-              }}
-              scroll={false}
-              onClick={markLoading}
-            />
+            <Link href={next.href} scroll={false} onClick={markLoading} />
           }
         >
           {next.label}

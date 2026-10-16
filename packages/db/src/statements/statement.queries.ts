@@ -177,14 +177,15 @@ export const saveStatement = async (
   const saved = await upsertStatement(ctx, owner, input);
   // Saved before in one transaction, so all its movements were handled then.
   if (!saved.isNew) return ok(nothingSaved(saved.id, total));
-  const countedBefore = await countCountedMovements(ctx, accountId);
+  const countedBefore = await countCountedMovements(ctx, { accountId });
   const { inserted, covered } = await insertMovements(
     ctx,
     { ...owner, statementId: saved.id },
     statement,
   );
   const hidden = await hideUnderVerified(ctx, saved.id, input);
-  const added = (await countCountedMovements(ctx, accountId)) - countedBefore;
+  const added =
+    (await countCountedMovements(ctx, { accountId })) - countedBefore;
   const replaced = version.kind === "replaced" ? 1 : 0;
   return ok({
     statementId: saved.id,

@@ -1,10 +1,27 @@
 import type { AmountMinor, LocalDate } from "@xtrakto/core";
-import type { AccountRow, TransactionListItem } from "@xtrakto/db";
+import type {
+  AccountRow,
+  MovementQuarter,
+  TransactionListItem,
+} from "@xtrakto/db";
+import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 
-/** An account's movements as the list reads them. */
+/** What the URL asks the movements list for. */
+export type TransactionsRequest = {
+  readonly accountId?: string;
+  readonly period?: MovementPeriod;
+  readonly shown: number;
+};
+
+/** An account's movements in a period, as the list reads them. */
 export type AccountTransactions = {
+  /** The accounts with movements, the one with the latest first. */
+  readonly accounts: readonly AccountRow[];
   readonly account: AccountRow;
-  /** Every movement of the account that counts. */
+  /** Its quarters with movements, the latest first. */
+  readonly quarters: readonly MovementQuarter[];
+  readonly period: MovementPeriod;
+  /** Every movement of the account in the period that counts. */
   readonly total: number;
   /** The newest of them, as many as the list shows. */
   readonly items: readonly TransactionListItem[];
@@ -24,5 +41,24 @@ export type DescriptionView =
   | { readonly kind: "bank"; readonly text: string }
   | { readonly kind: "none"; readonly raw: string };
 
-/** The list's next step: how many it will show, and its link's label. */
-export type NextStep = { readonly count: number; readonly label: string };
+/** A link to the list with other filters. */
+export type TransactionsHref = {
+  readonly pathname: "/transactions";
+  readonly query: Readonly<Record<string, string | number>>;
+};
+
+/** The list's next step: its link's label and where it goes. */
+export type NextStep = {
+  readonly label: string;
+  readonly href: TransactionsHref;
+};
+
+/** An option of the period selector or the account switch. */
+export type PeriodOption = {
+  readonly key: string;
+  readonly label: string;
+  readonly href: TransactionsHref;
+  readonly isCurrent: boolean;
+  /** A quarter's status: "Verificado" or "Sin verificar". */
+  readonly badge?: { readonly label: string; readonly isOk: boolean };
+};

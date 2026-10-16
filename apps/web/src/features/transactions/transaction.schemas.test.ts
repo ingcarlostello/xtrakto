@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shownCountSchema } from "./transaction.schemas";
+import {
+  shownCountSchema,
+  transactionsSearchSchema,
+} from "./transaction.schemas";
 
 describe("shownCountSchema", () => {
   it.each([
@@ -19,5 +22,33 @@ describe("shownCountSchema", () => {
     ["a repeated param", ["60", "90"]],
   ])("shows the first 30 for %s", (_, value) => {
     expect(shownCountSchema.parse(value)).toBe(30);
+  });
+});
+
+describe("transactionsSearchSchema", () => {
+  const ACCOUNT = "3f1c6a52-6d3b-4c4e-9a53-1d2f0b7e8a90";
+
+  it("reads the account, the period and how many show", () => {
+    expect(
+      transactionsSearchSchema.parse({
+        account: ACCOUNT,
+        period: "2026-q3",
+        show: "60",
+      }),
+    ).toEqual({
+      account: ACCOUNT,
+      period: { kind: "quarter", year: 2026, quarter: 3 },
+      show: 60,
+    });
+  });
+
+  it("leaves out what doesn't parse, so the list opens on its defaults", () => {
+    expect(
+      transactionsSearchSchema.parse({
+        account: "not-an-id",
+        period: ["2026-q3", "2026-08"],
+        show: "todos",
+      }),
+    ).toEqual({ show: 30 });
   });
 });

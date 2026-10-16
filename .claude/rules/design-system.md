@@ -355,6 +355,8 @@ Wordmark block on the left, greeting with the assistant mark in the center, util
 
 - **Quarter picker:** white pill button (`--shadow-chip`, `calendar` icon, the quarter "Jul – sep 2026", chevron). It opens a popover (`--surface`, `--radius-md`, `--shadow-pop`) that lists the quarters with their status badge ("Verificado", "Sin verificar") and "Año 2026" with its coverage ("9 de 12 meses"); "Año" adds up the quarters the user has. The selected quarter has a `--primary-soft` background and `--primary-strong` text.
 - **Months:** a segmented control with the quarter's three months and "Trimestre", the default. Pill container `rgba(255,255,255,0.8)` with 5px padding and `--shadow-chip`. Options: pill, min-height 40px, padding 0 16px, Manrope 600 14px `--text-muted`. Active: `--primary-soft` background, Manrope 700, `--primary-strong`.
+- **As Phase 5.7b builds it** (`PeriodControls`): the quarters with movements, newest first; "Verificado" when every movement of the quarter carries the balance of a verified quarterly statement, "Sin verificar" otherwise; "Año" waits for Phase 10.2. The options are links, since the period lives in the URL (`?period=2026-q3`, `?period=2026-08`): the picker is a menu of links (Base UI `Menu.LinkItem`, the current one with `aria-current`), and the months a `<nav>` named "Mes del trimestre" whose current link has `aria-current="page"`. On phones each control takes the full width, the months sharing it with 10px of padding each.
+- **Account switch:** only with several accounts, before the quarter picker: the same white pill with the short label ("Cuenta de ahorros ••••8901", so the digits never get cut) opening the accounts with their whole label ("Cuenta de ahorros · Bancolombia ••••8901"). Each opens on its latest quarter.
 
 ### Filter chips
 
@@ -425,10 +427,11 @@ On the upload screen the same pill counts the month's statements, beside the pag
 
 As Phase 5.7a builds it, before kinds and categories exist (`TransactionList`):
 
-- A card (`--surface-card`, `--radius-lg`) at most 896px wide, its title and one line naming the account ("Cuenta de ahorros · Bancolombia ••••8901. Los más recientes primero.").
+- A card (`--surface-card`, `--radius-lg`) at most 896px wide, its title and one line with the period's days and the account ("Del 1 de julio al 30 de septiembre de 2026. Cuenta de ahorros · Bancolombia ••••8901."). A month without movements reads "No hay movimientos en este periodo."
 - Day headers: the weekday and the date in Manrope 700 14px ("Miércoles 30 de septiembre", with the year when it isn't the current one), and "Saldo del día $6.482.310" in Caption `--text-muted` on the right, under it on phones. A day of a file without balances has no balance.
 - Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. The amount in Amount S, ink, with its sign. No icon chip until a category gives one.
-- Footer: "Mostrando 30 de 312" (Meta, `--text-muted`) and the link action "Mostrar 30 más" (fewer when fewer are left). The count lives in the URL (`?show=60`), the page keeps its scroll, and the focus moves to the first movement the link brought, also when the link goes away because every movement shows.
+- Footer: "Mostrando 30 de 312" (Meta, `--text-muted`) and the link action "Mostrar 30 más" (fewer when fewer are left). The count lives in the URL (`?show=60`) with the account and the period, the page keeps its scroll, and the focus moves to the first movement the link brought, also when the link goes away because every movement shows. Choosing another period or account shows the first 30 again.
+- The upload result links to its file's movements with the link action "Ver movimientos": its account, and the month that holds the file or the quarter of its last day. A statement that doesn't reconcile has none to show.
 
 ### Channel tag
 
@@ -604,7 +607,7 @@ The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box,
 - Focus ring: `3px solid #2563EB` with a 3px offset, on every interactive element.
 - Real `<button>`, `<a href>` and `<input>` with `<label>`. Icon-only buttons have an `aria-label`.
 - A field's error is joined to it with `aria-describedby` and `aria-invalid`, and the focus goes to the first wrong field. A button disabled until something happens stays focusable and says why.
-- Toggle groups use `role="group"` with `aria-label`, and options use `aria-pressed`. The active navigation item uses `aria-current="page"`.
+- Toggle groups use `role="group"` with `aria-label`, and options use `aria-pressed`. The active navigation item uses `aria-current="page"`, and so do filters that are links, such as the period selector's months.
 - Switches use `role="switch"` with a label that names what they change ("Es mío: Nequi terminado en 1270").
 - The coverage timeline has a text alternative that states it ("Enero a septiembre completo y verificado; octubre sin saldo").
 - Charts have `role="img"` and an `aria-label` that states the conclusion.

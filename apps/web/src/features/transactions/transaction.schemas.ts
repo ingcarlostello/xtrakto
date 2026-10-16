@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  parsePeriodParam,
+  TRANSACTIONS_PARAMS,
+} from "@/utils/transactions-url.helpers";
 import { MAX_MOVEMENTS_SHOWN, MOVEMENTS_STEP } from "./transaction.constants";
 
 /**
@@ -12,3 +16,18 @@ export const shownCountSchema = z.coerce
   .min(MOVEMENTS_STEP)
   .max(MAX_MOVEMENTS_SHOWN)
   .catch(MOVEMENTS_STEP);
+
+/**
+ * The movements list's filters, from the URL. A param that doesn't parse is
+ * left out, so the list opens on its defaults; whether the account is the
+ * user's, the service checks.
+ */
+export const transactionsSearchSchema = z.object({
+  [TRANSACTIONS_PARAMS.account]: z.uuid().optional().catch(undefined),
+  [TRANSACTIONS_PARAMS.period]: z
+    .string()
+    .transform(parsePeriodParam)
+    .optional()
+    .catch(undefined),
+  [TRANSACTIONS_PARAMS.shown]: shownCountSchema,
+});

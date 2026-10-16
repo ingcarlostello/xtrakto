@@ -1,7 +1,10 @@
 import { cn } from "@/utils/cn.utils";
 import { Check, CircleCheck, FileSpreadsheet } from "lucide-react";
+import Link from "next/link";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RESULT_COPY } from "../upload.constants";
 import type { ResultStep, ResultView } from "../upload-result.helpers";
 
 // A check on the soft green when it went well; on the attention surface, a
@@ -83,6 +86,21 @@ function Steps({ steps }: { steps: readonly ResultStep[] }) {
   );
 }
 
+// Its account's movements in its period, once they count (5.7b).
+function MovementsLink({ href }: { href: ResultView["movementsHref"] }) {
+  if (!href) return null;
+  return (
+    <Button
+      variant="link"
+      nativeButton={false}
+      render={<Link href={href} />}
+      className="self-start"
+    >
+      {RESULT_COPY.viewMovements}
+    </Button>
+  );
+}
+
 type UploadResultProps = {
   /** The file's name, which never leaves the browser, or its format and period. */
   name: string;
@@ -123,6 +141,7 @@ export function UploadResult({ name, tags, view }: UploadResultProps) {
       <Counts counts={view.counts} isOk={view.isOk} />
       <StatusPill {...view.pill} className="self-start" />
       <Steps steps={view.steps} />
+      <MovementsLink href={view.movementsHref} />
     </li>
   );
 }

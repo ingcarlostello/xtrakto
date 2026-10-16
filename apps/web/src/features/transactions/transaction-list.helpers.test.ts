@@ -130,19 +130,31 @@ describe("amounts and counts", () => {
 });
 
 describe("nextStep", () => {
+  const AUGUST = { kind: "month", year: 2026, month: 8 } as const;
+  const link = { accountId: "a1", period: AUGUST };
+
   it.each([
-    [30, 312, { count: 60, label: "Mostrar 30 más" }],
-    [300, 312, { count: 312, label: "Mostrar 12 más" }],
-    [1_990, 5_000, { count: 2_000, label: "Mostrar 10 más" }],
-  ])("after %i of %i brings %o", (shown, total, expected) => {
-    expect(nextStep(shown, total)).toEqual(expected);
-  });
+    { shown: 30, total: 312, count: 60, label: "Mostrar 30 más" },
+    { shown: 300, total: 312, count: 312, label: "Mostrar 12 más" },
+    { shown: 1_990, total: 5_000, count: 2_000, label: "Mostrar 10 más" },
+  ])(
+    "after $shown of $total shows $count",
+    ({ shown, total, count, label }) => {
+      expect(nextStep(shown, total, link)).toEqual({
+        label,
+        href: {
+          pathname: "/transactions",
+          query: { account: "a1", period: "2026-08", show: count },
+        },
+      });
+    },
+  );
 
   it.each([
     [312, 312],
     [7, 7],
     [2_000, 5_000],
   ])("brings nothing after %i of %i", (shown, total) => {
-    expect(nextStep(shown, total)).toBeUndefined();
+    expect(nextStep(shown, total, link)).toBeUndefined();
   });
 });

@@ -9,6 +9,10 @@ import {
 import type { TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
+  type MovementPeriod,
+  transactionsHref,
+} from "@/utils/transactions-url.helpers";
+import {
   MAX_MOVEMENTS_SHOWN,
   MOVEMENTS_STEP,
   NO_DESCRIPTION_TEXT,
@@ -80,18 +84,27 @@ export const totalText = (total: number): string =>
 export const shownText = (shown: number, total: number): string =>
   `${COPY.shown.before} ${formatCount(shown)} ${COPY.shown.of} ${formatCount(total)}`;
 
+/** The list's filters that a link keeps. */
+export type ListLink = {
+  /** Only when the user has more than one account. */
+  readonly accountId?: string;
+  readonly period: MovementPeriod;
+};
+
 /**
  * What "Mostrar 30 más" brings: one more step, fewer when fewer are left,
- * and nothing once every movement shows or the list holds its most.
+ * and nothing once every movement shows or the list holds its most. Its
+ * link keeps the account and the period.
  */
 export const nextStep = (
   shown: number,
   total: number,
+  link: ListLink,
 ): NextStep | undefined => {
   const count = Math.min(shown + MOVEMENTS_STEP, total, MAX_MOVEMENTS_SHOWN);
   if (count <= shown) return undefined;
   return {
-    count,
     label: `${COPY.more.before} ${formatCount(count - shown)} ${COPY.more.after}`,
+    href: transactionsHref({ ...link, shown: count }),
   };
 };

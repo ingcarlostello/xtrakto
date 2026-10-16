@@ -1,7 +1,19 @@
 import { TZDate, tz } from "@date-fns/tz";
-import { addMonths, format, isExists, startOfMonth } from "date-fns";
+import {
+  addMonths,
+  format,
+  isExists,
+  lastDayOfMonth,
+  startOfMonth,
+} from "date-fns";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
-import type { ExcelDateTimeZones, LocalDate, Period } from "./date.types";
+import type {
+  CalendarMonth,
+  CalendarQuarter,
+  ExcelDateTimeZones,
+  LocalDate,
+  Period,
+} from "./date.types";
 import type { Result } from "../result/result.types";
 import { err, ok } from "../result/result.utils";
 
@@ -57,6 +69,24 @@ export const monthBoundsInTimeZone = (
   const end = addMonths(start, 1, { in: tz(timeZone) });
   return { start: new Date(start.getTime()), end: new Date(end.getTime()) };
 };
+
+/** The days of a month: `2026-08-01` to `2026-08-31`. */
+export const monthPeriod = ({ year, month }: CalendarMonth): Period => {
+  const first = new TZDate(year, month - 1, 1, "UTC");
+  return {
+    from: localDateFromInstant(first, "UTC"),
+    to: localDateFromInstant(lastDayOfMonth(first), "UTC"),
+  };
+};
+
+/** The days of a quarter: `2026-07-01` to `2026-09-30` for the third. */
+export const quarterPeriod = ({ year, quarter }: CalendarQuarter): Period => ({
+  from: monthPeriod({ year, month: quarter * 3 - 2 }).from,
+  to: monthPeriod({ year, month: quarter * 3 }).to,
+});
+
+/** The quarter a month falls in: 3 for August. */
+export const quarterOfMonth = (month: number): number => Math.ceil(month / 3);
 
 // Month is 1-based. Returns undefined when the day doesn't exist.
 const toLocalDate = (

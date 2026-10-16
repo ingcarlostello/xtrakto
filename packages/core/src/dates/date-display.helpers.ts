@@ -1,7 +1,12 @@
 import { TZDate } from "@date-fns/tz";
 import { addDays, format, isSameMonth, isSameYear, min } from "date-fns";
 import { es } from "date-fns/locale";
-import type { LocalDate, Period } from "./date.types";
+import type {
+  CalendarMonth,
+  CalendarQuarter,
+  LocalDate,
+  Period,
+} from "./date.types";
 
 // Spanish month abbreviations as the design writes them ("sep", not Intl's
 // "sept."), from date-fns' Spanish locale.
@@ -29,6 +34,20 @@ export const formatMonthRange = ({ from, to }: Period): string => {
   return `${formatDate(start, "MMM yyyy")} – ${formatDate(end, "MMM yyyy")}`;
 };
 
+const capitalized = (text: string): string =>
+  `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+
+/** A quarter as the period selector names it: `"Jul – sep 2026"`. */
+export const formatQuarter = ({ year, quarter }: CalendarQuarter): string => {
+  const first = new TZDate(year, quarter * 3 - 3, 1, "UTC");
+  const last = new TZDate(year, quarter * 3 - 1, 1, "UTC");
+  return `${capitalized(formatDate(first, "MMM"))} – ${formatDate(last, "MMM yyyy")}`;
+};
+
+/** A month's name, as a heading or an option: `"Agosto"`. */
+export const formatMonthName = ({ year, month }: CalendarMonth): string =>
+  capitalized(formatDate(new TZDate(year, month - 1, 1, "UTC"), "MMMM"));
+
 /** A day in running text, without its year: `"1 de noviembre"`. */
 export const formatDayInWords = (date: LocalDate): string =>
   formatDate(toDate(date), "d 'de' MMMM");
@@ -42,8 +61,7 @@ export const formatWeekdayInWords = (
   { withYear }: { readonly withYear: boolean },
 ): string => {
   const pattern = withYear ? "EEEE d 'de' MMMM 'de' yyyy" : "EEEE d 'de' MMMM";
-  const text = formatDate(toDate(date), pattern);
-  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  return capitalized(formatDate(toDate(date), pattern));
 };
 
 /**

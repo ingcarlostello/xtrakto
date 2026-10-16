@@ -1,4 +1,4 @@
-import type { LocalDate, PreparedStatement } from "@xtrakto/core";
+import type { LocalDate, Period, PreparedStatement } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   preparedExport,
@@ -21,7 +21,8 @@ import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
 import { findOrCreateUser } from "../users/user.queries";
 import {
-  findLatestMovementAccount,
+  listMovementAccounts,
+  listMovementQuarters,
   listTransactions,
   type TransactionFilter,
 } from "./transaction.queries";
@@ -235,10 +236,11 @@ describe.skipIf(!testDatabase)("the movements that count", () => {
     expect(await listed(userId, accountId)).toEqual([["2026-08-01", -5, null]]);
   });
 
-  it("opens on the account whose latest movement that counts is the most recent", async () => {
+  it("lists the accounts with movements that count, the latest first", async () => {
     const userId = await newUser();
     const earlier = await newAccount(userId, "1111");
     const later = await newAccount(userId, "2222");
+    const withoutMovements = await newAccount(userId, "3333");
     await saveIn(userId, earlier, [
       await preparedExport([{ date: "2026-07-01", amount: -1 }]),
       UNCHECKED,
@@ -252,26 +254,24 @@ describe.skipIf(!testDatabase)("the movements that count", () => {
       await preparedExport([{ date: "2026-08-01", amount: -2 }]),
       UNCHECKED,
     ]);
+    await saveIn(userId, withoutMovements, [
+      await preparedQuarterly(QUARTER),
+      UNVERIFIED,
+    ]);
 
-    const found = await withUserContext(
-      app.db,
-      userId,
-      findLatestMovementAccount,
-    );
+    const found = await withUserContext(app.db, userId, listMovementAccounts);
     const counted = await withUserContext(app.db, userId, (ctx) =>
       countCountedMovements(ctx),
     );
 
-    expect(found).toEqual({
-      id: later,
-      bankId: "bancolombia",
-      accountType: "savings",
-      last4: "2222",
-    });
+    expect(found.map(({ id, last4 }) => [id, last4])).toEqual([
+      [later, "2222"],
+      [earlier, "1111"],
+    ]);
     expect(counted).toBe(2);
   });
 
-  it("opens on no account until a movement counts", async () => {
+  it("lists no account until a movement counts", async () => {
     const userId = await newUser();
     const accountId = await newAccount(userId, "8901");
     await saveIn(userId, accountId, [
@@ -279,9 +279,40 @@ describe.skipIf(!testDatabase)("the movements that count", () => {
       UNVERIFIED,
     ]);
 
-    expect(
-      await withUserContext(app.db, userId, findLatestMovementAccount),
-    ).toBeUndefined();
+    expect(await withUserContext(app.db, userId, listMovementAccounts)).toEqual(
+      [],
+    );
+  });
+
+  it("lists an account's quarters, verified when every movement comes from a verified quarterly statement", async () => {
+    const userId = await newUser();
+    const accountId = await newAccount(userId, "8901");
+    await saveIn(userId, accountId, [
+      await preparedExport(EXPORT_ACROSS_EDGES),
+      UNCHECKED,
+    ]);
+    await saveIn(userId, accountId, [
+      await preparedQuarterly(QUARTER),
+      VERIFIED,
+    ]);
+
+    const quarters = await withUserContext(app.db, userId, (ctx) =>
+      listMovementQuarters(ctx, accountId),
+    );
+    const julyToSeptember = await withUserContext(app.db, userId, (ctx) =>
+      countCountedMovements(ctx, {
+        accountId,
+        period: { from: "2026-07-01", to: "2026-09-30" } as Period,
+      }),
+    );
+
+    // The export's June 30 and October 1 stay outside the quarter it covers.
+    expect(quarters).toEqual([
+      { year: 2026, quarter: 4, verified: false },
+      { year: 2026, quarter: 3, verified: true },
+      { year: 2026, quarter: 2, verified: false },
+    ]);
+    expect(julyToSeptember).toBe(3);
   });
 });
 

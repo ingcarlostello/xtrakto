@@ -1,6 +1,7 @@
 import type { TransactionListItem } from "@xtrakto/db";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { accountLabel } from "@/utils/account-label.helpers";
+import { listLinkOf, periodText } from "../period-selector.helpers";
 import {
   amountText,
   dayBalanceText,
@@ -77,13 +78,16 @@ function DayGroup({ day, currentYear }: DayGroupProps) {
   );
 }
 
-/** "Todos los movimientos": the account's movements by day (docs/ui/v8-03). */
+/**
+ * "Todos los movimientos": the account's movements in the period, by day
+ * (docs/ui/v8-03).
+ */
 export function TransactionList({
   transactions,
 }: {
   transactions: AccountTransactions;
 }) {
-  const { account, total, items, currentYear } = transactions;
+  const { account, period, total, items, currentYear } = transactions;
   return (
     <Card variant="card" className="w-full max-w-4xl gap-0">
       <CardHeader className="pb-2">
@@ -91,17 +95,23 @@ export function TransactionList({
           {COPY.listTitle}
         </h2>
         <CardDescription>
-          {accountLabel(account, account.last4)}. {COPY.listOrder}
+          {periodText(period)}. {accountLabel(account, account.last4)}.
         </CardDescription>
       </CardHeader>
-      {groupByDay(items).map((day) => (
-        <DayGroup key={day.date} day={day} currentYear={currentYear} />
-      ))}
-      <ListFooter
-        shown={items.length}
-        status={shownText(items.length, total)}
-        next={nextStep(items.length, total)}
-      />
+      {items.length === 0 ? (
+        <p className="py-6 text-body text-ink-muted">{COPY.emptyPeriod}</p>
+      ) : (
+        <>
+          {groupByDay(items).map((day) => (
+            <DayGroup key={day.date} day={day} currentYear={currentYear} />
+          ))}
+          <ListFooter
+            shown={items.length}
+            status={shownText(items.length, total)}
+            next={nextStep(items.length, total, listLinkOf(transactions))}
+          />
+        </>
+      )}
     </Card>
   );
 }
