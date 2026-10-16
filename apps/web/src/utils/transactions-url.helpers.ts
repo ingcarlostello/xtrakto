@@ -69,6 +69,10 @@ export const periodOfStatement = ({ from, to }: Period): MovementPeriod => {
   return { kind: "quarter", ...quarterOf({ kind: "month", ...last }) };
 };
 
+/** Where a statement that doesn't reconcile shows its rows (5.7d). */
+export const breaksHref = (statementId: string) =>
+  `/transactions/breaks/${statementId}` as const;
+
 type TransactionsLink = {
   /** Left out when the user has a single account. */
   readonly accountId?: string;

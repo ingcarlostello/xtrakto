@@ -1,19 +1,22 @@
-import type { AccountRow, MovementQuarter } from "@xtrakto/db";
+import { periodSchema } from "@xtrakto/core";
+import type { AccountRow, UnreconciledStatement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import {
   accountOptions,
   listLinkOf,
   monthOptions,
+  meetsPeriod,
   periodText,
+  quarterChoices,
   quarterOptions,
   selectPeriod,
 } from "./period-selector.helpers";
-import type { AccountTransactions } from "./transaction.types";
+import type { AccountTransactions, QuarterChoice } from "./transaction.types";
 
-const QUARTERS: MovementQuarter[] = [
-  { year: 2026, quarter: 3, verified: true },
-  { year: 2026, quarter: 2, verified: false },
+const QUARTERS: QuarterChoice[] = [
+  { year: 2026, quarter: 3, status: "verified" },
+  { year: 2026, quarter: 2, status: "unverified" },
 ];
 const ACCOUNT: AccountRow = {
   id: "a1",
@@ -31,6 +34,7 @@ const view = (
   accounts,
   account: ACCOUNT,
   quarters: QUARTERS,
+  unreconciled: [],
   period,
   total: 0,
   items: [],
@@ -62,6 +66,70 @@ describe("selectPeriod", () => {
   });
 });
 
+describe("quarterChoices", () => {
+  const unreconciled = (from: string, to: string): UnreconciledStatement => ({
+    id: "s1",
+    accountId: "a1",
+    period: periodSchema.parse({ from, to }),
+    differenceMinor: null,
+  });
+
+  it("adds the quarter of a statement that doesn't reconcile, marking it before anything else", () => {
+    expect(
+      quarterChoices(
+        [
+          { year: 2026, quarter: 3, verified: false },
+          { year: 2026, quarter: 1, verified: true },
+        ],
+        [
+          unreconciled("2026-06-30", "2026-09-30"),
+          unreconciled("2026-03-31", "2026-06-30"),
+        ],
+      ),
+    ).toEqual([
+      { year: 2026, quarter: 3, status: "unreconciled" },
+      { year: 2026, quarter: 2, status: "unreconciled" },
+      { year: 2026, quarter: 1, status: "verified" },
+    ]);
+  });
+
+  it.each([
+    {
+      name: "the quarter it covers",
+      from: "2026-07-01",
+      to: "2026-09-30",
+      meets: true,
+    },
+    {
+      name: "one of its months",
+      from: "2026-08-01",
+      to: "2026-08-31",
+      meets: true,
+    },
+    {
+      name: "the quarter of its opening balance's day",
+      from: "2026-04-01",
+      to: "2026-06-30",
+      meets: false,
+    },
+    {
+      name: "the next quarter",
+      from: "2026-10-01",
+      to: "2026-12-31",
+      meets: false,
+    },
+  ])("finds whether its days meet $name", ({ from, to, meets }) => {
+    const statement = periodSchema.parse({
+      from: "2026-06-30",
+      to: "2026-09-30",
+    });
+
+    expect(meetsPeriod(statement, periodSchema.parse({ from, to }))).toBe(
+      meets,
+    );
+  });
+});
+
 describe("periodText", () => {
   it.each([
     [
@@ -82,14 +150,14 @@ describe("options", () => {
         label: "Jul – sep 2026",
         href: { pathname: "/transactions", query: { period: "2026-q3" } },
         isCurrent: true,
-        badge: { label: "Verificado", isOk: true },
+        badge: { label: "Verificado", variant: "ok" },
       },
       {
         key: "2026-q2",
         label: "Abr – jun 2026",
         href: { pathname: "/transactions", query: { period: "2026-q2" } },
         isCurrent: false,
-        badge: { label: "Sin verificar", isOk: false },
+        badge: { label: "Sin verificar", variant: "neutral" },
       },
     ]);
   });

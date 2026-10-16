@@ -38,6 +38,7 @@ const outcome = (
   rest: Partial<JobOutcome> = {},
 ): JobOutcome => ({
   stats: stats(counts),
+  statementId: "s1",
   accountId: "a1",
   period: QUARTER,
   balance: "verified",
@@ -200,8 +201,11 @@ describe("resultView", () => {
       title: RESULT_COPY.notReconciled,
       isOk: false,
     });
-    // Its movements count nowhere, so there are none to see yet (5.7d).
+    // Its movements count nowhere: it links to where its balance breaks.
     expect(resultView(quarterly, offBy).movementsHref).toBeUndefined();
+    expect(resultView(quarterly, offBy).breaksHref).toBe(
+      "/transactions/breaks/s1",
+    );
   });
 
   it("says a statement doesn't reconcile when its closing balance matches but a row breaks", () => {

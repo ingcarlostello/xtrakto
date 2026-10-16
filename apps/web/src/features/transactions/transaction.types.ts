@@ -1,10 +1,15 @@
-import type { AmountMinor, LocalDate } from "@xtrakto/core";
+import type { AmountMinor, CalendarQuarter, LocalDate } from "@xtrakto/core";
 import type {
   AccountRow,
-  MovementQuarter,
   TransactionListItem,
+  UnreconciledStatement,
 } from "@xtrakto/db";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+
+/** A quarter to choose from, with what its movements say about it. */
+export type QuarterChoice = CalendarQuarter & {
+  readonly status: "verified" | "unverified" | "unreconciled";
+};
 
 /** What the URL asks the movements list for. */
 export type TransactionsRequest = {
@@ -20,8 +25,10 @@ export type AccountTransactions = {
   /** The accounts with movements, the one with the latest first. */
   readonly accounts: readonly AccountRow[];
   readonly account: AccountRow;
-  /** Its quarters with movements, the latest first. */
-  readonly quarters: readonly MovementQuarter[];
+  /** Its quarters to choose from, the latest first. */
+  readonly quarters: readonly QuarterChoice[];
+  /** Its statements that don't reconcile on the period's days. */
+  readonly unreconciled: readonly UnreconciledStatement[];
   readonly period: MovementPeriod;
   /** What the list looks for, as typed. */
   readonly search?: string;
@@ -38,6 +45,13 @@ export type TransactionDay = {
   readonly date: LocalDate;
   readonly balanceMinor: AmountMinor | null;
   readonly items: readonly TransactionListItem[];
+};
+
+/** Why a row stands out: where a statement's balance breaks. */
+export type MovementMark = {
+  readonly note: string;
+  /** The first one's id, for "Ir a la primera fila que no cuadra". */
+  readonly anchor?: string;
 };
 
 /** A movement's line: the bank's text as printed, or that it gave none. */
@@ -64,5 +78,8 @@ export type PeriodOption = {
   readonly href: TransactionsHref;
   readonly isCurrent: boolean;
   /** A quarter's status: "Verificado" or "Sin verificar". */
-  readonly badge?: { readonly label: string; readonly isOk: boolean };
+  readonly badge?: {
+    readonly label: string;
+    readonly variant: "ok" | "neutral" | "attention";
+  };
 };

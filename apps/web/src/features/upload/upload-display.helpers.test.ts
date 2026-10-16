@@ -146,6 +146,7 @@ describe("a sent file's job", () => {
     jobId: "job",
   };
   const outcomeIn = (period: Period): JobOutcome => ({
+    statementId: "s1",
     accountId: "a1",
     stats: {
       total: 1,

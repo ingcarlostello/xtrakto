@@ -4,6 +4,7 @@ import { UploadStatementLink } from "@/components/empty-state/UploadStatementLin
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/features/transactions/components/PeriodControls";
 import { TransactionList } from "@/features/transactions/components/TransactionList";
+import { UnreconciledNotice } from "@/features/transactions/components/Unreconciled";
 import { totalText } from "@/features/transactions/transaction-list.helpers";
 import { TRANSACTIONS_COPY as COPY } from "@/features/transactions/transaction.constants";
 import { transactionsSearchSchema } from "@/features/transactions/transaction.schemas";
@@ -13,8 +14,9 @@ import { requireSignedIn } from "@/lib/auth";
 export const metadata: Metadata = { title: COPY.title };
 
 // docs/ui/v8-03 within Stage 5: an account's movements that count in a
-// quarter or one of its months, by day; until one counts, the invitation to
-// upload. The filters live in the URL.
+// quarter or one of its months, by day, and a warning when a statement of
+// its days doesn't reconcile; before any, the invitation to upload. The
+// filters live in the URL.
 export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
@@ -46,6 +48,9 @@ export default async function TransactionsPage({
         subtitle={totalText(transactions.total, transactions.search)}
       />
       <PeriodControls view={transactions} />
+      {transactions.unreconciled.map((statement) => (
+        <UnreconciledNotice key={statement.id} statement={statement} />
+      ))}
       <TransactionList transactions={transactions} />
     </>
   );

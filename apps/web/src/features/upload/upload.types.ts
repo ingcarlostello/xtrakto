@@ -154,6 +154,8 @@ export type UploadJob = {
 /** What a done job came to: its counts and its statement's balances. */
 export type JobOutcome = {
   readonly stats: IngestionStats;
+  /** The statement it saved, or the one that already held its movements. */
+  readonly statementId: string;
   /** The account its statement was saved to. */
   readonly accountId: string;
   readonly period: Period;

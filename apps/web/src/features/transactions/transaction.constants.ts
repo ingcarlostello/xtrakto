@@ -44,12 +44,48 @@ export const TRANSACTIONS_COPY = {
       "Busca por otra palabra o por el monto, o quita la búsqueda.",
     clear: "Quitar búsqueda",
   },
+  // Where a quarterly statement doesn't reconcile (docs/ui/v8-13): only
+  // statements with balances can, and none of their movements count.
+  breaks: {
+    title: "Dónde no cuadra",
+    action: "Ver dónde no cuadra",
+    statement: "Extracto trimestral",
+    yourStatement: "Tu extracto trimestral",
+    offBy: "no cuadra por",
+    off: "no cuadra",
+    notCounted: "sus movimientos no se cuentan aquí.",
+    closingOffBy: "El saldo final no cuadra por",
+    closingOff: "El saldo no cuadra",
+    detail:
+      "Puede faltar una página o una fila. No mostramos sus números hasta que cuadre.",
+    rows: {
+      one: "fila no cuadra con la anterior: la marcamos abajo.",
+      other: "filas no cuadran con la anterior: las marcamos abajo.",
+    },
+    noRows:
+      "Cada fila cuadra con la anterior: lo que no cuadra es el saldo final con la suma de los movimientos.",
+    firstRow: "Ir a la primera fila que no cuadra",
+    upload: "Subir de nuevo",
+    listTitle: "Movimientos del extracto",
+    listDetail:
+      "Tal como los imprimió el banco, con el saldo después de cada uno. Ninguno se cuenta hasta que cuadre.",
+    rowNote: {
+      before: "Con el saldo anterior",
+      expected: "y este movimiento quedaría",
+      printed: "el banco dice",
+    },
+    rowNoteUnknown: "Aquí el saldo no sigue al de la fila anterior.",
+    emptyTitle: "El saldo de tu extracto no cuadra",
+    emptyDescription:
+      "Por eso aún no mostramos sus movimientos. Mira en qué fila se rompe o súbelo de nuevo.",
+  },
   // The period selector (docs/ui/v8-03), without "Año" until Phase 10.2.
   period: {
     quarter: "Trimestre",
     months: "Mes del trimestre",
     verified: "Verificado",
     unverified: "Sin verificar",
+    unreconciled: "No cuadra",
     from: "Del",
     to: "al",
     ofYear: "de",

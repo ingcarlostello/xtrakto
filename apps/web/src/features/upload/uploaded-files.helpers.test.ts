@@ -36,6 +36,7 @@ const done = (
   ...job,
   outcome: {
     stats: stats(counts),
+    statementId: "s1",
     accountId: "a1",
     period: QUARTER,
     balance: "verified",
