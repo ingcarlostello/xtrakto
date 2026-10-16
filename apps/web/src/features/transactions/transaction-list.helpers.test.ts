@@ -7,6 +7,7 @@ import {
   dayHeading,
   descriptionView,
   groupByDay,
+  movementSearchOf,
   nextStep,
   shownText,
   totalText,
@@ -124,8 +125,28 @@ describe("amounts and counts", () => {
     expect(totalText(total)).toBe(expected);
   });
 
+  it.each([
+    [1, "1 movimiento coincide con “nequi”."],
+    [3, "3 movimientos coinciden con “nequi”."],
+  ])("counts %i matches as %s", (total, expected) => {
+    expect(totalText(total, "nequi")).toBe(expected);
+  });
+
   it("says how many show", () => {
     expect(shownText(30, 1_234)).toBe("Mostrando 30 de 1.234");
+  });
+});
+
+describe("movementSearchOf", () => {
+  it("looks for an amount too when the text reads as one", () => {
+    expect(movementSearchOf("$90.000")).toEqual({
+      text: "$90.000",
+      amountMinor: 9_000_000,
+    });
+  });
+
+  it("looks only for the text otherwise", () => {
+    expect(movementSearchOf("4x1000")).toEqual({ text: "4x1000" });
   });
 });
 

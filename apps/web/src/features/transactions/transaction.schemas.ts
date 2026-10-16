@@ -3,7 +3,11 @@ import {
   parsePeriodParam,
   TRANSACTIONS_PARAMS,
 } from "@/utils/transactions-url.helpers";
-import { MAX_MOVEMENTS_SHOWN, MOVEMENTS_STEP } from "./transaction.constants";
+import {
+  MAX_MOVEMENTS_SHOWN,
+  MAX_SEARCH_LENGTH,
+  MOVEMENTS_STEP,
+} from "./transaction.constants";
 
 /**
  * How many movements to show, from the URL (`?show=60`): a whole number from
@@ -27,6 +31,13 @@ export const transactionsSearchSchema = z.object({
   [TRANSACTIONS_PARAMS.period]: z
     .string()
     .transform(parsePeriodParam)
+    .optional()
+    .catch(undefined),
+  [TRANSACTIONS_PARAMS.search]: z
+    .string()
+    .trim()
+    .max(MAX_SEARCH_LENGTH)
+    .transform((text) => text || undefined)
     .optional()
     .catch(undefined),
   [TRANSACTIONS_PARAMS.shown]: shownCountSchema,

@@ -42,6 +42,15 @@ describe("transactionsSearchSchema", () => {
     });
   });
 
+  it("reads the search trimmed, and an empty or overlong one as none", () => {
+    const searchOf = (q: unknown) => transactionsSearchSchema.parse({ q }).q;
+
+    expect(searchOf("  nequi ")).toBe("nequi");
+    expect(searchOf("   ")).toBeUndefined();
+    expect(searchOf("x".repeat(61))).toBeUndefined();
+    expect(searchOf(["nequi", "pse"])).toBeUndefined();
+  });
+
   it("leaves out what doesn't parse, so the list opens on its defaults", () => {
     expect(
       transactionsSearchSchema.parse({

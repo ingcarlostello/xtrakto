@@ -200,7 +200,7 @@ describe("resultView", () => {
       title: RESULT_COPY.notReconciled,
       isOk: false,
     });
-    // Its movements count nowhere, so there are none to see yet (5.7c).
+    // Its movements count nowhere, so there are none to see yet (5.7d).
     expect(resultView(quarterly, offBy).movementsHref).toBeUndefined();
   });
 

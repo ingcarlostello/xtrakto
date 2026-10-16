@@ -171,7 +171,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 5.6c Uploaded files and "Encadenado"
 - [x] 5.7a Movements by day _(after 16.0a to 16.0d, pulled forward by the human)_
 - [x] 5.7b Period selector and account switch
-- [ ] 5.7c Search and "No cuadra"
+- [x] 5.7c Search
+- [ ] 5.7d "Ver dónde no cuadra"
 - [ ] 5.8 Onboarding _(design v8)_
 
 **Stage 6 — Deterministic insights**
@@ -1011,17 +1012,30 @@ Phase 5.7 was split in three, with the human's approval; its detail panel moved 
 
 **Commit:** `feat(web): period selector and account switch`
 
-#### 5.7c Search and "No cuadra"
+#### 5.7c Search
+
+Phase 5.7c was split in two (about 500 changed lines), with the human's approval.
 
 **Tasks**
 
 - Search by description (ignoring case and accents) or by amount typed the Colombian way ("$90.000"), within the period.
-- "Ver dónde no cuadra": the rows of a quarterly statement that doesn't reconcile, with the row that breaks marked; the list warns when its period has one, and the upload result links to it.
+- "No encontramos «…»" (`docs/ui/v8-13`) when nothing matches, with the way back to every movement.
+
+**Done when:** search works and survives a reload.
+
+**Commit:** `feat(web): search movements`
+
+#### 5.7d "Ver dónde no cuadra"
+
+**Tasks**
+
+- The rows of a quarterly statement that doesn't reconcile, with the row that breaks marked; the list warns when its period has one, and the upload result links to it (`docs/ui/v8-13`).
+- A user whose only statements don't reconcile gets a way to them, instead of "Aún no hay movimientos".
 - Later phases add the kind tiles and filters, channel tags and "Por revisar" (6.1, 6.2), the detail panel (6.3), interest grouped per month (6.7), "También aparece como" and source files (10.1), and "Descargar CSV" (7.6).
 
-**Done when:** search and the "No cuadra" view work and survive a reload.
+**Done when:** the "No cuadra" view works and survives a reload.
 
-**Commit:** `feat(web): search and balance breaks in movements`
+**Commit:** `feat(web): where a statement doesn't reconcile`
 
 #### 5.8 Onboarding _(added with design v8)_
 

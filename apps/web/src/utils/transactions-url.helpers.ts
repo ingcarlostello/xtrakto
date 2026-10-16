@@ -8,11 +8,12 @@ import {
 } from "@xtrakto/core";
 
 // The movements list keeps its filters in the URL, so a reload keeps them
-// and a link shares them: `/transactions?account=…&period=2026-q3&show=60`.
+// and a link shares them: `/transactions?account=…&period=2026-q3&q=nequi&show=60`.
 
 export const TRANSACTIONS_PARAMS = {
   account: "account",
   period: "period",
+  search: "q",
   shown: "show",
 } as const;
 
@@ -73,6 +74,8 @@ type TransactionsLink = {
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
   readonly period?: MovementPeriod;
+  /** What the list looks for, kept across periods. */
+  readonly search?: string;
   readonly shown?: number;
 };
 
@@ -80,6 +83,7 @@ type TransactionsLink = {
 export const transactionsHref = ({
   accountId,
   period,
+  search,
   shown,
 }: TransactionsLink) => ({
   pathname: "/transactions" as const,
@@ -90,6 +94,7 @@ export const transactionsHref = ({
     ...(period === undefined
       ? {}
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+    ...(search === undefined ? {} : { [TRANSACTIONS_PARAMS.search]: search }),
     ...(shown === undefined ? {} : { [TRANSACTIONS_PARAMS.shown]: shown }),
   },
 });

@@ -7,6 +7,7 @@ import {
   formatSignedAmount,
   isAmountMinor,
   parseAmountText,
+  parseTypedAmount,
   sumAmounts,
 } from "./money.helpers";
 import type { AmountMinor } from "./money.types";
@@ -184,6 +185,42 @@ describe("formatAmount", () => {
   it("uses the given locale", () => {
     expect(formatAmount(amount(8_119_555.5), CURRENCY.COP, "en-US")).toBe(
       "$8,119,555.50",
+    );
+  });
+});
+
+describe("parseTypedAmount", () => {
+  it.each([
+    ["$90.000", 9_000_000],
+    ["90.000", 9_000_000],
+    ["90000", 9_000_000],
+    ["$ 90.000", 9_000_000],
+    ["1.234,56", 123_456],
+    ["12,5", 1_250],
+    ["\u2212$90.000", 9_000_000],
+    ["-90.000", 9_000_000],
+    ["$1.234.567", 123_456_700],
+    ["0", 0],
+  ])("reads %s as %i minor units", (text, minor) => {
+    expect(parseTypedAmount(text)).toEqual(ok(minor));
+  });
+
+  it.each([
+    "90,000",
+    "9.00",
+    "1.23.456",
+    "$",
+    "nequi",
+    "4X1000",
+    "90.000,123",
+    "",
+  ])("doesn't read %j as an amount", (text) => {
+    expect(parseTypedAmount(text)).toEqual(parseFailure("format"));
+  });
+
+  it("refuses an amount beyond the safe integer range", () => {
+    expect(parseTypedAmount("999.999.999.999.999.999")).toEqual(
+      parseFailure("range"),
     );
   });
 });

@@ -57,6 +57,7 @@ export {
   formatSignedAmount,
   isAmountMinor,
   parseAmountText,
+  parseTypedAmount,
   sumAmounts,
 } from "./money/money.helpers";
 export { amountMinorSchema, currencySchema } from "./money/money.schemas";

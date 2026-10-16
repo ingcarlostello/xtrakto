@@ -19,12 +19,13 @@ export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
   const clerkUserId = await requireSignedIn();
-  const { account, period, show } = transactionsSearchSchema.parse(
+  const { account, period, q, show } = transactionsSearchSchema.parse(
     await searchParams,
   );
   const transactions = await getAccountTransactions(clerkUserId, {
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),
+    ...(q === undefined ? {} : { search: q }),
     shown: show,
   });
   if (!transactions)
@@ -40,7 +41,10 @@ export default async function TransactionsPage({
     );
   return (
     <>
-      <PageHeader title={COPY.title} subtitle={totalText(transactions.total)} />
+      <PageHeader
+        title={COPY.title}
+        subtitle={totalText(transactions.total, transactions.search)}
+      />
       <PeriodControls view={transactions} />
       <TransactionList transactions={transactions} />
     </>

@@ -11,6 +11,7 @@ import {
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import { selectPeriod } from "./period-selector.helpers";
+import { movementSearchOf } from "./transaction-list.helpers";
 import type {
   AccountTransactions,
   TransactionsRequest,
@@ -39,7 +40,13 @@ export const getAccountTransactions = async (
     const quarters = await listMovementQuarters(ctx, account.id);
     const period = selectPeriod(request.period, quarters);
     if (!period) return null;
-    const filter = { accountId: account.id, period: periodDays(period) };
+    const filter = {
+      accountId: account.id,
+      period: periodDays(period),
+      ...(request.search === undefined
+        ? {}
+        : { search: movementSearchOf(request.search) }),
+    };
     const total = await countCountedMovements(ctx, filter);
     const page = await listTransactions(ctx, {
       ...filter,
@@ -47,7 +54,13 @@ export const getAccountTransactions = async (
       offset: 0,
     });
     const currentYear = today.slice(0, 4);
-    return { accounts, account, quarters, period, total, ...page, currentYear };
+    const { search } = request;
+    const found = {
+      total,
+      ...page,
+      ...(search === undefined ? {} : { search }),
+    };
+    return { accounts, account, quarters, period, ...found, currentYear };
   });
 };
 

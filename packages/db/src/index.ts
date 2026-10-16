@@ -62,6 +62,7 @@ export {
   type TransactionListItem,
   type TransactionPage,
 } from "./transactions/transaction.queries";
+export type { MovementSearch } from "./transactions/transaction-search.queries";
 export {
   deleteAllUserData,
   findOrCreateUser,

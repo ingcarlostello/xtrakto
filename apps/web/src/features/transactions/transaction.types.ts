@@ -10,6 +10,8 @@ import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 export type TransactionsRequest = {
   readonly accountId?: string;
   readonly period?: MovementPeriod;
+  /** What to look for among the period's movements, as typed. */
+  readonly search?: string;
   readonly shown: number;
 };
 
@@ -21,7 +23,9 @@ export type AccountTransactions = {
   /** Its quarters with movements, the latest first. */
   readonly quarters: readonly MovementQuarter[];
   readonly period: MovementPeriod;
-  /** Every movement of the account in the period that counts. */
+  /** What the list looks for, as typed. */
+  readonly search?: string;
+  /** Every movement of the account in the period that counts and matches. */
   readonly total: number;
   /** The newest of them, as many as the list shows. */
   readonly items: readonly TransactionListItem[];

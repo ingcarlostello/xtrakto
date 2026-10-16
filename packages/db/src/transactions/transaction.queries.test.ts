@@ -1,4 +1,9 @@
-import type { LocalDate, Period, PreparedStatement } from "@xtrakto/core";
+import type {
+  AmountMinor,
+  LocalDate,
+  Period,
+  PreparedStatement,
+} from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   preparedExport,
@@ -15,6 +20,7 @@ import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { countCountedMovements } from "../coverage/coverage.queries";
 import { saveStatement } from "../statements/statement.queries";
+import type { MovementSearch } from "./transaction-search.queries";
 import type { BalanceCheck } from "../statements/statement.types";
 import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
@@ -313,6 +319,89 @@ describe.skipIf(!testDatabase)("the movements that count", () => {
       { year: 2026, quarter: 2, verified: false },
     ]);
     expect(julyToSeptember).toBe(3);
+  });
+});
+
+describe.skipIf(!testDatabase)("searching movements", () => {
+  let app: DbClient;
+  let userId: UserId;
+  let accountId: string;
+
+  beforeAll(async () => {
+    app = createDb({ connectionString: requireTestDatabase().appUrl });
+    userId = await findOrCreateUser(app.db, `test_${crypto.randomUUID()}`);
+    accountId = await withUserContext(app.db, userId, async (ctx) => {
+      const id = await resolveIdentifiedAccount(ctx, {
+        bankId: "bancolombia",
+        accountType: "savings",
+        last4: "5555",
+        currency: "COP",
+      });
+      await saveStatement(ctx, {
+        accountId: id,
+        balance: UNCHECKED,
+        statement: await preparedExport([
+          {
+            date: "2026-08-01",
+            amount: -9_000_000,
+            description: "PAGO PSE Compañía de Finan",
+          },
+          {
+            date: "2026-08-02",
+            amount: 9_000_000,
+            description: "TRANSFERENCIA DESDE NEQUI",
+          },
+          {
+            date: "2026-08-03",
+            amount: -1_250,
+            description: "COMPRA EN MERCADO XYZ",
+          },
+        ]),
+      });
+      return id;
+    });
+  });
+
+  afterAll(async () => {
+    await app.pool.end();
+  });
+
+  const found = (search: MovementSearch) =>
+    withUserContext(app.db, userId, async (ctx) => {
+      const { items } = await listTransactions(ctx, {
+        accountId,
+        search,
+        limit: 10,
+        offset: 0,
+      });
+      const counted = await countCountedMovements(ctx, { accountId, search });
+      return { amounts: items.map((t) => t.amountMinor), counted };
+    });
+
+  it.each([
+    ["ignoring case and accents", { text: "compania de" }, [-9_000_000]],
+    [
+      "ignoring its own accents and spaces",
+      { text: "  COMPAÑÍA  de " },
+      [-9_000_000],
+    ],
+    ["in any part of the text", { text: "nequi" }, [9_000_000]],
+    [
+      "by an amount with either sign",
+      { text: "$90.000", amountMinor: 9_000_000 as AmountMinor },
+      [9_000_000, -9_000_000],
+    ],
+    [
+      "by an amount with cents",
+      { text: "12,50", amountMinor: 1_250 as AmountMinor },
+      [-1_250],
+    ],
+    ["nothing when nothing matches", { text: "netflix" }, []],
+  ])("finds movements %s", async (_, search, expected) => {
+    const { amounts, counted } = await found(search);
+
+    expect(amounts).toEqual(expected);
+    expect(counted).toBe(expected.length);
   });
 });
 
