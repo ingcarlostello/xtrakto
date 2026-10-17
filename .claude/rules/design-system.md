@@ -309,7 +309,7 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Subscriptions                                 | `repeat`                           |
 | Other                                         | `ellipsis`                         |
 | To review ("Por revisar")                     | `circle-alert`                     |
-| Rules from the quick review                   | `tag`                              |
+| A category, and rules from the quick review   | `tag`                              |
 | Recurring payments                            | `calendar`                         |
 | Privacy                                       | `shield-check`                     |
 | Upload                                        | `upload`                           |
@@ -425,11 +425,11 @@ On the upload screen the same pill counts the month's statements, beside the pag
 
 ### Movements list ("Todos los movimientos")
 
-As Phase 5.7a builds it, before kinds and categories exist (`TransactionList`):
+As Phases 5.7a and 6.1b build it, before kinds exist (`TransactionList`):
 
 - A card (`--surface-card`, `--radius-lg`) at most 896px wide, its title and one line with the period's days and the account ("Del 1 de julio al 30 de septiembre de 2026. Cuenta de ahorros · Bancolombia ••••8901."). A month without movements reads "No hay movimientos en este periodo."
 - Day headers: the weekday and the date in Manrope 700 14px ("Miércoles 30 de septiembre", with the year when it isn't the current one), and "Saldo del día $6.482.310" in Caption `--text-muted` on the right, under it on phones. A day of a file without balances has no balance.
-- Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. The amount in Amount S, ink, with its sign. No icon chip until a category gives one.
+- Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. Under it, on one line that wraps, the channel tag and the category tag, or "Por revisar" instead while the category is only a guess (Phase 6.1b); a row of a statement that doesn't reconcile shows its channel only, since it counts nowhere. The amount in Amount S, ink, with its sign: no icon chip or kind color until Phase 6.2 gives movements a kind.
 - Footer: "Mostrando 30 de 312" (Meta, `--text-muted`) and the link action "Mostrar 30 más" (fewer when fewer are left). The count lives in the URL (`?show=60`) with the account and the period, the page keeps its scroll, and the focus moves to the first movement the link brought, also when the link goes away because every movement shows. Choosing another period or account shows the first 30 again.
 - The upload result links to its file's movements with the link action "Ver movimientos": its account, and the month that holds the file or the quarter of its last day. A statement that doesn't reconcile has none to show.
 - **Search** (Phase 5.7c), under the card's header: a white pill (the text field with `--radius-pill` and `--shadow-chip`) with the `search` icon at 18px inside on the left and "Busca por descripción o monto" (references are stored as hashes, so v8's "o referencia" waits). Its label is visually hidden ("Buscar movimientos"). It's a GET form inside `role="search"`, so the term lands in the URL (`?q=`) with the account and the period, Enter searches, and the period and account links keep it. It finds the bank's text ignoring case, accents and extra spaces, and an amount typed the Colombian way ("$90.000", "1.234,56") with either sign. The page's subtitle then says "3 movimientos coinciden con “nequi”."
@@ -445,31 +445,35 @@ As Phase 5.7d builds it, from `v8-13`'s "El saldo no cuadra" (`StatementBreaksVi
 
 ### Channel tag
 
-A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary` (`Badge` variant `tag`, which a file's tags use too). It comes from the bank's text:
+A small tag on each movement: pill, `--surface` background, 1px `--chart-axis` border, Manrope 600 11px `--text-secondary` (`Badge` variant `tag`, which a file's tags use too). It comes from the start of the bank's text (`CHANNELS` and `channelOf` in core), the first row that matches; interest, the 4x1000 and the bank's `0` have none. Screen readers hear "Canal:" before it.
 
-| Tag              | Bank text                |
-| ---------------- | ------------------------ |
-| PSE              | `PAGO PSE`               |
-| Llave Bre-B      | `PAGO LLAVE`             |
-| QR               | `PAGO QR`, `TRANSF QR`   |
-| Nequi            | `TRANSFERENCIAS A NEQUI` |
-| Cajero           | `RETIRO CAJERO`          |
-| Corresponsal     | `CORRESPONSAL`           |
-| Débito           | `COMPRA EN`              |
-| Sucursal virtual | `PAGO SUC VIRT`          |
-| Transferencia    | `TRANSF A`, `TRANSF DE`  |
+| Tag              | Bank text                                             |
+| ---------------- | ----------------------------------------------------- |
+| PSE              | `PAGO PSE`                                            |
+| Llave Bre-B      | `PAGO LLAVE`                                          |
+| QR               | `PAGO QR`, `TRANSF QR`                                |
+| Nequi            | `TRANSFERENCIAS A NEQUI`, `TRANSFERENCIA DESDE NEQUI` |
+| Cajero           | `RETIRO CAJERO`                                       |
+| Débito           | `COMPRA EN`                                           |
+| Sucursal virtual | `PAGO SUC VIRT`, `TRANSFERENCIA CTA SUC VIRTUAL`      |
+| Transferencia    | `TRANSF A`, `TRANSF DE`, `PAGO INTERBANC`             |
+| Corresponsal     | `CORRESPONSAL` anywhere in the text, tried last       |
+
+### Category tag
+
+The category of a movement, after its channel tag: the `neutral` badge (`--surface-muted`, `--text-secondary`) with the `tag` icon at 14px and the category's label ("Pagos a personas"). Screen readers hear "Categoría:" before it. A movement whose category is only a guess shows "Por revisar" instead; one without a category, none.
 
 ### Badges
 
 Pills without a border, Manrope 600 12px, on a soft background:
 
-| Badge                                           | Background        | Text                 |
-| ----------------------------------------------- | ----------------- | -------------------- |
-| Por revisar (`circle-alert`)                    | `--spending-soft` | `--spending-on-soft` |
-| Subió (`arrow-up-right`)                        | `--spending-soft` | `--spending-on-soft` |
-| Estable, Verificado                             | `--income-soft`   | `--income-on-soft`   |
-| Varios canales, Completado, Muy pronto (`info`) | `--primary-soft`  | `--primary-strong`   |
-| Monto variable, Sin verificar                   | `--surface-muted` | `--text-secondary`   |
+| Badge                                                  | Background        | Text                 |
+| ------------------------------------------------------ | ----------------- | -------------------- |
+| Por revisar (`circle-alert`, `Badge` variant `review`) | `--spending-soft` | `--spending-on-soft` |
+| Subió (`arrow-up-right`)                               | `--spending-soft` | `--spending-on-soft` |
+| Estable, Verificado                                    | `--income-soft`   | `--income-on-soft`   |
+| Varios canales, Completado, Muy pronto (`info`)        | `--primary-soft`  | `--primary-strong`   |
+| Monto variable, Sin verificar                          | `--surface-muted` | `--text-secondary`   |
 
 ### Raw-text chip
 
@@ -762,7 +766,7 @@ const manrope = localFont({
 
 Translucent surfaces are written with opacity modifiers: `bg-surface/88` (cards), `bg-surface/60` (panels), `bg-surface/94` (dock).
 
-Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`), `Badge` (one variant per kind, plus `neutral`, `attention`, `tag`, `ok` for verified states and `info`), `Input` and `Checkbox`. Classes are merged with `cn` from `@/utils/cn.utils` (the shadcn CLI writes that import): it knows the text sizes of this section, and a new `--text-*` token joins its list, or `cn` drops it whenever a text color follows (a test checks they match). The development page `/design-system` shows every token and component.
+Spacing needs no tokens: Tailwind's scale is 4px per step, so every value of §7 has a class (`gap-5.5` is 22px, `py-7.5` is 30px). Base components live in `apps/web/src/components/ui/` (shadcn on Base UI, ADR 0015): `Button` and `IconButton`, `Card` (`tile`, `card`, `panel`), `Badge` (one variant per kind, plus `neutral`, `attention` for the attention surface ("No cuadra"), `review` for "Por revisar", `tag`, `ok` for verified states and `info`), `Input` and `Checkbox`. Classes are merged with `cn` from `@/utils/cn.utils` (the shadcn CLI writes that import): it knows the text sizes of this section, and a new `--text-*` token joins its list, or `cn` drops it whenever a text color follows (a test checks they match). The development page `/design-system` shows every token and component.
 
 v8 needs no new color tokens: the grey status dot is `ink-faint`, and the coverage timeline uses `income`, `moved`, `ink-faint`, `chart-axis` and `ring-track`. Each v8 component (§9) is built with its first consumer: `Button` gains the white destructive variant and `Badge` the status badges of §9 then, and the development page shows them.
 
