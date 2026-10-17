@@ -78,6 +78,13 @@
       "when": 1792095798860,
       "tag": "0010_waitlist-insert-only",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792198895127,
+      "tag": "0011_categorization-rules",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,4 @@
 import type { AmountMinor } from "../money/money.types";
-import { foldText } from "../text/text.utils";
 import { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import { MONEY_DIRECTION } from "./categorization.constants";
 import type {
@@ -10,52 +9,21 @@ import type {
   RuleCategorization,
 } from "./categorization.types";
 import {
-  containsKeyword,
-  parseKeyword,
-  startsWithWords,
-  wordsOf,
+  compilePattern,
+  foldDescription,
+  type FoldedDescription,
 } from "./rule-matching.helpers";
 
 type TableRule = CategorizationRule & { readonly id: CategorizationRuleId };
 
-/** A folded description and its words, worked out once per movement. */
-type Description = {
-  readonly text: string;
-  readonly words: readonly string[];
-};
-
 type CompiledRule = {
   readonly rule: TableRule;
-  readonly matches: (description: Description) => boolean;
+  readonly matches: (description: FoldedDescription) => boolean;
 };
 
-// The words after the first prefix the description starts with, or none.
-const afterPrefix = (
-  words: readonly string[],
-  prefixes: readonly (readonly string[])[],
-): readonly string[] | undefined => {
-  const prefix = prefixes.find((candidate) =>
-    startsWithWords(words, candidate),
-  );
-  return prefix && words.slice(prefix.length);
-};
-
-const compileRule = (rule: TableRule): CompiledRule => {
-  const prefixes = (rule.startsWith ?? []).map((prefix) => prefix.split(" "));
-  const keywords = (rule.words ?? []).map(parseKeyword);
-  const matches = ({ text, words }: Description): boolean => {
-    if (rule.is !== undefined && text !== rule.is) return false;
-    const rest = prefixes.length === 0 ? words : afterPrefix(words, prefixes);
-    if (rest === undefined) return false;
-    return (
-      keywords.length === 0 ||
-      keywords.some((keyword) => containsKeyword(rest, keyword))
-    );
-  };
-  return { rule, matches };
-};
-
-const COMPILED_RULES = CATEGORIZATION_RULES.map(compileRule);
+const COMPILED_RULES = CATEGORIZATION_RULES.map(
+  (rule: TableRule): CompiledRule => ({ rule, matches: compilePattern(rule) }),
+);
 
 // A movement of 0 goes nowhere, so no rule applies to it.
 const directionOf = (amount: AmountMinor): MoneyDirection | undefined => {
@@ -75,8 +43,7 @@ export const categorizeByRules = ({
 }: CategorizableTransaction): RuleCategorization | null => {
   const direction = directionOf(amountMinor);
   if (direction === undefined) return null;
-  const text = foldText(descriptionNormalized);
-  const description = { text, words: wordsOf(text) };
+  const description = foldDescription(descriptionNormalized);
   const match = COMPILED_RULES.find(
     ({ rule, matches }) => rule.direction === direction && matches(description),
   );

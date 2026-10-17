@@ -115,6 +115,23 @@ describe.skipIf(!testDatabase)("transactions table", () => {
       { referenceHash: sha256Hex(), referenceKind: "none" as const },
     ],
     ["a category without its source", { categoryId: "groceries" as const }],
+    [
+      "a rule's category without the rule",
+      { categoryId: "groceries" as const, categorySource: "rule" as const },
+    ],
+    [
+      "a rule for a category the user chose",
+      {
+        categoryId: "groceries" as const,
+        categorySource: "user" as const,
+        categoryRuleId: "merchant_groceries" as const,
+      },
+    ],
+    [
+      "a rule without a category",
+      { categoryRuleId: "merchant_groceries" as const },
+    ],
+    ["a review without a best guess", { isPendingReview: true }],
     ["a fingerprint that isn't SHA-256 hex", { fingerprint: "ABC" }],
     ["a negative position", { position: -1 }],
     [
@@ -133,6 +150,28 @@ describe.skipIf(!testDatabase)("transactions table", () => {
     expect(await pgErrorCode(insertTransaction(owner.db, row))).toBe(
       CHECK_VIOLATION,
     );
+  });
+
+  it.each([
+    ["no category", {}],
+    [
+      "a rule's best guess to review",
+      {
+        categoryId: "investment" as const,
+        categorySource: "rule" as const,
+        categoryRuleId: "key_payment_saving" as const,
+        isPendingReview: true,
+      },
+    ],
+    [
+      "the user's category",
+      { categoryId: "groceries" as const, categorySource: "user" as const },
+    ],
+  ])("accepts %s", async (_, change) => {
+    const { account, statementId } = await newStatement();
+    const row = { ...transactionRow(account, statementId), ...change };
+
+    await expect(insertTransaction(owner.db, row)).resolves.not.toThrow();
   });
 
   it("reads back extreme amounts and dates exactly", async () => {

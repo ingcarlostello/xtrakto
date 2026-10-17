@@ -1,5 +1,6 @@
 import "server-only";
 import {
+  categorizeStatement,
   err,
   normalizeHolderName,
   ok,
@@ -114,12 +115,13 @@ const ingestOpenJob = async (
   if (!parsed.ok) return fail(ctx, jobId, parsed.error);
   const account = await resolveAccount(ctx, parsed.value, job);
   if (!account.ok) return fail(ctx, jobId, ACCOUNT_REQUIRED);
+  const prepared = await prepareStatement(
+    parsed.value,
+    getServerEnv().IDENTIFIER_HASH_KEY,
+  );
   const saved = await saveStatement(ctx, {
     accountId: account.value,
-    statement: await prepareStatement(
-      parsed.value,
-      getServerEnv().IDENTIFIER_HASH_KEY,
-    ),
+    statement: categorizeStatement(prepared),
     balance: balanceCheckOf(parsed.value),
   });
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");
@@ -137,10 +139,11 @@ export const claimJob = (job: JobRef): Promise<boolean> =>
 /**
  * Ingests a job's statement in one transaction: parses it again on the
  * server, resolves its account, reconciles, prepares its movements
- * (fingerprints, HMAC) and saves them, then finishes the job and deletes its
- * content. A statement the parser can't read, or an export whose account
- * the user has to choose, fails the job with its code. Unexpected errors are
- * thrown without their message, for Inngest to retry.
+ * (fingerprints, HMAC), categorizes them by the rules (ADR 0023) and saves
+ * them, then finishes the job and deletes its content. A statement the
+ * parser can't read, or an export whose account the user has to choose,
+ * fails the job with its code. Unexpected errors are thrown without their
+ * message, for Inngest to retry.
  */
 export const ingestJob = (job: JobRef): Promise<IngestOutcome> =>
   inUserContext("JOB_NOT_INGESTED", job, async (ctx) => {

@@ -57,6 +57,18 @@ describe("CATEGORIZATION_RULES", () => {
     expect(unclear).toEqual([]);
   });
 
+  it("puts each merchant word in one category only", () => {
+    const merchantWords = RULES.filter(({ id }) =>
+      id.startsWith("merchant_"),
+    ).flatMap(({ words = [] }) => words);
+
+    expect(
+      merchantWords.filter(
+        (word, index) => merchantWords.indexOf(word) !== index,
+      ),
+    ).toEqual([]);
+  });
+
   it("only guesses for the movements the quick review asks about", () => {
     const guesses = RULES.filter(({ isGuess }) => isGuess).map(({ id }) => id);
 

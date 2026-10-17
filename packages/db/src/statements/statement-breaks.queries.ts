@@ -2,7 +2,10 @@ import type { AmountMinor, Period } from "@xtrakto/core";
 import { and, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
 import type { AccountRow } from "../accounts/account.queries";
 import { accounts } from "../accounts/account.schemas";
-import type { TransactionListItem } from "../transactions/transaction.queries";
+import {
+  LIST_ITEM_COLUMNS,
+  type TransactionListItem,
+} from "../transactions/transaction.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 import { statements } from "./statement.schemas";
@@ -107,14 +110,7 @@ export const findStatementBreaks = async (
     .where(and(doesNotReconcile(userId), eq(statements.id, statementId)));
   if (!found) return undefined;
   const movements = await tx
-    .select({
-      id: transactions.id,
-      date: transactions.date,
-      descriptionRaw: transactions.descriptionRaw,
-      amountMinor: transactions.amountMinor,
-      balanceAfterMinor: transactions.balanceAfterMinor,
-      position: transactions.position,
-    })
+    .select({ ...LIST_ITEM_COLUMNS, position: transactions.position })
     .from(transactions)
     .where(
       and(

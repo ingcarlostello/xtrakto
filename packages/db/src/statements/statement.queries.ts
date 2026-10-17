@@ -1,5 +1,6 @@
 import {
   APP_ERROR_CODE,
+  type CategorizedStatement,
   err,
   ok,
   type PreparedStatement,
@@ -19,7 +20,7 @@ import { settlePeriodVersion } from "./statement-version.queries";
 import { statements } from "./statement.schemas";
 import type { SavedStatement, SaveStatementInput } from "./statement.types";
 
-// Well under PostgreSQL's 65,535 bind parameters per statement (20 columns).
+// Well under PostgreSQL's 65,535 bind parameters per statement (22 columns).
 const INSERT_CHUNK_SIZE = 1_000;
 
 type Owner = { readonly userId: string; readonly accountId: string };
@@ -99,7 +100,7 @@ const upsertStatement = async (
 const insertMovements = async (
   ctx: UserContext,
   owner: Owner & { readonly statementId: string },
-  statement: PreparedStatement,
+  statement: CategorizedStatement,
 ): Promise<{ readonly inserted: number; readonly covered: number }> => {
   const covering =
     statement.openingBalanceMinor === undefined

@@ -1,5 +1,7 @@
 import {
-  type PreparedStatement,
+  type CategorizedStatement,
+  categorizeStatement,
+  type ParsedStatement,
   parsedStatementSchema,
   prepareStatement,
 } from "@xtrakto/core";
@@ -7,6 +9,12 @@ import type { BalanceCheck } from "../src/statements/statement.types";
 import { asAmount } from "./test-rows";
 
 export const TEST_HASH_KEY = "test-key-with-at-least-32-characters!";
+
+// Prepared and categorized, as ingestion saves a statement.
+const readyToSave = async (
+  parsed: ParsedStatement,
+): Promise<CategorizedStatement> =>
+  categorizeStatement(await prepareStatement(parsed, TEST_HASH_KEY));
 
 /** What `reconcile` finds in a movements export, which prints no balances. */
 export const UNCHECKED: BalanceCheck = { verified: false, breakPositions: [] };
@@ -45,10 +53,10 @@ const parsedMovement = (movement: TestMovement, sourceRow: number) => {
   };
 };
 
-/** A movements export, parsed and prepared as ingestion will do it. */
+/** A movements export, parsed, prepared and categorized as ingestion does it. */
 export const preparedExport = (
   movements: readonly TestMovement[],
-): Promise<PreparedStatement> => {
+): Promise<CategorizedStatement> => {
   const dates = movements.map((movement) => movement.date).sort();
   const parsed = parsedStatementSchema.parse({
     bankId: "bancolombia",
@@ -60,7 +68,7 @@ export const preparedExport = (
     transactions: movements.map(parsedMovement),
     warnings: [],
   });
-  return prepareStatement(parsed, TEST_HASH_KEY);
+  return readyToSave(parsed);
 };
 
 export type QuarterOptions = {
@@ -82,7 +90,7 @@ export const preparedQuarterly = (
     to = "2026-09-30",
     openingMinor = 100_000,
   }: QuarterOptions = {},
-): Promise<PreparedStatement> => {
+): Promise<CategorizedStatement> => {
   let balance = openingMinor;
   const transactions = movements.map((movement, index) => {
     balance += movement.amount;
@@ -101,7 +109,7 @@ export const preparedQuarterly = (
     transactions,
     warnings: [],
   });
-  return prepareStatement(parsed, TEST_HASH_KEY);
+  return readyToSave(parsed);
 };
 
 /** `count` distinct purchases on consecutive days from 2026-01-01. */

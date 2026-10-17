@@ -1,8 +1,9 @@
 // Loads the synthetic fixtures for a development user, through the same
-// functions ingestion will use: parse, reconcile, prepare, save. Local
+// functions ingestion uses: parse, reconcile, prepare, categorize, save. Local
 // databases only. Run with `pnpm db:seed`; a second run inserts nothing.
 import { existsSync, readFileSync } from "node:fs";
 import {
+  categorizeStatement,
   extractedContentSchema,
   normalizeHolderName,
   type ParsedStatement,
@@ -74,7 +75,9 @@ const { db, pool } = createDb({ connectionString: databaseUrl });
 try {
   const userId = await findOrCreateUser(db, clerkUserId);
   for (const { file, parsed } of fixtures) {
-    const statement = await prepareStatement(parsed, identifierHashKey);
+    const statement = categorizeStatement(
+      await prepareStatement(parsed, identifierHashKey),
+    );
     const result = await withUserContext(db, userId, async (ctx) => {
       const accountId = await resolveIdentifiedAccount(ctx, {
         bankId: parsed.bankId,

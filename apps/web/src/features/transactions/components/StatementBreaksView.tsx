@@ -72,6 +72,7 @@ export function StatementBreaksView({ breaks, currentYear }: ViewProps) {
         <MovementDays
           items={breaks.movements}
           currentYear={currentYear}
+          isCounted={false}
           marks={breakMarks(breaks)}
         />
       </Card>

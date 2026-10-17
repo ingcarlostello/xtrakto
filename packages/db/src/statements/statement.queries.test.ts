@@ -1,7 +1,7 @@
 import {
   type AmountMinor,
   hashIdentifier,
-  type PreparedStatement,
+  type CategorizedStatement,
 } from "@xtrakto/core";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -86,7 +86,7 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
   // Saves a statement with its balance check in a new or given account.
   const saveIn = (
     account: { userId: UserId; accountId: string },
-    statement: PreparedStatement,
+    statement: CategorizedStatement,
     balance: BalanceCheck,
   ) =>
     savedValue(account.userId, {
@@ -101,6 +101,18 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
         amount: transactions.amountMinor,
         referenceHash: transactions.referenceHash,
         referenceLast4: transactions.referenceLast4,
+      })
+      .from(transactions)
+      .where(eq(transactions.accountId, accountId))
+      .orderBy(transactions.date, transactions.position);
+
+  const categoriesOf = (accountId: string) =>
+    owner.db
+      .select({
+        categoryId: transactions.categoryId,
+        categorySource: transactions.categorySource,
+        categoryRuleId: transactions.categoryRuleId,
+        isPendingReview: transactions.isPendingReview,
       })
       .from(transactions)
       .where(eq(transactions.accountId, accountId))
@@ -135,6 +147,74 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
       },
       { amount: 12, referenceHash: null, referenceLast4: null },
     ]);
+  });
+
+  // Read back as stored: a field the insert didn't know would vanish silently.
+  it("saves what the rules said about each movement", async () => {
+    const account = await newAccount();
+    const statement = await preparedExport([
+      { date: "2026-10-01", amount: -5_000_000, description: NEQUI },
+      {
+        date: "2026-10-02",
+        amount: -2_000_000,
+        description: "PAGO LLAVE Maria Lopez",
+      },
+      { date: "2026-10-03", amount: -1_000 },
+    ]);
+
+    await saveIn(account, statement, UNCHECKED);
+
+    expect(await categoriesOf(account.accountId)).toEqual([
+      {
+        categoryId: "transfers_to_people",
+        categorySource: "rule",
+        categoryRuleId: "nequi_out",
+        isPendingReview: false,
+      },
+      {
+        categoryId: "transfers_to_people",
+        categorySource: "rule",
+        categoryRuleId: "key_payment",
+        isPendingReview: true,
+      },
+      {
+        categoryId: null,
+        categorySource: null,
+        categoryRuleId: null,
+        isPendingReview: false,
+      },
+    ]);
+  });
+
+  it("keeps the category a movement was saved with when an upload brings it again", async () => {
+    const account = await newAccount();
+    const first = {
+      date: "2026-10-01",
+      amount: -5_000_000,
+      description: NEQUI,
+    };
+    await saveIn(account, await preparedExport([first]), UNCHECKED);
+    const overlapping = await preparedExport([
+      first,
+      { date: "2026-10-02", amount: -1_000 },
+    ]);
+    const recategorized = {
+      ...overlapping,
+      transactions: overlapping.transactions.map((movement) => ({
+        ...movement,
+        categoryId: "groceries" as const,
+        categorySource: "rule" as const,
+        categoryRuleId: "merchant_groceries" as const,
+      })),
+    };
+
+    const saved = await saveIn(account, recategorized, UNCHECKED);
+
+    expect(saved).toMatchObject({ added: 1, skipped: 1 });
+    expect((await categoriesOf(account.accountId))[0]).toMatchObject({
+      categoryId: "transfers_to_people",
+      categoryRuleId: "nequi_out",
+    });
   });
 
   it("adds nothing when the same statement is saved again", async () => {
@@ -284,7 +364,7 @@ describe.skipIf(!testDatabase)(
 
     const saveIn = async (
       { userId, accountId }: { userId: UserId; accountId: string },
-      statement: PreparedStatement,
+      statement: CategorizedStatement,
       balance: BalanceCheck,
     ) => {
       const result = await withUserContext(app.db, userId, (ctx) =>

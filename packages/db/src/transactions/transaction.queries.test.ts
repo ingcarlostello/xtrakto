@@ -1,8 +1,8 @@
 import type {
   AmountMinor,
+  CategorizedStatement,
   LocalDate,
   Period,
-  PreparedStatement,
 } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -107,9 +107,11 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
     expect(Object.keys(items[0] ?? {}).sort()).toEqual([
       "amountMinor",
       "balanceAfterMinor",
+      "categoryId",
       "date",
       "descriptionRaw",
       "id",
+      "isPendingReview",
     ]);
   });
 
@@ -191,7 +193,7 @@ describe.skipIf(!testDatabase)("the movements that count", () => {
   const saveIn = async (
     userId: UserId,
     accountId: string,
-    [statement, balance]: [PreparedStatement, BalanceCheck],
+    [statement, balance]: [CategorizedStatement, BalanceCheck],
   ) => {
     const result = await withUserContext(app.db, userId, (ctx) =>
       saveStatement(ctx, { accountId, statement, balance }),

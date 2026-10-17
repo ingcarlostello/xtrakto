@@ -1,4 +1,6 @@
 import type { TransactionListItem } from "@xtrakto/db";
+import { CircleAlert, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
 import {
   amountText,
@@ -6,12 +8,17 @@ import {
   dayHeading,
   descriptionView,
   groupByDay,
+  movementTags,
 } from "../transaction-list.helpers";
 import {
   MOVEMENT_ROW_ATTRIBUTE,
   TRANSACTIONS_COPY as COPY,
 } from "../transaction.constants";
-import type { MovementMark, TransactionDay } from "../transaction.types";
+import type {
+  MovementMark,
+  MovementTags,
+  TransactionDay,
+} from "../transaction.types";
 
 // The bank's text exactly as printed: its case, its cuts and its double
 // spaces (design-system.md §4), wrapping only where it has a space.
@@ -31,12 +38,47 @@ function Description({ raw }: { raw: string }) {
   );
 }
 
-type ItemProps = { item: TransactionListItem; mark?: MovementMark };
+// The channel tag, then the category, or "Por revisar" while the category
+// is only a guess (design-system.md §9). Screen readers hear what each is.
+function MovementTagList({ tags }: { tags: MovementTags }) {
+  const { channel, category, isPendingReview } = tags;
+  if (channel === undefined && category === undefined && !isPendingReview)
+    return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {channel !== undefined && (
+        <Badge variant="tag">
+          <span className="sr-only">{COPY.tags.channel} </span>
+          {channel}
+        </Badge>
+      )}
+      {category !== undefined && (
+        <Badge>
+          <Tag aria-hidden />
+          <span className="sr-only">{COPY.tags.category} </span>
+          {category}
+        </Badge>
+      )}
+      {isPendingReview && (
+        <Badge variant="review">
+          <CircleAlert aria-hidden />
+          {COPY.tags.pendingReview}
+        </Badge>
+      )}
+    </div>
+  );
+}
 
-// No kind color or category yet: those come with Stage 6, so the amount
-// stays in ink with its sign (design-system.md §3.4). A marked row, where a
-// statement's balance breaks, sits on the attention surface with why.
-function TransactionItem({ item, mark }: ItemProps) {
+type ItemProps = {
+  item: TransactionListItem;
+  isCounted: boolean;
+  mark?: MovementMark;
+};
+
+// No kind color yet: kinds come with 6.2, so the amount stays in ink with
+// its sign (design-system.md §3.4). A marked row, where a statement's
+// balance breaks, sits on the attention surface with why.
+function TransactionItem({ item, isCounted, mark }: ItemProps) {
   return (
     <li
       {...{ [MOVEMENT_ROW_ATTRIBUTE]: "" }}
@@ -48,6 +90,7 @@ function TransactionItem({ item, mark }: ItemProps) {
     >
       <div className="flex min-w-0 flex-col gap-0.5">
         <Description raw={item.descriptionRaw} />
+        <MovementTagList tags={movementTags(item, isCounted)} />
         {mark && (
           <p className="flex items-start gap-2 pt-1 text-caption text-ink-secondary">
             <span
@@ -68,10 +111,17 @@ function TransactionItem({ item, mark }: ItemProps) {
 type DayGroupProps = {
   day: TransactionDay;
   currentYear: string;
+  /** False for a statement that doesn't reconcile: its rows count nowhere. */
+  isCounted?: boolean;
   marks?: ReadonlyMap<string, MovementMark>;
 };
 
-function DayGroup({ day, currentYear, marks }: DayGroupProps) {
+function DayGroup({
+  day,
+  currentYear,
+  isCounted = true,
+  marks,
+}: DayGroupProps) {
   return (
     <div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 pt-4 pb-2">
@@ -89,6 +139,7 @@ function DayGroup({ day, currentYear, marks }: DayGroupProps) {
           <TransactionItem
             key={item.id}
             item={item}
+            isCounted={isCounted}
             mark={marks?.get(item.id)}
           />
         ))}

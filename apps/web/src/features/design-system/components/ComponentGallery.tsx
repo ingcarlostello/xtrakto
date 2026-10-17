@@ -1,4 +1,5 @@
-import { Bell, ShoppingCart, Upload } from "lucide-react";
+import { CHANNELS } from "@xtrakto/core";
+import { Bell, CircleAlert, ShoppingCart, Tag, Upload } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
@@ -96,16 +97,36 @@ function Cards() {
 
 function Badges() {
   return (
-    <div className="flex flex-wrap gap-2">
-      <Badge>Sin categoría</Badge>
-      <Badge variant="income">Ingreso</Badge>
-      <Badge variant="spending">Gasto real</Badge>
-      <Badge variant="moved">Movido</Badge>
-      <Badge variant="attention">Revisar</Badge>
-      <Badge variant="ok">Verificado</Badge>
-      <Badge variant="info">Muy pronto</Badge>
-      <Badge variant="tag">PSE</Badge>
-      <Badge variant="tag">Extracto trimestral</Badge>
+    <div className="grid gap-3">
+      <div className="flex flex-wrap gap-2">
+        <Badge>Sin categoría</Badge>
+        <Badge variant="income">Ingreso</Badge>
+        <Badge variant="spending">Gasto real</Badge>
+        <Badge variant="moved">Movido</Badge>
+        <Badge variant="attention">No cuadra</Badge>
+        <Badge variant="ok">Verificado</Badge>
+        <Badge variant="info">Muy pronto</Badge>
+        <Badge variant="tag">Extracto trimestral</Badge>
+      </div>
+      {/* A movement's tags (6.1b): its channel, then its category or
+          "Por revisar" while the category is only a guess. */}
+      <div className="flex flex-wrap gap-2">
+        {CHANNELS.map(({ id, labelEs }) => (
+          <Badge key={id} variant="tag">
+            {labelEs}
+          </Badge>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Badge>
+          <Tag aria-hidden />
+          Pagos a personas
+        </Badge>
+        <Badge variant="review">
+          <CircleAlert aria-hidden />
+          Por revisar
+        </Badge>
+      </div>
     </div>
   );
 }
@@ -183,7 +204,10 @@ export function ComponentGallery() {
       >
         <Cards />
       </GallerySection>
-      <GallerySection title="Etiquetas">
+      <GallerySection
+        title="Etiquetas"
+        description="Estados y archivos; debajo, el canal de cada movimiento y su categoría o «Por revisar»."
+      >
         <Badges />
       </GallerySection>
       <GallerySection

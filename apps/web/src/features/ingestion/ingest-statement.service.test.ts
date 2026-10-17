@@ -13,6 +13,7 @@ import {
   findOrCreateUser,
   listAccounts,
   listIngestionJobResults,
+  listTransactions,
   type NewIngestionJob,
   resolveIdentifiedAccount,
   saveStatement,
@@ -172,6 +173,51 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
       { last4: QUARTERLY_LAST4 },
     ]);
     expect(await slotsUsedBy(userId)).toBe(1);
+  });
+
+  it("saves each movement with the category the rules give it", async () => {
+    const userId = await newUser();
+    await run(await submit(userId, QUARTERLY));
+    const [account] = await accountsOf(userId);
+    const { items } = await withUserContext(app.db, userId, (ctx) =>
+      listTransactions(ctx, {
+        accountId: account?.id ?? "",
+        limit: 100,
+        offset: 0,
+      }),
+    );
+    const byText = Object.fromEntries(
+      items.map(({ descriptionRaw, categoryId, isPendingReview }) => [
+        descriptionRaw,
+        { categoryId, isPendingReview },
+      ]),
+    );
+
+    expect(byText).toMatchObject({
+      "ABONO INTERESES AHORROS": { categoryId: "interest" },
+      "IMPTO GOBIERNO 4X1000": { categoryId: "taxes_and_fees" },
+      "TRANSFERENCIAS A NEQUI": { categoryId: "transfers_to_people" },
+      "COMPRA EN  MERCADO XYZ": { categoryId: "groceries" },
+      "COMPRA EN  TIENDA LA ESQUI": { categoryId: null },
+      "PAGO LLAVE Maria Lopez": {
+        categoryId: "transfers_to_people",
+        isPendingReview: true,
+      },
+      "CONSIGNACION CORRESPONSAL CB": {
+        categoryId: "own_account_transfer",
+        isPendingReview: true,
+      },
+      "PAGO PSE Banco Ejemplo S": {
+        categoryId: "credit_card_payment",
+        isPendingReview: true,
+      },
+      // The holder's own name, cut: a payment to a person until 6.2
+      // compares it with the holder's.
+      "TRANSF A ANA MARIA PRUEB": {
+        categoryId: "transfers_to_people",
+        isPendingReview: false,
+      },
+    });
   });
 
   it("adds nothing for a file already loaded, which takes no slot", async () => {

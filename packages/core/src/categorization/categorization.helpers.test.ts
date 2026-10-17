@@ -92,17 +92,38 @@ const MATCHES: readonly Match[] = [
   ],
   ["PAGO PSE RAPPIPAY", OUT, "pse_card", "credit_card_payment", REVIEW],
   ["PAGO PSE Financiera Andes S", OUT, "pse_loan", "loan_payment", REVIEW],
+  // Merchants, after every other rule.
+  ["COMPRA EN NETFLIX.COM", OUT, "merchant_subscriptions", "subscriptions"],
+  ["COMPRA EN AMAZON PRIME", OUT, "merchant_subscriptions", "subscriptions"],
+  ["PAGO QR CAFE DEL PARQUE", OUT, "merchant_restaurants", "restaurants"],
+  ["COMPRA EN UBER EATS", OUT, "merchant_restaurants", "restaurants"],
+  ["COMPRA EN RAPPI", OUT, "merchant_restaurants", "restaurants"],
+  ["COMPRA EN MCDONALD'S", OUT, "merchant_restaurants", "restaurants"],
+  // Cut by the bank, as a stem allows.
+  ["COMPRA EN JUAN VALDE", OUT, "merchant_restaurants", "restaurants"],
+  ["COMPRA EN UBER TRIP", OUT, "merchant_transport", "transport"],
+  ["COMPRA EN GASOLINERA", OUT, "merchant_transport", "transport"],
+  ["COMPRA EN AMAZON MKTPL", OUT, "merchant_shopping", "shopping"],
+  ["COMPRA EN MERCADO LIBRE", OUT, "merchant_shopping", "shopping"],
+  ["COMPRA EN  MERCADO XYZ", OUT, "merchant_groceries", "groceries"],
+  ["COMPRA EN SUPERMERCADO LA", OUT, "merchant_groceries", "groceries"],
+  ["COMPRA EN DROGAS LA REBAJA", OUT, "merchant_health", "health"],
+  ["PAGO PSE CONJUNTO RESIDENCIAL", OUT, "merchant_housing", "housing"],
+  ["COMPRA EN CINE COLOMBIA", OUT, "merchant_entertainment", "entertainment"],
+  ["PAGO PSE UNIVERSIDAD EJEMPLO", OUT, "merchant_education", "education"],
+  // Merchant words count only after a purchase or a payment.
+  ["TRANSF A EXITO PEREZ", OUT, "transfer_out", "transfers_to_people"],
 ];
 
 const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
   [
     // Purchases at stores no rule knows.
-    ["COMPRA EN  MERCADO XYZ", OUT],
     ["COMPRA EN  TIENDA LA ESQUI", OUT],
-    ["PAGO QR CAFE DEL PARQUE", OUT],
     ["PAGO QR TIENDA SIN CODIGO", OUT],
+    // METRO is a supermarket and a train.
+    ["COMPRA EN METRO CENTRO", OUT],
     // Words found only inside other words.
-    ["COMPRA EN GASOLINERA", OUT],
+    ["COMPRA EN PARA TODOS", OUT],
     ["PAGO PSE FUNES", OUT],
     ["PAGO PSE MENU", OUT],
     ["PAGO PSE DAVIPLATA", OUT],
@@ -116,6 +137,8 @@ const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
     ["PAGO LLAVE Maria Lopez", IN],
     // Money in through a gateway is the user's own sale.
     ["COMPRA EN BOLD*CAFE", IN],
+    // A purchase that comes back is a refund, which no rule reads yet.
+    ["COMPRA EN NETFLIX.COM", IN],
     // Nothing moved, which is neither money in nor money out.
     ["TRANSFERENCIAS A NEQUI", 0],
     ["ABONO INTERESES AHORROS", 0],
