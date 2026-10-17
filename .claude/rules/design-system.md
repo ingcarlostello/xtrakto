@@ -190,7 +190,7 @@ Both come from Google Fonts, as variable files kept in `apps/web/src/fonts/` (La
 | Dates in text     | Day and month in words       | `4 de agosto`               |
 | Dates on axes     | Short                        | `31 jul`                    |
 
-Use compact amounts in cards and exact amounts in lists and detail views.
+Use compact amounts in cards and exact amounts in lists and detail views. `formatCompactAmount` and `formatSignedCompactAmount` (core) write them: whole thousands ("$392 mil"), millions with one decimal ("$51,3M"), and amounts under $1.000 exact ("$870").
 
 ---
 
@@ -306,6 +306,9 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Transport                                     | `car`                              |
 | Home services ("Servicios del hogar")         | `house`                            |
 | Health                                        | `heart`                            |
+| Housing ("Vivienda")                          | `key-round`                        |
+| Education ("Educación")                       | `graduation-cap`                   |
+| Entertainment ("Entretenimiento")             | `clapperboard`                     |
 | Subscriptions                                 | `repeat`                           |
 | Other                                         | `ellipsis`                         |
 | To review ("Por revisar")                     | `circle-alert`                     |
@@ -321,7 +324,7 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Profile                                       | `user`                             |
 | Assistant                                     | Custom open-ring arrow (see Brand) |
 
-An unclassified movement shows the icon of its best guess in neutral ink.
+An unclassified movement shows the icon of its best guess in neutral ink, and one without a category shows `ellipsis`. Every income category uses `download`. Each category's icon is in `CATEGORY_ICONS` (`features/transactions/category-icons.constants.ts`).
 
 ---
 
@@ -362,6 +365,8 @@ Wordmark block on the left, greeting with the assistant mark in the center, util
 
 Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`, `--text-secondary`, 600. Active: `--primary-soft`, `--primary-strong`, 700, `aria-pressed="true"`. A chip can carry its count ("Por revisar · 24").
 
+Chips whose filter lives in the URL are links instead, inside a named `<nav>`, and the current one has `aria-current="page"` (§12). Movimientos's "Todo / Ingresos / Gasto real / Movido / Por revisar · 24" work this way (`KindFilters`, Phase 6.2b), under the search, in a `<nav>` named "Mostrar". They keep the account, the period and the search, show the first 30 movements again, and leave the page's scroll where it is.
+
 ### Stat card
 
 - `--surface-card`, `--radius-md`, padding 20, `--shadow-card`, gap 12.
@@ -373,7 +378,16 @@ Pill, min-height 38px, padding 0 14px, Manrope 13px. Inactive: `--surface-muted`
 
 ### Kind total tile
 
-On Movimientos: icon chip 44px with the kind's soft background, the label, the total in Amount L with its sign and the kind's text color, and the count ("41 movimientos"). Moved shows both directions: "−$29,8M · +$2,8M", "57 salieron · 8 volvieron".
+On Movimientos (`KindTiles`, Phase 6.2b): three `tile` cards above the list, as wide as it, side by side from `sm` and stacked on phones. Each has:
+
+- an icon chip, 44px, with the kind's soft background and its icon (§8) in the kind's text tone;
+- the label, Manrope 700 14px;
+- the period's total in Amount L, compact (§4), with its sign, in the kind's text color;
+- the count, in Meta `--text-muted` ("41 movimientos").
+
+Moved shows each direction that has movements: "−$29,8M · +$2,8M", "57 salieron · 8 volvieron". A line breaks only between directions. When money moved only one way it shows that one, and when none moved, "$0" and "0 movimientos".
+
+The totals are the account's for the period: neither the search nor the filter changes them, and a movement without a category adds to none.
 
 ### Account card
 
@@ -425,15 +439,17 @@ On the upload screen the same pill counts the month's statements, beside the pag
 
 ### Movements list ("Todos los movimientos")
 
-As Phases 5.7a and 6.1b build it, before kinds exist (`TransactionList`):
+As Phases 5.7a, 6.1b and 6.2b build it (`TransactionList`):
 
+- Above the card, in order: the color legend under the page title (`KindLegend`, `components/kind-legend/`), the period controls, any statement that doesn't reconcile, and the kind total tiles.
 - A card (`--surface-card`, `--radius-lg`) at most 896px wide, its title and one line with the period's days and the account ("Del 1 de julio al 30 de septiembre de 2026. Cuenta de ahorros · Bancolombia ••••8901."). A month without movements reads "No hay movimientos en este periodo."
 - Day headers: the weekday and the date in Manrope 700 14px ("Miércoles 30 de septiembre", with the year when it isn't the current one), and "Saldo del día $6.482.310" in Caption `--text-muted` on the right, under it on phones. A day of a file without balances has no balance.
-- Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. Under it, on one line that wraps, the channel tag and the category tag, or "Por revisar" instead while the category is only a guess (Phase 6.1b); a row of a statement that doesn't reconcile shows its channel only, since it counts nowhere. The amount in Amount S, ink, with its sign: no icon chip or kind color until Phase 6.2 gives movements a kind.
+- Rows: the bank's text as the title, Manrope 600 15px with letter-spacing `0.02em` and `white-space: pre-wrap`, so double spaces show and a long text wraps only at its spaces; "Sin descripción del banco" with the bank's `0` under it in Meta. Under it, on one line that wraps, the channel tag and the category tag, or "Por revisar" instead while the category is only a guess (Phase 6.1b); a row of a statement that doesn't reconcile shows its channel only, since it counts nowhere. Each row starts with a 44px icon chip: its category's icon (§8) on the kind's soft background, in the kind's text tone. The amount is in Amount S with its sign, in the kind's text color (Phase 6.2b). The chip is neutral (`--surface-muted`, ink icon) and the amount ink (§3.4) when the category is only a guess, when there is none, or when the row belongs to a statement that doesn't reconcile.
 - Footer: "Mostrando 30 de 312" (Meta, `--text-muted`) and the link action "Mostrar 30 más" (fewer when fewer are left). The count lives in the URL (`?show=60`) with the account and the period, the page keeps its scroll, and the focus moves to the first movement the link brought, also when the link goes away because every movement shows. Choosing another period or account shows the first 30 again.
 - The upload result links to its file's movements with the link action "Ver movimientos": its account, and the month that holds the file or the quarter of its last day. A statement that doesn't reconcile has none to show.
-- **Search** (Phase 5.7c), under the card's header: a white pill (the text field with `--radius-pill` and `--shadow-chip`) with the `search` icon at 18px inside on the left and "Busca por descripción o monto" (references are stored as hashes, so v8's "o referencia" waits). Its label is visually hidden ("Buscar movimientos"). It's a GET form inside `role="search"`, so the term lands in the URL (`?q=`) with the account and the period, Enter searches, and the period and account links keep it. It finds the bank's text ignoring case, accents and extra spaces, and an amount typed the Colombian way ("$90.000", "1.234,56") with either sign. The page's subtitle then says "3 movimientos coinciden con “nequi”."
+- **Search** (Phase 5.7c), under the card's header: a white pill (the text field with `--radius-pill` and `--shadow-chip`) with the `search` icon at 18px inside on the left and "Busca por descripción o monto" (references are stored as hashes, so v8's "o referencia" waits). Its label is visually hidden ("Buscar movimientos"). It's a GET form inside `role="search"`, so the term lands in the URL (`?q=`) with the account, the period and the filter, Enter searches, and the period and account links keep it. It finds the bank's text ignoring case, accents and extra spaces, and an amount typed the Colombian way ("$90.000", "1.234,56") with either sign. The page's subtitle then says "3 movimientos coinciden con “nequi”."
 - **No matches** (`docs/ui/v8-13`): in the card, a 44px `--surface-muted` chip with `search`, "No encontramos “netflix”" (Manrope 700 15px), "Busca por otra palabra o por el monto, o quita la búsqueda." (Caption `--text-muted`) and a small Secondary "Quitar búsqueda", in a `role="status"` region. The footer's "Mostrando…" is a polite live region too.
+- **Filters by kind** (Phase 6.2b), under the search: the filter chips (above). A filter keeps only its kind's movements, by their categories, or those waiting for review. It lives in the URL (`?filter=income`, `spending`, `moved` or `review`) with the account, the period and the search, and their links keep it. A filter with nothing to show reads "No hay movimientos de este tipo en el periodo."; the page's subtitle counts what the list shows.
 
 ### Where a statement doesn't reconcile ("Ver dónde no cuadra")
 
