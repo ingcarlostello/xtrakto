@@ -177,7 +177,8 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 6 — Deterministic insights**
 
-- [ ] 6.1 Rule-based categorizer
+- [x] 6.1a Rules from Appendix B
+- [ ] 6.1b Categorized movements
 - [ ] 6.2 Real spending vs money that moved
 - [ ] 6.3 Category corrections and "this is mine"
 - [ ] 6.4 Summary computations
@@ -1053,27 +1054,42 @@ Phase 5.7c was split in two (about 500 changed lines), with the human's approval
 
 ### Stage 6 — Deterministic insights
 
-#### 6.1 Rule-based categorizer
+#### 6.1a Rules from Appendix B
+
+Phase 6.1 was split in two (about 800 changed lines), with the human's approval. Decided with the human on 2026-10-16: the review marks for transfers to or from the holder's name move to 6.2, which compares the name; best guesses follow design v8 (`v8-02`, `v8-03`), so money in from Nequi, a deposit at a _corresponsal_ and a key payment to a savings platform count as moved until the user answers; and a short list of well-known merchants joins the rules in 6.1b.
 
 **Tasks**
 
-- `categorizeByRules(transaction, context)` in `@xtrakto/core`: an ordered list of rules (pattern → category) built from Appendix B. Returns `null` when no rule applies (the LLM handles those in Stage 8).
-- Categories as design v8 shows them (`docs/ui/v8-05`), confirmed by the human, changing `categories.json` and its generated constants: a new `payment_gateways` ("Pasarelas de pago": Bold, Ebanx, dLocal, where the bank doesn't say the store); `transfers_to_people` becomes "Pagos a personas" and takes in `digital_wallet` (a Nequi send is a payment to a person unless the number is the user's, then it moved); labels "Créditos", "Efectivo", "Restaurantes y domicilios", "Servicios del hogar", "Costos del banco" (4x1000, fees and adjustments) and "Otros".
-- A rule gives its best guess and says whether the movement needs review: Bre-B _llave_ payments, PSE payments to fintechs, transfers to the holder's truncated name, deposits at a _corresponsal_, money in from the user's name or Nequi. Stored so the quick review (6.3) can group them, which changes the schema.
-- Each rule carries the reason shown in the movement's detail ("Regla del sistema, sin IA"), and the channel tag comes from the description's prefix (design system §9).
-- Add it to the ingestion function, inside its `ingest` transaction or as a step that reads and writes by ids (ADR 0019), with `category_source = "rule"`.
-- A private test reports, as a percentage only, how many real movements get a category and how many need review.
+- `categorizeByRules(transaction)` in `@xtrakto/core`: an ordered table of rules (`CATEGORIZATION_RULES`) built from Appendix B. A rule matches the description's words, folded (`foldText`: no case, accents or extra spaces) and never inside a word, and says which way the money goes; the first match wins. Returns `null` when no rule applies (the LLM handles those in Stage 8). The holder's name joins as its `context` in 6.2.
+- Categories as design v8 shows them (`docs/ui/v8-05`), changing `categories.json` and its generated constants: a new `payment_gateways` ("Pasarelas de pago": Bold, Ebanx, dLocal, where the bank doesn't say the store); `transfers_to_people` becomes "Pagos a personas" and takes in `digital_wallet` (a Nequi send is a payment to a person unless the number is the user's, then it moved); labels "Créditos", "Efectivo", "Restaurantes y domicilios", "Servicios del hogar", "Costos del banco" (4x1000, fees and adjustments) and "Otros".
+- A rule gives its best guess and says whether the movement needs review: Bre-B _llave_ payments, PSE payments to banks, fintechs, lenders and investment platforms, deposits at a _corresponsal_, money in from Nequi and the bank's `0`.
+- Each rule carries the reason the movement's detail shows (6.3) before "Regla del sistema, sin IA".
+- Bank texts beyond Appendix B only when the private test finds them in real files.
+- A private test reports, as whole percentages only, how many real movements get a category and how many need review, by format and by rule.
 
 **Done when:** every pattern in Appendix B has a test.
 
 **Commit:** `feat(core): rule-based categorizer`
+
+#### 6.1b Categorized movements
+
+**Tasks**
+
+- A pure step after `prepareStatement` gives each movement its category, its source (`rule`), its rule and whether it needs review, and `saveStatement` requires it: in `ingest`'s transaction (ADR 0019) and in the seed. The schema keeps the rule's id and the review flag, so the quick review (6.3) can group them; an ADR records the decision.
+- Rules for well-known merchants (public names and generic words) in purchases, QR and PSE payments.
+- The channel tag comes from the description's prefix (design system §9), worked out when read.
+- Movimientos shows each movement's channel and category, or "Por revisar" instead; kind colors, tiles and filters come with 6.2.
+
+**Done when:** ingestion stores the category of every movement a rule knows, and the list shows it.
+
+**Commit:** `feat(web): categories and channels on movements`
 
 #### 6.2 Real spending vs money that moved
 
 **Tasks**
 
 - The transaction's `kind` comes from its category.
-- Detect transfers to or from the account holder by prefix matching against the holder's normalized name, since descriptions truncate names (`TRANSF A <FIRST NAME> <PARTIAL>`).
+- Detect transfers to or from the account holder by prefix matching against the holder's normalized name, since descriptions truncate names (`TRANSF A <FIRST NAME> <PARTIAL>`). The name becomes `categorizeByRules`'s `context`, and a transfer to or from a cut name needs review (both moved here from 6.1).
 - References marked by the user as their own (Phase 6.3) also count as internal.
 - Moved goes both ways (design v8): money back from the user's own Nequi or name is moved (+), never income.
 - Keep the holder's name and the truncated forms seen in transfers, for "Cómo te escribe el banco" (`docs/ui/v8-11`).
@@ -1444,27 +1460,28 @@ No sample yet (Phase 12.1).
 
 ## Appendix B — Description patterns (Bancolombia)
 
-Starting point for the rule-based categorizer. Verify each pattern against the real files (privately) before relying on it. "Review" means a best guess the quick review asks about by group (design v8, Phase 6.3); categories follow v8, as Phase 6.1 sets them.
+Starting point for the rule-based categorizer (`CATEGORIZATION_RULES` in `@xtrakto/core`, Phase 6.1a). Verify each pattern against the real files (privately) before relying on it. "Review" means a best guess the quick review asks about by group (design v8, Phase 6.3); categories and best guesses follow v8, as Phase 6.1a sets them. A rule says which way the money goes, so a text with the other sign gets no category.
 
-| Pattern (normalized)                        | Meaning                                                | Category                | Notes                                                                                                       |
-| ------------------------------------------- | ------------------------------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `ABONO INTERESES AHORROS`                   | Daily savings interest                                 | `interest`              | Grouped per month in the UI                                                                                 |
-| `INTERES INV VIRT <number>`                 | Investment interest                                    | `interest`              | `SUCURSAL` says `VIRTUAL`; the parser masks the account number (ADR 0012)                                   |
-| `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                        | `investment`            | Internal                                                                                                    |
-| `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary)      | `income_transfer`       |                                                                                                             |
-| `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                        | `deposit`, review       | The user's own cash (moved) or a payment to them (income)                                                   |
-| `TRANSF DE <NAME>`                          | Incoming transfer                                      | `income_transfer`       | `own_account_transfer` (moved +, never income) if the name matches the holder, also cut; review when unsure |
-| `TRANSF A <NAME>`                           | Outgoing transfer                                      | `transfers_to_people`   | `own_account_transfer` if the name matches the holder; some utilities also appear this way                  |
-| `TRANSF QR <NAME>`                          | Transfer to a person by QR                             | `transfers_to_people`   | Channel QR; seen in real files                                                                              |
-| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)         | `transfers_to_people`   | Was `digital_wallet` before v8. Internal if the phone is marked as the user's own                           |
-| `TRANSFERENCIA DESDE NEQUI`                 | Money in from a Nequi wallet                           | review                  | The user's own Nequi: moved (+), not income; someone else's: income                                         |
-| `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch                    | `transfers_to_people`   | Ambiguous; let the user correct it                                                                          |
-| `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                                    | `credit_card_payment`   | Internal                                                                                                    |
-| `PAGO PSE <ENTITY>`                         | Online payment through PSE                             | Depends on the entity   | Card at another bank → `credit_card_payment`; utility → `utilities`; fintech or bank → review               |
-| `PAGO LLAVE <NAME>`                         | Bre-B instant payment to a key (person, business, app) | review                  | A platform may be the user's investment or savings (moved); redact the name before any LLM call             |
-| `PAGO QR <MERCHANT>`                        | QR payment at a merchant                               | Depends on the merchant | Merchant names truncated                                                                                    |
-| `COMPRA EN <MERCHANT>`                      | Card purchase                                          | Depends on the merchant | About 10 characters of merchant name                                                                        |
-| contains `BOLD`, `EBANX` or `DLOCAL`        | Payment through a gateway                              | `payment_gateways`      | The bank doesn't say the store; let the user name it                                                        |
-| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal                                        | `cash_withdrawal`       |                                                                                                             |
-| contains `4X1000`                           | Financial transactions tax (GMF)                       | `taxes_and_fees`        | Feeds the 4x1000 insight                                                                                    |
-| `0`                                         | No description from the bank                           | review                  | Shown as "Sin descripción del banco"; seen in real files                                                    |
+| Pattern (normalized)                        | Meaning                                                | Category                                                                          | Notes                                                                                                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ABONO INTERESES AHORROS`                   | Daily savings interest                                 | `interest`                                                                        | Grouped per month in the UI                                                                                                                                                                       |
+| `INTERES INV VIRT <number>`                 | Investment interest                                    | `interest`                                                                        | `SUCURSAL` says `VIRTUAL`; the parser masks the account number (ADR 0012)                                                                                                                         |
+| `APERTURA INV VIRTUAL …`                    | Opening of a virtual investment                        | `investment`                                                                      | Internal                                                                                                                                                                                          |
+| `PAGO INTERBANC <ORIGIN>`                   | Incoming transfer from another bank (e.g. salary)      | `income_transfer`                                                                 |                                                                                                                                                                                                   |
+| `CONSIGNACION CORRESPONSAL …`               | Cash deposit at a banking agent                        | `own_account_transfer`, review                                                    | Most likely the user's own cash (moved, design v8); a payment to them is income (`deposit`)                                                                                                       |
+| `TRANSF DE <NAME>`                          | Incoming transfer                                      | `income_transfer`                                                                 | 6.2: `own_account_transfer` (moved +, never income) if the name matches the holder, also cut; review when unsure                                                                                  |
+| `TRANSF A <NAME>`                           | Outgoing transfer                                      | `transfers_to_people`                                                             | 6.2: `own_account_transfer` if the name matches the holder; a utility written this way → `utilities`                                                                                              |
+| `TRANSF QR <NAME>`                          | Transfer to a person by QR                             | `transfers_to_people`                                                             | Channel QR; seen in real files                                                                                                                                                                    |
+| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)         | `transfers_to_people`                                                             | Was `digital_wallet` before v8. Internal if the phone is marked as the user's own                                                                                                                 |
+| `TRANSFERENCIA DESDE NEQUI`                 | Money in from a Nequi wallet                           | `own_account_transfer`, review                                                    | Most likely the user's own Nequi (moved +, design v8); someone else's: income                                                                                                                     |
+| `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch                    | `transfers_to_people` (out), `income_transfer` (in)                               | Ambiguous; let the user correct it                                                                                                                                                                |
+| `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                                    | `credit_card_payment`                                                             | Internal                                                                                                                                                                                          |
+| `PAGO PSE <ENTITY>`                         | Online payment through PSE                             | Depends on the entity                                                             | Utility → `utilities`; investment platform → `investment`, bank or fintech → `credit_card_payment` (cards first: NU is a financing company too), lender → `loan_payment`, those three with review |
+| `PAGO LLAVE <NAME>`                         | Bre-B instant payment to a key (person, business, app) | `investment` with savings or investment words, else `transfers_to_people`; review | A platform may be the user's investment or savings (moved); redact the name before any LLM call                                                                                                   |
+| `PAGO QR <MERCHANT>`                        | QR payment at a merchant                               | Depends on the merchant                                                           | Merchant names truncated; a utility → `utilities`, other merchants from 6.1b                                                                                                                      |
+| `COMPRA EN <MERCHANT>`                      | Card purchase                                          | Depends on the merchant                                                           | About 10 characters of merchant name; a utility → `utilities`, other merchants from 6.1b                                                                                                          |
+| contains `BOLD`, `EBANX` or `DLOCAL`        | Payment through a gateway                              | `payment_gateways`                                                                | Also PayU, Wompi, ePayco, PlacetoPay and Mercado Pago; the bank doesn't say the store, so let the user name it. Money in through one is the user's own sale                                       |
+| `RETIRO CAJERO …` / `RETIRO CORRESPONSAL …` | Cash withdrawal                                        | `cash_withdrawal`                                                                 |                                                                                                                                                                                                   |
+| contains `4X1000`                           | Financial transactions tax (GMF)                       | `taxes_and_fees`                                                                  | Feeds the 4x1000 insight                                                                                                                                                                          |
+| `COMIS …` / `AJUSTE …`                      | Bank fee or adjustment                                 | `taxes_and_fees`                                                                  | A fee such as one for a withdrawal at another bank's ATM (`COMIS RETIRO CAJERO …`); money out; seen in real files                                                                                 |
+| `0`                                         | No description from the bank                           | `other_spending` (out), `other_income` (in); review                               | Shown as "Sin descripción del banco"; seen in real files                                                                                                                                          |

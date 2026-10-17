@@ -2,41 +2,37 @@
   "kinds": ["spending", "income", "internal"],
   "categories": [
     { "id": "groceries", "labelEs": "Mercado", "kind": "spending" },
-    { "id": "restaurants", "labelEs": "Restaurantes", "kind": "spending" },
+    {
+      "id": "restaurants",
+      "labelEs": "Restaurantes y domicilios",
+      "kind": "spending"
+    },
     { "id": "transport", "labelEs": "Transporte", "kind": "spending" },
-    { "id": "utilities", "labelEs": "Servicios públicos", "kind": "spending" },
+    { "id": "utilities", "labelEs": "Servicios del hogar", "kind": "spending" },
     { "id": "housing", "labelEs": "Vivienda", "kind": "spending" },
     { "id": "health", "labelEs": "Salud", "kind": "spending" },
     { "id": "education", "labelEs": "Educación", "kind": "spending" },
-    {
-      "id": "entertainment",
-      "labelEs": "Entretenimiento",
-      "kind": "spending"
-    },
+    { "id": "entertainment", "labelEs": "Entretenimiento", "kind": "spending" },
     { "id": "shopping", "labelEs": "Compras", "kind": "spending" },
     { "id": "subscriptions", "labelEs": "Suscripciones", "kind": "spending" },
-    { "id": "loan_payment", "labelEs": "Pago de créditos", "kind": "spending" },
+    { "id": "loan_payment", "labelEs": "Créditos", "kind": "spending" },
     {
       "id": "transfers_to_people",
-      "labelEs": "Transferencias a personas",
+      "labelEs": "Pagos a personas",
       "kind": "spending"
     },
     {
-      "id": "digital_wallet",
-      "labelEs": "Billeteras digitales",
+      "id": "payment_gateways",
+      "labelEs": "Pasarelas de pago",
       "kind": "spending"
     },
-    {
-      "id": "cash_withdrawal",
-      "labelEs": "Retiros en efectivo",
-      "kind": "spending"
-    },
+    { "id": "cash_withdrawal", "labelEs": "Efectivo", "kind": "spending" },
     {
       "id": "taxes_and_fees",
-      "labelEs": "Impuestos y comisiones",
+      "labelEs": "Costos del banco",
       "kind": "spending"
     },
-    { "id": "other_spending", "labelEs": "Otros gastos", "kind": "spending" },
+    { "id": "other_spending", "labelEs": "Otros", "kind": "spending" },
     {
       "id": "income_transfer",
       "labelEs": "Transferencias recibidas",

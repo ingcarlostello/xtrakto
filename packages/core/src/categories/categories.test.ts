@@ -54,7 +54,10 @@ describe("categories.constants.ts", () => {
 
   it("gives TypeScript literal types instead of plain strings", () => {
     expectTypeOf<"groceries">().toExtend<CategoryId>();
+    expectTypeOf<"payment_gateways">().toExtend<CategoryId>();
     expectTypeOf<"not_a_category">().not.toExtend<CategoryId>();
+    // Folded into "transfers_to_people" with design v8 (Phase 6.1a).
+    expectTypeOf<"digital_wallet">().not.toExtend<CategoryId>();
     expectTypeOf<CategoryKind>().toEqualTypeOf<
       "spending" | "income" | "internal"
     >();

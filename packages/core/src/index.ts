@@ -12,6 +12,14 @@ export type {
   CategoryKind,
   CategorySource,
 } from "./categories/category.types";
+export { CATEGORIZATION_RULES } from "./categorization/categorization-rules.constants";
+export { categorizeByRules } from "./categorization/categorization.helpers";
+export type {
+  CategorizableTransaction,
+  CategorizationRule,
+  CategorizationRuleId,
+  RuleCategorization,
+} from "./categorization/categorization.types";
 export { DEFAULT_TIME_ZONE } from "./dates/date.constants";
 export {
   formatDayInWords,

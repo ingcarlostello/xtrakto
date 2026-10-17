@@ -10,7 +10,7 @@ export const CATEGORIES = [
   },
   {
     id: "restaurants",
-    labelEs: "Restaurantes",
+    labelEs: "Restaurantes y domicilios",
     kind: "spending",
   },
   {
@@ -20,7 +20,7 @@ export const CATEGORIES = [
   },
   {
     id: "utilities",
-    labelEs: "Servicios públicos",
+    labelEs: "Servicios del hogar",
     kind: "spending",
   },
   {
@@ -55,32 +55,32 @@ export const CATEGORIES = [
   },
   {
     id: "loan_payment",
-    labelEs: "Pago de créditos",
+    labelEs: "Créditos",
     kind: "spending",
   },
   {
     id: "transfers_to_people",
-    labelEs: "Transferencias a personas",
+    labelEs: "Pagos a personas",
     kind: "spending",
   },
   {
-    id: "digital_wallet",
-    labelEs: "Billeteras digitales",
+    id: "payment_gateways",
+    labelEs: "Pasarelas de pago",
     kind: "spending",
   },
   {
     id: "cash_withdrawal",
-    labelEs: "Retiros en efectivo",
+    labelEs: "Efectivo",
     kind: "spending",
   },
   {
     id: "taxes_and_fees",
-    labelEs: "Impuestos y comisiones",
+    labelEs: "Costos del banco",
     kind: "spending",
   },
   {
     id: "other_spending",
-    labelEs: "Otros gastos",
+    labelEs: "Otros",
     kind: "spending",
   },
   {
