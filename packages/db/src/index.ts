@@ -69,6 +69,11 @@ export {
   type TransactionListItem,
   type TransactionPage,
 } from "./transactions/transaction.queries";
+export {
+  type CategoryTotals,
+  listCategoryTotals,
+} from "./transactions/transaction-totals.queries";
+export type { MovementSelection } from "./transactions/transaction-selection.queries";
 export type { MovementSearch } from "./transactions/transaction-search.queries";
 export {
   deleteAllUserData,

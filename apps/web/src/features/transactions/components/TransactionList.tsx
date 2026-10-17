@@ -1,5 +1,6 @@
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { accountLabel } from "@/utils/account-label.helpers";
+import { filterOptions } from "../kind-view.helpers";
 import { listLinkOf, periodText } from "../period-selector.helpers";
 import {
   type ListLink,
@@ -8,6 +9,7 @@ import {
 } from "../transaction-list.helpers";
 import { TRANSACTIONS_COPY as COPY } from "../transaction.constants";
 import type { AccountTransactions } from "../transaction.types";
+import { KindFilters } from "./KindFilters";
 import { ListFooter } from "./ListFooter";
 import { MovementDays } from "./MovementDays";
 import { NoMatches } from "./NoMatches";
@@ -15,15 +17,18 @@ import { SearchField } from "./SearchField";
 
 type ListBodyProps = { transactions: AccountTransactions; link: ListLink };
 
-// The days, or why there are none: nothing matches, or the period is empty.
+// The days, or why there are none: nothing matches, nothing of the filter's
+// kind, or the period is empty.
 function ListBody({ transactions, link }: ListBodyProps) {
   const { total, items, currentYear } = transactions;
-  if (items.length === 0)
-    return link.search === undefined ? (
-      <p className="py-6 text-body text-ink-muted">{COPY.emptyPeriod}</p>
-    ) : (
-      <NoMatches link={link} />
+  if (items.length === 0) {
+    if (link.search !== undefined) return <NoMatches link={link} />;
+    return (
+      <p className="py-6 text-body text-ink-muted">
+        {link.filter === undefined ? COPY.emptyPeriod : COPY.kinds.emptyFilter}
+      </p>
     );
+  }
   return (
     <>
       <MovementDays items={items} currentYear={currentYear} />
@@ -38,7 +43,7 @@ function ListBody({ transactions, link }: ListBodyProps) {
 
 /**
  * "Todos los movimientos": the account's movements in the period, by day,
- * and the search among them (docs/ui/v8-03).
+ * the search among them and the filters by kind (docs/ui/v8-03).
  */
 export function TransactionList({
   transactions,
@@ -58,6 +63,7 @@ export function TransactionList({
         </CardDescription>
       </CardHeader>
       <SearchField link={link} />
+      <KindFilters options={filterOptions(link, transactions.pendingReview)} />
       <ListBody transactions={transactions} link={link} />
     </Card>
   );

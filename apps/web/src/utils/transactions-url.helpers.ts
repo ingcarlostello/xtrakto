@@ -8,14 +8,26 @@ import {
 } from "@xtrakto/core";
 
 // The movements list keeps its filters in the URL, so a reload keeps them
-// and a link shares them: `/transactions?account=…&period=2026-q3&q=nequi&show=60`.
+// and a link shares them:
+// `/transactions?account=…&period=2026-q3&q=nequi&filter=moved&show=60`.
 
 export const TRANSACTIONS_PARAMS = {
   account: "account",
   period: "period",
   search: "q",
+  filter: "filter",
   shown: "show",
 } as const;
+
+/** What the list shows of the period: one kind, or what waits for review. */
+export const MOVEMENT_FILTERS = [
+  "income",
+  "spending",
+  "moved",
+  "review",
+] as const;
+
+export type MovementFilter = (typeof MOVEMENT_FILTERS)[number];
 
 /** What the movements list shows: a quarter, or one of its months. */
 export type MovementPeriod =
@@ -80,6 +92,8 @@ type TransactionsLink = {
   readonly period?: MovementPeriod;
   /** What the list looks for, kept across periods. */
   readonly search?: string;
+  /** Which movements it shows, kept across periods too. */
+  readonly filter?: MovementFilter;
   readonly shown?: number;
 };
 
@@ -88,6 +102,7 @@ export const transactionsHref = ({
   accountId,
   period,
   search,
+  filter,
   shown,
 }: TransactionsLink) => ({
   pathname: "/transactions" as const,
@@ -99,6 +114,7 @@ export const transactionsHref = ({
       ? {}
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
     ...(search === undefined ? {} : { [TRANSACTIONS_PARAMS.search]: search }),
+    ...(filter === undefined ? {} : { [TRANSACTIONS_PARAMS.filter]: filter }),
     ...(shown === undefined ? {} : { [TRANSACTIONS_PARAMS.shown]: shown }),
   },
 });

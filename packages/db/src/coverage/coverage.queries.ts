@@ -17,6 +17,10 @@ import {
   matchesSearch,
   type MovementSearch,
 } from "../transactions/transaction-search.queries";
+import {
+  matchesSelection,
+  type MovementSelection,
+} from "../transactions/transaction-selection.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 
@@ -39,7 +43,7 @@ export const countedMovement = and(
 );
 
 /** Which movements to count: an account's, a period's, or every one. */
-export type CountedFilter = {
+export type CountedFilter = MovementSelection & {
   readonly accountId?: string;
   /** Inclusive on both ends. */
   readonly period?: Period;
@@ -49,7 +53,7 @@ export type CountedFilter = {
 /** How many of the user's movements count, within `filter`. */
 export const countCountedMovements = async (
   { tx, userId }: UserContext,
-  { accountId, period, search }: CountedFilter = {},
+  { accountId, period, search, ...selection }: CountedFilter = {},
 ): Promise<number> => {
   const [row] = await tx
     .select({ counted: count() })
@@ -64,6 +68,7 @@ export const countCountedMovements = async (
         period === undefined ? undefined : gte(transactions.date, period.from),
         period === undefined ? undefined : lte(transactions.date, period.to),
         search === undefined ? undefined : matchesSearch(search),
+        matchesSelection(selection),
         countedMovement,
       ),
     );

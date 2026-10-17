@@ -13,6 +13,7 @@ import {
 import type { MovementSearch, TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
+  type MovementFilter,
   type MovementPeriod,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
@@ -127,6 +128,7 @@ export type ListLink = {
   readonly accountId?: string;
   readonly period: MovementPeriod;
   readonly search?: string;
+  readonly filter?: MovementFilter;
 };
 
 /**

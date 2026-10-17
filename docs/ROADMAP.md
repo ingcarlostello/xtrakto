@@ -180,7 +180,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.1a Rules from Appendix B
 - [x] 6.1b Categorized movements
 - [x] 6.2a Internal movement detection
-- [ ] 6.2b Kinds in Movimientos
+- [x] 6.2b Kinds in Movimientos
 - [ ] 6.3 Category corrections and "this is mine"
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments

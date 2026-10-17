@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  MOVEMENT_FILTERS,
   parsePeriodParam,
   TRANSACTIONS_PARAMS,
 } from "@/utils/transactions-url.helpers";
@@ -38,6 +39,10 @@ export const transactionsSearchSchema = z.object({
     .trim()
     .max(MAX_SEARCH_LENGTH)
     .transform((text) => text || undefined)
+    .optional()
+    .catch(undefined),
+  [TRANSACTIONS_PARAMS.filter]: z
+    .enum(MOVEMENT_FILTERS)
     .optional()
     .catch(undefined),
   [TRANSACTIONS_PARAMS.shown]: shownCountSchema,

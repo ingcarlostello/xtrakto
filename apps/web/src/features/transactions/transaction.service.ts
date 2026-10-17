@@ -1,10 +1,15 @@
 import "server-only";
-import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
+import {
+  DEFAULT_TIME_ZONE,
+  localDateFromInstant,
+  type Period,
+} from "@xtrakto/core";
 import {
   countCountedMovements,
   findStatementBreaks,
   findUserId,
   listAccounts,
+  listCategoryTotals,
   listMovementAccounts,
   listMovementQuarters,
   listTransactions,
@@ -21,6 +26,7 @@ import {
   quarterChoices,
   selectPeriod,
 } from "./period-selector.helpers";
+import { kindTotalsOf, selectionOf } from "./kind-view.helpers";
 import { movementSearchOf } from "./transaction-list.helpers";
 import type {
   AccountTransactions,
@@ -80,6 +86,19 @@ const locate = async (
   };
 };
 
+// The tiles and "Por revisar · 24" add up the whole period, whatever the
+// list shows of it.
+const periodKinds = async (
+  ctx: UserContext,
+  shownPeriod: { readonly accountId: string; readonly period: Period },
+): Promise<Pick<AccountTransactions, "kindTotals" | "pendingReview">> => ({
+  kindTotals: kindTotalsOf(await listCategoryTotals(ctx, shownPeriod)),
+  pendingReview: await countCountedMovements(ctx, {
+    ...shownPeriod,
+    isPendingReview: true,
+  }),
+});
+
 /**
  * The signed-in user's movements that count, newest first, in the account
  * and period the URL asks, or the latest, matching its search when there's
@@ -98,20 +117,31 @@ export const getAccountTransactions = async (
   return withUserContext(db, userId, async (ctx) => {
     const located = await locate(ctx, request);
     if (!located) return null;
-    const { search } = request;
-    const filter = {
+    const { search, filter } = request;
+    const shownPeriod = {
       accountId: located.account.id,
       period: periodDays(located.period),
-      ...(search === undefined ? {} : { search: movementSearchOf(search) }),
     };
-    const total = await countCountedMovements(ctx, filter);
+    const shown = {
+      ...shownPeriod,
+      ...(search === undefined ? {} : { search: movementSearchOf(search) }),
+      ...selectionOf(filter),
+    };
+    const total = await countCountedMovements(ctx, shown);
     const { items } = await listTransactions(ctx, {
-      ...filter,
+      ...shown,
       limit: request.shown,
       offset: 0,
     });
-    const searched = search === undefined ? {} : { search };
-    return { ...located, total, items, ...searched, currentYear };
+    return {
+      ...located,
+      total,
+      items,
+      ...(search === undefined ? {} : { search }),
+      ...(filter === undefined ? {} : { filter }),
+      ...(await periodKinds(ctx, shownPeriod)),
+      currentYear,
+    };
   });
 };
 

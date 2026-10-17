@@ -51,11 +51,21 @@ describe("transactionsSearchSchema", () => {
     expect(searchOf(["nequi", "pse"])).toBeUndefined();
   });
 
+  it("reads a filter by kind, or what waits for review", () => {
+    const filterOf = (filter: unknown) =>
+      transactionsSearchSchema.parse({ filter }).filter;
+
+    expect(filterOf("moved")).toBe("moved");
+    expect(filterOf("review")).toBe("review");
+    expect(filterOf("internal")).toBeUndefined();
+  });
+
   it("leaves out what doesn't parse, so the list opens on its defaults", () => {
     expect(
       transactionsSearchSchema.parse({
         account: "not-an-id",
         period: ["2026-q3", "2026-08"],
+        filter: ["income", "moved"],
         show: "todos",
       }),
     ).toEqual({ show: 30 });

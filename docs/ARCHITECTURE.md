@@ -386,11 +386,11 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 
 ## 11. Scaling path
 
-| Load                  | What changes                                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Private beta          | One database. One ingestion job per user at a time. Summaries computed in TypeScript from a period's transactions.        |
-| Thousands of users    | Aggregates move to SQL with monthly rollups per account. Connection pooling tuned.                                        |
-| Hundreds of thousands | Partition `transactions` by user or month. Read replica for dashboards. Model inference in a dedicated service if needed. |
+| Load                  | What changes                                                                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Private beta          | One database. One ingestion job per user at a time. Summaries computed in TypeScript from a period's transactions. The movements list shows 30 movements at a time, so SQL adds up its kind totals by category and TypeScript maps the categories to kinds. |
+| Thousands of users    | Aggregates move to SQL with monthly rollups per account. Connection pooling tuned.                                                                                                                                                                          |
+| Hundreds of thousands | Partition `transactions` by user or month. Read replica for dashboards. Model inference in a dedicated service if needed.                                                                                                                                   |
 
 ---
 

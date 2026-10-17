@@ -4,7 +4,9 @@ import { CURRENCY } from "./money.constants";
 import {
   amountFromNumber,
   formatAmount,
+  formatCompactAmount,
   formatSignedAmount,
+  formatSignedCompactAmount,
   isAmountMinor,
   parseAmountText,
   parseTypedAmount,
@@ -250,4 +252,34 @@ describe("isAmountMinor", () => {
       expect(isAmountMinor(value)).toBe(false);
     },
   );
+});
+
+describe("formatCompactAmount", () => {
+  it.each([
+    [46_800_000, "$46,8M"],
+    [-24_400_000, "\u2212$24,4M"],
+    [3_000_000, "$3,0M"],
+    // Rounded to a thousand thousands, it's a million.
+    [999_600, "$1,0M"],
+    [392_000, "$392 mil"],
+    [1_000, "$1 mil"],
+    // Below a thousand pesos it's exact, with its cents.
+    [870, "$870"],
+    [5.2, "$5,20"],
+    [0, "$0"],
+  ])("shows %d as %j", (value, display) => {
+    expect(formatCompactAmount(amount(value), CURRENCY.COP)).toBe(display);
+  });
+});
+
+describe("formatSignedCompactAmount", () => {
+  it.each([
+    [46_800_000, "+$46,8M"],
+    [-29_800_000, "\u2212$29,8M"],
+    [0, "$0"],
+  ])("shows %d as %j", (value, display) => {
+    expect(formatSignedCompactAmount(amount(value), CURRENCY.COP)).toBe(
+      display,
+    );
+  });
 });

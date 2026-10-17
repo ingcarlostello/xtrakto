@@ -1,4 +1,4 @@
-import { CircleCheck, Layers, List } from "lucide-react";
+import { ArrowLeftRight, CircleCheck, Layers, List } from "lucide-react";
 import Link from "next/link";
 import { StatementIllustration } from "@/components/empty-state/StatementIllustration";
 import { StatusPill } from "@/components/status-pill/StatusPill";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { WELCOME_COPY as COPY } from "../onboarding.constants";
 
 const FEATURES = [
+  { icon: ArrowLeftRight, ...COPY.features.moved },
   { icon: List, ...COPY.features.days },
   { icon: CircleCheck, ...COPY.features.verified },
   { icon: Layers, ...COPY.features.once },
