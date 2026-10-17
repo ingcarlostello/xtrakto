@@ -11,6 +11,7 @@ import {
 } from "@xtrakto/core";
 import {
   createDb,
+  findAccountHolderName,
   findOrCreateUser,
   resolveIdentifiedAccount,
   saveStatement,
@@ -75,9 +76,7 @@ const { db, pool } = createDb({ connectionString: databaseUrl });
 try {
   const userId = await findOrCreateUser(db, clerkUserId);
   for (const { file, parsed } of fixtures) {
-    const statement = categorizeStatement(
-      await prepareStatement(parsed, identifierHashKey),
-    );
+    const prepared = await prepareStatement(parsed, identifierHashKey);
     const result = await withUserContext(db, userId, async (ctx) => {
       const accountId = await resolveIdentifiedAccount(ctx, {
         bankId: parsed.bankId,
@@ -89,9 +88,10 @@ try {
             ? undefined
             : normalizeHolderName(parsed.holderName),
       });
+      const holderName = await findAccountHolderName(ctx, accountId);
       return saveStatement(ctx, {
         accountId,
-        statement,
+        statement: categorizeStatement(prepared, { holderName }),
         balance: balanceCheckOf(parsed),
       });
     });

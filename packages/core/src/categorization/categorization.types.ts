@@ -10,6 +10,15 @@ import type { MONEY_DIRECTION } from "./categorization.constants";
 export type MoneyDirection =
   (typeof MONEY_DIRECTION)[keyof typeof MONEY_DIRECTION];
 
+/** How a transfer's words name the account holder: whole words, or the last one cut. */
+export type HolderNameMatch = "whole" | "cut";
+
+/** What the rules know about the movement's account. */
+export type CategorizationContext = {
+  /** The holder's name, as `normalizeHolderName` writes it; unknown until a quarterly statement prints it. */
+  readonly holderName?: string;
+};
+
 /** What the rules read from a movement. */
 export type CategorizableTransaction = Pick<
   ParsedTransaction,
@@ -40,6 +49,8 @@ export type CategorizationRule = TextPattern & {
    * categorized them, so an id is never renamed or reused.
    */
   readonly id: string;
+  /** The words after the prefix name the account holder, whole or cut. */
+  readonly namesHolder?: HolderNameMatch;
   readonly direction: MoneyDirection;
   readonly categoryId: CategoryId;
   /** The category is only a best guess, which the quick review asks about. */

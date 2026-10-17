@@ -11,6 +11,7 @@ import {
 import {
   claimIngestionJob,
   failIngestionJob,
+  findAccountHolderName,
   finishIngestionJob,
   INGESTION_JOB_ERROR,
   type IngestionJobError,
@@ -119,9 +120,12 @@ const ingestOpenJob = async (
     parsed.value,
     getServerEnv().IDENTIFIER_HASH_KEY,
   );
+  // The holder's name a quarterly statement of the account printed, this one
+  // or an earlier one: a movements export prints none.
+  const holderName = await findAccountHolderName(ctx, account.value);
   const saved = await saveStatement(ctx, {
     accountId: account.value,
-    statement: categorizeStatement(prepared),
+    statement: categorizeStatement(prepared, { holderName }),
     balance: balanceCheckOf(parsed.value),
   });
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");

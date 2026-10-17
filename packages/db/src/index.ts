@@ -11,6 +11,7 @@ export type { UserContext, UserId } from "./user-context/user-context.types";
 export {
   type AccountKind,
   type AccountRow,
+  findAccountHolderName,
   type IdentifiedAccount,
   listAccounts,
   resolveIdentifiedAccount,

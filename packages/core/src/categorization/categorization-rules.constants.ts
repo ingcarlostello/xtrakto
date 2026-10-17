@@ -143,6 +143,44 @@ export const CATEGORIZATION_RULES = [
     categoryId: "transfers_to_people",
     reasonEs: "una transferencia por QR suele ser un pago a una persona",
   },
+  // The holder's own name, which a quarterly statement prints (6.2): whole
+  // words count as moved; a name the bank cut asks the user first.
+  {
+    id: "own_name_out",
+    startsWith: ["TRANSF A"],
+    namesHolder: "whole",
+    direction: OUT,
+    categoryId: "own_account_transfer",
+    reasonEs: "va a tu propio nombre: la plata sigue siendo tuya",
+  },
+  {
+    id: "own_name_out_cut",
+    startsWith: ["TRANSF A"],
+    namesHolder: "cut",
+    direction: OUT,
+    categoryId: "own_account_transfer",
+    isGuess: true,
+    reasonEs:
+      "creemos que es tu nombre, cortado por el banco: la plata sigue siendo tuya",
+  },
+  {
+    id: "own_name_in",
+    startsWith: ["TRANSF DE"],
+    namesHolder: "whole",
+    direction: IN,
+    categoryId: "own_account_transfer",
+    reasonEs: "viene de tu propio nombre: volvió a ti, no es un ingreso",
+  },
+  {
+    id: "own_name_in_cut",
+    startsWith: ["TRANSF DE"],
+    namesHolder: "cut",
+    direction: IN,
+    categoryId: "own_account_transfer",
+    isGuess: true,
+    reasonEs:
+      "creemos que viene de tu nombre, cortado por el banco: no es un ingreso",
+  },
   {
     id: "transfer_to_utility",
     startsWith: ["TRANSF A"],
@@ -167,6 +205,26 @@ export const CATEGORIZATION_RULES = [
     reasonEs: "te transfirieron plata desde otra cuenta",
   },
   // Bre-B key payments go to people, stores or the user's own savings.
+  {
+    id: "own_name_key",
+    startsWith: ["PAGO LLAVE"],
+    namesHolder: "whole",
+    direction: OUT,
+    categoryId: "own_account_transfer",
+    isGuess: true,
+    reasonEs:
+      "un pago con llave a tu propio nombre suele ir a otra cuenta tuya",
+  },
+  {
+    id: "own_name_key_cut",
+    startsWith: ["PAGO LLAVE"],
+    namesHolder: "cut",
+    direction: OUT,
+    categoryId: "own_account_transfer",
+    isGuess: true,
+    reasonEs:
+      "creemos que la llave es tuya: lleva tu nombre, cortado por el banco",
+  },
   {
     id: "key_payment_saving",
     startsWith: ["PAGO LLAVE"],

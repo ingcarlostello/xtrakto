@@ -160,6 +160,8 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
         description: "PAGO LLAVE Maria Lopez",
       },
       { date: "2026-10-03", amount: -1_000 },
+      // Money in that no rule knows.
+      { date: "2026-10-04", amount: 1_000, description: "ABONO EJEMPLO" },
     ]);
 
     await saveIn(account, statement, UNCHECKED);
@@ -176,6 +178,12 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
         categorySource: "rule",
         categoryRuleId: "key_payment",
         isPendingReview: true,
+      },
+      {
+        categoryId: "other_spending",
+        categorySource: "rule",
+        categoryRuleId: "unknown_merchant",
+        isPendingReview: false,
       },
       {
         categoryId: null,

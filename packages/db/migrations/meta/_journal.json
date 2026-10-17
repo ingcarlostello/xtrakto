@@ -85,6 +85,13 @@
       "when": 1792198895127,
       "tag": "0011_categorization-rules",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792201035999,
+      "tag": "0012_kind-from-category",
+      "breakpoints": true
     }
   ]
 }

@@ -64,30 +64,33 @@ describe("containsKeyword", () => {
 });
 
 describe("compilePattern", () => {
-  const matches = (
-    pattern: Parameters<typeof compilePattern>[0],
-    text: string,
-  ) => compilePattern(pattern)(foldDescription(text));
+  const read = (pattern: Parameters<typeof compilePattern>[0], text: string) =>
+    compilePattern(pattern)(foldDescription(text));
 
   it("takes a text that is exactly the pattern's", () => {
-    expect(matches({ is: "0" }, " 0 ")).toBe(true);
-    expect(matches({ is: "0" }, "0 COMISION")).toBe(false);
+    expect(read({ is: "0" }, " 0 ")).toEqual(["0"]);
+    expect(read({ is: "0" }, "0 COMISION")).toBeUndefined();
   });
 
-  it("looks for keywords after the prefix only", () => {
+  it("gives the words after the prefix, where it looks for keywords", () => {
     const pattern = { startsWith: ["PAGO PSE"], words: ["PSE"] };
 
-    expect(matches(pattern, "PAGO PSE PSE EJEMPLO")).toBe(true);
-    expect(matches(pattern, "PAGO PSE EJEMPLO")).toBe(false);
+    expect(read(pattern, "PAGO PSE PSE EJEMPLO")).toEqual(["PSE", "EJEMPLO"]);
+    expect(read(pattern, "PAGO PSE EJEMPLO")).toBeUndefined();
   });
 
   it("looks for keywords anywhere without a prefix", () => {
-    expect(matches({ words: ["4X1000"] }, "IMPTO GOBIERNO 4X1000")).toBe(true);
+    expect(read({ words: ["4X1000"] }, "IMPTO GOBIERNO 4X1000")).toEqual([
+      "IMPTO",
+      "GOBIERNO",
+      "4X1000",
+    ]);
   });
 
-  it("folds the description before matching it", () => {
-    expect(matches({ startsWith: ["PAGO PSE"] }, "Pago  Pse Compañía")).toBe(
-      true,
-    );
+  it("folds the description before reading it", () => {
+    expect(read({ startsWith: ["TRANSF A"] }, "Transf  a Ana Pérez")).toEqual([
+      "ANA",
+      "PEREZ",
+    ]);
   });
 });

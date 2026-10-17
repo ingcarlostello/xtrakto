@@ -17,8 +17,9 @@ const { OUT } = MONEY_DIRECTION;
 
 /**
  * Purchases and payments by what the merchant sells, the last rules of the
- * table. Pairs such as AMAZON PRIME and AMAZON, UBER EATS and UBER, or
- * MERCADO LIBRE and MERCADO depend on this order.
+ * table, then any other one as "Otros". Pairs such as AMAZON PRIME and
+ * AMAZON, UBER EATS and UBER, or MERCADO LIBRE and MERCADO depend on this
+ * order.
  */
 export const MERCHANT_RULES = [
   {
@@ -96,5 +97,14 @@ export const MERCHANT_RULES = [
     direction: OUT,
     categoryId: "education",
     reasonEs: "los pagos a universidades, colegios y cursos son educación",
+  },
+  // A purchase or a payment at a merchant no rule knows is still spending.
+  {
+    id: "unknown_merchant",
+    startsWith: PAYMENT_PREFIXES,
+    direction: OUT,
+    categoryId: "other_spending",
+    reasonEs:
+      "es un pago a un comercio que aún no conocemos: cuenta como gasto",
   },
 ] as const satisfies readonly CategorizationRule[];

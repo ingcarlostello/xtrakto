@@ -9,6 +9,7 @@ import type { UserId } from "../user-context/user-context.types";
 import { findOrCreateUser } from "../users/user.queries";
 import {
   type AccountKind,
+  findAccountHolderName,
   listAccounts,
   resolveIdentifiedAccount,
   resolveUnidentifiedAccount,
@@ -102,6 +103,20 @@ describe.skipIf(!testDatabase)("accounts", () => {
 
     expect(found).toBe(created);
     expect(await read(found)).toEqual({ last4: "8901", holder: "ANA PRUEBA" });
+  });
+
+  it("reads the holder's name a statement kept, to its user only", async () => {
+    const userId = await newUser();
+    const named = await identified(userId, "8901", "ANA PRUEBA");
+    const unnamed = await identified(userId, "2109");
+    const holderOf = (user: UserId, accountId: string) =>
+      withUserContext(app.db, user, (ctx) =>
+        findAccountHolderName(ctx, accountId),
+      );
+
+    expect(await holderOf(userId, named)).toBe("ANA PRUEBA");
+    expect(await holderOf(userId, unnamed)).toBeUndefined();
+    expect(await holderOf(await newUser(), named)).toBeUndefined();
   });
 
   it("lets a quarterly statement adopt the account an export created without a number", async () => {

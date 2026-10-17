@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  CATEGORIES,
   CATEGORIZATION_RULES,
   categorizeByRules,
+  categoryKind,
   channelOf,
+  normalizeHolderName,
 } from "@xtrakto/core";
 import type {
   CategorizationRuleId,
@@ -20,7 +21,7 @@ import {
 } from "./bancolombia.constants";
 
 // The real exports of fixtures/private/ (Phase 2.8) through the rule-based
-// categorizer (Phases 6.1a and 6.1b). The report is whole percentages only, as test
+// categorizer (Phases 6.1a, 6.1b and 6.2a). The report is whole percentages only, as test
 // annotations that the verbose reporter prints, and the assertions compare
 // counts, so nothing of a real movement is ever printed.
 
@@ -65,12 +66,19 @@ const readStatement = (bytes: Uint8Array): ParsedStatement | undefined => {
 const statements = (await readPrivateExports())
   .map(readStatement)
   .filter((statement) => statement !== undefined);
+// The holder's name a quarterly statement prints, which the app keeps on the
+// account for its exports too: the real files are all one holder's.
+const printedName = statements.find(({ holderName }) => holderName)?.holderName;
+const context = {
+  holderName:
+    printedName === undefined ? undefined : normalizeHolderName(printedName),
+};
 const categorized: readonly Categorized[] = statements.flatMap(
   ({ formatId, transactions }) =>
     transactions.map((movement) => ({
       movement,
       formatId,
-      result: categorizeByRules(movement),
+      result: categorizeByRules(movement, context),
     })),
 );
 
@@ -94,8 +102,6 @@ const MIN_CATEGORIZED_SHARE = 0.6;
 const isDailyInterest = ({ result }: Categorized) =>
   result?.ruleId === "savings_interest";
 
-const KIND_OF = new Map(CATEGORIES.map(({ id, kind }) => [id, kind]));
-
 const words = ({ descriptionNormalized }: ParsedTransaction) =>
   descriptionNormalized.toUpperCase().split(/[^A-Z0-9]+/);
 
@@ -107,7 +113,7 @@ const startsWithText = (movement: ParsedTransaction, text: string) => {
 const isMoneyIn = ({ amountMinor }: ParsedTransaction) => amountMinor > 0;
 
 const hasWrongKind = ({ movement, result }: Categorized) => {
-  const kind = result && KIND_OF.get(result.categoryId);
+  const kind = result && categoryKind(result.categoryId);
   return movement.amountMinor < 0 ? kind === "income" : kind === "spending";
 };
 

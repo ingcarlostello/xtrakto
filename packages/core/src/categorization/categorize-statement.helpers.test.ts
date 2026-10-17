@@ -13,7 +13,14 @@ const movement = (description: string, amountMinor: number, row: number) => ({
   sourceRow: row,
 });
 
-const prepared = () =>
+const DEFAULT_MOVEMENTS = [
+  movement("TRANSFERENCIAS A NEQUI", -5_000_000, 3),
+  movement("PAGO LLAVE Maria Lopez", -2_000_000, 2),
+  // Money in that no rule knows.
+  movement("ABONO EJEMPLO", 1_000_000, 1),
+];
+
+const prepared = (movements = DEFAULT_MOVEMENTS) =>
   prepareStatement(
     parsedStatementSchema.parse({
       bankId: "bancolombia",
@@ -22,11 +29,7 @@ const prepared = () =>
       currency: "COP",
       period: { from: "2026-10-01", to: "2026-10-01" },
       periodSource: "rows",
-      transactions: [
-        movement("TRANSFERENCIAS A NEQUI", -5_000_000, 3),
-        movement("PAGO LLAVE Maria Lopez", -2_000_000, 2),
-        movement("COMPRA EN TIENDA SIN NOMBRE", -1_000_000, 1),
-      ],
+      transactions: movements,
       warnings: [],
     }),
     KEY,
@@ -65,6 +68,18 @@ describe("categorizeStatement", () => {
         isPendingReview: false,
       },
     ]);
+  });
+
+  it("reads the account's holder name it's given", async () => {
+    const statement = await prepared([
+      movement("TRANSF A ANA MARIA PRUEB", -1_000_000, 0),
+    ]);
+    const ruleOf = (holderName?: string) =>
+      categorizeStatement(statement, { holderName }).transactions[0]
+        ?.categoryRuleId;
+
+    expect(ruleOf("ANA MARIA PRUEBA GOMEZ")).toBe("own_name_out_cut");
+    expect(ruleOf()).toBe("transfer_out");
   });
 
   it("keeps everything else the statement had, in its order", async () => {

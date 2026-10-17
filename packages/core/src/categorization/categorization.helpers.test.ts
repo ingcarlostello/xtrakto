@@ -11,6 +11,9 @@ import type { CategorizationRuleId } from "./categorization.types";
 const OUT = -9_000_000;
 const IN = 9_000_000;
 const REVIEW = "review";
+// The fixtures' holder, as `normalizeHolderName` writes the quarterly
+// statement's: the context every case below runs with.
+const HOLDER = "ANA MARIA PRUEBA GOMEZ";
 
 type Match = readonly [
   description: string,
@@ -57,10 +60,43 @@ const MATCHES: readonly Match[] = [
   ["TRANSF A PEDRO GOMEZ R", OUT, "transfer_out", "transfers_to_people"],
   // A name isn't a utility, even one that reads like a word for one.
   ["TRANSF A LUZ MARINA", OUT, "transfer_out", "transfers_to_people"],
-  // The holder's own name stays a transfer until 6.2 compares it.
-  ["TRANSF A Ana Maria Pru", OUT, "transfer_out", "transfers_to_people"],
-  ["TRANSF A ANA MARIA PRUEB", OUT, "transfer_out", "transfers_to_people"],
-  ["TRANSF DE ANA PRUEBA", IN, "transfer_in", "income_transfer"],
+  // The holder's own name: moved, and to review when the bank cut it.
+  ["TRANSF A ANA PRUEBA GOMEZ", OUT, "own_name_out", "own_account_transfer"],
+  [
+    "TRANSF A Ana Maria Pru",
+    OUT,
+    "own_name_out_cut",
+    "own_account_transfer",
+    REVIEW,
+  ],
+  [
+    "TRANSF A ANA MARIA PRUEB",
+    OUT,
+    "own_name_out_cut",
+    "own_account_transfer",
+    REVIEW,
+  ],
+  ["TRANSF DE ANA PRUEBA", IN, "own_name_in", "own_account_transfer"],
+  [
+    "TRANSF DE ANA MARIA PRU",
+    IN,
+    "own_name_in_cut",
+    "own_account_transfer",
+    REVIEW,
+  ],
+  // Cut before any surname, as the bank often writes the holder's name.
+  [
+    "TRANSF A ANA MARI",
+    OUT,
+    "own_name_out_cut",
+    "own_account_transfer",
+    REVIEW,
+  ],
+  // Too little of the name, or someone else's, is another person.
+  ["TRANSF A ANA", OUT, "transfer_out", "transfers_to_people"],
+  ["TRANSF A ANA MA", OUT, "transfer_out", "transfers_to_people"],
+  ["TRANSF A ANA LOPEZ", OUT, "transfer_out", "transfers_to_people"],
+  ["TRANSF A JUAN PRUEBA GOMEZ", OUT, "transfer_out", "transfers_to_people"],
   ["TRANSF DE JUAN PEREZ", IN, "transfer_in", "income_transfer"],
   [
     "PAGO LLAVE INVERSIONES XY",
@@ -70,6 +106,20 @@ const MATCHES: readonly Match[] = [
     REVIEW,
   ],
   ["PAGO LLAVE AHORRO DOLAR", OUT, "key_payment_saving", "investment", REVIEW],
+  [
+    "PAGO LLAVE ANA PRUEBA",
+    OUT,
+    "own_name_key",
+    "own_account_transfer",
+    REVIEW,
+  ],
+  [
+    "PAGO LLAVE ANA MARIA PRUEB",
+    OUT,
+    "own_name_key_cut",
+    "own_account_transfer",
+    REVIEW,
+  ],
   ["PAGO LLAVE Maria Lopez", OUT, "key_payment", "transfers_to_people", REVIEW],
   ["PAGO LLAVE COMIDAS RÁ", OUT, "key_payment", "transfers_to_people", REVIEW],
   // A key payment stays to review even when a gateway takes it.
@@ -113,20 +163,20 @@ const MATCHES: readonly Match[] = [
   ["PAGO PSE UNIVERSIDAD EJEMPLO", OUT, "merchant_education", "education"],
   // Merchant words count only after a purchase or a payment.
   ["TRANSF A EXITO PEREZ", OUT, "transfer_out", "transfers_to_people"],
+  // Any other purchase or payment is still spending, as "Otros".
+  ["COMPRA EN  TIENDA LA ESQUI", OUT, "unknown_merchant", "other_spending"],
+  ["PAGO QR TIENDA SIN CODIGO", OUT, "unknown_merchant", "other_spending"],
+  // METRO is a supermarket and a train.
+  ["COMPRA EN METRO CENTRO", OUT, "unknown_merchant", "other_spending"],
+  // Words found only inside other words.
+  ["COMPRA EN PARA TODOS", OUT, "unknown_merchant", "other_spending"],
+  ["PAGO PSE FUNES", OUT, "unknown_merchant", "other_spending"],
+  ["PAGO PSE MENU", OUT, "unknown_merchant", "other_spending"],
+  ["PAGO PSE DAVIPLATA", OUT, "unknown_merchant", "other_spending"],
 ];
 
 const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
   [
-    // Purchases at stores no rule knows.
-    ["COMPRA EN  TIENDA LA ESQUI", OUT],
-    ["PAGO QR TIENDA SIN CODIGO", OUT],
-    // METRO is a supermarket and a train.
-    ["COMPRA EN METRO CENTRO", OUT],
-    // Words found only inside other words.
-    ["COMPRA EN PARA TODOS", OUT],
-    ["PAGO PSE FUNES", OUT],
-    ["PAGO PSE MENU", OUT],
-    ["PAGO PSE DAVIPLATA", OUT],
     // A text that only starts with the bank's 0.
     ["0 COMISION", OUT],
     // The other way round from what a rule expects.
@@ -144,11 +194,13 @@ const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
     ["ABONO INTERESES AHORROS", 0],
   ];
 
+const movement = (description: string, amount: number) => ({
+  descriptionNormalized: description,
+  amountMinor: amountMinorSchema.parse(amount),
+});
+
 const categorize = (description: string, amount: number) =>
-  categorizeByRules({
-    descriptionNormalized: description,
-    amountMinor: amountMinorSchema.parse(amount),
-  });
+  categorizeByRules(movement(description, amount), { holderName: HOLDER });
 
 describe("categorizeByRules", () => {
   it.for(MATCHES)(
@@ -165,6 +217,20 @@ describe("categorizeByRules", () => {
   it.each(NO_MATCHES)("finds no rule for %j (%i)", (description, amount) => {
     expect(categorize(description, amount)).toBeNull();
   });
+
+  // An export saved before any quarterly statement printed the holder's name.
+  it.each([
+    ["TRANSF A ANA MARIA PRUEB", OUT, "transfer_out"],
+    ["TRANSF DE ANA PRUEBA", IN, "transfer_in"],
+    ["PAGO LLAVE ANA PRUEBA", OUT, "key_payment"],
+  ])(
+    "reads %j (%i) as %s without the holder's name",
+    (description, amount, ruleId) => {
+      expect(categorizeByRules(movement(description, amount))?.ruleId).toBe(
+        ruleId,
+      );
+    },
+  );
 
   it("has a case for every rule of the table", () => {
     const tested = new Set<string>(MATCHES.map(([, , ruleId]) => ruleId));
