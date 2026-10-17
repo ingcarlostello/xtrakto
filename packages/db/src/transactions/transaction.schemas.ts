@@ -34,6 +34,11 @@ type ReferenceColumns = {
   readonly referenceLast4: AnyPgColumn;
 };
 
+// `is not distinct from`, never `=`: it's never null, which a check would
+// take as passing.
+const sourceIs = (column: AnyPgColumn, source: CategorySource) =>
+  sql`(${column} is not distinct from ${sql.raw(`'${source}'`)})`;
+
 // A reference's HMAC goes with its kind, and its last 4 digits with the HMAC.
 const referenceChecks = (t: ReferenceColumns) => [
   check(
@@ -130,16 +135,16 @@ export const transactions = pgTable(
       "transactions_category_pair_check",
       sql`(${t.categoryId} is null) = (${t.categorySource} is null)`,
     ),
-    // A rule's id only with a category a rule gave. `is distinct from`, not
-    // `<>`: it's never null, which a check would take as passing.
+    // A rule's category always names its rule. The user's may keep the rule
+    // whose guess they answered (ADR 0025); no other source has one.
     check(
       "transactions_category_rule_check",
-      sql`(${t.categoryRuleId} is null) = (${t.categorySource} is distinct from ${sql.raw(`'${CATEGORY_SOURCE.RULE}'`)})`,
+      sql`(not ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${t.categoryRuleId} is not null) and (${t.categoryRuleId} is null or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.USER)})`,
     ),
-    // Something to review always has its best guess.
+    // Only a rule's best guess waits for review, never the user's answer.
     check(
       "transactions_pending_review_check",
-      sql`not ${t.isPendingReview} or ${t.categoryId} is not null`,
+      sql`not ${t.isPendingReview} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)}`,
     ),
     check("transactions_fingerprint_check", isSha256Hex(t.fingerprint)),
     check(

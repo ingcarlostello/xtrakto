@@ -32,8 +32,10 @@ const COMPILED_RULES = CATEGORIZATION_RULES.map(
   }),
 );
 
-// A movement of 0 goes nowhere, so no rule applies to it.
-const directionOf = (amount: AmountMinor): MoneyDirection | undefined => {
+/** Which way a movement's money goes. One of 0 goes nowhere, so no rule applies to it. */
+export const moneyDirectionOf = (
+  amount: AmountMinor,
+): MoneyDirection | undefined => {
   if (amount > 0) return MONEY_DIRECTION.IN;
   if (amount < 0) return MONEY_DIRECTION.OUT;
   return undefined;
@@ -59,7 +61,7 @@ export const categorizeByRules = (
   { descriptionNormalized, amountMinor }: CategorizableTransaction,
   { holderName }: CategorizationContext = {},
 ): RuleCategorization | null => {
-  const direction = directionOf(amountMinor);
+  const direction = moneyDirectionOf(amountMinor);
   if (direction === undefined) return null;
   const description = foldDescription(descriptionNormalized);
   const holderWords =

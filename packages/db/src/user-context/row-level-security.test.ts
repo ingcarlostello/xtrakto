@@ -26,6 +26,7 @@ const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   statements: READ_WRITE,
   transactions: READ_WRITE,
   ingestion_jobs: READ_WRITE,
+  user_category_rules: READ_WRITE,
 };
 
 // The tables that hold no user's data, each with its own policies. Every

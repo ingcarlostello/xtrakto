@@ -92,6 +92,20 @@
       "when": 1792201035999,
       "tag": "0012_kind-from-category",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792205815245,
+      "tag": "0013_user-category-rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792205825491,
+      "tag": "0014_user-category-rules-rls",
+      "breakpoints": true
     }
   ]
 }

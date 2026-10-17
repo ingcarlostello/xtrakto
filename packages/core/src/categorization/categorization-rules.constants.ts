@@ -6,7 +6,7 @@ import {
   SAVINGS_WORDS,
   UTILITY_WORDS,
 } from "./categorization-words.constants";
-import { MONEY_DIRECTION } from "./categorization.constants";
+import { MONEY_DIRECTION, NO_DESCRIPTION } from "./categorization.constants";
 import { MERCHANT_RULES } from "./merchant-rules.constants";
 import type { CategorizationRule } from "./categorization.types";
 
@@ -20,7 +20,7 @@ const { IN, OUT } = MONEY_DIRECTION;
 export const CATEGORIZATION_RULES = [
   {
     id: "no_description_out",
-    is: "0",
+    is: NO_DESCRIPTION,
     direction: OUT,
     categoryId: "other_spending",
     isGuess: true,
@@ -28,7 +28,7 @@ export const CATEGORIZATION_RULES = [
   },
   {
     id: "no_description_in",
-    is: "0",
+    is: NO_DESCRIPTION,
     direction: IN,
     categoryId: "other_income",
     isGuess: true,

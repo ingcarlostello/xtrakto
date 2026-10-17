@@ -17,6 +17,7 @@ import {
   type NewIngestionJob,
   resolveIdentifiedAccount,
   saveStatement,
+  saveUserCategoryRule,
   type UserId,
   withUserContext,
 } from "@xtrakto/db";
@@ -245,6 +246,33 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
       categoryId: "own_account_transfer",
       isPendingReview: true,
     });
+  });
+
+  it("gives the user's own rules before the table's", async () => {
+    const userId = await newUser();
+    await withUserContext(app.db, userId, (ctx) =>
+      saveUserCategoryRule(ctx, {
+        target: "description",
+        descriptionFolded: "PAGO LLAVE MARIA LOPEZ",
+        direction: "out",
+        categoryId: "restaurants",
+      }),
+    );
+    await run(await submit(userId, QUARTERLY));
+    const [account] = await accountsOf(userId);
+    const { items } = await withUserContext(app.db, userId, (ctx) =>
+      listTransactions(ctx, {
+        accountId: account?.id ?? "",
+        limit: 100,
+        offset: 0,
+      }),
+    );
+
+    expect(
+      items.find(
+        ({ descriptionRaw }) => descriptionRaw === "PAGO LLAVE Maria Lopez",
+      ),
+    ).toMatchObject({ categoryId: "restaurants", isPendingReview: false });
   });
 
   it("adds nothing for a file already loaded, which takes no slot", async () => {

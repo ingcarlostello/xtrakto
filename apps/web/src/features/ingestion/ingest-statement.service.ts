@@ -16,6 +16,7 @@ import {
   INGESTION_JOB_ERROR,
   type IngestionJobError,
   type IngestionStats,
+  listUserCategoryRules,
   lockIngestionJob,
   type OpenIngestionJob,
   resolveIdentifiedAccount,
@@ -121,11 +122,13 @@ const ingestOpenJob = async (
     getServerEnv().IDENTIFIER_HASH_KEY,
   );
   // The holder's name a quarterly statement of the account printed, this one
-  // or an earlier one: a movements export prints none.
+  // or an earlier one: a movements export prints none. The user's own rules
+  // come before the table's.
   const holderName = await findAccountHolderName(ctx, account.value);
+  const userRules = await listUserCategoryRules(ctx);
   const saved = await saveStatement(ctx, {
     accountId: account.value,
-    statement: categorizeStatement(prepared, { holderName }),
+    statement: categorizeStatement(prepared, { holderName, userRules }),
     balance: balanceCheckOf(parsed.value),
   });
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");

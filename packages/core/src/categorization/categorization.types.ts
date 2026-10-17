@@ -13,10 +13,34 @@ export type MoneyDirection =
 /** How a transfer's words name the account holder: whole words, or the last one cut. */
 export type HolderNameMatch = "whole" | "cut";
 
-/** What the rules know about the movement's account. */
+/**
+ * A rule the user made by answering the quick review or correcting a
+ * movement (6.3). A text rule holds for the movements whose text is the
+ * same as `userRuleTextOf` writes it, going the same way. A reference names
+ * one person or account, so its rule holds both ways.
+ */
+export type UserCategoryRule =
+  | {
+      readonly target: "description";
+      readonly descriptionFolded: string;
+      readonly direction: MoneyDirection;
+      readonly categoryId: CategoryId;
+    }
+  | {
+      readonly target: "reference";
+      /** The reference's HMAC, as movements keep it. */
+      readonly referenceHash: string;
+      /** Its last 4 digits, which show it ("ref ••• 1270"), when it has them. */
+      readonly referenceLast4?: string;
+      readonly categoryId: CategoryId;
+    };
+
+/** What the rules know about the movement's account and its user. */
 export type CategorizationContext = {
   /** The holder's name, as `normalizeHolderName` writes it; unknown until a quarterly statement prints it. */
   readonly holderName?: string;
+  /** The user's own rules, which come before the table's. */
+  readonly userRules?: readonly UserCategoryRule[];
 };
 
 /** What the rules read from a movement. */
@@ -73,6 +97,10 @@ export type RuleCategorization = {
 export type CategorizedTransaction = PreparedTransaction & {
   readonly categoryId: CategoryId | null;
   readonly categorySource: CategorySource | null;
+  /**
+   * The table's rule that matched, kept when the user's rule decides, so the
+   * quick review knows what it guessed.
+   */
   readonly categoryRuleId: CategorizationRuleId | null;
   readonly isPendingReview: boolean;
 };

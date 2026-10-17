@@ -82,6 +82,55 @@ describe("categorizeStatement", () => {
     expect(ruleOf()).toBe("transfer_out");
   });
 
+  it("gives the user's category before the table's, never to review, keeping the rule that matched", async () => {
+    const { transactions } = categorizeStatement(await prepared(), {
+      userRules: [
+        {
+          target: "description",
+          descriptionFolded: "PAGO LLAVE MARIA LOPEZ",
+          direction: "out",
+          categoryId: "restaurants",
+        },
+        {
+          target: "description",
+          descriptionFolded: "ABONO EJEMPLO",
+          direction: "in",
+          categoryId: "income_transfer",
+        },
+      ],
+    });
+
+    expect(
+      transactions.map(
+        ({ categoryId, categorySource, categoryRuleId, isPendingReview }) => ({
+          categoryId,
+          categorySource,
+          categoryRuleId,
+          isPendingReview,
+        }),
+      ),
+    ).toEqual([
+      {
+        categoryId: "transfers_to_people",
+        categorySource: "rule",
+        categoryRuleId: "nequi_out",
+        isPendingReview: false,
+      },
+      {
+        categoryId: "restaurants",
+        categorySource: "user",
+        categoryRuleId: "key_payment",
+        isPendingReview: false,
+      },
+      {
+        categoryId: "income_transfer",
+        categorySource: "user",
+        categoryRuleId: null,
+        isPendingReview: false,
+      },
+    ]);
+  });
+
   it("keeps everything else the statement had, in its order", async () => {
     const statement = await prepared();
     const categorized = categorizeStatement(statement);
