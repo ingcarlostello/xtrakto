@@ -34,6 +34,22 @@ export const listAccounts = ({
     .where(eq(accounts.userId, userId))
     .orderBy(asc(accounts.createdAt), asc(accounts.id));
 
+/**
+ * The account's holder name, as a quarterly statement printed it and
+ * `normalizeHolderName` wrote it: what the rules compare transfers with.
+ * `undefined` until one did, or for an account that isn't the user's.
+ */
+export const findAccountHolderName = async (
+  { tx, userId }: UserContext,
+  accountId: string,
+): Promise<string | undefined> => {
+  const [found] = await tx
+    .select({ holderName: accounts.holderNameNormalized })
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
+  return found?.holderName ?? undefined;
+};
+
 /** What any statement says about its account. */
 export type AccountKind = {
   readonly bankId: string;

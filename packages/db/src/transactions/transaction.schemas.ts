@@ -1,9 +1,7 @@
 import {
-  CATEGORY_KINDS,
   CATEGORY_SOURCE,
   type CategorizationRuleId,
   type CategoryId,
-  type CategoryKind,
   type CategorySource,
   REFERENCE_KIND,
   type ReferenceKind,
@@ -98,7 +96,6 @@ export const transactions = pgTable(
     categoryRuleId: text("category_rule_id").$type<CategorizationRuleId>(),
     // The category is a best guess the quick review asks about (6.3).
     isPendingReview: boolean("pending_review").notNull().default(false),
-    kind: text("kind").$type<CategoryKind>(),
     fingerprint: text("fingerprint").notNull(),
     // Kept so fingerprints can be recomputed from stored rows.
     occurrenceIndex: integer("occurrence_index").notNull(),
@@ -129,7 +126,6 @@ export const transactions = pgTable(
       "transactions_category_source_check",
       isOneOf(t.categorySource, Object.values(CATEGORY_SOURCE)),
     ),
-    check("transactions_kind_check", isOneOf(t.kind, CATEGORY_KINDS)),
     check(
       "transactions_category_pair_check",
       sql`(${t.categoryId} is null) = (${t.categorySource} is null)`,

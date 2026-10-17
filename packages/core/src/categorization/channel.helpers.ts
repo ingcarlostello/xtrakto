@@ -19,7 +19,9 @@ const COMPILED_CHANNELS = CHANNELS.map((channel: TableChannel) => ({
  */
 export const channelOf = (description: string): Channel | null => {
   const folded: FoldedDescription = foldDescription(description);
-  const found = COMPILED_CHANNELS.find(({ matches }) => matches(folded));
+  const found = COMPILED_CHANNELS.find(
+    ({ matches }) => matches(folded) !== undefined,
+  );
   return found === undefined
     ? null
     : { id: found.channel.id, labelEs: found.channel.labelEs };

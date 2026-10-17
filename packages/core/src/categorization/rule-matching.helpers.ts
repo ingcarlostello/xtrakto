@@ -77,24 +77,33 @@ const afterPrefix = (
   return prefix && words.slice(prefix.length);
 };
 
-/** A pattern made into a test of folded descriptions, once. */
+/** Reads a folded description: the words after its prefix when it matches. */
+export type CompiledPattern = (
+  description: FoldedDescription,
+) => readonly string[] | undefined;
+
+/**
+ * A pattern made, once, into a reading of folded descriptions: the words
+ * after the prefix (all of them without one) when the description matches,
+ * `undefined` when it doesn't.
+ */
 export const compilePattern = ({
   is,
   startsWith = [],
   words = [],
-}: TextPattern): ((description: FoldedDescription) => boolean) => {
+}: TextPattern): CompiledPattern => {
   const prefixes = startsWith.map((prefix) => prefix.split(" "));
   const keywords = words.map(parseKeyword);
   return ({ text, words: descriptionWords }) => {
-    if (is !== undefined && text !== is) return false;
+    if (is !== undefined && text !== is) return undefined;
     const rest =
       prefixes.length === 0
         ? descriptionWords
         : afterPrefix(descriptionWords, prefixes);
-    if (rest === undefined) return false;
-    return (
+    if (rest === undefined) return undefined;
+    const hasKeyword =
       keywords.length === 0 ||
-      keywords.some((keyword) => containsKeyword(rest, keyword))
-    );
+      keywords.some((keyword) => containsKeyword(rest, keyword));
+    return hasKeyword ? rest : undefined;
   };
 };

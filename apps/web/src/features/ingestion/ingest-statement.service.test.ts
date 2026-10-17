@@ -198,7 +198,7 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
       "IMPTO GOBIERNO 4X1000": { categoryId: "taxes_and_fees" },
       "TRANSFERENCIAS A NEQUI": { categoryId: "transfers_to_people" },
       "COMPRA EN  MERCADO XYZ": { categoryId: "groceries" },
-      "COMPRA EN  TIENDA LA ESQUI": { categoryId: null },
+      "COMPRA EN  TIENDA LA ESQUI": { categoryId: "other_spending" },
       "PAGO LLAVE Maria Lopez": {
         categoryId: "transfers_to_people",
         isPendingReview: true,
@@ -211,12 +211,39 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
         categoryId: "credit_card_payment",
         isPendingReview: true,
       },
-      // The holder's own name, cut: a payment to a person until 6.2
-      // compares it with the holder's.
-      "TRANSF A ANA MARIA PRUEB": {
-        categoryId: "transfers_to_people",
+      // The holder's own name, which the statement prints: whole words
+      // count as moved, a name the bank cut waits for review.
+      "TRANSF DE ANA PRUEBA": {
+        categoryId: "own_account_transfer",
         isPendingReview: false,
       },
+      "TRANSF A ANA MARIA PRUEB": {
+        categoryId: "own_account_transfer",
+        isPendingReview: true,
+      },
+      "TRANSF A PEDRO GOMEZ R": { categoryId: "transfers_to_people" },
+    });
+  });
+
+  it("reads an export's transfers with the holder's name its account kept", async () => {
+    const userId = await newUser();
+    const accountId = await withUserContext(app.db, userId, (ctx) =>
+      resolveIdentifiedAccount(ctx, {
+        ...SAVINGS,
+        last4: QUARTERLY_LAST4 ?? "8901",
+        holderNameNormalized: "ANA MARIA PRUEBA GOMEZ",
+      }),
+    );
+    await run(await submit(userId, JULY_EXPORT, { accountId }));
+    const { items } = await withUserContext(app.db, userId, (ctx) =>
+      listTransactions(ctx, { accountId, limit: 100, offset: 0 }),
+    );
+
+    expect(
+      items.find(({ descriptionRaw }) => descriptionRaw.startsWith("TRANSF A")),
+    ).toMatchObject({
+      categoryId: "own_account_transfer",
+      isPendingReview: true,
     });
   });
 

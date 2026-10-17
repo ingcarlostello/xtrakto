@@ -41,3 +41,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0021](0021-insert-only-public-waitlist.md)                       | An insert-only public waitlist                                     | Accepted |
 | [0022](0022-waitlist-only-deployment.md)                          | A waitlist-only deployment                                         | Accepted |
 | [0023](0023-rules-give-a-best-guess-and-flag-what-to-review.md)   | Rules give a best guess and flag what to review                    | Accepted |
+| [0024](0024-kind-comes-from-the-category.md)                      | A movement's kind comes from its category                          | Accepted |
