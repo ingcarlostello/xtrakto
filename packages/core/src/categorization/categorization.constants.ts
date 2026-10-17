@@ -3,3 +3,6 @@ export const MONEY_DIRECTION = {
   IN: "in",
   OUT: "out",
 } as const;
+
+/** What the bank writes when it doesn't say what a movement was. */
+export const NO_DESCRIPTION = "0";

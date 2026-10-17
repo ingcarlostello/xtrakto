@@ -120,10 +120,10 @@ describe.skipIf(!testDatabase)("transactions table", () => {
       { categoryId: "groceries" as const, categorySource: "rule" as const },
     ],
     [
-      "a rule for a category the user chose",
+      "a rule for a category the LLM gave",
       {
         categoryId: "groceries" as const,
-        categorySource: "user" as const,
+        categorySource: "llm" as const,
         categoryRuleId: "merchant_groceries" as const,
       },
     ],
@@ -132,6 +132,14 @@ describe.skipIf(!testDatabase)("transactions table", () => {
       { categoryRuleId: "merchant_groceries" as const },
     ],
     ["a review without a best guess", { isPendingReview: true }],
+    [
+      "the user's answer still to review",
+      {
+        categoryId: "groceries" as const,
+        categorySource: "user" as const,
+        isPendingReview: true,
+      },
+    ],
     ["a fingerprint that isn't SHA-256 hex", { fingerprint: "ABC" }],
     ["a negative position", { position: -1 }],
     [
@@ -166,6 +174,14 @@ describe.skipIf(!testDatabase)("transactions table", () => {
     [
       "the user's category",
       { categoryId: "groceries" as const, categorySource: "user" as const },
+    ],
+    [
+      "the user's answer, keeping the rule that guessed",
+      {
+        categoryId: "transfers_to_people" as const,
+        categorySource: "user" as const,
+        categoryRuleId: "key_payment_saving" as const,
+      },
     ],
   ])("accepts %s", async (_, change) => {
     const { account, statementId } = await newStatement();

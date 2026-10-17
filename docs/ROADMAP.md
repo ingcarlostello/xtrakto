@@ -181,7 +181,10 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.1b Categorized movements
 - [x] 6.2a Internal movement detection
 - [x] 6.2b Kinds in Movimientos
-- [ ] 6.3 Category corrections and "this is mine"
+- [x] 6.3a User rules
+- [ ] 6.3b Quick review
+- [ ] 6.3c Nequi numbers and "Lo que está en juego"
+- [ ] 6.3d Detail panel and corrections
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
@@ -1112,18 +1115,53 @@ Phase 6.2 was split in two (about 550 changed lines), with the human's approval.
 
 **Commit:** `feat(web): kinds in the movements list`
 
-#### 6.3 Category corrections and "this is mine"
+#### 6.3a User rules
+
+Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval. Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
 
 **Tasks**
 
-- The quick review of design v8 (`docs/ui/v8-02`): the movements that need review, asked by group, with the best guess as the suggested answer; Nequi numbers with an "Es mío" switch; answered groups collapse, and "Lo que está en juego" shows what each answer would change. The summary shows a review banner while groups are pending.
-- The detail panel of `v8-03`, moved here from 5.7: the movement's real fields (date, amount, "Así lo escribe el banco", reference, balance after, source statement) and its kind and category with the reason, which the user can change, optionally for every transaction with the same normalized description ("Aplicar a los 3 parecidos").
-- Mark a reference (for example a Nequi phone number, a card or an investment platform) or a transfer recipient as "my own account", and undo it.
-- Store answers and corrections with `category_source = "user"` and as user rules applied before the global rules on future ingestions ("Tus reglas", `v8-05`).
-- These corrections are the labeled data for Stage 14.
-- Probably beyond 400 lines: expect to split it into the quick review and the corrections.
+- `user_category_rules`, with forced Row-Level Security: a bank text, folded, with the direction of its money, or a reference's HMAC with its last 4 digits; one per text and direction and one per reference, the latest answer replacing the earlier one; never the bank's `0`.
+- `categorizeStatement` applies the user's rules before the table's (the reference's, then the text's), with `category_source = "user"`, never to review, and keeps the table's rule that matched; the CHECKs follow (ADR 0025).
+- Saving a rule gives its category to the user's movements it holds for, in every statement; ingestion reads the user's rules.
 
-**Done when:** actions validate input and ownership; tests cover applying the rules to new data.
+**Done when:** tests prove the precedence, the folding and the direction, the movements already saved getting the rule's category, and that a user's rules never touch another user's.
+
+**Commit:** `feat(db): user category rules`
+
+#### 6.3b Quick review
+
+**Tasks**
+
+- The quick review of design v8 (`docs/ui/v8-02`) for the period and account in the URL: the movements that count and wait for review, asked by group (the holder's cut name going out, key payments to platforms and to people, money in from the user's name or Nequi, deposits at a _corresponsal_, PSE payments to banks and fintechs, to investment platforms and to lenders, and the bank's `0`), each with its question, the bank's texts with their counts, the amount at stake and the answers, the best guess first ("Sugerido: la primera").
+- An answer saves a user rule for each text of the group (6.3a); answered groups collapse with what they now count as and "Cambiar".
+- The summary shows the review banner while groups are pending ("Tienes 4 grupos por revisar (24 movimientos)", design system §9).
+
+**Done when:** answering a group recategorizes its movements in every statement and in the next upload; the review works at phone width and with the keyboard.
+
+**Commit:** `feat(web): quick review`
+
+#### 6.3c Nequi numbers and "Lo que está en juego"
+
+**Tasks**
+
+- The Nequi group of `v8-02`: the period's Nequi numbers (only movements exports carry them) with their count and total and an "Es mío" switch; "Guardar" saves a reference rule for each one marked, and "Ninguno es mío" answers the group.
+- "Lo que está en juego": the progress ("2 de 6 respondidos"), and each open group with its amount, what it counts as today and what another answer would change in the period's totals ("Si son compras, tu gasto real sube a $30,4M"), with "Ver mi resumen" and "Responder después".
+
+**Done when:** a number marked as the user's counts as moved in every statement; the panel's figures are tested.
+
+**Commit:** `feat(web): Nequi numbers and what's at stake in the review`
+
+#### 6.3d Detail panel and corrections
+
+**Tasks**
+
+- The detail panel of `v8-03`, moved here from 5.7: the movement's real fields (date, amount, "Así lo escribe el banco", channel, reference, balance after, source statement) and its kind and category with the reason ("Regla del sistema, sin IA"), which the user can change for that movement ("Guardar cambios") or for every movement with the same text ("Aplicar a los 3 parecidos", a user rule).
+- Mark a reference (a Nequi number) or a transfer recipient as "my own account", and undo it: its movements go back to what the table of rules says.
+- These corrections are the labeled data for Stage 14.
+- Probably near 500 lines: it may split again when it starts.
+
+**Done when:** actions validate input and ownership; tests cover correcting one movement, its similar ones, and an undo.
 
 **Commit:** `feat(web): category corrections and own-account marking`
 

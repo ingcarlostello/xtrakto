@@ -9,15 +9,22 @@ import type { DbClient } from "../client/db-client.types";
 import { ingestionJobs } from "../ingestion-jobs/ingestion-job.schemas";
 import { statements } from "../statements/statement.schemas";
 import { transactions } from "../transactions/transaction.schemas";
+import { userCategoryRules } from "../user-category-rules/user-category-rule.schemas";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
 import { deleteAllUserData, findUserId } from "./user.queries";
 import { users } from "./user.schemas";
 
-const DATA_TABLES = [accounts, statements, transactions, ingestionJobs];
+const DATA_TABLES = [
+  accounts,
+  statements,
+  transactions,
+  ingestionJobs,
+  userCategoryRules,
+];
 // seedUser leaves one row in users and in each data table.
-const SEEDED = [1, 1, 1, 1, 1];
-const GONE = [0, 0, 0, 0, 0];
+const SEEDED = [1, 1, 1, 1, 1, 1];
+const GONE = [0, 0, 0, 0, 0, 0];
 
 describe.skipIf(!testDatabase)("user queries", () => {
   let app: DbClient;
@@ -60,7 +67,7 @@ describe.skipIf(!testDatabase)("user queries", () => {
     return row.clerkUserId;
   };
 
-  it("deletes every row of the user in the five tables, and nothing of another user", async () => {
+  it("deletes every row of the user in the six tables, and nothing of another user", async () => {
     const a = await seedUser(owner.db);
     const b = await seedUser(owner.db);
 

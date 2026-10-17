@@ -14,6 +14,10 @@ export type {
   CategorySource,
 } from "./categories/category.types";
 export { CATEGORIZATION_RULES } from "./categorization/categorization-rules.constants";
+export {
+  MONEY_DIRECTION,
+  NO_DESCRIPTION,
+} from "./categorization/categorization.constants";
 export { categorizeByRules } from "./categorization/categorization.helpers";
 export { categorizeStatement } from "./categorization/categorize-statement.helpers";
 export type {
@@ -23,8 +27,14 @@ export type {
   CategorizationRuleId,
   CategorizedStatement,
   CategorizedTransaction,
+  MoneyDirection,
   RuleCategorization,
+  UserCategoryRule,
 } from "./categorization/categorization.types";
+export {
+  descriptionRuleFor,
+  userRuleTextOf,
+} from "./categorization/user-rule.helpers";
 export { CHANNELS } from "./categorization/channel.constants";
 export { channelOf } from "./categorization/channel.helpers";
 export type { Channel, ChannelId } from "./categorization/channel.types";

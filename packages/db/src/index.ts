@@ -76,6 +76,10 @@ export {
 export type { MovementSelection } from "./transactions/transaction-selection.queries";
 export type { MovementSearch } from "./transactions/transaction-search.queries";
 export {
+  listUserCategoryRules,
+  saveUserCategoryRule,
+} from "./user-category-rules/user-category-rule.queries";
+export {
   deleteAllUserData,
   findOrCreateUser,
   findUserId,

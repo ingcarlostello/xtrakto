@@ -14,6 +14,7 @@ import type { DbClient } from "../client/db-client.types";
 import { ingestionJobs } from "../ingestion-jobs/ingestion-job.schemas";
 import { statements } from "../statements/statement.schemas";
 import { transactions } from "../transactions/transaction.schemas";
+import { userCategoryRules } from "../user-category-rules/user-category-rule.schemas";
 import { users } from "../users/user.schemas";
 import { withUserContext } from "./user-context.queries";
 import type { UserId } from "./user-context.types";
@@ -21,7 +22,13 @@ import type { UserId } from "./user-context.types";
 const RLS_VIOLATION = "42501";
 const FOREIGN_KEY_VIOLATION = "23503";
 
-const USER_TABLES = [accounts, statements, transactions, ingestionJobs];
+const USER_TABLES = [
+  accounts,
+  statements,
+  transactions,
+  ingestionJobs,
+  userCategoryRules,
+];
 
 describe.skipIf(!testDatabase)("withUserContext", () => {
   let app: DbClient;

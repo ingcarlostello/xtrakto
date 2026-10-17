@@ -5,6 +5,7 @@ import { accounts } from "../src/accounts/account.schemas";
 import { ingestionJobs } from "../src/ingestion-jobs/ingestion-job.schemas";
 import { statements } from "../src/statements/statement.schemas";
 import { transactions } from "../src/transactions/transaction.schemas";
+import { userCategoryRules } from "../src/user-category-rules/user-category-rule.schemas";
 import { toUserId } from "../src/user-context/user-context.helpers";
 import type { UserId } from "../src/user-context/user-context.types";
 import { users } from "../src/users/user.schemas";
@@ -104,6 +105,12 @@ export const seedUser = async (db: Database): Promise<SeededUser> => {
     .returning({ id: transactions.id });
   if (!movement) throw new Error("No transaction inserted.");
   await db.insert(ingestionJobs).values({ userId, accountId });
+  await db.insert(userCategoryRules).values({
+    userId,
+    descriptionFolded: "PAGO LLAVE INVERSIONES XY",
+    direction: "out",
+    categoryId: "investment",
+  });
   return { userId, accountId, statementId, transactionId: movement.id };
 };
 
