@@ -21,15 +21,19 @@ export const ONBOARDING_COPY = {
   skipWhat: " la bienvenida",
 } as const;
 
-// docs/ui/v8-15 without what later stages bring: separating spending from
-// money that moved (6.2), the kind rings (6.7), the translation (8.6) and the
-// chat (13.3).
+// docs/ui/v8-15 without what later stages bring: the kind rings (6.7), the
+// translation (8.6) and the chat (13.3).
 export const WELCOME_COPY = {
   metaTitle: "Bienvenida",
   title: "Entiende tu extracto en minutos",
   subtitle:
     "Sube el Excel de tu cuenta de ahorros Bancolombia y te lo mostramos en limpio.",
   features: {
+    moved: {
+      title: "Separa lo que gastaste de lo que solo moviste",
+      detail:
+        "La plata que pasa a tu inversión o tus tarjetas, o vuelve de tu Nequi, no es gasto ni ingreso.",
+    },
     days: {
       title: "Tus movimientos, día por día",
       detail:

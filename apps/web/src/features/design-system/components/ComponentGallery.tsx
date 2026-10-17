@@ -1,6 +1,7 @@
 import { CHANNELS } from "@xtrakto/core";
 import { Bell, CircleAlert, ShoppingCart, Tag, Upload } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
@@ -183,7 +184,8 @@ function StatusPills() {
   );
 }
 
-export function ComponentGallery() {
+// The brand and the pieces every screen uses.
+function BaseSections() {
   return (
     <>
       <GallerySection title="Logo">
@@ -204,6 +206,14 @@ export function ComponentGallery() {
       >
         <Cards />
       </GallerySection>
+    </>
+  );
+}
+
+// What shows the user's data and asks for theirs.
+function DataSections() {
+  return (
+    <>
       <GallerySection
         title="Etiquetas"
         description="Estados y archivos; debajo, el canal de cada movimiento y su categoría o «Por revisar»."
@@ -211,11 +221,26 @@ export function ComponentGallery() {
         <Badges />
       </GallerySection>
       <GallerySection
+        title="Leyenda de colores"
+        description="Bajo el título de cada pantalla que muestra tipos: verde, naranja y azul, siempre con su palabra."
+      >
+        <KindLegend />
+      </GallerySection>
+      <GallerySection
         title="Formularios"
         description="Cada campo con su etiqueta; el error, en rojo debajo. La casilla nunca viene marcada."
       >
         <Forms />
       </GallerySection>
+    </>
+  );
+}
+
+export function ComponentGallery() {
+  return (
+    <>
+      <BaseSections />
+      <DataSections />
     </>
   );
 }

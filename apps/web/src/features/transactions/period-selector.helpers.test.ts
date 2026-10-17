@@ -1,4 +1,4 @@
-import { periodSchema } from "@xtrakto/core";
+import { amountMinorSchema, periodSchema } from "@xtrakto/core";
 import type { AccountRow, UnreconciledStatement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
@@ -27,6 +27,8 @@ const ACCOUNT: AccountRow = {
 const OTHER: AccountRow = { ...ACCOUNT, id: "a2", last4: null };
 const AUGUST: MovementPeriod = { kind: "month", year: 2026, month: 8 };
 
+const NOTHING = { amountMinor: amountMinorSchema.parse(0), count: 0 };
+
 const view = (
   period: MovementPeriod,
   accounts: AccountRow[] = [ACCOUNT],
@@ -38,6 +40,12 @@ const view = (
   period,
   total: 0,
   items: [],
+  kindTotals: {
+    income: NOTHING,
+    spending: NOTHING,
+    moved: { out: NOTHING, back: NOTHING },
+  },
+  pendingReview: 0,
   currentYear: "2026",
 });
 
@@ -176,16 +184,22 @@ describe("options", () => {
     ]);
   });
 
-  it("keeps the search in every period's link", () => {
-    const searching = { ...view(AUGUST), search: "nequi" };
+  it("keeps the search and the filter in every period's link", () => {
+    const searching = {
+      ...view(AUGUST),
+      search: "nequi",
+      filter: "moved" as const,
+    };
 
     expect(quarterOptions(searching)[0]?.href.query).toEqual({
       period: "2026-q3",
       q: "nequi",
+      filter: "moved",
     });
     expect(monthOptions(searching)[0]?.href.query).toEqual({
       period: "2026-07",
       q: "nequi",
+      filter: "moved",
     });
   });
 

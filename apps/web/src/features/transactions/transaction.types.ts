@@ -4,7 +4,10 @@ import type {
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementFilter,
+  MovementPeriod,
+} from "@/utils/transactions-url.helpers";
 
 /** A quarter to choose from, with what its movements say about it. */
 export type QuarterChoice = CalendarQuarter & {
@@ -17,6 +20,8 @@ export type TransactionsRequest = {
   readonly period?: MovementPeriod;
   /** What to look for among the period's movements, as typed. */
   readonly search?: string;
+  /** Which of them to show: a kind, or those to review. */
+  readonly filter?: MovementFilter;
   readonly shown: number;
 };
 
@@ -32,6 +37,11 @@ export type AccountTransactions = {
   readonly period: MovementPeriod;
   /** What the list looks for, as typed. */
   readonly search?: string;
+  readonly filter?: MovementFilter;
+  /** The period's movements that count, by kind, whatever the list shows. */
+  readonly kindTotals: KindTotals;
+  /** How many of the period's movements wait for review. */
+  readonly pendingReview: number;
   /** Every movement of the account in the period that counts and matches. */
   readonly total: number;
   /** The newest of them, as many as the list shows. */
@@ -92,4 +102,41 @@ export type PeriodOption = {
     readonly label: string;
     readonly variant: "ok" | "neutral" | "attention";
   };
+};
+
+/** Some movements of a kind: their amounts added up, and how many. */
+export type KindTotal = {
+  readonly amountMinor: AmountMinor;
+  readonly count: number;
+};
+
+/** A period's movements that count, by kind (design-system.md §3.4). */
+export type KindTotals = {
+  readonly income: KindTotal;
+  readonly spending: KindTotal;
+  /** Money that only moved goes both ways: out, and back. */
+  readonly moved: { readonly out: KindTotal; readonly back: KindTotal };
+};
+
+/**
+ * The colors a movement shows: its kind's, or neutral while it waits for
+ * review, has no category or counts nowhere.
+ */
+export type MovementTone = "income" | "spending" | "moved" | "neutral";
+
+/** A kind's tile on Movimientos (docs/ui/v8-03). */
+export type KindTile = {
+  readonly tone: Exclude<MovementTone, "neutral">;
+  readonly label: string;
+  /** `["+$46,8M"]`, or both ways for money that moved: `["−$29,8M", "+$2,8M"]`. */
+  readonly totals: readonly string[];
+  /** `"41 movimientos"`, or `"57 salieron · 8 volvieron"`. */
+  readonly detail: string;
+};
+
+/** A filter chip: what it shows and its link; the current one is marked. */
+export type FilterOption = {
+  readonly label: string;
+  readonly href: TransactionsHref;
+  readonly isCurrent: boolean;
 };

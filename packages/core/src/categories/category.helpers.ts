@@ -14,3 +14,7 @@ const KIND_OF: ReadonlyMap<CategoryId, CategoryKind> = new Map(
 export const categoryKind = (
   categoryId: CategoryId,
 ): CategoryKind | undefined => KIND_OF.get(categoryId);
+
+/** The categories of a kind, which a query for that kind lists. */
+export const categoriesOfKind = (kind: CategoryKind): readonly CategoryId[] =>
+  CATEGORIES.filter((category) => category.kind === kind).map(({ id }) => id);

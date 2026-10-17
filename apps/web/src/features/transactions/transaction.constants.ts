@@ -30,6 +30,19 @@ export const TRANSACTIONS_COPY = {
   emptyPeriod: "No hay movimientos en este periodo.",
   dayBalance: "Saldo del día",
   noDescription: "Sin descripción del banco",
+  // The kinds (docs/ui/v8-03): the tiles, the filters and an empty filter.
+  kinds: {
+    income: "Ingresos",
+    spending: "Gasto real",
+    moved: "Movido",
+    all: "Todo",
+    review: "Por revisar",
+    filtersLabel: "Mostrar",
+    tilesLabel: "Totales del periodo por tipo",
+    out: { one: "salió", other: "salieron" },
+    back: { one: "volvió", other: "volvieron" },
+    emptyFilter: "No hay movimientos de este tipo en el periodo.",
+  },
   // The tags under each movement, with their names for screen readers.
   tags: {
     channel: "Canal:",

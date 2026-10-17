@@ -152,3 +152,49 @@ export const formatSignedAmount = (
   const formatted = formatAmount(amount, currency, locale);
   return amount > 0 ? `+${formatted}` : formatted;
 };
+
+const MINOR_PER_UNIT = 10 ** MINOR_DIGITS;
+const THOUSAND = 1_000;
+const MILLION = 1_000_000;
+
+const currencySymbol = (currency: Currency, locale: string): string =>
+  new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+  })
+    .formatToParts(0)
+    .find(({ type }) => type === "currency")?.value ?? "";
+
+/**
+ * An amount for a card, as the design system writes it: `$51,3M` with one
+ * decimal for millions, `$392 mil` for thousands, and the exact amount below
+ * (`$870`). Negatives with a real minus sign.
+ */
+export const formatCompactAmount = (
+  amount: AmountMinor,
+  currency: Currency,
+  locale = "es-CO",
+): string => {
+  const units = Math.abs(amount) / MINOR_PER_UNIT;
+  if (units < THOUSAND) return formatAmount(amount, currency, locale);
+  const thousands = Math.round(units / THOUSAND);
+  const sign = amount < 0 ? MINUS_SIGN : "";
+  const symbol = currencySymbol(currency, locale);
+  if (thousands < THOUSAND) return `${sign}${symbol}${thousands} mil`;
+  const millions = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(units / MILLION);
+  return `${sign}${symbol}${millions}M`;
+};
+
+/** A compact amount with its direction, as a total shows it: `+$46,8M`. */
+export const formatSignedCompactAmount = (
+  amount: AmountMinor,
+  currency: Currency,
+  locale = "es-CO",
+): string => {
+  const formatted = formatCompactAmount(amount, currency, locale);
+  return amount > 0 ? `+${formatted}` : formatted;
+};

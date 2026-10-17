@@ -3,6 +3,12 @@ import { CircleAlert, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
 import {
+  CATEGORY_ICONS,
+  TONE_CLASSES,
+  UNKNOWN_CATEGORY_ICON,
+} from "../category-icons.constants";
+import { movementTone } from "../kind-view.helpers";
+import {
   amountText,
   dayBalanceText,
   dayHeading,
@@ -17,6 +23,7 @@ import {
 import type {
   MovementMark,
   MovementTags,
+  MovementTone,
   TransactionDay,
 } from "../transaction.types";
 
@@ -69,25 +76,53 @@ function MovementTagList({ tags }: { tags: MovementTags }) {
   );
 }
 
+// The icon of its category, which a guess keeps too, in its tone's chip
+// (design-system.md §8): neutral and in ink while it isn't sure.
+function MovementIcon({
+  categoryId,
+  tone,
+}: {
+  categoryId: TransactionListItem["categoryId"];
+  tone: MovementTone;
+}) {
+  const Icon =
+    (categoryId === null ? undefined : CATEGORY_ICONS[categoryId]) ??
+    UNKNOWN_CATEGORY_ICON;
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-11 items-center justify-center rounded-full",
+        TONE_CLASSES[tone].chip,
+      )}
+    >
+      <Icon strokeWidth={1.9} className="size-5" />
+    </span>
+  );
+}
+
 type ItemProps = {
   item: TransactionListItem;
   isCounted: boolean;
   mark?: MovementMark;
 };
 
-// No kind color yet: kinds come with 6.2, so the amount stays in ink with
-// its sign (design-system.md §3.4). A marked row, where a statement's
-// balance breaks, sits on the attention surface with why.
+// The icon of its category in its kind's colors, and its amount in its
+// kind's text color with its sign; neutral and in ink while the category is
+// a guess or missing (design-system.md §3.4). A marked row, where a
+// statement's balance breaks, sits on the attention surface with why.
 function TransactionItem({ item, isCounted, mark }: ItemProps) {
+  const tone = movementTone(item, isCounted);
   return (
     <li
       {...{ [MOVEMENT_ROW_ATTRIBUTE]: "" }}
       id={mark?.anchor}
       className={cn(
-        "grid scroll-mt-6 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 border-t border-divider py-3.5",
+        "grid scroll-mt-6 grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-divider py-3.5",
         mark && "-mx-3.5 rounded-md border-t-0 bg-spending-surface px-3.5",
       )}
     >
+      <MovementIcon categoryId={item.categoryId} tone={tone} />
       <div className="flex min-w-0 flex-col gap-0.5">
         <Description raw={item.descriptionRaw} />
         <MovementTagList tags={movementTags(item, isCounted)} />
@@ -101,7 +136,12 @@ function TransactionItem({ item, isCounted, mark }: ItemProps) {
           </p>
         )}
       </div>
-      <p className="text-right font-display text-base leading-[1.3] font-medium tabular-nums sm:min-w-32">
+      <p
+        className={cn(
+          "text-right font-display text-base leading-[1.3] font-medium tabular-nums sm:min-w-32",
+          TONE_CLASSES[tone].amount,
+        )}
+      >
         {amountText(item.amountMinor)}
       </p>
     </li>

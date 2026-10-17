@@ -102,10 +102,12 @@ export const listLinkOf = ({
   account,
   period,
   search,
+  filter,
 }: AccountTransactions): ListLink => ({
   ...(accounts.length > 1 ? { accountId: account.id } : {}),
   period,
   ...(search === undefined ? {} : { search }),
+  ...(filter === undefined ? {} : { filter }),
 });
 
 /** `"Del 1 de julio al 30 de septiembre de 2026"`. */
@@ -118,7 +120,7 @@ export const periodText = (period: MovementPeriod): string => {
 export const quarterOptions = (
   view: AccountTransactions,
 ): readonly PeriodOption[] => {
-  const { accountId, search } = listLinkOf(view);
+  const { accountId, search, filter } = listLinkOf(view);
   return view.quarters.map((quarter) => {
     const period: MovementPeriod = {
       kind: "quarter",
@@ -128,7 +130,7 @@ export const quarterOptions = (
     return {
       key: periodParam(period),
       label: formatQuarter(quarter),
-      href: transactionsHref({ accountId, period, search }),
+      href: transactionsHref({ accountId, period, search, filter }),
       isCurrent: isSameQuarter(view.period, quarter),
       badge: QUARTER_BADGES[quarter.status],
     };
@@ -139,7 +141,7 @@ export const quarterOptions = (
 export const monthOptions = (
   view: AccountTransactions,
 ): readonly PeriodOption[] => {
-  const { accountId, period, search } = listLinkOf(view);
+  const { accountId, period, search, filter } = listLinkOf(view);
   const { year, quarter } = quarterOf(period);
   const months: MovementPeriod[] = [0, 1, 2].map((offset) => ({
     kind: "month",
@@ -153,7 +155,7 @@ export const monthOptions = (
   return options.map((option) => ({
     key: periodParam(option),
     label: option.kind === "month" ? formatMonthName(option) : COPY.quarter,
-    href: transactionsHref({ accountId, period: option, search }),
+    href: transactionsHref({ accountId, period: option, search, filter }),
     isCurrent: periodParam(option) === periodParam(period),
   }));
 };
@@ -163,13 +165,14 @@ export const accountOptions = ({
   accounts,
   account,
   search,
+  filter,
 }: Pick<
   AccountTransactions,
-  "accounts" | "account" | "search"
+  "accounts" | "account" | "search" | "filter"
 >): readonly PeriodOption[] =>
   accounts.map((option: AccountRow) => ({
     key: option.id,
     label: accountLabel(option, option.last4),
-    href: transactionsHref({ accountId: option.id, search }),
+    href: transactionsHref({ accountId: option.id, search, filter }),
     isCurrent: option.id === account.id,
   }));

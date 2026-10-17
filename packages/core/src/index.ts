@@ -6,7 +6,7 @@ export type {
 } from "./result/app-error.types";
 export { CATEGORIES, CATEGORY_KINDS } from "./categories/categories.constants";
 export { CATEGORY_SOURCE } from "./categories/category-source.constants";
-export { categoryKind } from "./categories/category.helpers";
+export { categoriesOfKind, categoryKind } from "./categories/category.helpers";
 export type {
   Category,
   CategoryId,
@@ -70,7 +70,9 @@ export { CURRENCY } from "./money/money.constants";
 export {
   amountFromNumber,
   formatAmount,
+  formatCompactAmount,
   formatSignedAmount,
+  formatSignedCompactAmount,
   isAmountMinor,
   parseAmountText,
   parseTypedAmount,

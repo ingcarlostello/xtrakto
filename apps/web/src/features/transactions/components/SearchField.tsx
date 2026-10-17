@@ -11,7 +11,8 @@ import { SearchInput } from "./SearchInput";
 
 const COPY = TRANSACTIONS_COPY.search;
 
-// The filters the search keeps: the account, when there are several, and the period.
+// The filters the search keeps: the account, when there are several, the
+// period, and the kind shown.
 function KeptFilters({ link }: { link: ListLink }) {
   return (
     <>
@@ -27,6 +28,13 @@ function KeptFilters({ link }: { link: ListLink }) {
         name={TRANSACTIONS_PARAMS.period}
         value={periodParam(link.period)}
       />
+      {link.filter && (
+        <input
+          type="hidden"
+          name={TRANSACTIONS_PARAMS.filter}
+          value={link.filter}
+        />
+      )}
     </>
   );
 }
