@@ -1,6 +1,7 @@
 import {
   CATEGORY_KINDS,
   CATEGORY_SOURCE,
+  type CategorizationRuleId,
   type CategoryId,
   type CategoryKind,
   type CategorySource,
@@ -10,6 +11,7 @@ import {
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  boolean,
   check,
   foreignKey,
   index,
@@ -92,6 +94,10 @@ export const transactions = pgTable(
     referenceKind: text("reference_kind").$type<ReferenceKind>(),
     categoryId: text("category_id").$type<CategoryId>(),
     categorySource: text("category_source").$type<CategorySource>(),
+    // The rule that gave the category, by its stable id (ADR 0023).
+    categoryRuleId: text("category_rule_id").$type<CategorizationRuleId>(),
+    // The category is a best guess the quick review asks about (6.3).
+    isPendingReview: boolean("pending_review").notNull().default(false),
     kind: text("kind").$type<CategoryKind>(),
     fingerprint: text("fingerprint").notNull(),
     // Kept so fingerprints can be recomputed from stored rows.
@@ -127,6 +133,17 @@ export const transactions = pgTable(
     check(
       "transactions_category_pair_check",
       sql`(${t.categoryId} is null) = (${t.categorySource} is null)`,
+    ),
+    // A rule's id only with a category a rule gave. `is distinct from`, not
+    // `<>`: it's never null, which a check would take as passing.
+    check(
+      "transactions_category_rule_check",
+      sql`(${t.categoryRuleId} is null) = (${t.categorySource} is distinct from ${sql.raw(`'${CATEGORY_SOURCE.RULE}'`)})`,
+    ),
+    // Something to review always has its best guess.
+    check(
+      "transactions_pending_review_check",
+      sql`not ${t.isPendingReview} or ${t.categoryId} is not null`,
     ),
     check("transactions_fingerprint_check", isSha256Hex(t.fingerprint)),
     check(

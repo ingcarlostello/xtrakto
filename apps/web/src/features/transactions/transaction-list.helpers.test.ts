@@ -1,4 +1,8 @@
-import { amountMinorSchema, localDateSchema } from "@xtrakto/core";
+import {
+  amountMinorSchema,
+  type CategoryId,
+  localDateSchema,
+} from "@xtrakto/core";
 import type { TransactionListItem } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import {
@@ -8,6 +12,7 @@ import {
   descriptionView,
   groupByDay,
   movementSearchOf,
+  movementTags,
   nextStep,
   shownText,
   totalText,
@@ -23,6 +28,8 @@ const item = (
   descriptionRaw: "COMPRA EN TIENDA",
   amountMinor: amountMinorSchema.parse(-1_000),
   balanceAfterMinor: balance === null ? null : amountMinorSchema.parse(balance),
+  categoryId: null,
+  isPendingReview: false,
 });
 
 describe("groupByDay", () => {
@@ -177,5 +184,75 @@ describe("nextStep", () => {
     [2_000, 5_000],
   ])("brings nothing after %i of %i", (shown, total) => {
     expect(nextStep(shown, total, link)).toBeUndefined();
+  });
+});
+
+describe("movementTags", () => {
+  const tagged = (
+    descriptionRaw: string,
+    categoryId: CategoryId | null,
+    isPendingReview = false,
+  ): TransactionListItem => ({
+    ...item("m1", "2026-09-30"),
+    descriptionRaw,
+    categoryId,
+    isPendingReview,
+  });
+
+  it.each([
+    [
+      "its channel and its category",
+      tagged("TRANSFERENCIAS A NEQUI", "transfers_to_people"),
+      {
+        channel: "Nequi",
+        category: "Pagos a personas",
+        isPendingReview: false,
+      },
+    ],
+    [
+      "«Por revisar» instead of a guessed category",
+      tagged("PAGO LLAVE Maria Lopez", "transfers_to_people", true),
+      { channel: "Llave Bre-B", category: undefined, isPendingReview: true },
+    ],
+    [
+      "its channel alone when no rule knows it",
+      tagged("COMPRA EN  TIENDA LA ESQUI", null),
+      { channel: "Débito", category: undefined, isPendingReview: false },
+    ],
+    [
+      "its category alone when its text names no channel",
+      tagged("ABONO INTERESES AHORROS", "interest"),
+      { channel: undefined, category: "Intereses", isPendingReview: false },
+    ],
+    [
+      "«Por revisar» alone for the bank's 0",
+      tagged("0", "other_spending", true),
+      { channel: undefined, category: undefined, isPendingReview: true },
+    ],
+  ])("shows %s", (_, movement, tags) => {
+    expect(movementTags(movement, true)).toEqual(tags);
+  });
+
+  it("shows only the channel of a movement that counts nowhere", () => {
+    const movement = tagged(
+      "PAGO LLAVE Maria Lopez",
+      "transfers_to_people",
+      true,
+    );
+
+    expect(movementTags(movement, false)).toEqual({
+      channel: "Llave Bre-B",
+      category: undefined,
+      isPendingReview: false,
+    });
+  });
+
+  it("shows no category whose id the table no longer has", () => {
+    // As a row saved before a category left categories.json could hold.
+    const retired = "digital_wallet" as CategoryId;
+
+    expect(
+      movementTags(tagged("TRANSFERENCIAS A NEQUI", retired), true).category,
+    ).toBeUndefined();
   });
 });

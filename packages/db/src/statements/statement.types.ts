@@ -1,4 +1,4 @@
-import type { AmountMinor, PreparedStatement } from "@xtrakto/core";
+import type { AmountMinor, CategorizedStatement } from "@xtrakto/core";
 
 /** What `reconcile` found, kept to show where a statement doesn't add up. */
 export type BalanceCheck = {
@@ -12,7 +12,8 @@ export type BalanceCheck = {
 export type SaveStatementInput = {
   /** One of the user's accounts; any other gives NOT_FOUND. */
   readonly accountId: string;
-  readonly statement: PreparedStatement;
+  /** Prepared and categorized: what the rules say about each movement. */
+  readonly statement: CategorizedStatement;
   readonly balance: BalanceCheck;
 };
 

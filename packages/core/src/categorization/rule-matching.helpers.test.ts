@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  compilePattern,
   containsKeyword,
+  foldDescription,
   parseKeyword,
   startsWithWords,
   wordsOf,
@@ -58,5 +60,34 @@ describe("containsKeyword", () => {
     ["PAGO PSE EMPRESAS DE PUBLICAS", "EMPRESAS PUBLICAS"],
   ])("doesn't find %j's %j", (text, keyword) => {
     expect(contains(text, keyword)).toBe(false);
+  });
+});
+
+describe("compilePattern", () => {
+  const matches = (
+    pattern: Parameters<typeof compilePattern>[0],
+    text: string,
+  ) => compilePattern(pattern)(foldDescription(text));
+
+  it("takes a text that is exactly the pattern's", () => {
+    expect(matches({ is: "0" }, " 0 ")).toBe(true);
+    expect(matches({ is: "0" }, "0 COMISION")).toBe(false);
+  });
+
+  it("looks for keywords after the prefix only", () => {
+    const pattern = { startsWith: ["PAGO PSE"], words: ["PSE"] };
+
+    expect(matches(pattern, "PAGO PSE PSE EJEMPLO")).toBe(true);
+    expect(matches(pattern, "PAGO PSE EJEMPLO")).toBe(false);
+  });
+
+  it("looks for keywords anywhere without a prefix", () => {
+    expect(matches({ words: ["4X1000"] }, "IMPTO GOBIERNO 4X1000")).toBe(true);
+  });
+
+  it("folds the description before matching it", () => {
+    expect(matches({ startsWith: ["PAGO PSE"] }, "Pago  Pse Compañía")).toBe(
+      true,
+    );
   });
 });

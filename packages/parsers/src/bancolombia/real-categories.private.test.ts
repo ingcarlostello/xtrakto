@@ -3,6 +3,7 @@ import {
   CATEGORIES,
   CATEGORIZATION_RULES,
   categorizeByRules,
+  channelOf,
 } from "@xtrakto/core";
 import type {
   CategorizationRuleId,
@@ -19,7 +20,7 @@ import {
 } from "./bancolombia.constants";
 
 // The real exports of fixtures/private/ (Phase 2.8) through the rule-based
-// categorizer (Phase 6.1a). The report is whole percentages only, as test
+// categorizer (Phases 6.1a and 6.1b). The report is whole percentages only, as test
 // annotations that the verbose reporter prints, and the assertions compare
 // counts, so nothing of a real movement is ever printed.
 
@@ -144,6 +145,29 @@ describe.skipIf(categorized.length === 0)(
         "reglas",
       );
       expect(categorized.length).toBeGreaterThan(0);
+    });
+
+    it("reports which channels the movements without a category come from", async ({
+      annotate,
+    }) => {
+      const without = categorized.filter(({ result }) => result === null);
+      const byChannel = new Map<string, number>();
+      for (const { movement } of without) {
+        const label =
+          channelOf(movement.descriptionNormalized)?.labelEs ?? "sin canal";
+        byChannel.set(label, (byChannel.get(label) ?? 0) + 1);
+      }
+      await annotate(
+        [...byChannel]
+          .sort(([, a], [, b]) => b - a)
+          .map(
+            ([label, count]) =>
+              `${label} ${percent(count, categorized.length)}`,
+          )
+          .join(", "),
+        "sin categoría",
+      );
+      expect(without.length).toBeLessThan(categorized.length);
     });
 
     it("never gives money out an income category, nor money in a spending one", () => {

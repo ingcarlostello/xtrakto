@@ -14,8 +14,10 @@ const badgeVariants = cva(
         income: "bg-income-soft text-income-on-soft",
         spending: "bg-spending-soft text-spending-on-soft",
         moved: "bg-moved-soft text-moved-on-soft",
-        // Something to review, such as the 4x1000 charges.
+        // On the attention surface, for what needs a look: "No cuadra".
         attention: "bg-spending-surface text-spending-on-soft",
+        // A guess the quick review asks about: "Por revisar" (§9).
+        review: "bg-spending-soft text-spending-on-soft",
         // A verified state, outside data: "Verificado", "Estable".
         ok: "bg-income-soft text-income-on-soft",
         // Information, outside data: "Varios canales", "Muy pronto".

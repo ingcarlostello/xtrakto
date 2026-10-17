@@ -1,6 +1,7 @@
 import type {
   AmountMinor,
   CalendarQuarter,
+  CategoryId,
   LocalDate,
   Period,
 } from "@xtrakto/core";
@@ -25,6 +26,21 @@ export type TransactionListItem = {
   readonly amountMinor: AmountMinor;
   /** Only a statement with balances prints it. */
   readonly balanceAfterMinor: AmountMinor | null;
+  /** As a rule gave it; `null` when no rule knows the movement. */
+  readonly categoryId: CategoryId | null;
+  /** The category is a best guess the quick review asks about. */
+  readonly isPendingReview: boolean;
+};
+
+/** The columns of a `TransactionListItem`, for every list that shows one. */
+export const LIST_ITEM_COLUMNS = {
+  id: transactions.id,
+  date: transactions.date,
+  descriptionRaw: transactions.descriptionRaw,
+  amountMinor: transactions.amountMinor,
+  balanceAfterMinor: transactions.balanceAfterMinor,
+  categoryId: transactions.categoryId,
+  isPendingReview: transactions.isPendingReview,
 };
 
 export type TransactionFilter = {
@@ -52,13 +68,7 @@ export const listTransactions = async (
   { accountId, period, search, limit, offset }: TransactionFilter,
 ): Promise<TransactionPage> => {
   const rows = await tx
-    .select({
-      id: transactions.id,
-      date: transactions.date,
-      descriptionRaw: transactions.descriptionRaw,
-      amountMinor: transactions.amountMinor,
-      balanceAfterMinor: transactions.balanceAfterMinor,
-    })
+    .select(LIST_ITEM_COLUMNS)
     .from(transactions)
     .innerJoin(statements, eq(statements.id, transactions.statementId))
     .where(

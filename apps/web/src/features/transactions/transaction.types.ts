@@ -54,6 +54,16 @@ export type MovementMark = {
   readonly anchor?: string;
 };
 
+/**
+ * The tags under a movement: how its money moved, and its category or that
+ * the category is only a guess waiting for review.
+ */
+export type MovementTags = {
+  readonly channel: string | undefined;
+  readonly category: string | undefined;
+  readonly isPendingReview: boolean;
+};
+
 /** A movement's line: the bank's text as printed, or that it gave none. */
 export type DescriptionView =
   | { readonly kind: "bank"; readonly text: string }

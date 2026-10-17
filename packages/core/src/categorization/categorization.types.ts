@@ -1,5 +1,9 @@
-import type { CategoryId } from "../categories/category.types";
-import type { ParsedTransaction } from "../statements/statement.types";
+import type { CategoryId, CategorySource } from "../categories/category.types";
+import type {
+  ParsedTransaction,
+  PreparedStatement,
+  PreparedTransaction,
+} from "../statements/statement.types";
 import type { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import type { MONEY_DIRECTION } from "./categorization.constants";
 
@@ -13,12 +17,10 @@ export type CategorizableTransaction = Pick<
 >;
 
 /**
- * One row of the ordered rule table. Its texts are written folded
- * (`foldText`) and as the words a description splits into: letters and digits.
+ * What a bank's text says, written folded (`foldText`) and as the words a
+ * description splits into: letters and digits.
  */
-export type CategorizationRule = {
-  /** A stable name in snake_case. */
-  readonly id: string;
+export type TextPattern = {
   /** The whole description, such as the bank's `0`. */
   readonly is?: string;
   /** The description starts with one of these, word by word. */
@@ -29,6 +31,15 @@ export type CategorizationRule = {
    * (`EMPRESAS PUBLICAS`).
    */
   readonly words?: readonly string[];
+};
+
+/** One row of the ordered rule table. */
+export type CategorizationRule = TextPattern & {
+  /**
+   * A stable name in snake_case. Movements keep the id of the rule that
+   * categorized them, so an id is never renamed or reused.
+   */
+  readonly id: string;
   readonly direction: MoneyDirection;
   readonly categoryId: CategoryId;
   /** The category is only a best guess, which the quick review asks about. */
@@ -45,4 +56,16 @@ export type RuleCategorization = {
   readonly categoryId: CategoryId;
   /** The category is a best guess, waiting for the user's answer. */
   readonly isPendingReview: boolean;
+};
+
+/** A prepared movement with what the rules said about it, ready to save. */
+export type CategorizedTransaction = PreparedTransaction & {
+  readonly categoryId: CategoryId | null;
+  readonly categorySource: CategorySource | null;
+  readonly categoryRuleId: CategorizationRuleId | null;
+  readonly isPendingReview: boolean;
+};
+
+export type CategorizedStatement = Omit<PreparedStatement, "transactions"> & {
+  readonly transactions: readonly CategorizedTransaction[];
 };

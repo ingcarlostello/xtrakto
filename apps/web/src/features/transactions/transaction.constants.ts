@@ -1,7 +1,7 @@
-// The movements list of docs/ui/v8-03 within Phase 5.7a: each day with its
-// balance, the bank's text as printed and signed amounts. Kinds and
-// categories come with Stage 6, the period selector with 5.7b. The Spanish
-// copy lives here, in one place (project rules §5).
+// The movements list of docs/ui/v8-03: each day with its balance, the
+// bank's text as printed with its channel and category (Phase 6.1b) and
+// signed amounts. Kinds come with 6.2. The Spanish copy lives here, in one
+// place (project rules §5).
 
 /** How many movements the list adds each time ("Mostrar 30 más"). */
 export const MOVEMENTS_STEP = 30;
@@ -30,6 +30,12 @@ export const TRANSACTIONS_COPY = {
   emptyPeriod: "No hay movimientos en este periodo.",
   dayBalance: "Saldo del día",
   noDescription: "Sin descripción del banco",
+  // The tags under each movement, with their names for screen readers.
+  tags: {
+    channel: "Canal:",
+    category: "Categoría:",
+    pendingReview: "Por revisar",
+  },
   shown: { before: "Mostrando", of: "de" },
   more: { before: "Mostrar", after: "más" },
   // The search (docs/ui/v8-03) and its empty result (v8-13). References are

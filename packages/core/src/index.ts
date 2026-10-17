@@ -14,12 +14,18 @@ export type {
 } from "./categories/category.types";
 export { CATEGORIZATION_RULES } from "./categorization/categorization-rules.constants";
 export { categorizeByRules } from "./categorization/categorization.helpers";
+export { categorizeStatement } from "./categorization/categorize-statement.helpers";
 export type {
   CategorizableTransaction,
   CategorizationRule,
   CategorizationRuleId,
+  CategorizedStatement,
+  CategorizedTransaction,
   RuleCategorization,
 } from "./categorization/categorization.types";
+export { CHANNELS } from "./categorization/channel.constants";
+export { channelOf } from "./categorization/channel.helpers";
+export type { Channel, ChannelId } from "./categorization/channel.types";
 export { DEFAULT_TIME_ZONE } from "./dates/date.constants";
 export {
   formatDayInWords,

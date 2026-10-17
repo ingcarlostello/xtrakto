@@ -1,4 +1,4 @@
-import type { PreparedStatement } from "@xtrakto/core";
+import type { CategorizedStatement } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   preparedExport,
@@ -58,7 +58,7 @@ describe.skipIf(!testDatabase)("statements that don't reconcile", () => {
   const saveIn = async (
     userId: UserId,
     accountId: string,
-    [statement, balance]: [PreparedStatement, BalanceCheck],
+    [statement, balance]: [CategorizedStatement, BalanceCheck],
   ) => {
     const result = await withUserContext(app.db, userId, (ctx) =>
       saveStatement(ctx, { accountId, statement, balance }),

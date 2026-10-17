@@ -1,5 +1,8 @@
 import {
   type AmountMinor,
+  CATEGORIES,
+  type CategoryId,
+  channelOf,
   CURRENCY,
   formatAmount,
   formatSignedAmount,
@@ -21,6 +24,7 @@ import {
 } from "./transaction.constants";
 import type {
   DescriptionView,
+  MovementTags,
   NextStep,
   TransactionDay,
 } from "./transaction.types";
@@ -72,6 +76,30 @@ export const descriptionView = (raw: string): DescriptionView =>
   raw.trim() === NO_DESCRIPTION_TEXT
     ? { kind: "none", raw }
     : { kind: "bank", text: raw };
+
+const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
+  CATEGORIES.map(({ id, labelEs }) => [id, labelEs]),
+);
+
+/**
+ * A movement's tags (docs/ui/v8-03): the channel its text names, and its
+ * category, or "Por revisar" instead while the category is only a guess. A
+ * movement that counts nowhere, of a statement that doesn't reconcile, shows
+ * its channel only: the quick review never asks about it.
+ */
+export const movementTags = (
+  { descriptionRaw, categoryId, isPendingReview }: TransactionListItem,
+  isCounted: boolean,
+): MovementTags => {
+  const channel = channelOf(descriptionRaw)?.labelEs;
+  if (!isCounted)
+    return { channel, category: undefined, isPendingReview: false };
+  const category =
+    isPendingReview || categoryId === null
+      ? undefined
+      : CATEGORY_LABELS.get(categoryId);
+  return { channel, category, isPendingReview };
+};
 
 /** `"+$420"`, `"−$90.000"`. */
 export const amountText = (amount: AmountMinor): string =>

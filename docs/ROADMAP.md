@@ -178,7 +178,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 6 — Deterministic insights**
 
 - [x] 6.1a Rules from Appendix B
-- [ ] 6.1b Categorized movements
+- [x] 6.1b Categorized movements
 - [ ] 6.2 Real spending vs money that moved
 - [ ] 6.3 Category corrections and "this is mine"
 - [ ] 6.4 Summary computations

@@ -2,16 +2,15 @@ import {
   BANK_WORDS,
   GATEWAY_WORDS,
   LOAN_WORDS,
+  PAYMENT_PREFIXES,
   SAVINGS_WORDS,
   UTILITY_WORDS,
 } from "./categorization-words.constants";
 import { MONEY_DIRECTION } from "./categorization.constants";
+import { MERCHANT_RULES } from "./merchant-rules.constants";
 import type { CategorizationRule } from "./categorization.types";
 
 const { IN, OUT } = MONEY_DIRECTION;
-
-// Payments whose next words name who was paid.
-const PAYMENT_PREFIXES = ["PAGO PSE", "COMPRA EN", "PAGO QR"];
 
 /**
  * Bancolombia's descriptions (ROADMAP Appendix B) and the category each one
@@ -232,4 +231,5 @@ export const CATEGORIZATION_RULES = [
     isGuess: true,
     reasonEs: "creemos que es la cuota de un crédito",
   },
+  ...MERCHANT_RULES,
 ] as const satisfies readonly CategorizationRule[];
