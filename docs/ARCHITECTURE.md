@@ -271,8 +271,9 @@ flowchart LR
 ```
 
 - The category's `kind` drives the headline numbers. Credit card payments, investments and own-account transfers are `internal`: they leave the account but are not spending. Internal goes both ways: money that comes back from the user's own Nequi or name is not income either.
+- The global rules are an ordered table in `@xtrakto/core` (`CATEGORIZATION_RULES`, from ROADMAP Appendix B): each one matches the description's words, folded (no case, accents or extra spaces) and never inside a word, and says which way the money goes, so `ABONO INTERESES AHORROS` is interest only when money comes in. The first rule that matches wins, and each carries the reason the movement's detail shows.
 - Own-account transfers are detected by prefix matching against the holder's normalized name, because descriptions truncate names, and by references the user marked as theirs (a Nequi number, a card, an investment platform).
-- Some movements can't be classified alone: Bre-B _llave_ payments, PSE payments to fintechs, transfers to the truncated holder name, cash deposits at a _corresponsal_. They keep a best guess marked for review, the quick review asks about them by group, and each answer becomes a user rule.
+- Some movements can't be classified alone: Bre-B _llave_ payments, PSE payments to banks, fintechs, lenders and investment platforms, transfers to the truncated holder name, money in from Nequi, cash deposits at a _corresponsal_, the bank's `0`. They keep a best guess marked for review, which follows design v8: money in from the user's Nequi or name, a deposit at a _corresponsal_ and a key payment to a savings platform count as moved until the user answers. The quick review asks about them by group, and each answer becomes a user rule.
 - The channel shown on each movement (PSE, Llave Bre-B, QR, Nequi, cajero…) comes from the description's prefix; it is not a category.
 - User corrections become user rules and, later, labeled data for the ML model.
 
