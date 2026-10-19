@@ -74,6 +74,10 @@ export {
   listCategoryTotals,
 } from "./transactions/transaction-totals.queries";
 export {
+  findMovementDetail,
+  type MovementDetail,
+} from "./transactions/transaction-detail.queries";
+export {
   dismissReview,
   listReviewMovements,
   type ReviewFilter,
