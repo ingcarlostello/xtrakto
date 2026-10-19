@@ -22,5 +22,5 @@ Design v8 asks about Nequi sends number by number in the quick review ("¿Alguno
 ## Consequences
 
 - Sends saved before 6.3d keep `nequi_out` and aren't asked about until they're categorized again.
-- A number marked as the user's can't be taken back from the review yet: undoing it, which recategorizes its movements by the table, comes with 6.3f.
+- A number marked as the user's can't be taken back from the review yet: undoing it, which recategorizes its movements by the table, comes with 6.3h.
 - A rule for an income from a reference holds only for money coming in; none is made yet.

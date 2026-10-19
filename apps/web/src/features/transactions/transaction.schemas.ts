@@ -46,4 +46,5 @@ export const transactionsSearchSchema = z.object({
     .optional()
     .catch(undefined),
   [TRANSACTIONS_PARAMS.shown]: shownCountSchema,
+  [TRANSACTIONS_PARAMS.movement]: z.uuid().optional().catch(undefined),
 });

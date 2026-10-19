@@ -1,5 +1,5 @@
-import { APP_ERROR_CODE, PERIOD_SOURCE } from "@xtrakto/core";
-import type { AppError, PeriodSource } from "@xtrakto/core";
+import { APP_ERROR_CODE } from "@xtrakto/core";
+import type { AppError } from "@xtrakto/core";
 import type {
   IngestionJobError,
   IngestionJobStatus,
@@ -103,18 +103,8 @@ export const FILE_PROBLEM = {
   UNREADABLE: "unreadable",
 } as const;
 
-// Keyed by the parsers' format ids: the build fails if a format has no label.
-export const FORMAT_LABELS = {
-  "bancolombia-savings-quarterly": "Extracto trimestral",
-  "bancolombia-movements-export": "Movimientos",
-} as const satisfies Record<FormatId, string>;
-
-// A statement's own period reads as months, a range of movements as days.
-export const FORMAT_PERIOD_SOURCE = {
-  "bancolombia-savings-quarterly": PERIOD_SOURCE.STATEMENT,
-  "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
-} as const satisfies Record<FormatId, PeriodSource>;
-
+// Keyed by the parsers' format ids, as the formats' labels are
+// (`utils/statement-label.constants.ts`).
 export const FORMAT_BANKS = {
   "bancolombia-savings-quarterly": "bancolombia",
   "bancolombia-movements-export": "bancolombia",

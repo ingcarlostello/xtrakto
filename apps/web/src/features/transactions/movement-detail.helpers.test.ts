@@ -1,0 +1,142 @@
+import {
+  amountMinorSchema,
+  type CategorizationRuleId,
+  localDateSchema,
+  periodSchema,
+} from "@xtrakto/core";
+import type { MovementDetail } from "@xtrakto/db";
+import { describe, expect, it } from "vitest";
+import { movementDetailView } from "./movement-detail.helpers";
+
+const QUARTER = {
+  formatId: "bancolombia-savings-quarterly",
+  period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+};
+
+// A utility paid through PSE, as v8-03 details it: a rule knew it.
+const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
+  id: "m1",
+  date: localDateSchema.parse("2026-09-27"),
+  descriptionRaw: "PAGO PSE EMPRESA DE ENERGIA",
+  amountMinor: amountMinorSchema.parse(-18_200_000),
+  balanceAfterMinor: amountMinorSchema.parse(879_389_000),
+  categoryId: "utilities",
+  isPendingReview: false,
+  referenceLast4: null,
+  categorySource: "rule",
+  categoryRuleId: "utility_payment",
+  statement: QUARTER,
+  ...changes,
+});
+
+describe("movementDetailView", () => {
+  it("shows a movement's fields, its kind and category, and the rule's reason", () => {
+    expect(movementDetailView(detail(), "a1")).toEqual({
+      id: "m1",
+      title: "PAGO PSE EMPRESA DE ENERGIA",
+      bankText: "PAGO PSE EMPRESA DE ENERGIA",
+      date: "Domingo 27 de septiembre de 2026",
+      amount: "−$182.000",
+      tone: "spending",
+      categoryId: "utilities",
+      facts: [
+        { label: "Canal", value: "PSE" },
+        { label: "Fuente", value: "Extracto trimestral jul–sep 2026" },
+        { label: "Saldo después", value: "$8.793.890" },
+        { label: "Tipo", value: "Gasto real" },
+      ],
+      category: "Servicios del hogar",
+      isGuess: false,
+      reason:
+        "los pagos de luz, agua, gas, internet o celular son servicios del hogar. Regla del sistema, sin IA.",
+    });
+  });
+
+  it("shows a best guess in ink, with its reference's digits and the way to the review of its quarter", () => {
+    const send = detail({
+      date: localDateSchema.parse("2026-08-20"),
+      descriptionRaw: "TRANSFERENCIAS A NEQUI",
+      amountMinor: amountMinorSchema.parse(-4_800_000),
+      balanceAfterMinor: null,
+      categoryId: "transfers_to_people",
+      isPendingReview: true,
+      referenceLast4: "1270",
+      categoryRuleId: "nequi_out_number",
+      statement: {
+        formatId: "bancolombia-movements-export",
+        period: periodSchema.parse({ from: "2026-08-15", to: "2026-08-31" }),
+      },
+    });
+
+    expect(movementDetailView(send, "a1")).toMatchObject({
+      tone: "neutral",
+      facts: [
+        { label: "Canal", value: "Nequi" },
+        { label: "Referencia", value: "••• 1270" },
+        { label: "Fuente", value: "Movimientos 15–31 ago 2026" },
+        { label: "Tipo", value: "Gasto real" },
+      ],
+      category: "Pagos a personas",
+      isGuess: true,
+      reason:
+        "un envío a Nequi es un pago a una persona, salvo que el número sea tuyo. Regla del sistema, sin IA.",
+      reviewHref: {
+        pathname: "/review",
+        query: { account: "a1", period: "2026-q3" },
+      },
+    });
+  });
+
+  it("says the user decided a category they gave", () => {
+    const answered = detail({
+      categoryId: "own_account_transfer",
+      categorySource: "user",
+      categoryRuleId: "pse_card",
+    });
+
+    expect(movementDetailView(answered, "a1")).toMatchObject({
+      tone: "moved",
+      category: "Entre tus cuentas",
+      reason: "lo decidiste tú.",
+    });
+    expect(movementDetailView(answered, "a1").facts.at(-1)).toEqual({
+      label: "Tipo",
+      value: "Movido",
+    });
+  });
+
+  it("names no kind or category for money in no rule knows", () => {
+    const unknown = detail({
+      descriptionRaw: "ABONO EJEMPLO",
+      amountMinor: amountMinorSchema.parse(100_000),
+      categoryId: null,
+      categorySource: null,
+      categoryRuleId: null,
+    });
+
+    expect(movementDetailView(unknown, "a1")).toMatchObject({
+      tone: "neutral",
+      facts: [
+        { label: "Fuente", value: "Extracto trimestral jul–sep 2026" },
+        { label: "Saldo después", value: "$8.793.890" },
+      ],
+      category: "Sin categoría",
+      reason: "ninguna regla conoce este movimiento todavía.",
+    });
+  });
+
+  it("titles the bank's 0 as a movement it didn't describe, keeping its text", () => {
+    expect(
+      movementDetailView(detail({ descriptionRaw: "0" }), "a1"),
+    ).toMatchObject({ title: "Sin descripción del banco", bankText: "0" });
+  });
+
+  it("says only that the system gave a category whose rule the table no longer has", () => {
+    // An id a later table might drop, as movements keep it (ADR 0025).
+    const retired = "retired_rule" as CategorizationRuleId;
+
+    expect(
+      movementDetailView(detail({ categoryRuleId: retired }), "a1").reason,
+    ).toBe("Regla del sistema, sin IA.");
+  });
+});

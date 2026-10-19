@@ -1,7 +1,7 @@
 import { ReviewBanner } from "@/components/review-banner/ReviewBanner";
+import { reviewHref } from "@/utils/transactions-url.helpers";
 import { bannerTitle, pendingOf } from "../review-display.helpers";
 import { REVIEW_COPY } from "../review.constants";
-import { reviewHref } from "../review.helpers";
 import { getReview } from "../review.service";
 
 /**
@@ -23,7 +23,7 @@ export async function PendingReviewBanner({
       title={bannerTitle(pending)}
       description={REVIEW_COPY.bannerText}
       action={REVIEW_COPY.bannerAction}
-      href={reviewHref(review)}
+      href={reviewHref({ accountId: review.account.id, period: review.period })}
     />
   );
 }

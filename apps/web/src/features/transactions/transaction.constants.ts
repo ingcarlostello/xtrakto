@@ -12,6 +12,13 @@ export const MAX_MOVEMENTS_SHOWN = 2_000;
 /** The attribute that marks each movement's row, to focus the new ones. */
 export const MOVEMENT_ROW_ATTRIBUTE = "data-movement";
 
+/** The attribute that marks the link closing a movement's detail, which Escape follows. */
+export const DETAIL_CLOSE_ATTRIBUTE = "data-detail-close";
+
+/** The id of a movement's link in the list, which gets the focus back once its detail closes. */
+export const movementLinkId = (movementId: string): string =>
+  `movement-${movementId}`;
+
 /** The longest search the list takes: a bank's text is about 30 characters. */
 export const MAX_SEARCH_LENGTH = 60;
 
@@ -108,6 +115,31 @@ export const TRANSACTIONS_COPY = {
     from: "Del",
     to: "al",
     ofYear: "de",
+  },
+  // A movement's detail (docs/ui/v8-03), and what its column says before
+  // one is chosen. Its reasons follow "Por qué:" in lowercase, as the rules
+  // write theirs.
+  detail: {
+    close: "Cerrar el detalle",
+    bankText: "Así lo escribe el banco",
+    channel: "Canal",
+    reference: "Referencia",
+    referenceDots: "•••",
+    source: "Fuente",
+    balanceAfter: "Saldo después",
+    kind: "Tipo",
+    kinds: { income: "Ingreso", spending: "Gasto real", internal: "Movido" },
+    category: "Categoría",
+    noCategory: "Sin categoría",
+    why: "Por qué:",
+    systemRule: "Regla del sistema, sin IA.",
+    yours: "lo decidiste tú.",
+    unknown: "ninguna regla conoce este movimiento todavía.",
+    bestGuess: "Es nuestra mejor suposición: confírmala en la revisión.",
+    toReview: "Ir a la revisión",
+    emptyTitle: "Elige un movimiento",
+    emptyDescription:
+      "Verás cómo lo escribe el banco, su canal, de qué archivo viene y por qué tiene su categoría.",
   },
   // The summary, once movements count and before Phase 6.7 builds it.
   ready: {

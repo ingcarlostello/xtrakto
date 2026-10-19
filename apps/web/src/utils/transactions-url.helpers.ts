@@ -7,9 +7,9 @@ import {
   quarterPeriod,
 } from "@xtrakto/core";
 
-// The movements list keeps its filters in the URL, so a reload keeps them
-// and a link shares them:
-// `/transactions?account=…&period=2026-q3&q=nequi&filter=moved&show=60`.
+// The movements list keeps its filters and the movement it details in the
+// URL, so a reload keeps them and a link shares them:
+// `/transactions?account=…&period=2026-q3&q=nequi&filter=moved&show=60&movement=…`.
 
 export const TRANSACTIONS_PARAMS = {
   account: "account",
@@ -17,6 +17,7 @@ export const TRANSACTIONS_PARAMS = {
   search: "q",
   filter: "filter",
   shown: "show",
+  movement: "movement",
 } as const;
 
 /** What the list shows of the period: one kind, or what waits for review. */
@@ -95,6 +96,8 @@ type TransactionsLink = {
   /** Which movements it shows, kept across periods too. */
   readonly filter?: MovementFilter;
   readonly shown?: number;
+  /** The movement whose detail opens beside the list. */
+  readonly movementId?: string;
 };
 
 /** A link to the movements of an account in a period. */
@@ -104,6 +107,7 @@ export const transactionsHref = ({
   search,
   filter,
   shown,
+  movementId,
 }: TransactionsLink) => ({
   pathname: "/transactions" as const,
   query: {
@@ -116,5 +120,23 @@ export const transactionsHref = ({
     ...(search === undefined ? {} : { [TRANSACTIONS_PARAMS.search]: search }),
     ...(filter === undefined ? {} : { [TRANSACTIONS_PARAMS.filter]: filter }),
     ...(shown === undefined ? {} : { [TRANSACTIONS_PARAMS.shown]: shown }),
+    ...(movementId === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.movement]: movementId }),
+  },
+});
+
+/** The quick review of an account's quarter, with both in the URL (6.3b). */
+export const reviewHref = ({
+  accountId,
+  period,
+}: {
+  readonly accountId: string;
+  readonly period: MovementPeriod;
+}) => ({
+  pathname: "/review" as const,
+  query: {
+    [TRANSACTIONS_PARAMS.account]: accountId,
+    [TRANSACTIONS_PARAMS.period]: periodParam(period),
   },
 });

@@ -10,6 +10,7 @@ import {
   dayBalanceText,
   dayHeading,
   descriptionView,
+  detailLinks,
   groupByDay,
   movementSearchOf,
   movementTags,
@@ -184,6 +185,37 @@ describe("nextStep", () => {
     [2_000, 5_000],
   ])("brings nothing after %i of %i", (shown, total) => {
     expect(nextStep(shown, total, link)).toBeUndefined();
+  });
+});
+
+describe("detailLinks", () => {
+  const AUGUST = { kind: "month", year: 2026, month: 8 } as const;
+  const link = { accountId: "a1", period: AUGUST, filter: "review" } as const;
+
+  it("opens and closes a movement's detail keeping the list as it is", () => {
+    const links = detailLinks(link, { shown: 60, openId: "m1" });
+
+    expect(links.open("m2")).toEqual({
+      pathname: "/transactions",
+      query: {
+        account: "a1",
+        period: "2026-08",
+        filter: "review",
+        show: 60,
+        movement: "m2",
+      },
+    });
+    expect(links.close).toEqual({
+      pathname: "/transactions",
+      query: { account: "a1", period: "2026-08", filter: "review", show: 60 },
+    });
+    expect(links.openId).toBe("m1");
+  });
+
+  it("leaves out how many show while the list shows its first 30", () => {
+    expect(detailLinks(link, { shown: 12 }).close.query).not.toHaveProperty(
+      "show",
+    );
   });
 });
 

@@ -6,6 +6,7 @@ import {
 } from "@xtrakto/core";
 import {
   countCountedMovements,
+  findMovementDetail,
   findStatementBreaks,
   findUserId,
   listAccounts,
@@ -14,6 +15,7 @@ import {
   listMovementQuarters,
   listTransactions,
   listUnreconciledStatements,
+  type MovementDetail,
   type StatementBreaks,
   type UnreconciledStatement,
   type UserContext,
@@ -87,6 +89,16 @@ const locate = async (
   };
 };
 
+// The movement the URL details, when it's one of the account's that count.
+const detailOf = async (
+  ctx: UserContext,
+  accountId: string,
+  movementId: string | undefined,
+): Promise<MovementDetail | null> =>
+  movementId === undefined
+    ? null
+    : ((await findMovementDetail(ctx, { accountId, movementId })) ?? null);
+
 // The tiles and "Por revisar · 24" add up the whole period, whatever the
 // list shows of it.
 const periodKinds = async (
@@ -103,9 +115,9 @@ const periodKinds = async (
 /**
  * The signed-in user's movements that count, newest first, in the account
  * and period the URL asks, or the latest, matching its search when there's
- * one. `null` until a movement counts or a statement doesn't reconcile;
- * reading never creates the user's row. The Clerk id must come from the
- * session.
+ * one, and the detail of the movement it asks, when it's the account's.
+ * `null` until a movement counts or a statement doesn't reconcile; reading
+ * never creates the user's row. The Clerk id must come from the session.
  */
 export const getAccountTransactions = async (
   clerkUserId: string,
@@ -141,6 +153,7 @@ export const getAccountTransactions = async (
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
       ...(await periodKinds(ctx, shownPeriod)),
+      detail: await detailOf(ctx, located.account.id, request.movementId),
       currentYear,
     };
   });

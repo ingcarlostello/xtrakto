@@ -60,6 +60,12 @@ describe("transactionsSearchSchema", () => {
     expect(filterOf("internal")).toBeUndefined();
   });
 
+  it("reads the movement whose detail opens", () => {
+    expect(transactionsSearchSchema.parse({ movement: ACCOUNT }).movement).toBe(
+      ACCOUNT,
+    );
+  });
+
   it("leaves out what doesn't parse, so the list opens on its defaults", () => {
     expect(
       transactionsSearchSchema.parse({
@@ -67,6 +73,7 @@ describe("transactionsSearchSchema", () => {
         period: ["2026-q3", "2026-08"],
         filter: ["income", "moved"],
         show: "todos",
+        movement: "3001234567",
       }),
     ).toEqual({ show: 30 });
   });

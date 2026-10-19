@@ -186,7 +186,9 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3c Quick review: answered groups and the banner
 - [x] 6.3d Nequi numbers
 - [x] 6.3e "Lo que está en juego"
-- [ ] 6.3f Detail panel and corrections
+- [x] 6.3f Detail panel
+- [ ] 6.3g Corrections
+- [ ] 6.3h Your own accounts and undo
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
@@ -1119,7 +1121,7 @@ Phase 6.2 was split in two (about 550 changed lines), with the human's approval.
 
 #### 6.3a User rules
 
-Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval, in five when 6.3b came out at about 750, and in six when 6.3d was estimated at about 600 (2026-10-19). Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
+Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval, in five when 6.3b came out at about 750, in six when 6.3d was estimated at about 600, and in eight when 6.3f was estimated at about 1,000 (both on 2026-10-19). Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
 
 **Tasks**
 
@@ -1164,7 +1166,7 @@ Phase 6.3d was split in two (about 600 changed lines), with the human's approval
 
 - A rule for Nequi sends with a phone number (`nequi_out_number`, before `nequi_out`): a payment to a person, to review. A rule can ask for a reference of a kind.
 - A reference rule holds the ways its category allows: money that only moves, both; a payment to a person, money out; an income, money in. An ADR records it.
-- The Nequi group of `v8-02`: the quarter's numbers with their count and total and an "Es mío" switch. "Guardar" saves a rule for each number, moved for those marked and a payment to a person for the rest, and "Ninguno es mío" a payment to a person for every one. Answered, the group closes like the others, and "Cambiar" can mark more numbers as the user's; taking one back comes with 6.3f.
+- The Nequi group of `v8-02`: the quarter's numbers with their count and total and an "Es mío" switch. "Guardar" saves a rule for each number, moved for those marked and a payment to a person for the rest, and "Ninguno es mío" a payment to a person for every one. Answered, the group closes like the others, and "Cambiar" can mark more numbers as the user's; taking one back comes with 6.3h.
 - The switch joins the design system.
 
 **Done when:** a number marked as the user's counts as moved in every statement and in the next upload, and one marked as someone else's isn't asked again for money going out.
@@ -1181,18 +1183,41 @@ Phase 6.3d was split in two (about 600 changed lines), with the human's approval
 
 **Commit:** `feat(web): what's at stake in the review`
 
-#### 6.3f Detail panel and corrections
+#### 6.3f Detail panel
+
+Phase 6.3f was split in three (about 1,000 changed lines), with the human's approval on 2026-10-19: the panel here, the corrections in 6.3g, and the user's own accounts with their undo in 6.3h. Decided with the human: on phones, the detail opens as a full-screen sheet over the list, which its X, Escape or the browser's Back close, giving the focus back to the movement.
 
 **Tasks**
 
-- The detail panel of `v8-03`, moved here from 5.7: the movement's real fields (date, amount, "Así lo escribe el banco", channel, reference, balance after, source statement) and its kind and category with the reason ("Regla del sistema, sin IA"), which the user can change for that movement ("Guardar cambios") or for every movement with the same text ("Aplicar a los 3 parecidos", a user rule).
-- Mark a reference (a Nequi number) or a transfer recipient as "my own account", and undo it, also a Nequi number marked in the quick review (6.3d): its movements go back to what the table of rules says.
+- The detail panel of `v8-03`, moved here from 5.7: a movement of Movimientos opens it (`?movement=` in the URL, with the list's filters), beside the list from `lg` and as the sheet on phones. It shows the movement's real fields (date, amount, "Así lo escribe el banco", channel, the reference's last 4 digits, the statement it came from, balance after) and its kind and category with the reason: the rule's ("Regla del sistema, sin IA"), a best guess with the way to the quick review, or the user's answer.
+- With no movement chosen, the side column says what the panel shows. Later phases add theirs: the corrections (6.3g), "Es mío" and its undo (6.3h), "Es un pago fijo" (6.5), the plain-language title (8.6), and "También aparece como" with the other files (10.1).
+
+**Done when:** every field reads right from seeded data, a movement of another account or user never opens, and the panel works with the keyboard and at phone width.
+
+It came out at about 580 lines and lands in two commits of one pull request (decided with the human): the query, then the panel.
+
+**Commits:** `feat(db): movement detail query`, then `feat(web): movement detail panel`
+
+#### 6.3g Corrections
+
+**Tasks**
+
+- In the panel, the kind and the category become choices (`v8-03`), the kinds the money's direction allows: "Guardar cambios" gives that movement the user's category, and "Aplicar a los N parecidos" saves a rule for its text and direction (6.3a), in every statement. The bank's `0` makes no rule.
 - These corrections are the labeled data for Stage 14.
-- Probably near 500 lines: it may split again when it starts.
 
-**Done when:** actions validate input and ownership; tests cover correcting one movement, its similar ones, and an undo.
+**Done when:** actions validate input and ownership; tests cover correcting one movement and its similar ones.
 
-**Commit:** `feat(web): category corrections and own-account marking`
+**Commit:** `feat(web): category corrections`
+
+#### 6.3h Your own accounts and undo
+
+**Tasks**
+
+- Mark a reference (a Nequi number) or a transfer recipient as "my own account" from the panel, and undo it, also a Nequi number marked in the quick review (6.3d): its movements go back to what the user's other rules or the table of rules say.
+
+**Done when:** actions validate input and ownership; tests cover marking, an undo, and a number marked in the quick review.
+
+**Commit:** `feat(web): your own accounts and undo`
 
 #### 6.4 Summary computations
 

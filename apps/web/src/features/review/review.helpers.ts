@@ -14,9 +14,7 @@ import type { ReviewMovement } from "@xtrakto/db";
 import { accountShortLabel } from "@/utils/account-label.helpers";
 import {
   type MovementPeriod,
-  periodParam,
   quarterOf,
-  TRANSACTIONS_PARAMS,
 } from "@/utils/transactions-url.helpers";
 import { REVIEW_ANSWERS, REVIEW_GROUPS } from "./review.constants";
 import type {
@@ -124,7 +122,7 @@ const kindsOf = (movements: readonly ReviewMovement[]): KindShare[] => {
  * What answering the Nequi numbers saves: each number's rule, the user's
  * own for those marked and someone else's for the rest, which holds for
  * money going out to it (ADR 0026). A number already theirs stays theirs:
- * taking one back comes with 6.3f.
+ * taking one back comes with 6.3h.
  */
 export const numberRules = (
   numbers: readonly ReviewNumber[],
@@ -283,15 +281,3 @@ export const scopeText = ({
   period,
 }: Pick<Review, "account" | "period">): string =>
   `${formatQuarter(quarterOf(period))} · ${accountShortLabel(account, account.last4)}`;
-
-/** The review of an account's quarter, with both in the URL. */
-export const reviewHref = ({
-  account,
-  period,
-}: Pick<Review, "account" | "period">) => ({
-  pathname: "/review" as const,
-  query: {
-    [TRANSACTIONS_PARAMS.account]: account.id,
-    [TRANSACTIONS_PARAMS.period]: periodParam(period),
-  },
-});
