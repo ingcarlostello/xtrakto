@@ -80,7 +80,7 @@ const QUARTER = [
 ];
 
 describe("reviewGroupsOf", () => {
-  it("asks by group in the review's order, each text with its count, the amount at stake and how many", () => {
+  it("asks by group in the review's order, each text with its count, the amount at stake, how many and what they count as meanwhile", () => {
     expect(reviewGroupsOf(QUARTER)).toEqual([
       {
         id: "key_platforms",
@@ -91,6 +91,7 @@ describe("reviewGroupsOf", () => {
           ],
           amountMinor: -600_000_000,
           count: 3,
+          kinds: [{ kind: "internal", amountMinor: -600_000_000, count: 3 }],
         },
         answered: null,
       },
@@ -100,6 +101,7 @@ describe("reviewGroupsOf", () => {
           texts: [{ text: "PAGO LLAVE Maria Lopez", count: 1 }],
           amountMinor: -5_000_000,
           count: 1,
+          kinds: [{ kind: "spending", amountMinor: -5_000_000, count: 1 }],
         },
         answered: null,
       },
@@ -109,6 +111,7 @@ describe("reviewGroupsOf", () => {
           texts: [{ text: "TRANSFERENCIA DESDE NEQUI", count: 1 }],
           amountMinor: 120_000_000,
           count: 1,
+          kinds: [{ kind: "internal", amountMinor: 120_000_000, count: 1 }],
         },
         answered: null,
       },
@@ -118,9 +121,24 @@ describe("reviewGroupsOf", () => {
           texts: [{ text: "0", count: 2 }],
           amountMinor: -3_200_000,
           count: 2,
+          kinds: [{ kind: "spending", amountMinor: -3_200_000, count: 2 }],
         },
         answered: null,
       },
+    ]);
+  });
+
+  it("counts what waits by the kind it counts as meanwhile, the most first", () => {
+    const [m1, , m3, m4] = QUARTER;
+    if (!m1 || !m3 || !m4) throw new Error("No movements.");
+    // A guess an earlier table of rules gave, which counts as spending.
+    const earlier: ReviewMovement = { ...m3, categoryId: "other_spending" };
+
+    const [group] = reviewGroupsOf([m1, earlier, m4]);
+
+    expect(group?.pending?.kinds).toEqual([
+      { kind: "internal", amountMinor: -500_000_000, count: 2 },
+      { kind: "spending", amountMinor: -100_000_000, count: 1 },
     ]);
   });
 

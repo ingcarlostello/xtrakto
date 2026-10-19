@@ -6,7 +6,7 @@ import {
   NO_DESCRIPTION,
 } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
-import { countText, type Noun } from "@/utils/count-text.utils";
+import { countText, wordFor } from "@/utils/count-text.utils";
 import { REVIEW_ANSWERS, REVIEW_COPY as COPY } from "./review.constants";
 import type {
   GroupMovements,
@@ -20,9 +20,6 @@ import type {
 const QUOTED_TEXTS = 2;
 /** About what answering a group takes (docs/ui/v8-02: 4 groups, 2 minutes). */
 const SECONDS_PER_GROUP = 30;
-
-const wordFor = (count: number, { one, other }: Noun): string =>
-  count === 1 ? one : other;
 
 // "“A”", "“A” y “B”", "“A”, “B” y 3 más".
 const listOf = (items: readonly string[], more: number): string => {

@@ -20,13 +20,14 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
+import { kindTotalsOf } from "@/utils/kind-totals.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import {
   meetsPeriod,
   quarterChoices,
   selectPeriod,
 } from "./period-selector.helpers";
-import { kindTotalsOf, selectionOf } from "./kind-view.helpers";
+import { selectionOf } from "./kind-view.helpers";
 import { movementSearchOf } from "./transaction-list.helpers";
 import type {
   AccountTransactions,

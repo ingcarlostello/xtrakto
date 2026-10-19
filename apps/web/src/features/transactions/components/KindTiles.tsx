@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn.utils";
+import type { KindTotals } from "@/utils/kind-totals.helpers";
 import { KIND_ICONS, TONE_CLASSES } from "../category-icons.constants";
 import { kindTiles } from "../kind-view.helpers";
 import { TRANSACTIONS_COPY } from "../transaction.constants";
-import type { KindTile, KindTotals } from "../transaction.types";
+import type { KindTile } from "../transaction.types";
 
 // A kind's icon chip, label, total in its text color, and count (§9).
 function KindTileCard({ tone, label, totals, detail }: KindTile) {

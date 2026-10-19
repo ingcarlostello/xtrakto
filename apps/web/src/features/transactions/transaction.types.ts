@@ -4,6 +4,7 @@ import type {
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
+import type { KindTotals } from "@/utils/kind-totals.helpers";
 import type {
   MovementFilter,
   MovementPeriod,
@@ -102,20 +103,6 @@ export type PeriodOption = {
     readonly label: string;
     readonly variant: "ok" | "neutral" | "attention";
   };
-};
-
-/** Some movements of a kind: their amounts added up, and how many. */
-export type KindTotal = {
-  readonly amountMinor: AmountMinor;
-  readonly count: number;
-};
-
-/** A period's movements that count, by kind (design-system.md §3.4). */
-export type KindTotals = {
-  readonly income: KindTotal;
-  readonly spending: KindTotal;
-  /** Money that only moved goes both ways: out, and back. */
-  readonly moved: { readonly out: KindTotal; readonly back: KindTotal };
 };
 
 /**
