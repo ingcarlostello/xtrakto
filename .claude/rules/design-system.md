@@ -493,7 +493,7 @@ Pills without a border, Manrope 600 12px, on a soft background:
 
 ### Raw-text chip
 
-The bank's text exactly as printed, for the quick review, the profile and the detail panel: `--surface`, 1px `--ring-track` border, radius 8, padding 4px 10px, monospace 12px (§4), `white-space: pre`. Repeats show as "×3" beside it.
+The bank's text exactly as printed, for the quick review, the profile and the detail panel: `--surface`, 1px `--ring-track` border, radius 8, padding 4px 10px, monospace 12px (§4), `white-space: pre`, in `--text-muted`. Repeats show as "×3" beside it (Meta, `--text-muted`), which screen readers hear as "3 veces" (`RawTextChip`, `components/raw-text-chip/`; the waitlist's sample draws its own).
 
 ### Review banner
 
@@ -506,6 +506,12 @@ The quick review asks one question per group:
 - **Open:** `--surface-card`, `--radius-lg`, padding 24. Neutral icon chip, the question as card title ("¿Qué son estos pagos con llave (Bre-B)?"), one line of context, the amount at stake and its count on the right (Amount S, ink), the raw-text chips of the group, and the answers (Answer buttons, §9). A group of references (Nequi numbers) lists each one with its count and total and an "Es mío" switch, then "Guardar" and "Ninguno es mío".
 - **Answered:** collapses to one line on `--surface-card`: a check icon chip (`--income-soft`), the group and what it now counts as ("Son tuyas: 5 movimientos cuentan como movido.") and a "Cambiar" link.
 - Beside the groups, the panel "Lo que está en juego": progress ("2 de 6 respondidos"), each open group with its amount and what the answer would change ("Si son compras, tu gasto real sube a $30,4M"), and "Ver mi resumen" / "Responder después".
+
+As Phase 6.3b builds the quick review (`/review`, `ReviewGroupCard`):
+
+- **The page:** the title "Revisa antes de ver tu resumen" and v8's subtitle, then the account's quarter in Body small 600 `--text-secondary` ("Jul – sep 2026 · Cuenta de ahorros ••••8901"). The quarter is the account's latest, or the one the URL asks, as in Movimientos, with no picker. Below, one open card per group, at most 896px wide. A quarter with nothing to ask shows a card with "Nada por revisar en este trimestre", one line, and the link action "Ver movimientos". The dock lights Resumen.
+- **An open card:** a grid with the 44px neutral chip (`--surface-muted`, ink icon at 1.7), the question (Manrope 700 16px) and its context (Caption `--text-muted`), and the amount at stake with its sign and its count on the right. On phones the amount moves under the question. Then the raw-text chips, most repeated first, and the answers: small pills of 44px, the suggested one Primary and the others Secondary, inside a `role="group"` named "Respuestas", then "Sugerido: la primera" in Caption `--text-muted`.
+- **Sending:** each answer is a submit button of one form. While it sends, every button keeps its focus and waits (`aria-disabled`). An answered group leaves the page until 6.3c closes it in place. An answer that couldn't be saved says "No pudimos guardar tu respuesta. Vuelve a intentarlo." under the buttons, in Caption 600 `--danger`, as an alert.
 
 ### Coverage timeline
 
@@ -611,7 +617,7 @@ The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box,
 - `position: sticky; bottom: 16px`, centered.
 - Items: icon 22px above a 14px label, min-width 86px, padding 10px 14px, `--radius-md`.
 - Active item: `--primary-soft-2` background, `--primary` text and icon, weight 700, `aria-current="page"`.
-- Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil. Each one appears when its screen exists.
+- Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil. Each one appears when its screen exists. An item stands for the pages under it, and Resumen for the quick review too, as `v8-02` shows.
 
 ---
 

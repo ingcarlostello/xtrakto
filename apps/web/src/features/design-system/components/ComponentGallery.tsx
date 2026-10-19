@@ -2,6 +2,7 @@ import { CHANNELS } from "@xtrakto/core";
 import { Bell, CircleAlert, ShoppingCart, Tag, Upload } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { KindLegend } from "@/components/kind-legend/KindLegend";
+import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
@@ -225,6 +226,15 @@ function DataSections() {
         description="Bajo el título de cada pantalla que muestra tipos: verde, naranja y azul, siempre con su palabra."
       >
         <KindLegend />
+      </GallerySection>
+      <GallerySection
+        title="Texto del banco"
+        description="Tal como lo escribe el banco, con sus dobles espacios, y cuántas veces se repite."
+      >
+        <div className="flex flex-wrap gap-2">
+          <RawTextChip text="COMPRA EN  MERCADO XYZ" count={3} />
+          <RawTextChip text="PAGO LLAVE INVERSIONES XY" count={1} />
+        </div>
       </GallerySection>
       <GallerySection
         title="Formularios"
