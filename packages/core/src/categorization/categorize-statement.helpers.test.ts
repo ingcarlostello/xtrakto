@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { amountMinorSchema } from "../money/money.schemas";
 import { prepareStatement } from "../statements/prepared-statement.helpers";
 import { parsedStatementSchema } from "../statements/statement.schemas";
-import { categorizeStatement } from "./categorize-statement.helpers";
+import {
+  categorizeStatement,
+  savedMovementCategory,
+} from "./categorize-statement.helpers";
+import type { CategorizationRuleId } from "./categorization.types";
+import { compileUserRules } from "./user-rule.helpers";
 
 const KEY = "test-key-with-at-least-32-characters!";
 
@@ -137,5 +143,97 @@ describe("categorizeStatement", () => {
 
     expect(categorized.contentHash).toBe(statement.contentHash);
     expect(categorized.transactions).toMatchObject(statement.transactions);
+  });
+});
+
+describe("savedMovementCategory", () => {
+  // A key payment saved before, whose table rule guessed a payment to a person.
+  const saved = (
+    changes: Partial<Parameters<typeof savedMovementCategory>[0]> = {},
+  ): Parameters<typeof savedMovementCategory>[0] => ({
+    descriptionNormalized: "PAGO LLAVE Maria Lopez",
+    amountMinor: amountMinorSchema.parse(-6_000_000),
+    categoryRuleId: "key_payment",
+    ...changes,
+  });
+
+  it("gives it the user's other rule first", () => {
+    const rules = compileUserRules([
+      {
+        target: "description",
+        descriptionFolded: "PAGO LLAVE MARIA LOPEZ",
+        direction: "out",
+        categoryId: "investment",
+      },
+    ]);
+
+    expect(savedMovementCategory(saved(), rules)).toEqual({
+      categoryId: "investment",
+      categorySource: "user",
+      isPendingReview: false,
+    });
+  });
+
+  it("gives it a number's rule, which holds both ways for money that only moves", () => {
+    const rules = compileUserRules([
+      {
+        target: "reference",
+        referenceHash: "h1",
+        categoryId: "own_account_transfer",
+      },
+    ]);
+    const back = saved({
+      descriptionNormalized: "TRANSFERENCIA DESDE NEQUI",
+      amountMinor: amountMinorSchema.parse(2_000_000),
+      referenceHash: "h1",
+      categoryRuleId: "nequi_in",
+    });
+
+    expect(savedMovementCategory(back, rules)?.categorySource).toBe("user");
+  });
+
+  it.each([
+    [
+      "the table's guess, to review again",
+      "key_payment" as const,
+      {
+        categoryId: "transfers_to_people",
+        categorySource: "rule",
+        isPendingReview: true,
+      },
+    ],
+    [
+      "the table's sure category",
+      "transfer_out" as const,
+      {
+        categoryId: "transfers_to_people",
+        categorySource: "rule",
+        isPendingReview: false,
+      },
+    ],
+    [
+      "no category when no rule knew it",
+      null,
+      { categoryId: null, categorySource: null, isPendingReview: false },
+    ],
+  ])(
+    "gives it back %s without a rule of the user's",
+    (_, categoryRuleId, category) => {
+      expect(
+        savedMovementCategory(saved({ categoryRuleId }), compileUserRules([])),
+      ).toEqual(category);
+    },
+  );
+
+  it("leaves it as it is when the table no longer has its rule", () => {
+    // An id a later table might drop, as movements keep it (ADR 0025).
+    const retired = "retired_rule" as CategorizationRuleId;
+
+    expect(
+      savedMovementCategory(
+        saved({ categoryRuleId: retired }),
+        compileUserRules([]),
+      ),
+    ).toBeUndefined();
   });
 });

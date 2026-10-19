@@ -91,6 +91,7 @@ export {
   listUserCategoryRules,
   saveUserCategoryRule,
 } from "./user-category-rules/user-category-rule.queries";
+export { deleteUserCategoryRule } from "./user-category-rules/user-category-rule-undo.queries";
 export {
   deleteAllUserData,
   findOrCreateUser,
