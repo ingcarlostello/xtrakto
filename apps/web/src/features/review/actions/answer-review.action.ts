@@ -9,8 +9,8 @@ import type { AnswerState } from "../review.types";
 
 /**
  * Answers a group of the quick review from its form, and refreshes the page
- * so the group leaves it. The form is validated here, whatever it sends,
- * and whose movements they are comes only from the session.
+ * so the group shows what it answered. The form is validated here, whatever
+ * it sends, and whose movements they are comes only from the session.
  */
 export async function answerReview(
   _previous: AnswerState,

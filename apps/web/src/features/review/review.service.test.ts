@@ -118,11 +118,17 @@ describe.skipIf(!testDatabase)("quick review", () => {
       "corresponsal",
       "pse_banks",
     ]);
-    expect(review?.groups[0]?.texts).toEqual([
+    expect(review?.groups[0]?.pending?.texts).toEqual([
       { text: "TRANSF A Ana Maria Pru", count: 1 },
       { text: "TRANSF A ANA MARIA PRUEB", count: 1 },
     ]);
   });
+
+  // What the review says now of the quarter's key payment to a person.
+  const keyPeopleOf = async (clerkUserId: string, period = QUARTER) =>
+    (await getReview(clerkUserId, { period }))?.groups.find(
+      ({ id }) => id === "key_people",
+    );
 
   it("answers a group in every statement and in the next upload", async () => {
     const { clerkUserId, userId, accountId } = await newUser();
@@ -136,14 +142,35 @@ describe.skipIf(!testDatabase)("quick review", () => {
     await upload(userId, "movements-basic");
 
     expect(answered).toEqual({ ok: true, value: null });
-    // Only that group leaves the quarter's review: the others keep their
-    // guesses. October, the latest quarter now, has nothing to ask.
+    // The group stays in its place, closed, saying what it counts as now;
+    // the others keep asking.
+    const review = await getReview(clerkUserId, { period: QUARTER });
     expect(
-      (await getReview(clerkUserId, { period: QUARTER }))?.groups.map(
-        ({ id }) => id,
-      ),
-    ).toEqual(["own_name", "corresponsal", "pse_banks"]);
-    expect((await getReview(clerkUserId, {}))?.groups).toEqual([]);
+      review?.groups.map(({ id, pending }) => [id, pending === null]),
+    ).toEqual([
+      ["own_name", false],
+      ["key_people", true],
+      ["corresponsal", false],
+      ["pse_banks", false],
+    ]);
+    expect((await keyPeopleOf(clerkUserId))?.answered?.outcomes).toEqual([
+      {
+        said: "Compras",
+        categoryId: "other_spending",
+        isGuessKept: false,
+        count: 1,
+      },
+    ]);
+    // October, the latest quarter now, asks nothing: its key payment comes
+    // answered by the rule.
+    const latest = await getReview(clerkUserId, {});
+    expect(
+      latest?.groups.map(({ id, pending, answered }) => ({
+        id,
+        isOpen: pending !== null,
+        said: answered?.outcomes.map(({ said }) => said),
+      })),
+    ).toEqual([{ id: "key_people", isOpen: false, said: ["Compras"] }]);
     const movements = await keyPaymentOf(userId, accountId);
     expect(movements.map(({ date }) => date)).toEqual([
       expect.stringMatching(/^2026-10-/),
@@ -165,6 +192,70 @@ describe.skipIf(!testDatabase)("quick review", () => {
     expect(october.items.some(({ isPendingReview }) => isPendingReview)).toBe(
       false,
     );
+  });
+
+  it("asks an answered group again, and changes the answer in every statement", async () => {
+    const { clerkUserId, userId, accountId } = await newUser();
+    const answer = (choice: "purchase" | "person") =>
+      answerReviewGroup(clerkUserId, {
+        group: "key_people",
+        answer: choice,
+        account: accountId,
+        period: QUARTER,
+      });
+    await answer("purchase");
+    await upload(userId, "movements-basic");
+
+    const changed = await answer("person");
+
+    expect(changed).toEqual({ ok: true, value: null });
+    expect((await keyPeopleOf(clerkUserId))?.answered?.outcomes).toEqual([
+      {
+        said: "Pagos a otras personas",
+        categoryId: "transfers_to_people",
+        isGuessKept: false,
+        count: 1,
+      },
+    ]);
+    // October's movement follows the rule's new answer.
+    for (const movement of await keyPaymentOf(userId, accountId))
+      expect(movement).toMatchObject({
+        categoryId: "transfers_to_people",
+        isPendingReview: false,
+      });
+    expect(
+      await withUserContext(app.db, userId, listUserCategoryRules),
+    ).toMatchObject([{ categoryId: "transfers_to_people" }]);
+  });
+
+  it('answers a group again after "No sé", with a rule this time', async () => {
+    const { clerkUserId, userId, accountId } = await newUser();
+    const answer = (choice: "unsure" | "purchase") =>
+      answerReviewGroup(clerkUserId, {
+        group: "key_people",
+        answer: choice,
+        account: accountId,
+        period: QUARTER,
+      });
+    await answer("unsure");
+    const unsure = (await keyPeopleOf(clerkUserId))?.answered?.outcomes;
+
+    await answer("purchase");
+
+    expect(unsure).toEqual([
+      {
+        said: "No sé",
+        categoryId: "transfers_to_people",
+        isGuessKept: true,
+        count: 1,
+      },
+    ]);
+    expect(await keyPaymentOf(userId, accountId)).toMatchObject([
+      { categoryId: "other_spending", isPendingReview: false },
+    ]);
+    expect(
+      await withUserContext(app.db, userId, listUserCategoryRules),
+    ).toMatchObject([{ categoryId: "other_spending" }]);
   });
 
   it("takes what the user doesn't know out of the review, keeping the guess and no rule", async () => {
