@@ -140,12 +140,14 @@ const heldByReference = ({ tx }: UserContext, direction: MoneyDirection) =>
       ),
     );
 
-// The user's movements a rule holds for, or none. A reference's rule holds
-// the ways its category allows (ADR 0026). A text rule compares texts as
-// `userRuleTextOf` writes them, which SQL can't, so it reads the user's
-// distinct texts going that way first; it leaves what a reference's rule
-// says.
-const movementsOfRule = async (
+/**
+ * The user's movements a rule holds for, or none. A reference's rule holds
+ * the ways its category allows (ADR 0026). A text rule compares texts as
+ * `userRuleTextOf` writes them, which SQL can't, so it reads the user's
+ * distinct texts going that way first; it leaves what a reference's rule
+ * says.
+ */
+export const movementsOfRule = async (
   ctx: UserContext,
   rule: UserCategoryRule,
 ): Promise<SQL | undefined> => {

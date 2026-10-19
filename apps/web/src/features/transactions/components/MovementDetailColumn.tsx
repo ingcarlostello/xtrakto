@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { correctionView } from "../correction.helpers";
 import { movementDetailView } from "../movement-detail.helpers";
+import { ownRulesView } from "../own-rules.helpers";
 import { listLinkOf } from "../period-selector.helpers";
 import { detailLinks } from "../transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "../transaction.constants";
@@ -39,6 +40,7 @@ export function MovementDetailColumn({
           key={detail.movement.id}
           view={movementDetailView(detail.movement, account.id)}
           correction={correctionView(detail, account.id)}
+          own={ownRulesView(detail, account.id)}
           closeHref={close}
         />
       ) : (

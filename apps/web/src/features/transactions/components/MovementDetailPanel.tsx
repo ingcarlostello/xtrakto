@@ -13,10 +13,12 @@ import {
 import type {
   CorrectionView,
   MovementDetailView,
+  OwnRulesView,
   TransactionsHref,
 } from "../transaction.types";
 import { CorrectionForm } from "./CorrectionForm";
 import { MovementIcon } from "./MovementIcon";
+import { OwnRules } from "./OwnRules";
 import { MovementSheet } from "./MovementSheet";
 
 const COPY = TRANSACTIONS_COPY.detail;
@@ -105,15 +107,16 @@ function DetailReason({ view }: { view: MovementDetailView }) {
 }
 
 /**
- * A movement's detail (docs/ui/v8-03): its real fields, and its kind and
- * category with why, which the user can change. Beside the list from `lg`,
- * a sheet over it on phones.
+ * A movement's detail (docs/ui/v8-03): its real fields, its Nequi number
+ * and the user's rules for it, and its kind and category with why, which
+ * the user can change. Beside the list from `lg`, a sheet on phones.
  */
 export function MovementDetailPanel({
   view,
   correction,
+  own,
   closeHref,
-}: PanelProps & { correction: CorrectionView }) {
+}: PanelProps & { correction: CorrectionView; own: OwnRulesView }) {
   const rowId = movementLinkId(view.id);
   const titleId = `${rowId}-detail`;
   return (
@@ -136,6 +139,7 @@ export function MovementDetailPanel({
           <RawTextChip text={view.bankText} />
         </div>
         <DetailFacts view={view} />
+        <OwnRules view={own} />
         <CorrectionForm view={correction} isGuess={view.isGuess}>
           <DetailReason view={view} />
         </CorrectionForm>

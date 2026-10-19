@@ -6,6 +6,7 @@ import type {
   CategoryKind,
   LocalDate,
   Result,
+  UserCategoryRule,
 } from "@xtrakto/core";
 import type {
   AccountRow,
@@ -19,7 +20,7 @@ import type {
   MovementPeriod,
   reviewHref,
 } from "@/utils/transactions-url.helpers";
-import type { CORRECTION_SCOPE } from "./transaction.constants";
+import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
 
 /** A quarter to choose from, with what its movements say about it. */
 export type QuarterChoice = CalendarQuarter & {
@@ -114,11 +115,46 @@ export type DetailLinks = {
   readonly openId?: string;
 };
 
-/** The movement the URL details, and how many others a rule for its text would change. */
+type ReferenceRule = Extract<UserCategoryRule, { target: "reference" }>;
+type DescriptionRule = Extract<UserCategoryRule, { target: "description" }>;
+
+/** The user's rules that hold for a movement: its number's, and its text's. */
+export type MovementRules = {
+  readonly number: ReferenceRule | null;
+  readonly text: DescriptionRule | null;
+};
+
+/** The movement the URL details, how many others a rule for its text would change, and the user's rules for it. */
 export type OpenMovement = {
   readonly movement: MovementDetail;
   /** `null` for the bank's `0` or a movement of 0, which make no rule. */
   readonly similar: number | null;
+  readonly rules: MovementRules;
+};
+
+export type RuleChange = (typeof RULE_CHANGE)[keyof typeof RULE_CHANGE];
+
+/** A change from the detail's own block: a number made the user's, or a rule undone (6.3h). */
+export type RuleChangeInput = {
+  readonly account: string;
+  readonly movement: string;
+  readonly intent: RuleChange;
+};
+
+/** What the detail's own block shows after sending: nothing yet, or how it went. */
+export type RuleChangeState = Result<RuleChange, AppError> | null;
+
+/** A movement's Nequi number and the user's rule for its text, as the detail shows them. */
+export type OwnRulesView = {
+  readonly accountId: string;
+  readonly movementId: string;
+  /** Its Nequi number, whether the user said it's theirs; `null` without one. */
+  readonly number: {
+    readonly label: string;
+    readonly state: "unknown" | "mine" | "theirs";
+  } | null;
+  /** What the user's rule for its text gives: "«Inversiones»". */
+  readonly textRule: string | null;
 };
 
 export type CorrectionScope =

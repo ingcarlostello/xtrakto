@@ -22,7 +22,11 @@ export {
   categorizeByRules,
   moneyDirectionOf,
 } from "./categorization/categorization.helpers";
-export { categorizeStatement } from "./categorization/categorize-statement.helpers";
+export {
+  categorizeStatement,
+  type SavedCategory,
+  savedMovementCategory,
+} from "./categorization/categorize-statement.helpers";
 export type {
   CategorizableTransaction,
   CategorizationContext,
@@ -35,6 +39,7 @@ export type {
   UserCategoryRule,
 } from "./categorization/categorization.types";
 export {
+  compileUserRules,
   descriptionRuleFor,
   referenceRuleDirection,
   userRuleTextOf,

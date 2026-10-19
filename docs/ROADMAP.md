@@ -188,7 +188,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3e "Lo que está en juego"
 - [x] 6.3f Detail panel
 - [x] 6.3g Corrections
-- [ ] 6.3h Your own accounts and undo
+- [x] 6.3h Your own accounts and undo
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
@@ -1213,13 +1213,17 @@ It came out at about 460 lines and lands in commits of one pull request (decided
 
 #### 6.3h Your own accounts and undo
 
+Decided when it started (2026-10-19): "Es mío" is for Nequi numbers, as the quick review asks (6.3d); a transfer recipient, a bank text, becomes the user's with 6.3g's "Aplicar a los parecidos" as "Entre tus cuentas". An undo deletes the rule, and its movements take what the user's other rules say, else the table's rule each one kept (ADR 0025, amended).
+
 **Tasks**
 
-- Mark a reference (a Nequi number) or a transfer recipient as "my own account" from the panel, and undo it, also a Nequi number marked in the quick review (6.3d): its movements go back to what the user's other rules or the table of rules say.
+- In the panel, "Es mío" for a Nequi send or receipt with its number, which saves the number's rule as moved, and "Deshacer" for the rule of its number, also one marked in the quick review (6.3d), and for the rule of its text: its movements go back to what the user's other rules or the table of rules say.
 
 **Done when:** actions validate input and ownership; tests cover marking, an undo, and a number marked in the quick review.
 
-**Commit:** `feat(web): your own accounts and undo`
+It came out at about 560 lines and lands in commits of one pull request (decided with the human): the undo's query, then the panel.
+
+**Commits:** `feat(db): undo a user's category rule`, then `feat(web): your own accounts and undo`
 
 #### 6.4 Summary computations
 

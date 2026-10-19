@@ -26,4 +26,4 @@ Phase 6.3 lets the user answer the quick review by group and correct a movement,
 - An answer changes movements of every period and account of the user, as "Tus reglas" promises ("aplicado a todos tus extractos").
 - A rule whose text the bank writes differently next time doesn't hold; the review asks again.
 - Saving a text's rule leaves the movements already saved that a reference's rule holds, as ingestion does (6.3g); before 6.3g it gave them its category too.
-- Undoing an answer (6.3h) must recategorize its movements by the table again, from their texts and the account's holder name.
+- Undoing an answer (6.3h) deletes its rule, and the movements it held take what the user's other rules say, else the table's rule each one kept (`category_rule_id`), with its guess and review, instead of running the table again on their texts and the account's holder name. A movement whose rule the table dropped keeps its category. Undoing a text's rule also undoes the corrections of single movements with that text (6.3g), which nothing tells apart from it.

@@ -2,6 +2,7 @@ import type {
   CategorizationRuleId,
   CategorySource,
   Period,
+  ReferenceKind,
 } from "@xtrakto/core";
 import { and, eq } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
@@ -21,6 +22,9 @@ import { transactions } from "./transaction.schemas";
 export type MovementDetail = TransactionListItem & {
   /** Its text as rules read it, which a rule for its text compares (6.3g). */
   readonly descriptionNormalized: string;
+  /** The number it went to or came from, as its HMAC, which a rule names (6.3h). */
+  readonly referenceHash: string | null;
+  readonly referenceKind: ReferenceKind | null;
   /** The last 4 digits of the number it went to or came from, when it had one. */
   readonly referenceLast4: string | null;
   readonly categorySource: CategorySource | null;
@@ -44,6 +48,8 @@ export const findMovementDetail = async (
     .select({
       ...LIST_ITEM_COLUMNS,
       descriptionNormalized: transactions.descriptionNormalized,
+      referenceHash: transactions.referenceHash,
+      referenceKind: transactions.referenceKind,
       referenceLast4: transactions.referenceLast4,
       categorySource: transactions.categorySource,
       categoryRuleId: transactions.categoryRuleId,

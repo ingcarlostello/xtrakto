@@ -106,7 +106,10 @@ export const userCategoryOf = (
  * nothing of what a movement was, and for a movement of 0.
  */
 export const descriptionRuleFor = (
-  { descriptionNormalized, amountMinor }: CategorizableTransaction,
+  {
+    descriptionNormalized,
+    amountMinor,
+  }: Pick<CategorizableTransaction, "descriptionNormalized" | "amountMinor">,
   categoryId: CategoryId,
 ): UserCategoryRule | null => {
   const direction = moneyDirectionOf(amountMinor);

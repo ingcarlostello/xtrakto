@@ -471,6 +471,13 @@ As Phase 6.3g makes them choices (`CorrectionForm`):
 - **Why** follows, then the Primary "Guardar cambios", which gives that movement the user's category, and, when its text makes a rule (not the bank's `0`), the Secondary "Aplicar a los 3 parecidos" ("Aplicar al parecido" for one, "Aplicar también a los próximos" when no other movement has its text), which saves the rule for its text and direction and gives the category to every movement with it, in every statement. While it sends, both keep their focus and wait (`aria-disabled`).
 - **After saving:** the page refreshes the list, its totals and the panel, whose reason becomes "lo decidiste tú.", and a polite status says what changed in Caption 600 `--text-secondary`: "Listo: este movimiento cuenta como movido." or "Listo: los movimientos con este texto cuentan como gasto real, también los próximos." A failure says "No pudimos guardar el cambio. Vuelve a intentarlo." in Caption 600 `--danger`, as an alert.
 
+As Phase 6.3h adds what the user said is theirs (`OwnRules`), between the lines and the choices:
+
+- **A Nequi number:** a send to Nequi, or money from it, that carries the number (only movements exports do) shows a row with a `--divider` line above it: the 44px neutral chip (`--surface-muted`, ink icon at 1.7) with `smartphone`, "Nequi ••• 1270" in Manrope 700 14px, and what the user said in Caption `--text-muted`: "¿Es tuyo? Lo que le envías y lo que llega de él contaría como movido.", "Es tuyo: lo que le envías y lo que llega de él cuenta como movido." or "Dijiste que no es tuyo." Under them, the small Secondary "Es mío" until it's the user's, and the link action "Deshacer" once they answered, here or in the quick review, read with the number ("Deshacer: Nequi ••• 1270").
+- **The user's rule for its text:** the same row with `tag`, "Tu regla para este texto" and "Los movimientos con este texto cuentan como «Inversiones».", and "Deshacer" ("Deshacer tu regla para este texto"). Without a number or a rule, the block takes no room.
+- **After a change:** the page refreshes the list, its totals and the panel, and the polite status of 6.3g says it: "Listo: ese Nequi es tuyo.", "Listo: deshicimos tu respuesta para ese Nequi." or "Listo: deshicimos tu regla para este texto."; a failure is its alert. An undone rule's movements take what the user's other rules say, else the table's guess again, with "Por revisar". The focus goes to the button that takes the place of the one pressed ("Deshacer" after "Es mío", and back), or to the status when its row leaves. While it sends, the buttons keep their focus and wait (`aria-disabled`).
+- **The choices** show the movement's kind and category again when the page brings others, as after "Es mío", and keep the user's choice after saving.
+
 ### Where a statement doesn't reconcile ("Ver dónde no cuadra")
 
 As Phase 5.7d builds it, from `v8-13`'s "El saldo no cuadra" (`StatementBreaksView`, `/transactions/breaks/<id>`):
@@ -545,7 +552,7 @@ As Phase 6.3d asks about the Nequi numbers (`NumbersCard`, `NumbersForm`), after
 
 - **Open:** the same card, with the `smartphone` chip, "¿Alguno de estos números de Nequi es tuyo?" and its context, and the amount and count of the sends that wait. Below, one row per number, the most sends first, each with a `--divider` line above it: the raw-text chip with the bank's text and the number's digits ("TRANSFERENCIAS A NEQUI · ref ••• 1270"), what went there in Meta `--text-muted` ("6 envíos · $480.000"), and "Es mío" with its switch on the right, under them on phones. Then a small Primary "Guardar" and a small Secondary "Ninguno es mío".
 - **Answered:** the closed card names the numbers instead of the bank's text ("Números de Nequi (••• 4567 y ••• 6543)"), with "Son tuyos: 1 movimiento cuenta como movido." and "No son tuyos: 1 movimiento cuenta como gasto real."
-- **Cambiar:** a number already the user's reads "Es tuyo", without a switch (taking it back comes with 6.3h); the others keep theirs. "Mantener mi respuesta" replaces "Ninguno es mío", and "Guardar" leaves when no number is left to mark.
+- **Cambiar:** a number already the user's reads "Es tuyo", without a switch (its movement's detail takes it back, 6.3h); the others keep theirs. "Mantener mi respuesta" replaces "Ninguno es mío", and "Guardar" leaves when no number is left to mark.
 
 As Phase 6.3e builds "Lo que está en juego" (`StakesPanel`), beside the groups, under them on phones:
 

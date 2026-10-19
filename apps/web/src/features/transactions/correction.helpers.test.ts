@@ -27,6 +27,8 @@ const movement = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   balanceAfterMinor: null,
   categoryId: "transfers_to_people",
   isPendingReview: true,
+  referenceHash: null,
+  referenceKind: "none",
   referenceLast4: null,
   categorySource: "rule",
   categoryRuleId: "key_payment",
@@ -36,6 +38,8 @@ const movement = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   },
   ...changes,
 });
+
+const NO_RULES = { number: null, text: null };
 
 describe("kindChoices", () => {
   it.each([
@@ -77,7 +81,12 @@ describe("fitsMovement", () => {
 
 describe("correctionView", () => {
   it("starts on the kind and category the movement has, with how many like it", () => {
-    expect(correctionView({ movement: movement(), similar: 3 }, "a1")).toEqual({
+    expect(
+      correctionView(
+        { movement: movement(), similar: 3, rules: NO_RULES },
+        "a1",
+      ),
+    ).toEqual({
       accountId: "a1",
       movementId: "m1",
       kinds: ["spending", "internal"],
@@ -93,16 +102,17 @@ describe("correctionView", () => {
     [null, null],
   ])("offers to apply it to %s like it as %s", (similar, label) => {
     expect(
-      correctionView({ movement: movement(), similar }, "a1").applyLabel,
+      correctionView({ movement: movement(), similar, rules: NO_RULES }, "a1")
+        .applyLabel,
     ).toBe(label);
   });
 
   it("starts on Movido for money that only moved", () => {
     const moved = movement({ categoryId: "investment" });
 
-    expect(correctionView({ movement: moved, similar: 0 }, "a1")).toMatchObject(
-      { kind: "internal", categoryId: "investment" },
-    );
+    expect(
+      correctionView({ movement: moved, similar: 0, rules: NO_RULES }, "a1"),
+    ).toMatchObject({ kind: "internal", categoryId: "investment" });
   });
 
   it("starts money in without a category on income, choosing none yet", () => {
@@ -115,7 +125,7 @@ describe("correctionView", () => {
     });
 
     expect(
-      correctionView({ movement: unknown, similar: 0 }, "a1"),
+      correctionView({ movement: unknown, similar: 0, rules: NO_RULES }, "a1"),
     ).toMatchObject({
       kinds: ["income", "internal"],
       kind: "income",
@@ -127,7 +137,7 @@ describe("correctionView", () => {
     const misfit = movement({ amountMinor: amount(100_000) });
 
     expect(
-      correctionView({ movement: misfit, similar: 0 }, "a1"),
+      correctionView({ movement: misfit, similar: 0, rules: NO_RULES }, "a1"),
     ).toMatchObject({ kind: "income", categoryId: null });
   });
 });
