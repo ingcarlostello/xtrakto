@@ -18,7 +18,10 @@ export {
   MONEY_DIRECTION,
   NO_DESCRIPTION,
 } from "./categorization/categorization.constants";
-export { categorizeByRules } from "./categorization/categorization.helpers";
+export {
+  categorizeByRules,
+  moneyDirectionOf,
+} from "./categorization/categorization.helpers";
 export { categorizeStatement } from "./categorization/categorize-statement.helpers";
 export type {
   CategorizableTransaction,

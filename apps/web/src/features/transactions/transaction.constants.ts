@@ -2,6 +2,7 @@
 // bank's text as printed with its channel and category (Phase 6.1b) and
 // signed amounts. Kinds come with 6.2. The Spanish copy lives here, in one
 // place (project rules §5).
+import type { CategoryId, CategoryKind } from "@xtrakto/core";
 
 /** How many movements the list adds each time ("Mostrar 30 más"). */
 export const MOVEMENTS_STEP = 30;
@@ -18,6 +19,19 @@ export const DETAIL_CLOSE_ATTRIBUTE = "data-detail-close";
 /** The id of a movement's link in the list, which gets the focus back once its detail closes. */
 export const movementLinkId = (movementId: string): string =>
   `movement-${movementId}`;
+
+/** What a correction changes: that movement, or every one with its text too (6.3g). */
+export const CORRECTION_SCOPE = {
+  MOVEMENT: "movement",
+  SIMILAR: "similar",
+} as const;
+
+/** The category a kind starts on when the user chooses it: what it says when nothing more is known. */
+export const DEFAULT_CATEGORY_OF_KIND = {
+  spending: "other_spending",
+  income: "other_income",
+  internal: "own_account_transfer",
+} as const satisfies Record<CategoryKind, CategoryId>;
 
 /** The longest search the list takes: a bank's text is about 30 characters. */
 export const MAX_SEARCH_LENGTH = 60;
@@ -137,6 +151,21 @@ export const TRANSACTIONS_COPY = {
     unknown: "ninguna regla conoce este movimiento todavía.",
     bestGuess: "Es nuestra mejor suposición: confírmala en la revisión.",
     toReview: "Ir a la revisión",
+    // Its kind and category as choices (6.3g): "Aplicar a los 3 parecidos",
+    // then "Listo: este movimiento cuenta como movido."
+    save: "Guardar cambios",
+    applyToOne: "Aplicar al parecido",
+    applyToMany: { before: "Aplicar a los", after: "parecidos" },
+    applyToNext: "Aplicar también a los próximos",
+    kindWords: {
+      income: "ingreso",
+      spending: "gasto real",
+      internal: "movido",
+    },
+    savedOne: "Listo: este movimiento cuenta como",
+    savedSimilar: "Listo: los movimientos con este texto cuentan como",
+    andNext: "también los próximos",
+    failed: "No pudimos guardar el cambio. Vuelve a intentarlo.",
     emptyTitle: "Elige un movimiento",
     emptyDescription:
       "Verás cómo lo escribe el banco, su canal, de qué archivo viene y por qué tiene su categoría.",

@@ -1,7 +1,6 @@
-import { CircleAlert, Info, Tag, X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import Link from "next/link";
 import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
-import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn.utils";
@@ -12,9 +11,11 @@ import {
   TRANSACTIONS_COPY,
 } from "../transaction.constants";
 import type {
+  CorrectionView,
   MovementDetailView,
   TransactionsHref,
 } from "../transaction.types";
+import { CorrectionForm } from "./CorrectionForm";
 import { MovementIcon } from "./MovementIcon";
 import { MovementSheet } from "./MovementSheet";
 
@@ -59,34 +60,19 @@ function DetailHeading({
   );
 }
 
-// Its channel, reference, source, balance after and kind, then its
-// category, or the guess waiting for review.
+// Its channel, reference, source and balance after, those it has.
 function DetailFacts({ view }: { view: MovementDetailView }) {
-  const row =
-    "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-divider py-2.5";
   return (
     <dl className="flex flex-col">
       {view.facts.map(({ label, value }) => (
-        <div key={label} className={row}>
+        <div
+          key={label}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-divider py-2.5"
+        >
           <dt className="text-meta text-ink-muted">{label}</dt>
           <dd className="text-caption text-ink">{value}</dd>
         </div>
       ))}
-      <div className={row}>
-        <dt className="text-meta text-ink-muted">{COPY.category}</dt>
-        <dd className="flex flex-wrap gap-1.5">
-          <Badge>
-            <Tag aria-hidden />
-            {view.category}
-          </Badge>
-          {view.isGuess && (
-            <Badge variant="review">
-              <CircleAlert aria-hidden />
-              {TRANSACTIONS_COPY.tags.pendingReview}
-            </Badge>
-          )}
-        </dd>
-      </div>
     </dl>
   );
 }
@@ -120,9 +106,14 @@ function DetailReason({ view }: { view: MovementDetailView }) {
 
 /**
  * A movement's detail (docs/ui/v8-03): its real fields, and its kind and
- * category with why. Beside the list from `lg`, a sheet over it on phones.
+ * category with why, which the user can change. Beside the list from `lg`,
+ * a sheet over it on phones.
  */
-export function MovementDetailPanel({ view, closeHref }: PanelProps) {
+export function MovementDetailPanel({
+  view,
+  correction,
+  closeHref,
+}: PanelProps & { correction: CorrectionView }) {
   const rowId = movementLinkId(view.id);
   const titleId = `${rowId}-detail`;
   return (
@@ -145,7 +136,9 @@ export function MovementDetailPanel({ view, closeHref }: PanelProps) {
           <RawTextChip text={view.bankText} />
         </div>
         <DetailFacts view={view} />
-        <DetailReason view={view} />
+        <CorrectionForm view={correction} isGuess={view.isGuess}>
+          <DetailReason view={view} />
+        </CorrectionForm>
       </Card>
     </MovementSheet>
   );

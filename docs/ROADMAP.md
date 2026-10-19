@@ -187,7 +187,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3d Nequi numbers
 - [x] 6.3e "Lo que está en juego"
 - [x] 6.3f Detail panel
-- [ ] 6.3g Corrections
+- [x] 6.3g Corrections
 - [ ] 6.3h Your own accounts and undo
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
@@ -1207,7 +1207,9 @@ It came out at about 580 lines and lands in two commits of one pull request (dec
 
 **Done when:** actions validate input and ownership; tests cover correcting one movement and its similar ones.
 
-**Commit:** `feat(web): category corrections`
+It came out at about 460 lines and lands in commits of one pull request (decided with the human): the queries, with a text's rule now leaving what a number's rule says, then the form.
+
+**Commits:** `feat(db): count a rule's movements and keep number rules first`, then `feat(web): category corrections`
 
 #### 6.3h Your own accounts and undo
 
