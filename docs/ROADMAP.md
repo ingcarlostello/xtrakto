@@ -185,7 +185,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3b Quick review: ask and answer
 - [x] 6.3c Quick review: answered groups and the banner
 - [x] 6.3d Nequi numbers
-- [ ] 6.3e "Lo que está en juego"
+- [x] 6.3e "Lo que está en juego"
 - [ ] 6.3f Detail panel and corrections
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments

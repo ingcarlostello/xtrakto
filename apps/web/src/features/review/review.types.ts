@@ -3,11 +3,13 @@ import type {
   AppError,
   CategorizationRuleId,
   CategoryId,
+  CategoryKind,
   Result,
   UserCategoryRule,
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
 import type { LucideIcon } from "lucide-react";
+import type { KindTotals } from "@/utils/kind-totals.helpers";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import type { REVIEW_ANSWERS, REVIEW_GROUPS } from "./review.constants";
 
@@ -35,6 +37,15 @@ export type ReviewGroupDefinition = {
   readonly answers: readonly ReviewAnswerId[];
   /** Asked number by number, each with its switch (the Nequi numbers, 6.3d). */
   readonly asksByNumber?: boolean;
+  /**
+   * The answer "Lo que está en juego" weighs against the guess, one that
+   * changes the period's totals, and how it starts saying it: "Si son
+   * compras" (6.3e).
+   */
+  readonly whatIf: {
+    readonly answer: ReviewAnswerId;
+    readonly ifSaid: string;
+  };
 };
 
 export type ReviewGroupId = (typeof REVIEW_GROUPS)[number]["id"];
@@ -79,6 +90,20 @@ export type AnsweredMovements = GroupMovements & {
   readonly outcomes: readonly ReviewOutcome[];
 };
 
+/** Some of a group's movements that count as one kind now. */
+export type KindShare = {
+  readonly kind: CategoryKind;
+  /** What they add up to, signed. */
+  readonly amountMinor: AmountMinor;
+  readonly count: number;
+};
+
+/** What waits for an answer in a group, and what it counts as meanwhile. */
+export type PendingMovements = GroupMovements & {
+  /** By kind, the most movements first; a category the table lost has none. */
+  readonly kinds: readonly KindShare[];
+};
+
 /**
  * A question with its movements in the period: open while some wait for an
  * answer (`pending`), closed once none does. What was answered is what
@@ -86,7 +111,7 @@ export type AnsweredMovements = GroupMovements & {
  */
 export type ReviewGroup = { readonly id: ReviewGroupId } & (
   | {
-      readonly pending: GroupMovements;
+      readonly pending: PendingMovements;
       readonly answered: AnsweredMovements | null;
     }
   | { readonly pending: null; readonly answered: AnsweredMovements }
@@ -103,6 +128,8 @@ export type Review = {
   readonly account: AccountRow;
   readonly period: MovementPeriod;
   readonly groups: readonly ReviewGroup[];
+  /** The quarter's movements that count, by kind, with the guesses as they stand. */
+  readonly totals: KindTotals;
 };
 
 export type ReviewRequest = {

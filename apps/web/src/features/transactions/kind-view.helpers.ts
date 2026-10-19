@@ -4,27 +4,17 @@ import {
   categoryKind,
   CURRENCY,
   formatSignedCompactAmount,
-  sumAmounts,
 } from "@xtrakto/core";
-import type {
-  CategoryTotals,
-  MovementSelection,
-  TransactionListItem,
-} from "@xtrakto/db";
+import type { MovementSelection, TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
+import type { KindTotal, KindTotals } from "@/utils/kind-totals.helpers";
 import {
   type MovementFilter,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import type { ListLink } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type {
-  FilterOption,
-  KindTile,
-  KindTotal,
-  KindTotals,
-  MovementTone,
-} from "./transaction.types";
+import type { FilterOption, KindTile, MovementTone } from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.kinds;
 
@@ -40,43 +30,6 @@ const KIND_OF_FILTER = {
   spending: "spending",
   moved: "internal",
 } as const satisfies Record<Exclude<MovementFilter, "review">, CategoryKind>;
-
-const ofKind = (rows: readonly CategoryTotals[], kind: CategoryKind) =>
-  rows.filter(
-    ({ categoryId }) =>
-      categoryId !== null && categoryKind(categoryId) === kind,
-  );
-
-const amountOf = (row: CategoryTotals, side: "in" | "out") =>
-  side === "in" ? row.inMinor : row.outMinor;
-
-const countOf = (row: CategoryTotals, side: "in" | "out") =>
-  side === "in" ? row.inCount : row.outCount;
-
-const totalOf = (
-  rows: readonly CategoryTotals[],
-  sides: readonly ("in" | "out")[],
-): KindTotal => {
-  const parts = rows.flatMap((row) => sides.map((side) => ({ row, side })));
-  return {
-    amountMinor: sumAmounts(parts.map(({ row, side }) => amountOf(row, side))),
-    count: parts.reduce((sum, { row, side }) => sum + countOf(row, side), 0),
-  };
-};
-
-/**
- * A period's totals by kind, from its totals by category: what each kind
- * adds up to, money that moved in each direction. Movements no rule knows
- * have no kind and stay out.
- */
-export const kindTotalsOf = (rows: readonly CategoryTotals[]): KindTotals => {
-  const moved = ofKind(rows, "internal");
-  return {
-    income: totalOf(ofKind(rows, "income"), ["in", "out"]),
-    spending: totalOf(ofKind(rows, "spending"), ["in", "out"]),
-    moved: { out: totalOf(moved, ["out"]), back: totalOf(moved, ["in"]) },
-  };
-};
 
 const signed = (total: KindTotal) =>
   formatSignedCompactAmount(total.amountMinor, CURRENCY.COP);

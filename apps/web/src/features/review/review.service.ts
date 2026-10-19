@@ -10,6 +10,7 @@ import {
 import {
   dismissReview,
   findUserId,
+  listCategoryTotals,
   listMovementAccounts,
   listMovementQuarters,
   listReviewMovements,
@@ -20,6 +21,7 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
+import { kindTotalsOf } from "@/utils/kind-totals.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import { REVIEW_ANSWERS } from "./review.constants";
 import {
@@ -43,8 +45,8 @@ const NEQUI_NUMBERS: ReviewGroupId = "nequi_numbers";
 /**
  * The quick review of the signed-in user's account and quarter the URL
  * asks, or of their latest: by group, what waits for review there and what
- * was answered. `null` until a movement counts. The Clerk id must come from
- * the session.
+ * was answered, and the quarter's totals by kind as they stand. `null`
+ * until a movement counts. The Clerk id must come from the session.
  */
 export const getReview = async (
   clerkUserId: string,
@@ -61,11 +63,10 @@ export const getReview = async (
     const quarters = await listMovementQuarters(ctx, account.id);
     const period = pickQuarter(request.period, quarters);
     if (!period) return null;
-    const movements = await listReviewMovements(ctx, {
-      accountId: account.id,
-      period: periodDays(period),
-    });
-    return { account, period, groups: reviewGroupsOf(movements) };
+    const scope = { accountId: account.id, period: periodDays(period) };
+    const movements = await listReviewMovements(ctx, scope);
+    const totals = kindTotalsOf(await listCategoryTotals(ctx, scope));
+    return { account, period, groups: reviewGroupsOf(movements), totals };
   });
 };
 

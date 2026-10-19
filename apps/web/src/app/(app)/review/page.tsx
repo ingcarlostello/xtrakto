@@ -8,6 +8,7 @@ import { NothingToReview } from "@/features/review/components/NothingToReview";
 import { NumbersCard } from "@/features/review/components/NumbersCard";
 import { ReviewGroupCard } from "@/features/review/components/ReviewGroupCard";
 import { ReviewGroupItem } from "@/features/review/components/ReviewGroupItem";
+import { StakesPanel } from "@/features/review/components/StakesPanel";
 import { reviewStatus } from "@/features/review/review-display.helpers";
 import { REVIEW_COPY as COPY } from "@/features/review/review.constants";
 import { reviewGroupById, scopeText } from "@/features/review/review.helpers";
@@ -78,7 +79,7 @@ function ReviewGroups({ review }: { review: Review }) {
   return (
     <ul
       aria-label={COPY.groupsLabel}
-      className="flex w-full max-w-4xl flex-col gap-4"
+      className="flex min-w-0 flex-[2_1_600px] flex-col gap-4"
     >
       {review.groups.map((group) => (
         <li key={group.id}>
@@ -90,8 +91,9 @@ function ReviewGroups({ review }: { review: Review }) {
 }
 
 // docs/ui/v8-02: what waits for review in an account's quarter, asked by
-// group, the best guess first, and what was answered. The account and the
-// quarter live in the URL, as in Movimientos.
+// group, the best guess first, and what was answered, with what's at stake
+// beside it (under it on phones). The account and the quarter live in the
+// URL, as in Movimientos.
 export default async function ReviewPage({
   searchParams,
 }: PageProps<"/review">) {
@@ -104,7 +106,7 @@ export default async function ReviewPage({
   if (!review) return <NoMovements />;
   return (
     <>
-      <div className="flex w-full max-w-4xl flex-wrap items-start justify-between gap-4">
+      <div className="flex w-full flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
           <p className="text-sm font-semibold text-ink-secondary">
@@ -121,7 +123,10 @@ export default async function ReviewPage({
       {review.groups.length === 0 ? (
         <NothingToReview account={review.account} period={review.period} />
       ) : (
-        <ReviewGroups review={review} />
+        <div className="flex w-full flex-wrap items-start gap-5.5">
+          <ReviewGroups review={review} />
+          <StakesPanel review={review} />
+        </div>
       )}
     </>
   );

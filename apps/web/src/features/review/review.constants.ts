@@ -60,6 +60,22 @@ export const REVIEW_COPY = {
   bannerText:
     "Mientras tanto usamos nuestra mejor suposición. Confírmalos: pueden cambiar tu gasto real.",
   bannerAction: "Revisar ahora",
+  // "Lo que está en juego" beside the groups: "2 de 6 respondidos", and each
+  // open group, "Hoy cuentan como movido. Si son compras, tu gasto real sube
+  // a $30,4M."
+  stakesTitle: "Lo que está en juego",
+  stakesWhileOpen: "Usamos nuestra mejor suposición mientras respondes.",
+  stakesAllAnswered: "Respondiste todos los grupos de este trimestre.",
+  of: "de",
+  answered: { one: "respondido", other: "respondidos" },
+  waiting: { one: "movimiento pendiente", other: "movimientos pendientes" },
+  openGroupsLabel: "Grupos por responder",
+  today: "Hoy",
+  spendingTo: { up: "tu gasto real sube a", down: "tu gasto real baja a" },
+  incomeTo: { up: "tus ingresos suben a", down: "tus ingresos bajan a" },
+  toSummary: "Ver mi resumen",
+  answerLater: "Responder después",
+  remembered: "Recordamos tus respuestas para los próximos extractos.",
 } as const;
 
 /** The most Nequi numbers one answer marks: a quarter's, with room to spare. */
@@ -158,9 +174,9 @@ export const REVIEW_ANSWERS = {
 
 /**
  * The questions of the quick review, in the order it asks them, each with
- * the rules whose guesses it asks about and its answers, the best guess
- * first. Card payments from the virtual branch aren't asked (decided with
- * the human, Phase 6.3a).
+ * the rules whose guesses it asks about, its answers, the best guess first,
+ * and the one "Lo que está en juego" weighs. Card payments from the virtual
+ * branch aren't asked (decided with the human, Phase 6.3a).
  */
 export const REVIEW_GROUPS = [
   {
@@ -172,6 +188,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a tu nombre, que el banco a veces corta. Si llegan a otra cuenta tuya, no son gasto.",
     answers: ["mine", "someone_else"],
+    whatIf: { answer: "someone_else", ifSaid: "Si son de otra persona" },
   },
   {
     id: "key_platforms",
@@ -182,6 +199,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a plataformas, no a personas. Si son tu inversión o tu ahorro, no son gasto.",
     answers: ["investment", "person", "purchase", "unsure"],
+    whatIf: { answer: "purchase", ifSaid: "Si son compras" },
   },
   {
     id: "key_people",
@@ -192,6 +210,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a nombres de personas o negocios. Si fueron compras o tu propio ahorro, cuéntanos.",
     answers: ["person", "purchase", "investment", "unsure"],
+    whatIf: { answer: "investment", ifSaid: "Si son tu inversión o tu ahorro" },
   },
   {
     id: "money_in",
@@ -202,6 +221,7 @@ export const REVIEW_GROUPS = [
     context:
       "Viene de tu nombre o de un Nequi. Si es tuya, no la contamos como ingreso.",
     answers: ["came_back", "income"],
+    whatIf: { answer: "income", ifSaid: "Si es un ingreso" },
   },
   {
     id: "nequi_numbers",
@@ -213,6 +233,7 @@ export const REVIEW_GROUPS = [
       "Solo los archivos de movimientos traen el número; el extracto trimestral no. Los que marques como tuyos pasan a movido.",
     answers: ["not_mine", "my_number"],
     asksByNumber: true,
+    whatIf: { answer: "my_number", ifSaid: "Si son tuyos" },
   },
   {
     id: "corresponsal",
@@ -223,6 +244,7 @@ export const REVIEW_GROUPS = [
     context:
       "Alguien depositó efectivo en tu cuenta. Puede ser tu propio efectivo o un pago que te hicieron.",
     answers: ["own_cash", "paid_to_me"],
+    whatIf: { answer: "paid_to_me", ifSaid: "Si es un ingreso" },
   },
   {
     id: "pse_banks",
@@ -233,6 +255,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a bancos o fintechs. Pueden ser el pago de una tarjeta, la cuota de un crédito o una compra.",
     answers: ["card", "loan", "purchase"],
+    whatIf: { answer: "loan", ifSaid: "Si son cuotas de un crédito" },
   },
   {
     id: "pse_investment",
@@ -243,6 +266,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a plataformas de inversión o ahorro. Si son tuyos, no son gasto.",
     answers: ["investment", "purchase"],
+    whatIf: { answer: "purchase", ifSaid: "Si son compras" },
   },
   {
     id: "pse_loans",
@@ -253,6 +277,7 @@ export const REVIEW_GROUPS = [
     context:
       "Van a entidades que prestan plata. Una cuota es gasto real; el pago de una tarjeta solo se mueve.",
     answers: ["loan", "card", "purchase"],
+    whatIf: { answer: "card", ifSaid: "Si son pagos de tu tarjeta" },
   },
   {
     id: "no_description_out",
@@ -263,6 +288,7 @@ export const REVIEW_GROUPS = [
     context:
       "El banco no escribió qué fueron, así que tu respuesta vale solo para estos.",
     answers: ["spending", "moved"],
+    whatIf: { answer: "moved", ifSaid: "Si es plata que solo moviste" },
   },
   {
     id: "no_description_in",
@@ -273,5 +299,6 @@ export const REVIEW_GROUPS = [
     context:
       "El banco no escribió de dónde vino, así que tu respuesta vale solo para esta.",
     answers: ["other_income", "back_from_mine"],
+    whatIf: { answer: "back_from_mine", ifSaid: "Si volvió de tus cuentas" },
   },
 ] as const satisfies readonly ReviewGroupDefinition[];

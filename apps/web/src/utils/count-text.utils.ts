@@ -7,6 +7,10 @@ const COUNT_FORMAT = new Intl.NumberFormat("es-CO");
 export const formatCount = (count: number): string =>
   COUNT_FORMAT.format(count);
 
+/** The word that goes with a count: `"cuenta como"` for 1, `"cuentan como"` for any other. */
+export const wordFor = (count: number, { one, other }: Noun): string =>
+  count === 1 ? one : other;
+
 /** A count with its noun: `"1 movimiento"`, `"1.234 movimientos"`. */
 export const countText = (count: number, noun: Noun): string =>
-  `${formatCount(count)} ${count === 1 ? noun.one : noun.other}`;
+  `${formatCount(count)} ${wordFor(count, noun)}`;

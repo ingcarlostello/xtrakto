@@ -163,6 +163,32 @@ describe.skipIf(!testDatabase)("quick review", () => {
     ]);
   });
 
+  it("adds up the quarter's kinds with the guesses as they stand, and with the answers", async () => {
+    const { clerkUserId, userId, accountId } = await newUser();
+    const before = await getReview(clerkUserId, {});
+    const [payment] = await keyPaymentOf(userId, accountId);
+    if (!before || !payment) throw new Error("Nothing to weigh.");
+
+    await answerReviewGroup(clerkUserId, {
+      group: "key_people",
+      answer: "investment",
+      account: accountId,
+      period: QUARTER,
+    });
+    const after = await getReview(clerkUserId, {});
+
+    // The key payment to a person was real spending; now it only moved.
+    expect(after?.totals.spending).toEqual({
+      amountMinor: before.totals.spending.amountMinor - payment.amountMinor,
+      count: before.totals.spending.count - 1,
+    });
+    expect(after?.totals.moved.out).toEqual({
+      amountMinor: before.totals.moved.out.amountMinor + payment.amountMinor,
+      count: before.totals.moved.out.count + 1,
+    });
+    expect(after?.totals.income).toEqual(before.totals.income);
+  });
+
   // What the review says now of the quarter's key payment to a person.
   const keyPeopleOf = async (clerkUserId: string, period = QUARTER) =>
     (await getReview(clerkUserId, { period }))?.groups.find(

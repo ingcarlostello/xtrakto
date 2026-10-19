@@ -45,6 +45,22 @@ describe("REVIEW_GROUPS", () => {
     },
   );
 
+  // "Lo que está en juego" says what the other answer would change.
+  it.for(REVIEW_GROUPS)(
+    "weighs one of $id's answers that counts as another kind than its guess",
+    ({ ruleIds, answers, whatIf }) => {
+      const { categoryId } = REVIEW_ANSWERS[whatIf.answer];
+      const kindIf = categoryId === null ? undefined : categoryKind(categoryId);
+
+      expect(answers).toContain(whatIf.answer);
+      expect(kindIf).toBeDefined();
+      for (const ruleId of ruleIds) {
+        const guess = RULES.get(ruleId)?.categoryId;
+        expect(guess && categoryKind(guess)).not.toBe(kindIf);
+      }
+    },
+  );
+
   it.for(REVIEW_GROUPS)(
     "never offers spending for money in, or income for money out, in $id",
     ({ ruleIds, answers }) => {

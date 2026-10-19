@@ -32,7 +32,7 @@ const outcome = (
 
 const open = (count: number, answeredCount = 0): ReviewGroup => ({
   id: "key_people",
-  pending: movements(count),
+  pending: { ...movements(count), kinds: [] },
   answered:
     answeredCount === 0
       ? null

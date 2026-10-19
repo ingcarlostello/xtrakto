@@ -3,6 +3,8 @@ import {
   CATEGORIES,
   type CategorizationRuleId,
   type CategoryId,
+  type CategoryKind,
+  categoryKind,
   descriptionRuleFor,
   formatQuarter,
   sumAmounts,
@@ -20,6 +22,7 @@ import { REVIEW_ANSWERS, REVIEW_GROUPS } from "./review.constants";
 import type {
   AnswerPlan,
   GroupMovements,
+  KindShare,
   Review,
   ReviewAnswerId,
   ReviewGroup,
@@ -99,6 +102,24 @@ const movementsOf = (
   ...(asksByNumber ? { numbers: numbersOf(movements) } : {}),
 });
 
+// What the movements count as now, by kind, the most first. A category the
+// table no longer has names no kind, so it counts as none.
+const kindsOf = (movements: readonly ReviewMovement[]): KindShare[] => {
+  const byKind = new Map<CategoryKind, ReviewMovement[]>();
+  for (const movement of movements) {
+    const kind = categoryKind(movement.categoryId);
+    if (kind !== undefined)
+      byKind.set(kind, [...(byKind.get(kind) ?? []), movement]);
+  }
+  return [...byKind]
+    .map(([kind, ofKind]) => ({
+      kind,
+      amountMinor: sumAmounts(ofKind.map(({ amountMinor }) => amountMinor)),
+      count: ofKind.length,
+    }))
+    .sort((a, b) => b.count - a.count);
+};
+
 /**
  * What answering the Nequi numbers saves: each number's rule, the user's
  * own for those marked and someone else's for the rest, which holds for
@@ -169,8 +190,9 @@ const outcomesOf = (
 
 /**
  * The questions about these movements, in the review's order: what each
- * still asks about, with its bank texts, the amount at stake and how many
- * movements, and what was answered and counts as what now.
+ * still asks about, with its bank texts, the amount at stake, how many
+ * movements and what they count as meanwhile, and what was answered and
+ * counts as what now.
  */
 export const reviewGroupsOf = (
   movements: readonly ReviewMovement[],
@@ -192,7 +214,10 @@ export const reviewGroupsOf = (
       return [
         {
           id: definition.id,
-          pending: movementsOf(pending, definition),
+          pending: {
+            ...movementsOf(pending, definition),
+            kinds: kindsOf(pending),
+          },
           answered: withOutcomes,
         },
       ];
