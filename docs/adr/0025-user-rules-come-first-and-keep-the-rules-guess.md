@@ -25,4 +25,4 @@ Phase 6.3 lets the user answer the quick review by group and correct a movement,
 
 - An answer changes movements of every period and account of the user, as "Tus reglas" promises ("aplicado a todos tus extractos").
 - A rule whose text the bank writes differently next time doesn't hold; the review asks again.
-- Undoing an answer (6.3f) must recategorize its movements by the table again, from their texts and the account's holder name.
+- Undoing an answer (6.3h) must recategorize its movements by the table again, from their texts and the account's holder name.

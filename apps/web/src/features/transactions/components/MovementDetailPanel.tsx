@@ -1,0 +1,152 @@
+import { CircleAlert, Info, Tag, X } from "lucide-react";
+import Link from "next/link";
+import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
+import { Badge } from "@/components/ui/badge";
+import { Button, IconButton } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/utils/cn.utils";
+import { TONE_CLASSES } from "../category-icons.constants";
+import {
+  DETAIL_CLOSE_ATTRIBUTE,
+  movementLinkId,
+  TRANSACTIONS_COPY,
+} from "../transaction.constants";
+import type {
+  MovementDetailView,
+  TransactionsHref,
+} from "../transaction.types";
+import { MovementIcon } from "./MovementIcon";
+import { MovementSheet } from "./MovementSheet";
+
+const COPY = TRANSACTIONS_COPY.detail;
+
+type PanelProps = { view: MovementDetailView; closeHref: TransactionsHref };
+
+// Its category's chip, the bank's text as its title with the day, and the
+// way to close it.
+function DetailHeading({
+  view,
+  closeHref,
+  titleId,
+}: PanelProps & { titleId: string }) {
+  return (
+    <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-x-3.5">
+      <MovementIcon categoryId={view.categoryId} tone={view.tone} />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h2
+          id={titleId}
+          tabIndex={-1}
+          className="text-section font-bold tracking-[0.02em] break-words whitespace-pre-wrap"
+        >
+          {view.title}
+        </h2>
+        <p className="text-caption text-ink-muted">{view.date}</p>
+      </div>
+      <IconButton
+        label={COPY.close}
+        nativeButton={false}
+        render={
+          <Link
+            href={closeHref}
+            scroll={false}
+            {...{ [DETAIL_CLOSE_ATTRIBUTE]: "" }}
+          />
+        }
+      >
+        <X aria-hidden />
+      </IconButton>
+    </div>
+  );
+}
+
+// Its channel, reference, source, balance after and kind, then its
+// category, or the guess waiting for review.
+function DetailFacts({ view }: { view: MovementDetailView }) {
+  const row =
+    "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-divider py-2.5";
+  return (
+    <dl className="flex flex-col">
+      {view.facts.map(({ label, value }) => (
+        <div key={label} className={row}>
+          <dt className="text-meta text-ink-muted">{label}</dt>
+          <dd className="text-caption text-ink">{value}</dd>
+        </div>
+      ))}
+      <div className={row}>
+        <dt className="text-meta text-ink-muted">{COPY.category}</dt>
+        <dd className="flex flex-wrap gap-1.5">
+          <Badge>
+            <Tag aria-hidden />
+            {view.category}
+          </Badge>
+          {view.isGuess && (
+            <Badge variant="review">
+              <CircleAlert aria-hidden />
+              {TRANSACTIONS_COPY.tags.pendingReview}
+            </Badge>
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+// Why it has its category, and the way to the quick review while it's a
+// best guess.
+function DetailReason({ view }: { view: MovementDetailView }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p className="flex items-start gap-2 text-caption text-ink-secondary">
+        <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
+        <span>
+          <strong className="font-bold">{COPY.why}</strong> {view.reason}
+        </span>
+      </p>
+      {view.reviewHref && (
+        <>
+          <p className="text-caption text-ink-secondary">{COPY.bestGuess}</p>
+          <Button
+            variant="link"
+            nativeButton={false}
+            render={<Link href={view.reviewHref} />}
+          >
+            {COPY.toReview}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A movement's detail (docs/ui/v8-03): its real fields, and its kind and
+ * category with why. Beside the list from `lg`, a sheet over it on phones.
+ */
+export function MovementDetailPanel({ view, closeHref }: PanelProps) {
+  const rowId = movementLinkId(view.id);
+  const titleId = `${rowId}-detail`;
+  return (
+    <MovementSheet titleId={titleId} rowId={rowId}>
+      <Card
+        variant="card"
+        className="gap-5 lg:max-h-[calc(100dvh-9rem)] lg:overflow-y-auto"
+      >
+        <DetailHeading view={view} closeHref={closeHref} titleId={titleId} />
+        <p
+          className={cn(
+            "font-display text-amount-xl font-medium tabular-nums",
+            TONE_CLASSES[view.tone].amount,
+          )}
+        >
+          {view.amount}
+        </p>
+        <div className="flex flex-col items-start gap-2 rounded-md bg-surface-muted p-4">
+          <p className="text-meta font-bold">{COPY.bankText}</p>
+          <RawTextChip text={view.bankText} />
+        </div>
+        <DetailFacts view={view} />
+        <DetailReason view={view} />
+      </Card>
+    </MovementSheet>
+  );
+}

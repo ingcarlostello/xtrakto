@@ -6,6 +6,7 @@ import {
   periodDays,
   periodOfStatement,
   periodParam,
+  reviewHref,
   transactionsHref,
 } from "./transactions-url.helpers";
 
@@ -68,7 +69,7 @@ describe("periodOfStatement", () => {
 });
 
 describe("transactionsHref", () => {
-  it("names the account, the period, the search, the filter and how many show", () => {
+  it("names the account, the period, the search, the filter, how many show and the movement detailed", () => {
     expect(
       transactionsHref({
         accountId: "a1",
@@ -76,6 +77,7 @@ describe("transactionsHref", () => {
         search: "nequi",
         filter: "moved",
         shown: 60,
+        movementId: "m1",
       }),
     ).toEqual({
       pathname: "/transactions",
@@ -85,6 +87,7 @@ describe("transactionsHref", () => {
         q: "nequi",
         filter: "moved",
         show: 60,
+        movement: "m1",
       },
     });
   });
@@ -100,6 +103,15 @@ describe("transactionsHref", () => {
     expect(transactionsHref({ period: AUGUST })).toEqual({
       pathname: "/transactions",
       query: { period: "2026-08" },
+    });
+  });
+});
+
+describe("reviewHref", () => {
+  it("links to the review of the account's quarter", () => {
+    expect(reviewHref({ accountId: "a1", period: QUARTER })).toEqual({
+      pathname: "/review",
+      query: { account: "a1", period: "2026-q3" },
     });
   });
 });

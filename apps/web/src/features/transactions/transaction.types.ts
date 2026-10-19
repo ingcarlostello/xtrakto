@@ -1,6 +1,12 @@
-import type { AmountMinor, CalendarQuarter, LocalDate } from "@xtrakto/core";
+import type {
+  AmountMinor,
+  CalendarQuarter,
+  CategoryId,
+  LocalDate,
+} from "@xtrakto/core";
 import type {
   AccountRow,
+  MovementDetail,
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
@@ -8,6 +14,7 @@ import type { KindTotals } from "@/utils/kind-totals.helpers";
 import type {
   MovementFilter,
   MovementPeriod,
+  reviewHref,
 } from "@/utils/transactions-url.helpers";
 
 /** A quarter to choose from, with what its movements say about it. */
@@ -24,6 +31,8 @@ export type TransactionsRequest = {
   /** Which of them to show: a kind, or those to review. */
   readonly filter?: MovementFilter;
   readonly shown: number;
+  /** The movement whose detail opens beside the list. */
+  readonly movementId?: string;
 };
 
 /** An account's movements in a period, as the list reads them. */
@@ -47,6 +56,8 @@ export type AccountTransactions = {
   readonly total: number;
   /** The newest of them, as many as the list shows. */
   readonly items: readonly TransactionListItem[];
+  /** The movement the URL details, when it's one of the account's that count. */
+  readonly detail: MovementDetail | null;
   /** This year in Bogotá, which day headings leave out. */
   readonly currentYear: string;
 };
@@ -90,6 +101,41 @@ export type TransactionsHref = {
 export type NextStep = {
   readonly label: string;
   readonly href: TransactionsHref;
+};
+
+/** Where each movement's detail opens, which one is open, and how it closes. */
+export type DetailLinks = {
+  readonly open: (movementId: string) => TransactionsHref;
+  readonly close: TransactionsHref;
+  readonly openId?: string;
+};
+
+/** A line of a movement's detail: "Canal" and "PSE". */
+export type DetailFact = { readonly label: string; readonly value: string };
+
+/** A movement as its detail shows it (docs/ui/v8-03). */
+export type MovementDetailView = {
+  readonly id: string;
+  /** The bank's text, or that it gave none. */
+  readonly title: string;
+  /** Its text exactly as printed, for "Así lo escribe el banco". */
+  readonly bankText: string;
+  /** `"Domingo 27 de septiembre de 2026"`. */
+  readonly date: string;
+  /** `"−$182.000"`. */
+  readonly amount: string;
+  readonly tone: MovementTone;
+  readonly categoryId: CategoryId | null;
+  /** Its channel, reference, source, balance after and kind, those it has. */
+  readonly facts: readonly DetailFact[];
+  /** Its category's label, or that it has none. */
+  readonly category: string;
+  /** The category is a best guess waiting for the quick review. */
+  readonly isGuess: boolean;
+  /** What follows "Por qué:": the rule's reason, or the user's answer. */
+  readonly reason: string;
+  /** Where its guess is answered, while it waits. */
+  readonly reviewHref?: ReturnType<typeof reviewHref>;
 };
 
 /** An option of the period selector or the account switch. */

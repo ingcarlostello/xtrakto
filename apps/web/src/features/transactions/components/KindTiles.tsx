@@ -50,7 +50,7 @@ export function KindTiles({ totals }: { totals: KindTotals }) {
   return (
     <ul
       aria-label={TRANSACTIONS_COPY.kinds.tilesLabel}
-      className="grid w-full max-w-4xl gap-3 sm:grid-cols-3"
+      className="grid w-full gap-3 sm:grid-cols-3"
     >
       {kindTiles(totals).map((tile) => (
         <li key={tile.tone}>

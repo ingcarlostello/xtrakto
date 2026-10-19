@@ -147,6 +147,12 @@
     outline: 3px solid var(--color-primary);
     outline-offset: 3px;
   }
+  /* A movement's detail covers the page on phones, which holds still. */
+  @media (width < 64rem) {
+    html:has(dialog[open]) {
+      overflow: hidden;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

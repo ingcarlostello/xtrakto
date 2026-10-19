@@ -13,7 +13,6 @@ import {
   numbersOf,
   pickQuarter,
   reviewGroupsOf,
-  reviewHref,
   scopeText,
 } from "./review.helpers";
 
@@ -332,7 +331,7 @@ describe("numberRules", () => {
     ]);
   });
 
-  it("keeps a number already the user's, which only 6.3f takes back", () => {
+  it("keeps a number already the user's, which only 6.3h takes back", () => {
     const rules = numberRules(numbers, new Set());
 
     expect(
@@ -447,24 +446,5 @@ describe("answersToOffer", () => {
       "person",
       "purchase",
     ]);
-  });
-});
-
-describe("reviewHref", () => {
-  it("links to the review of the account's quarter", () => {
-    expect(
-      reviewHref({
-        account: {
-          id: "a1",
-          bankId: "bancolombia",
-          accountType: "savings",
-          last4: "8901",
-        },
-        period: { kind: "quarter", year: 2026, quarter: 3 },
-      }),
-    ).toEqual({
-      pathname: "/review",
-      query: { account: "a1", period: "2026-q3" },
-    });
   });
 });

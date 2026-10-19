@@ -4,6 +4,7 @@ import { UploadStatementLink } from "@/components/empty-state/UploadStatementLin
 import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { KindTiles } from "@/features/transactions/components/KindTiles";
+import { MovementDetailColumn } from "@/features/transactions/components/MovementDetailColumn";
 import { PeriodControls } from "@/features/transactions/components/PeriodControls";
 import { TransactionList } from "@/features/transactions/components/TransactionList";
 import { UnreconciledNotice } from "@/features/transactions/components/Unreconciled";
@@ -31,21 +32,22 @@ function NoTransactions() {
 
 // docs/ui/v8-03: an account's movements that count in a quarter or one of
 // its months, by day, in their kinds' colors, with the period's totals by
-// kind and a warning when a statement of its days doesn't reconcile; before
-// any, the invitation to upload. The filters live in the URL.
+// kind, a warning when a statement of its days doesn't reconcile, and the
+// detail of the movement chosen beside them; before any, the invitation to
+// upload. The filters and the movement live in the URL.
 export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
   const clerkUserId = await requireSignedIn();
-  const { account, period, q, filter, show } = transactionsSearchSchema.parse(
-    await searchParams,
-  );
+  const { account, period, q, filter, show, movement } =
+    transactionsSearchSchema.parse(await searchParams);
   const transactions = await getAccountTransactions(clerkUserId, {
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),
     ...(q === undefined ? {} : { search: q }),
     ...(filter === undefined ? {} : { filter }),
     shown: show,
+    ...(movement === undefined ? {} : { movementId: movement }),
   });
   if (!transactions) return <NoTransactions />;
   return (
@@ -60,7 +62,10 @@ export default async function TransactionsPage({
         <UnreconciledNotice key={statement.id} statement={statement} />
       ))}
       <KindTiles totals={transactions.kindTotals} />
-      <TransactionList transactions={transactions} />
+      <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <TransactionList transactions={transactions} />
+        <MovementDetailColumn transactions={transactions} />
+      </div>
     </>
   );
 }

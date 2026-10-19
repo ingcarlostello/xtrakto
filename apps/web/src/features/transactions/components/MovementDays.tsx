@@ -1,12 +1,9 @@
 import type { TransactionListItem } from "@xtrakto/db";
 import { CircleAlert, Tag } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
-import {
-  CATEGORY_ICONS,
-  TONE_CLASSES,
-  UNKNOWN_CATEGORY_ICON,
-} from "../category-icons.constants";
+import { TONE_CLASSES } from "../category-icons.constants";
 import { movementTone } from "../kind-view.helpers";
 import {
   amountText,
@@ -18,28 +15,61 @@ import {
 } from "../transaction-list.helpers";
 import {
   MOVEMENT_ROW_ATTRIBUTE,
+  movementLinkId,
   TRANSACTIONS_COPY as COPY,
 } from "../transaction.constants";
 import type {
+  DetailLinks,
   MovementMark,
   MovementTags,
-  MovementTone,
   TransactionDay,
+  TransactionsHref,
 } from "../transaction.types";
+import { MovementIcon } from "./MovementIcon";
 
 // The bank's text exactly as printed: its case, its cuts and its double
 // spaces (design-system.md §4), wrapping only where it has a space.
 const BANK_TEXT = "tracking-[0.02em] break-words whitespace-pre-wrap";
 
-function Description({ raw }: { raw: string }) {
+// The link to a movement's detail covers its whole row, and so does its
+// focus ring.
+const ROW_LINK =
+  "after:absolute after:inset-0 after:rounded-md hover:underline focus-visible:outline-none focus-visible:after:outline-[3px] focus-visible:after:outline-offset-[3px] focus-visible:after:outline-primary focus-visible:after:outline-solid";
+
+type RowLink = {
+  readonly id: string;
+  readonly href: TransactionsHref;
+  readonly isOpen: boolean;
+};
+
+function Title({ text, link }: { text: string; link?: RowLink }) {
+  if (!link) return text;
+  return (
+    <Link
+      id={link.id}
+      href={link.href}
+      scroll={false}
+      aria-current={link.isOpen ? "true" : undefined}
+      className={ROW_LINK}
+    >
+      {text}
+    </Link>
+  );
+}
+
+function Description({ raw, link }: { raw: string; link?: RowLink }) {
   const view = descriptionView(raw);
   if (view.kind === "bank")
     return (
-      <p className={`text-body font-semibold ${BANK_TEXT}`}>{view.text}</p>
+      <p className={`text-body font-semibold ${BANK_TEXT}`}>
+        <Title text={view.text} link={link} />
+      </p>
     );
   return (
     <>
-      <p className="text-body font-bold">{COPY.noDescription}</p>
+      <p className="text-body font-bold">
+        <Title text={COPY.noDescription} link={link} />
+      </p>
       <p className={`text-meta text-ink-muted ${BANK_TEXT}`}>{view.raw}</p>
     </>
   );
@@ -76,65 +106,57 @@ function MovementTagList({ tags }: { tags: MovementTags }) {
   );
 }
 
-// The icon of its category, which a guess keeps too, in its tone's chip
-// (design-system.md §8): neutral and in ink while it isn't sure.
-function MovementIcon({
-  categoryId,
-  tone,
-}: {
-  categoryId: TransactionListItem["categoryId"];
-  tone: MovementTone;
-}) {
-  const Icon =
-    (categoryId === null ? undefined : CATEGORY_ICONS[categoryId]) ??
-    UNKNOWN_CATEGORY_ICON;
+// Why a row stands out where a statement's balance breaks.
+function MarkNote({ note }: { note: string }) {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "flex size-11 items-center justify-center rounded-full",
-        TONE_CLASSES[tone].chip,
-      )}
-    >
-      <Icon strokeWidth={1.9} className="size-5" />
-    </span>
+    <p className="flex items-start gap-2 pt-1 text-caption text-ink-secondary">
+      <span
+        aria-hidden
+        className="mt-1.5 size-[9px] shrink-0 rounded-full bg-spending"
+      />
+      {note}
+    </p>
   );
 }
+
+const rowLinkOf = (id: string, links?: DetailLinks): RowLink | undefined =>
+  links && {
+    id: movementLinkId(id),
+    href: links.open(id),
+    isOpen: links.openId === id,
+  };
 
 type ItemProps = {
   item: TransactionListItem;
   isCounted: boolean;
   mark?: MovementMark;
+  links?: DetailLinks;
 };
 
 // The icon of its category in its kind's colors, and its amount in its
 // kind's text color with its sign; neutral and in ink while the category is
 // a guess or missing (design-system.md §3.4). A marked row, where a
-// statement's balance breaks, sits on the attention surface with why.
-function TransactionItem({ item, isCounted, mark }: ItemProps) {
+// statement's balance breaks, sits on the attention surface with why; the
+// one whose detail is open, on the primary's soft surface.
+function TransactionItem({ item, isCounted, mark, links }: ItemProps) {
   const tone = movementTone(item, isCounted);
+  const link = rowLinkOf(item.id, links);
   return (
     <li
       {...{ [MOVEMENT_ROW_ATTRIBUTE]: "" }}
       id={mark?.anchor}
       className={cn(
-        "grid scroll-mt-6 grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-divider py-3.5",
+        "relative grid scroll-mt-6 grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-divider py-3.5",
         mark && "-mx-3.5 rounded-md border-t-0 bg-spending-surface px-3.5",
+        link?.isOpen &&
+          "-mx-3.5 rounded-md border-t-0 bg-primary-soft-2 px-3.5 ring-1 ring-primary/40",
       )}
     >
       <MovementIcon categoryId={item.categoryId} tone={tone} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <Description raw={item.descriptionRaw} />
+        <Description raw={item.descriptionRaw} link={link} />
         <MovementTagList tags={movementTags(item, isCounted)} />
-        {mark && (
-          <p className="flex items-start gap-2 pt-1 text-caption text-ink-secondary">
-            <span
-              aria-hidden
-              className="mt-1.5 size-[9px] shrink-0 rounded-full bg-spending"
-            />
-            {mark.note}
-          </p>
-        )}
+        {mark && <MarkNote note={mark.note} />}
       </div>
       <p
         className={cn(
@@ -154,6 +176,8 @@ type DayGroupProps = {
   /** False for a statement that doesn't reconcile: its rows count nowhere. */
   isCounted?: boolean;
   marks?: ReadonlyMap<string, MovementMark>;
+  /** Where each row opens its detail, in Movimientos. */
+  links?: DetailLinks;
 };
 
 function DayGroup({
@@ -161,6 +185,7 @@ function DayGroup({
   currentYear,
   isCounted = true,
   marks,
+  links,
 }: DayGroupProps) {
   return (
     <div>
@@ -181,6 +206,7 @@ function DayGroup({
             item={item}
             isCounted={isCounted}
             mark={marks?.get(item.id)}
+            links={links}
           />
         ))}
       </ul>

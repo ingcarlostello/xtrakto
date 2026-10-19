@@ -40,6 +40,7 @@ const view = (
   period,
   total: 0,
   items: [],
+  detail: null,
   kindTotals: {
     income: NOTHING,
     spending: NOTHING,

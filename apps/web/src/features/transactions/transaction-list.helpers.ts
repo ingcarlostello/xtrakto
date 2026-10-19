@@ -25,6 +25,7 @@ import {
 } from "./transaction.constants";
 import type {
   DescriptionView,
+  DetailLinks,
   MovementTags,
   NextStep,
   TransactionDay,
@@ -78,7 +79,7 @@ export const descriptionView = (raw: string): DescriptionView =>
     ? { kind: "none", raw }
     : { kind: "bank", text: raw };
 
-const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
+export const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
   CATEGORIES.map(({ id, labelEs }) => [id, labelEs]),
 );
 
@@ -146,5 +147,21 @@ export const nextStep = (
   return {
     label: `${COPY.more.before} ${formatCount(count - shown)} ${COPY.more.after}`,
     href: transactionsHref({ ...link, shown: count }),
+  };
+};
+
+/**
+ * Where each movement's detail opens and closes: the list as it is, with
+ * as many movements as it shows, so the one chosen stays in it.
+ */
+export const detailLinks = (
+  link: ListLink,
+  { shown, openId }: { readonly shown: number; readonly openId?: string },
+): DetailLinks => {
+  const kept = { ...link, ...(shown > MOVEMENTS_STEP ? { shown } : {}) };
+  return {
+    open: (movementId) => transactionsHref({ ...kept, movementId }),
+    close: transactionsHref(kept),
+    ...(openId === undefined ? {} : { openId }),
   };
 };

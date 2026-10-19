@@ -1,19 +1,18 @@
-import {
-  APP_ERROR_CODE,
-  formatDayInWords,
-  formatDayRange,
-  formatMonthRange,
-  PERIOD_SOURCE,
-} from "@xtrakto/core";
-import type { AppError, Period, PeriodSource } from "@xtrakto/core";
+import { APP_ERROR_CODE, formatDayInWords } from "@xtrakto/core";
+import type { AppError, Period } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { BANK_LABELS, MASKED_DIGITS } from "@/utils/account-label.constants";
 import { countText } from "@/utils/count-text.utils";
+import { FORMAT_LABELS } from "@/utils/statement-label.constants";
+import {
+  labelOf,
+  periodText,
+  statementLabel,
+  statementPeriodText,
+} from "@/utils/statement-label.helpers";
 import {
   FILE_PROBLEM,
   FORMAT_BANKS,
-  FORMAT_LABELS,
-  FORMAT_PERIOD_SOURCE,
   JOB_PROBLEMS,
   JOB_STATUS,
   NO_ANSWER,
@@ -46,14 +45,6 @@ export type FileRowView =
     }
   | ({ readonly kind: "problem" } & ProblemText);
 
-// An id without a label is shown as it is: no parser returns one today.
-const labelOf = (labels: Labels, id: string): string => labels[id] ?? id;
-
-const periodText = (period: Period, source: PeriodSource): string =>
-  source === PERIOD_SOURCE.STATEMENT
-    ? formatMonthRange(period)
-    : formatDayRange(period);
-
 /** The tags of a file read in the browser: bank, format, file type, period. */
 export const previewTags = (preview: StatementPreview): readonly string[] => [
   labelOf(BANK_LABELS, preview.bankId),
@@ -62,18 +53,13 @@ export const previewTags = (preview: StatementPreview): readonly string[] => [
   periodText(preview.period, preview.periodSource),
 ];
 
-// Any other format's period reads as days, as a range of movements does.
-const PERIOD_SOURCES: Readonly<Partial<Record<string, PeriodSource>>> =
-  FORMAT_PERIOD_SOURCE;
-
 /** What the server recognized in a job's file: bank, format and period. */
 export const recognizedText = (formatId: string, period: Period): string => {
   const banks: Labels = FORMAT_BANKS;
-  const source = PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS;
   return [
     labelOf(BANK_LABELS, labelOf(banks, formatId)),
     labelOf(FORMAT_LABELS, formatId),
-    periodText(period, source),
+    statementPeriodText(formatId, period),
   ].join(" · ");
 };
 
@@ -83,11 +69,8 @@ export const recognizedText = (formatId: string, period: Period): string => {
  */
 export const jobLabel = ({ formatId, outcome }: UploadJob): string => {
   if (formatId === undefined) return COPY.statement;
-  const format = labelOf(FORMAT_LABELS, formatId);
-  if (outcome === undefined) return format;
-  const { period } = outcome;
-  const source = PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS;
-  return `${format} ${periodText(period, source)}`;
+  if (outcome === undefined) return labelOf(FORMAT_LABELS, formatId);
+  return statementLabel(formatId, outcome.period);
 };
 
 // A quarterly statement names its account; a movements export gets its
