@@ -13,6 +13,9 @@ export const MAX_MOVEMENTS_SHOWN = 2_000;
 /** The attribute that marks each movement's row, to focus the new ones. */
 export const MOVEMENT_ROW_ATTRIBUTE = "data-movement";
 
+/** The attribute that marks what a form of the detail saved, which can take the focus. */
+export const SAVE_STATUS_ATTRIBUTE = "data-save-status";
+
 /** The attribute that marks the link closing a movement's detail, which Escape follows. */
 export const DETAIL_CLOSE_ATTRIBUTE = "data-detail-close";
 
@@ -24,6 +27,13 @@ export const movementLinkId = (movementId: string): string =>
 export const CORRECTION_SCOPE = {
   MOVEMENT: "movement",
   SIMILAR: "similar",
+} as const;
+
+/** What the detail's own block changes: a Nequi number made the user's, or a rule undone (6.3h). */
+export const RULE_CHANGE = {
+  MINE: "mine",
+  UNDO_NUMBER: "undo_number",
+  UNDO_TEXT: "undo_text",
 } as const;
 
 /** The category a kind starts on when the user chooses it: what it says when nothing more is known. */
@@ -166,6 +176,22 @@ export const TRANSACTIONS_COPY = {
     savedSimilar: "Listo: los movimientos con este texto cuentan como",
     andNext: "también los próximos",
     failed: "No pudimos guardar el cambio. Vuelve a intentarlo.",
+    // The user's Nequi number and their rule for its text, and undoing them
+    // (6.3h): "Nequi ••• 1270", "Es mío", "Deshacer".
+    nequi: "Nequi",
+    numberUnknown:
+      "¿Es tuyo? Lo que le envías y lo que llega de él contaría como movido.",
+    numberMine:
+      "Es tuyo: lo que le envías y lo que llega de él cuenta como movido.",
+    numberTheirs: "Dijiste que no es tuyo.",
+    markMine: "Es mío",
+    undo: "Deshacer",
+    textRule: "Tu regla para este texto",
+    textRuleSays: "Los movimientos con este texto cuentan como",
+    undoTextRule: "Deshacer tu regla para este texto",
+    savedMine: "Listo: ese Nequi es tuyo.",
+    undoneNumber: "Listo: deshicimos tu respuesta para ese Nequi.",
+    undoneText: "Listo: deshicimos tu regla para este texto.",
     emptyTitle: "Elige un movimiento",
     emptyDescription:
       "Verás cómo lo escribe el banco, su canal, de qué archivo viene y por qué tiene su categoría.",

@@ -17,6 +17,7 @@ import {
   listMovementQuarters,
   listTransactions,
   listUnreconciledStatements,
+  listUserCategoryRules,
   type StatementBreaks,
   type UnreconciledStatement,
   type UserContext,
@@ -31,6 +32,7 @@ import {
   selectPeriod,
 } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
+import { rulesOfMovement } from "./own-rules.helpers";
 import { movementSearchOf } from "./transaction-list.helpers";
 import { DEFAULT_CATEGORY_OF_KIND } from "./transaction.constants";
 import type {
@@ -108,6 +110,7 @@ const detailOf = async (
     movement,
     similar:
       rule === null ? null : await countMovementsOfRule(ctx, rule, movement.id),
+    rules: rulesOfMovement(movement, await listUserCategoryRules(ctx)),
   };
 };
 

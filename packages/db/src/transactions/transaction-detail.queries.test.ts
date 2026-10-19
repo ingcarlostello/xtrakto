@@ -117,6 +117,8 @@ describe.skipIf(!testDatabase)("movement detail", () => {
       balanceAfterMinor: 40_000,
       categoryId: "transfers_to_people",
       isPendingReview: true,
+      referenceHash: null,
+      referenceKind: "none",
       referenceLast4: null,
       categorySource: "rule",
       categoryRuleId: "key_payment",

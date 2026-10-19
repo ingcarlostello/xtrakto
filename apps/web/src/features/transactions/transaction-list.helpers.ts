@@ -79,7 +79,7 @@ export const descriptionView = (raw: string): DescriptionView =>
     ? { kind: "none", raw }
     : { kind: "bank", text: raw };
 
-const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
+export const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
   CATEGORIES.map(({ id, labelEs }) => [id, labelEs]),
 );
 

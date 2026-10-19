@@ -2,7 +2,7 @@
 
 import type { CategoryId, CategoryKind } from "@xtrakto/core";
 import { ChevronDown, CircleAlert } from "lucide-react";
-import { type ReactNode, useActionState, useState } from "react";
+import { type ReactNode, useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { correctMovement } from "../actions/correct-movement.action";
@@ -15,12 +15,11 @@ import {
   isCategoryId,
   savedText,
 } from "../correction.helpers";
-import {
-  CORRECTION_SCOPE,
-  DEFAULT_CATEGORY_OF_KIND,
-  TRANSACTIONS_COPY,
-} from "../transaction.constants";
-import type { CorrectionState, CorrectionView } from "../transaction.types";
+import { useCorrectionChoice } from "../hooks/use-correction-choice";
+import { useSubmitWithoutReset } from "../hooks/use-submit-without-reset";
+import { CORRECTION_SCOPE, TRANSACTIONS_COPY } from "../transaction.constants";
+import type { CorrectionView } from "../transaction.types";
+import { SaveStatus } from "./SaveStatus";
 
 const COPY = TRANSACTIONS_COPY.detail;
 
@@ -176,25 +175,6 @@ function CorrectionButtons({
   );
 }
 
-// What was saved, said politely, or that it couldn't be, as an alert.
-function CorrectionStatus({ state }: { state: CorrectionState }) {
-  return (
-    <>
-      <p
-        role="status"
-        className="text-caption font-semibold text-ink-secondary empty:sr-only"
-      >
-        {state?.ok ? savedText(state.value) : ""}
-      </p>
-      {state?.ok === false && (
-        <p role="alert" className="text-caption font-semibold text-danger">
-          {COPY.failed}
-        </p>
-      )}
-    </>
-  );
-}
-
 type CorrectionFormProps = {
   view: CorrectionView;
   isGuess: boolean;
@@ -213,27 +193,27 @@ export function CorrectionForm({
   isGuess,
   children,
 }: CorrectionFormProps) {
-  const [state, action, isPending] = useActionState(correctMovement, null);
-  const [kind, setKind] = useState(view.kind);
-  const [category, setCategory] = useState(view.categoryId);
-  const chooseKind = (next: CategoryKind) => {
-    setKind(next);
-    setCategory(DEFAULT_CATEGORY_OF_KIND[next]);
-  };
+  const [state, dispatch, isPending] = useActionState(correctMovement, null);
+  const onSubmit = useSubmitWithoutReset(dispatch);
+  const { kind, category, chooseKind, chooseCategory } =
+    useCorrectionChoice(view);
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <input type="hidden" name="account" value={view.accountId} />
       <input type="hidden" name="movement" value={view.movementId} />
       <KindChoice kinds={view.kinds} kind={kind} onChoose={chooseKind} />
       <CategoryChoice
         kind={kind}
         value={category}
-        onChoose={setCategory}
+        onChoose={chooseCategory}
         isGuess={isGuess}
       />
       {children}
       <CorrectionButtons applyLabel={view.applyLabel} isPending={isPending} />
-      <CorrectionStatus state={state} />
+      <SaveStatus
+        saved={state?.ok ? savedText(state.value) : null}
+        isFailed={state?.ok === false}
+      />
     </form>
   );
 }

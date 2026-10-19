@@ -23,6 +23,8 @@ const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   balanceAfterMinor: amountMinorSchema.parse(879_389_000),
   categoryId: "utilities",
   isPendingReview: false,
+  referenceHash: null,
+  referenceKind: "none",
   referenceLast4: null,
   categorySource: "rule",
   categoryRuleId: "utility_payment",
