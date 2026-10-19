@@ -18,6 +18,7 @@ const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   id: "m1",
   date: localDateSchema.parse("2026-09-27"),
   descriptionRaw: "PAGO PSE EMPRESA DE ENERGIA",
+  descriptionNormalized: "PAGO PSE EMPRESA DE ENERGIA",
   amountMinor: amountMinorSchema.parse(-18_200_000),
   balanceAfterMinor: amountMinorSchema.parse(879_389_000),
   categoryId: "utilities",
@@ -30,7 +31,7 @@ const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
 });
 
 describe("movementDetailView", () => {
-  it("shows a movement's fields, its kind and category, and the rule's reason", () => {
+  it("shows a movement's fields and the rule's reason for its category", () => {
     expect(movementDetailView(detail(), "a1")).toEqual({
       id: "m1",
       title: "PAGO PSE EMPRESA DE ENERGIA",
@@ -43,9 +44,7 @@ describe("movementDetailView", () => {
         { label: "Canal", value: "PSE" },
         { label: "Fuente", value: "Extracto trimestral jul–sep 2026" },
         { label: "Saldo después", value: "$8.793.890" },
-        { label: "Tipo", value: "Gasto real" },
       ],
-      category: "Servicios del hogar",
       isGuess: false,
       reason:
         "los pagos de luz, agua, gas, internet o celular son servicios del hogar. Regla del sistema, sin IA.",
@@ -74,9 +73,7 @@ describe("movementDetailView", () => {
         { label: "Canal", value: "Nequi" },
         { label: "Referencia", value: "••• 1270" },
         { label: "Fuente", value: "Movimientos 15–31 ago 2026" },
-        { label: "Tipo", value: "Gasto real" },
       ],
-      category: "Pagos a personas",
       isGuess: true,
       reason:
         "un envío a Nequi es un pago a una persona, salvo que el número sea tuyo. Regla del sistema, sin IA.",
@@ -96,16 +93,11 @@ describe("movementDetailView", () => {
 
     expect(movementDetailView(answered, "a1")).toMatchObject({
       tone: "moved",
-      category: "Entre tus cuentas",
       reason: "lo decidiste tú.",
-    });
-    expect(movementDetailView(answered, "a1").facts.at(-1)).toEqual({
-      label: "Tipo",
-      value: "Movido",
     });
   });
 
-  it("names no kind or category for money in no rule knows", () => {
+  it("says no rule knows money in without a category", () => {
     const unknown = detail({
       descriptionRaw: "ABONO EJEMPLO",
       amountMinor: amountMinorSchema.parse(100_000),
@@ -120,7 +112,6 @@ describe("movementDetailView", () => {
         { label: "Fuente", value: "Extracto trimestral jul–sep 2026" },
         { label: "Saldo después", value: "$8.793.890" },
       ],
-      category: "Sin categoría",
       reason: "ninguna regla conoce este movimiento todavía.",
     });
   });

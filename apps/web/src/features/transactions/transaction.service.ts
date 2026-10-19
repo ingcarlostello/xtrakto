@@ -1,11 +1,13 @@
 import "server-only";
 import {
   DEFAULT_TIME_ZONE,
+  descriptionRuleFor,
   localDateFromInstant,
   type Period,
 } from "@xtrakto/core";
 import {
   countCountedMovements,
+  countMovementsOfRule,
   findMovementDetail,
   findStatementBreaks,
   findUserId,
@@ -15,7 +17,6 @@ import {
   listMovementQuarters,
   listTransactions,
   listUnreconciledStatements,
-  type MovementDetail,
   type StatementBreaks,
   type UnreconciledStatement,
   type UserContext,
@@ -31,8 +32,10 @@ import {
 } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { movementSearchOf } from "./transaction-list.helpers";
+import { DEFAULT_CATEGORY_OF_KIND } from "./transaction.constants";
 import type {
   AccountTransactions,
+  OpenMovement,
   TransactionsRequest,
 } from "./transaction.types";
 
@@ -89,15 +92,24 @@ const locate = async (
   };
 };
 
-// The movement the URL details, when it's one of the account's that count.
+// The movement the URL details, when it's one of the account's that count,
+// and how many others a rule for its text would change. Which movements a
+// text's rule holds for doesn't depend on its category.
 const detailOf = async (
   ctx: UserContext,
   accountId: string,
   movementId: string | undefined,
-): Promise<MovementDetail | null> =>
-  movementId === undefined
-    ? null
-    : ((await findMovementDetail(ctx, { accountId, movementId })) ?? null);
+): Promise<OpenMovement | null> => {
+  if (movementId === undefined) return null;
+  const movement = await findMovementDetail(ctx, { accountId, movementId });
+  if (!movement) return null;
+  const rule = descriptionRuleFor(movement, DEFAULT_CATEGORY_OF_KIND.spending);
+  return {
+    movement,
+    similar:
+      rule === null ? null : await countMovementsOfRule(ctx, rule, movement.id),
+  };
+};
 
 // The tiles and "Por revisar · 24" add up the whole period, whatever the
 // list shows of it.

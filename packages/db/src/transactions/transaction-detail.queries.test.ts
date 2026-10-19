@@ -112,6 +112,7 @@ describe.skipIf(!testDatabase)("movement detail", () => {
       id: idOf(KEY_PAYMENT),
       date: "2026-07-03",
       descriptionRaw: KEY_PAYMENT,
+      descriptionNormalized: KEY_PAYMENT,
       amountMinor: -60_000,
       balanceAfterMinor: 40_000,
       categoryId: "transfers_to_people",

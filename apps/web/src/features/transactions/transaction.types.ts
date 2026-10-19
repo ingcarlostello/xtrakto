@@ -1,8 +1,11 @@
 import type {
   AmountMinor,
+  AppError,
   CalendarQuarter,
   CategoryId,
+  CategoryKind,
   LocalDate,
+  Result,
 } from "@xtrakto/core";
 import type {
   AccountRow,
@@ -16,6 +19,7 @@ import type {
   MovementPeriod,
   reviewHref,
 } from "@/utils/transactions-url.helpers";
+import type { CORRECTION_SCOPE } from "./transaction.constants";
 
 /** A quarter to choose from, with what its movements say about it. */
 export type QuarterChoice = CalendarQuarter & {
@@ -57,7 +61,7 @@ export type AccountTransactions = {
   /** The newest of them, as many as the list shows. */
   readonly items: readonly TransactionListItem[];
   /** The movement the URL details, when it's one of the account's that count. */
-  readonly detail: MovementDetail | null;
+  readonly detail: OpenMovement | null;
   /** This year in Bogotá, which day headings leave out. */
   readonly currentYear: string;
 };
@@ -110,6 +114,44 @@ export type DetailLinks = {
   readonly openId?: string;
 };
 
+/** The movement the URL details, and how many others a rule for its text would change. */
+export type OpenMovement = {
+  readonly movement: MovementDetail;
+  /** `null` for the bank's `0` or a movement of 0, which make no rule. */
+  readonly similar: number | null;
+};
+
+export type CorrectionScope =
+  (typeof CORRECTION_SCOPE)[keyof typeof CORRECTION_SCOPE];
+
+/** A correction from the detail's form (6.3g). */
+export type CorrectionInput = {
+  readonly account: string;
+  readonly movement: string;
+  readonly category: CategoryId;
+  readonly scope: CorrectionScope;
+};
+
+/** What a correction saved, which its form says back. */
+export type CorrectionResult = Pick<CorrectionInput, "scope" | "category">;
+
+/** What the detail's form shows after sending: nothing yet, or how it went. */
+export type CorrectionState = Result<CorrectionResult, AppError> | null;
+
+/** A movement's kind and category as choices (docs/ui/v8-03). */
+export type CorrectionView = {
+  readonly accountId: string;
+  readonly movementId: string;
+  /** The kinds its money's direction allows. */
+  readonly kinds: readonly CategoryKind[];
+  /** The one it counts as, or its direction's first. */
+  readonly kind: CategoryKind;
+  /** Its category, unless it has none of those kinds. */
+  readonly categoryId: CategoryId | null;
+  /** "Aplicar a los 3 parecidos"; `null` when its text makes no rule. */
+  readonly applyLabel: string | null;
+};
+
 /** A line of a movement's detail: "Canal" and "PSE". */
 export type DetailFact = { readonly label: string; readonly value: string };
 
@@ -126,10 +168,8 @@ export type MovementDetailView = {
   readonly amount: string;
   readonly tone: MovementTone;
   readonly categoryId: CategoryId | null;
-  /** Its channel, reference, source, balance after and kind, those it has. */
+  /** Its channel, reference, source and balance after, those it has. */
   readonly facts: readonly DetailFact[];
-  /** Its category's label, or that it has none. */
-  readonly category: string;
   /** The category is a best guess waiting for the quick review. */
   readonly isGuess: boolean;
   /** What follows "Por qué:": the rule's reason, or the user's answer. */

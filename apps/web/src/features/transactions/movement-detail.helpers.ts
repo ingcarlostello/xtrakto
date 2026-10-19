@@ -2,7 +2,6 @@ import {
   CATEGORIZATION_RULES,
   type CategorizationRuleId,
   CATEGORY_SOURCE,
-  categoryKind,
   channelOf,
   CURRENCY,
   formatAmount,
@@ -14,11 +13,7 @@ import type { MovementDetail } from "@xtrakto/db";
 import { statementLabel } from "@/utils/statement-label.helpers";
 import { reviewHref } from "@/utils/transactions-url.helpers";
 import { movementTone } from "./kind-view.helpers";
-import {
-  amountText,
-  CATEGORY_LABELS,
-  descriptionView,
-} from "./transaction-list.helpers";
+import { amountText, descriptionView } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
 import type { DetailFact, MovementDetailView } from "./transaction.types";
 
@@ -28,13 +23,12 @@ const RULE_REASONS: ReadonlyMap<CategorizationRuleId, string> = new Map(
   CATEGORIZATION_RULES.map(({ id, reasonEs }) => [id, reasonEs]),
 );
 
-// Its channel, the digits its reference kept, the statement it came from,
-// its balance after and its kind: those it has.
+// Its channel, the digits its reference kept, the statement it came from
+// and its balance after: those it has. Its kind and category are choices
+// of their own (6.3g).
 const factsOf = (detail: MovementDetail): DetailFact[] => {
   const { descriptionRaw, referenceLast4, statement } = detail;
   const channel = channelOf(descriptionRaw)?.labelEs;
-  const kind =
-    detail.categoryId === null ? undefined : categoryKind(detail.categoryId);
   const facts: DetailFact[] = [];
   if (channel !== undefined)
     facts.push({ label: COPY.channel, value: channel });
@@ -52,8 +46,6 @@ const factsOf = (detail: MovementDetail): DetailFact[] => {
       label: COPY.balanceAfter,
       value: formatAmount(detail.balanceAfterMinor, CURRENCY.COP),
     });
-  if (kind !== undefined)
-    facts.push({ label: COPY.kind, value: COPY.kinds[kind] });
   return facts;
 };
 
@@ -102,10 +94,6 @@ export const movementDetailView = (
     tone: movementTone(detail, true),
     categoryId,
     facts: factsOf(detail),
-    category:
-      categoryId === null
-        ? COPY.noCategory
-        : (CATEGORY_LABELS.get(categoryId) ?? categoryId),
     isGuess: isPendingReview,
     reason: reasonOf(detail),
     ...(isPendingReview

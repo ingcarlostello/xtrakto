@@ -32,7 +32,7 @@ function ListBody({ transactions, link }: ListBodyProps) {
   }
   const links: DetailLinks = detailLinks(link, {
     shown: items.length,
-    ...(detail === null ? {} : { openId: detail.id }),
+    ...(detail === null ? {} : { openId: detail.movement.id }),
   });
   return (
     <>

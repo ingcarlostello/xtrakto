@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { correctionView } from "../correction.helpers";
 import { movementDetailView } from "../movement-detail.helpers";
 import { listLinkOf } from "../period-selector.helpers";
 import { detailLinks } from "../transaction-list.helpers";
@@ -35,8 +36,9 @@ export function MovementDetailColumn({
     <div className="lg:sticky lg:top-6">
       {detail ? (
         <MovementDetailPanel
-          key={detail.id}
-          view={movementDetailView(detail, account.id)}
+          key={detail.movement.id}
+          view={movementDetailView(detail.movement, account.id)}
+          correction={correctionView(detail, account.id)}
           closeHref={close}
         />
       ) : (

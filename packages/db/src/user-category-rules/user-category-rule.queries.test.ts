@@ -8,6 +8,7 @@ import {
   VERIFIED,
 } from "../../test/prepared-statements";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
+import { asAmount } from "../../test/test-rows";
 import { resolveIdentifiedAccount } from "../accounts/account.queries";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
@@ -15,8 +16,10 @@ import { saveStatement } from "../statements/statement.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserContext, UserId } from "../user-context/user-context.types";
+import { listMovementAccounts } from "../transactions/transaction.queries";
 import { findOrCreateUser } from "../users/user.queries";
 import {
+  countMovementsOfRule,
   listUserCategoryRules,
   saveUserCategoryRule,
 } from "./user-category-rule.queries";
@@ -331,6 +334,144 @@ describe.skipIf(!testDatabase)("user category rules", () => {
         categorySource: "rule",
       },
     ]);
+  });
+
+  // A reference's rule comes before a text's (ADR 0025), also for the
+  // movements already saved when the text's rule comes later.
+  it("keeps what a number's rule says when a rule for its text comes later", async () => {
+    const userId = await newUser();
+    const myNequi = (await movementsOf(userId)).find(
+      ({ referenceLast4 }) => referenceLast4 === "4567",
+    )?.referenceHash;
+    if (!myNequi) throw new Error("No Nequi reference saved.");
+
+    const changed = await inContext(userId, async (ctx) => {
+      await saveUserCategoryRule(ctx, {
+        target: "reference",
+        referenceHash: myNequi,
+        categoryId: "own_account_transfer",
+      });
+      return saveUserCategoryRule(ctx, {
+        target: "description",
+        descriptionFolded: "TRANSFERENCIAS A NEQUI",
+        direction: "out",
+        categoryId: "transfers_to_people",
+      });
+    });
+    const sends = (await movementsOf(userId)).filter(
+      ({ description }) => description === "TRANSFERENCIAS A NEQUI",
+    );
+
+    expect(changed).toBe(1);
+    expect(
+      sends.map(({ referenceLast4, categoryId }) => [
+        referenceLast4,
+        categoryId,
+      ]),
+    ).toEqual([
+      ["4567", "own_account_transfer"],
+      ["4567", "own_account_transfer"],
+      ["6543", "transfers_to_people"],
+    ]);
+  });
+
+  it("keeps a number marked as someone else's when a rule for its text comes later", async () => {
+    const userId = await newUser();
+    const theirs = (await movementsOf(userId)).find(
+      ({ referenceLast4 }) => referenceLast4 === "6543",
+    )?.referenceHash;
+    if (!theirs) throw new Error("No Nequi reference saved.");
+
+    const changed = await inContext(userId, async (ctx) => {
+      await saveUserCategoryRule(ctx, {
+        target: "reference",
+        referenceHash: theirs,
+        categoryId: "transfers_to_people",
+      });
+      return saveUserCategoryRule(ctx, {
+        target: "description",
+        descriptionFolded: "TRANSFERENCIAS A NEQUI",
+        direction: "out",
+        categoryId: "investment",
+      });
+    });
+    const sends = (await movementsOf(userId)).filter(
+      ({ description }) => description === "TRANSFERENCIAS A NEQUI",
+    );
+
+    expect(changed).toBe(2);
+    expect(
+      sends.map(({ referenceLast4, categoryId }) => [
+        referenceLast4,
+        categoryId,
+      ]),
+    ).toEqual([
+      ["4567", "investment"],
+      ["4567", "investment"],
+      ["6543", "transfers_to_people"],
+    ]);
+  });
+
+  it("counts the movements a text rule would change besides one, leaving what a number's rule says", async () => {
+    const userId = await newUser();
+    const before = await movementsOf(userId);
+    const myNequi = before.find(
+      ({ referenceLast4 }) => referenceLast4 === "4567",
+    )?.referenceHash;
+    const idOf = async (amountMinor: number) => {
+      const [row] = await inContext(userId, ({ tx }) =>
+        tx
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(eq(transactions.amountMinor, asAmount(amountMinor))),
+      );
+      if (!row) throw new Error(`No movement of ${amountMinor}.`);
+      return row.id;
+    };
+    if (!myNequi) throw new Error("No Nequi reference saved.");
+
+    const counts = await inContext(userId, async (ctx) => {
+      // July's payment again in an export, which the verified quarterly
+      // statement hides: it counts nowhere (ADR 0018).
+      const [account] = await listMovementAccounts(ctx);
+      if (!account) throw new Error("No account.");
+      await saveStatement(ctx, {
+        accountId: account.id,
+        balance: UNCHECKED,
+        statement: await preparedExport([
+          {
+            date: "2026-07-01",
+            amount: -300_000,
+            description: "PAGO LLAVE INVERSIONES XY",
+          },
+        ]),
+      });
+      // The October key payment and July's, written another way.
+      const keyPayments = await countMovementsOfRule(
+        ctx,
+        KEY_PAYMENTS_ARE_TRANSFERS,
+        await idOf(-200_000),
+      );
+      await saveUserCategoryRule(ctx, {
+        target: "reference",
+        referenceHash: myNequi,
+        categoryId: "own_account_transfer",
+      });
+      // The sends to ••4567 stay the user's own: none besides ••6543's.
+      const sends = await countMovementsOfRule(
+        ctx,
+        {
+          target: "description",
+          descriptionFolded: "TRANSFERENCIAS A NEQUI",
+          direction: "out",
+          categoryId: "transfers_to_people",
+        },
+        await idOf(-30_000),
+      );
+      return { keyPayments, sends };
+    });
+
+    expect(counts).toEqual({ keyPayments: 1, sends: 0 });
   });
 
   it("changes nothing of another user's, who can't read the rule", async () => {
