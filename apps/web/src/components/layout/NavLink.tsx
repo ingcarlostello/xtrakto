@@ -6,15 +6,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-type NavLinkProps = { href: Route; label: string; icon: ReactNode };
+type NavLinkProps = {
+  href: Route;
+  alsoActiveOn?: readonly Route[] | undefined;
+  label: string;
+  icon: ReactNode;
+};
 
 // The only client part of the dock: knowing the active item needs the path.
-export function NavLink({ href, label, icon }: NavLinkProps) {
+export function NavLink({
+  href,
+  alsoActiveOn = [],
+  label,
+  icon,
+}: NavLinkProps) {
   const pathname = usePathname();
   const isActive =
-    href === "/"
+    (href === "/"
       ? pathname === "/"
-      : pathname === href || pathname.startsWith(`${href}/`);
+      : pathname === href || pathname.startsWith(`${href}/`)) ||
+    alsoActiveOn.some((path) => path === pathname);
   return (
     <Link
       href={href}

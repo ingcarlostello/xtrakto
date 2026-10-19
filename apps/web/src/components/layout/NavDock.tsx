@@ -11,10 +11,11 @@ export function NavDock() {
       className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 sm:sticky sm:inset-x-auto sm:bottom-4 sm:mx-auto sm:mb-4 sm:w-fit"
     >
       <ul className="flex justify-around gap-1 rounded-xl bg-surface/94 p-2 shadow-float">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        {NAV_ITEMS.map(({ href, label, icon: Icon, alsoActiveOn }) => (
           <li key={href}>
             <NavLink
               href={href}
+              alsoActiveOn={alsoActiveOn}
               label={label}
               icon={<Icon aria-hidden strokeWidth={1.7} />}
             />

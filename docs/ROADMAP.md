@@ -182,9 +182,10 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.2a Internal movement detection
 - [x] 6.2b Kinds in Movimientos
 - [x] 6.3a User rules
-- [ ] 6.3b Quick review
-- [ ] 6.3c Nequi numbers and "Lo que está en juego"
-- [ ] 6.3d Detail panel and corrections
+- [x] 6.3b Quick review: ask and answer
+- [ ] 6.3c Quick review: answered groups and the banner
+- [ ] 6.3d Nequi numbers and "Lo que está en juego"
+- [ ] 6.3e Detail panel and corrections
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
@@ -1117,7 +1118,7 @@ Phase 6.2 was split in two (about 550 changed lines), with the human's approval.
 
 #### 6.3a User rules
 
-Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval. Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
+Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval, and in five when 6.3b came out at about 750. Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
 
 **Tasks**
 
@@ -1129,19 +1130,32 @@ Phase 6.3 was split in four (about 1,500 changed lines), with the human's approv
 
 **Commit:** `feat(db): user category rules`
 
-#### 6.3b Quick review
+#### 6.3b Quick review: ask and answer
+
+The quick review was split in two (about 750 changed lines), with the human's approval: asking and answering here, closing in 6.3c. Decided with the human: the review shows the account's latest quarter, or the one the URL asks, without the quarter picker, as `v8-02` draws it. It came out at about 810 lines, and lands in two commits of one pull request (decided with the human): the answers, then the page.
 
 **Tasks**
 
-- The quick review of design v8 (`docs/ui/v8-02`) for the period and account in the URL: the movements that count and wait for review, asked by group (the holder's cut name going out, key payments to platforms and to people, money in from the user's name or Nequi, deposits at a _corresponsal_, PSE payments to banks and fintechs, to investment platforms and to lenders, and the bank's `0`), each with its question, the bank's texts with their counts, the amount at stake and the answers, the best guess first ("Sugerido: la primera").
-- An answer saves a user rule for each text of the group (6.3a); answered groups collapse with what they now count as and "Cambiar".
-- The summary shows the review banner while groups are pending ("Tienes 4 grupos por revisar (24 movimientos)", design system §9).
+- The quick review of design v8 (`docs/ui/v8-02`) at `/review`, for the account and quarter in the URL or the latest: the movements that count and wait for review, asked by group (the holder's cut name going out, key payments to platforms and to people, money in from the user's name or Nequi, deposits at a _corresponsal_, PSE payments to banks and fintechs, to investment platforms and to lenders, and the bank's `0`), each with its question, the bank's texts with their counts, the amount at stake and the answers, the best guess first ("Sugerido: la primera").
+- An answer saves a user rule for each text of the group (6.3a), and gives the bank's `0` its category movement by movement; "No sé" takes the movements out of the review, keeping the guess. An answered group leaves the page.
 
 **Done when:** answering a group recategorizes its movements in every statement and in the next upload; the review works at phone width and with the keyboard.
 
-**Commit:** `feat(web): quick review`
+**Commits:** `feat(web): quick review answers by group`, then `feat(web): quick review page`
 
-#### 6.3c Nequi numbers and "Lo que está en juego"
+#### 6.3c Quick review: answered groups and the banner
+
+**Tasks**
+
+- Answered groups stay on the review, closed, with what they now count as ("Son tuyas: 5 movimientos cuentan como movido.") and "Cambiar", which asks again; after an answer, the focus stays on its group.
+- The status pill beside the title ("6 grupos · 38 movimientos").
+- The summary shows the review banner while groups are pending ("Tienes 4 grupos por revisar (24 movimientos)", design system §9), for the review's account and quarter.
+
+**Done when:** a group answered stays closed after a reload and can be answered again; the banner shows only while something waits for review.
+
+**Commit:** `feat(web): answered groups and the review banner`
+
+#### 6.3d Nequi numbers and "Lo que está en juego"
 
 **Tasks**
 
@@ -1152,7 +1166,7 @@ Phase 6.3 was split in four (about 1,500 changed lines), with the human's approv
 
 **Commit:** `feat(web): Nequi numbers and what's at stake in the review`
 
-#### 6.3d Detail panel and corrections
+#### 6.3e Detail panel and corrections
 
 **Tasks**
 
