@@ -523,6 +523,12 @@ As Phase 6.3c closes answered groups (`AnsweredGroup`, `ReviewGroupItem`):
 - **Cambiar** opens the card again in the same place, about the movements answered, with every answer but "No sé" (an answer changes, it doesn't go back to the guess) and the link action "Mantener mi respuesta" under them, which closes it unchanged.
 - **The focus** stays on the group: once answered, or kept, on the closed card (a `role="group"` named by its title and described by its sentence, with the focus ring around it); when "Cambiar" opens it, on its question. A group loaded already answered takes no focus.
 
+As Phase 6.3d asks about the Nequi numbers (`NumbersCard`, `NumbersForm`), after "Plata que entró", as `v8-02` orders them:
+
+- **Open:** the same card, with the `smartphone` chip, "¿Alguno de estos números de Nequi es tuyo?" and its context, and the amount and count of the sends that wait. Below, one row per number, the most sends first, each with a `--divider` line above it: the raw-text chip with the bank's text and the number's digits ("TRANSFERENCIAS A NEQUI · ref ••• 1270"), what went there in Meta `--text-muted` ("6 envíos · $480.000"), and "Es mío" with its switch on the right, under them on phones. Then a small Primary "Guardar" and a small Secondary "Ninguno es mío".
+- **Answered:** the closed card names the numbers instead of the bank's text ("Números de Nequi (••• 4567 y ••• 6543)"), with "Son tuyos: 1 movimiento cuenta como movido." and "No son tuyos: 1 movimiento cuenta como gasto real."
+- **Cambiar:** a number already the user's reads "Es tuyo", without a switch (taking it back comes with 6.3f); the others keep theirs. "Mantener mi respuesta" replaces "Ninguno es mío", and "Guardar" leaves when no number is left to mark.
+
 ### Coverage timeline
 
 The months the user has, on the upload screen, the upload result and the profile: one rounded segment per month (8px tall, 6px apart) with the month below (Meta), and a legend:
@@ -588,6 +594,8 @@ As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a ne
 ### Switch
 
 For "Es mío" and the email notices: `--primary` when on, `--ring-track` when off, always with a visible label.
+
+As Phase 6.3d builds it (`Switch`, `components/ui/switch.tsx`, on Base UI): a 44 × 26 pill with a 20px white thumb and `--shadow-chip`; off, the track is edged in 1.5px `--text-faint`, as the checkbox (3.7:1 on white, which a control's edge needs). Its visible label sits beside it, Manrope 700 14px, inside a `<label>` that wraps it, and it's named by what it changes ("Es mío: Nequi terminado en 1270"). Its hidden input sends its value with the form when it's on; its hit area reaches 44px.
 
 ### Text field
 
