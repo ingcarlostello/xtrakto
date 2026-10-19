@@ -1,4 +1,5 @@
 import {
+  CATEGORIES,
   CATEGORY_SOURCE,
   type CategoryId,
   MONEY_DIRECTION,
@@ -7,7 +8,18 @@ import {
   type UserCategoryRule,
   userRuleTextOf,
 } from "@xtrakto/core";
-import { and, eq, inArray, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  inArray,
+  ne,
+  notExists,
+  type SQL,
+  sql,
+} from "drizzle-orm";
+import { countedMovement } from "../coverage/coverage.queries";
+import { statements } from "../statements/statement.schemas";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 import { userCategoryRules } from "./user-category-rule.schemas";
@@ -104,12 +116,37 @@ const goingWay = (direction: MoneyDirection | undefined): SQL => {
   return sql`${transactions.amountMinor} <> 0`;
 };
 
+// The categories whose reference rules hold for money going this way.
+const referenceCategoriesFor = (direction: MoneyDirection): CategoryId[] =>
+  CATEGORIES.flatMap(({ id }) => {
+    const holds = referenceRuleDirection(id);
+    return holds === undefined || holds === direction ? [id] : [];
+  });
+
+// The movement's reference has a rule of the user's that holds for its way,
+// which comes before any text's rule (ADR 0025).
+const heldByReference = ({ tx }: UserContext, direction: MoneyDirection) =>
+  tx
+    .select({ held: sql`1` })
+    .from(userCategoryRules)
+    .where(
+      and(
+        eq(userCategoryRules.userId, transactions.userId),
+        eq(userCategoryRules.referenceHash, transactions.referenceHash),
+        inArray(
+          userCategoryRules.categoryId,
+          referenceCategoriesFor(direction),
+        ),
+      ),
+    );
+
 // The user's movements a rule holds for, or none. A reference's rule holds
 // the ways its category allows (ADR 0026). A text rule compares texts as
 // `userRuleTextOf` writes them, which SQL can't, so it reads the user's
-// distinct texts going that way first.
+// distinct texts going that way first; it leaves what a reference's rule
+// says.
 const movementsOfRule = async (
-  { tx, userId }: UserContext,
+  ctx: UserContext,
   rule: UserCategoryRule,
 ): Promise<SQL | undefined> => {
   if (rule.target === "reference")
@@ -117,10 +154,10 @@ const movementsOfRule = async (
       eq(transactions.referenceHash, rule.referenceHash),
       goingWay(referenceRuleDirection(rule.categoryId)),
     );
-  const rows = await tx
+  const rows = await ctx.tx
     .selectDistinct({ description: transactions.descriptionNormalized })
     .from(transactions)
-    .where(and(eq(transactions.userId, userId), goingWay(rule.direction)));
+    .where(and(eq(transactions.userId, ctx.userId), goingWay(rule.direction)));
   const texts = rows
     .map(({ description }) => description)
     .filter((text) => userRuleTextOf(text) === rule.descriptionFolded);
@@ -129,6 +166,7 @@ const movementsOfRule = async (
     : and(
         goingWay(rule.direction),
         inArray(transactions.descriptionNormalized, texts),
+        notExists(heldByReference(ctx, rule.direction)),
       );
 };
 
@@ -138,6 +176,32 @@ export const usersCategory = (categoryId: CategoryId) => ({
   categorySource: CATEGORY_SOURCE.USER,
   isPendingReview: false,
 });
+
+/**
+ * How many of the user's movements that count a rule would give its
+ * category to, in any statement, besides one: "Aplicar a los 3 parecidos".
+ */
+export const countMovementsOfRule = async (
+  ctx: UserContext,
+  rule: UserCategoryRule,
+  exceptId: string,
+): Promise<number> => {
+  const matching = await movementsOfRule(ctx, rule);
+  if (matching === undefined) return 0;
+  const [row] = await ctx.tx
+    .select({ movements: count() })
+    .from(transactions)
+    .innerJoin(statements, eq(statements.id, transactions.statementId))
+    .where(
+      and(
+        eq(transactions.userId, ctx.userId),
+        matching,
+        countedMovement,
+        ne(transactions.id, exceptId),
+      ),
+    );
+  return row?.movements ?? 0;
+};
 
 /**
  * Saves the user's rule, replacing their earlier one for the same text and

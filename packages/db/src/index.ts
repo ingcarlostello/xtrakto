@@ -87,6 +87,7 @@ export {
 export type { MovementSelection } from "./transactions/transaction-selection.queries";
 export type { MovementSearch } from "./transactions/transaction-search.queries";
 export {
+  countMovementsOfRule,
   listUserCategoryRules,
   saveUserCategoryRule,
 } from "./user-category-rules/user-category-rule.queries";

@@ -19,6 +19,8 @@ import { transactions } from "./transaction.schemas";
  * it was saved from.
  */
 export type MovementDetail = TransactionListItem & {
+  /** Its text as rules read it, which a rule for its text compares (6.3g). */
+  readonly descriptionNormalized: string;
   /** The last 4 digits of the number it went to or came from, when it had one. */
   readonly referenceLast4: string | null;
   readonly categorySource: CategorySource | null;
@@ -41,6 +43,7 @@ export const findMovementDetail = async (
   const [row] = await tx
     .select({
       ...LIST_ITEM_COLUMNS,
+      descriptionNormalized: transactions.descriptionNormalized,
       referenceLast4: transactions.referenceLast4,
       categorySource: transactions.categorySource,
       categoryRuleId: transactions.categoryRuleId,
