@@ -73,6 +73,13 @@ export {
   type CategoryTotals,
   listCategoryTotals,
 } from "./transactions/transaction-totals.queries";
+export {
+  dismissReview,
+  listReviewMovements,
+  type ReviewFilter,
+  type ReviewMovement,
+  setUserCategory,
+} from "./transactions/transaction-review.queries";
 export type { MovementSelection } from "./transactions/transaction-selection.queries";
 export type { MovementSearch } from "./transactions/transaction-search.queries";
 export {

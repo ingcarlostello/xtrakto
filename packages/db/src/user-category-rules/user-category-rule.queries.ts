@@ -127,8 +127,8 @@ const movementsOfRule = async (
       );
 };
 
-// The user's category is never a guess, and the rule that guessed stays.
-const usersCategory = (categoryId: CategoryId) => ({
+/** The user's category, as movements keep it: never a guess, the rule that guessed kept. */
+export const usersCategory = (categoryId: CategoryId) => ({
   categoryId,
   categorySource: CATEGORY_SOURCE.USER,
   isPendingReview: false,
