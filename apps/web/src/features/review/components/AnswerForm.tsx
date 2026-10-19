@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { answerReview } from "../actions/answer-review.action";
-import { useReviewGroupControls } from "../hooks/use-review-group";
+import { useCloseWhenSaved } from "../hooks/use-review-group";
 import { REVIEW_COPY } from "../review.constants";
 import type { ReviewAnswerId, ReviewGroupId } from "../review.types";
 import { KeepAnswerButton } from "./ChangeAnswerButtons";
@@ -66,12 +66,7 @@ export function AnswerForm({
   canKeep,
 }: AnswerFormProps) {
   const [state, action, isPending] = useActionState(answerReview, null);
-  const controls = useReviewGroupControls();
-  // Once saved, a group asked again with "Cambiar" closes; one that waited
-  // closes as the page refreshes with its answer.
-  useEffect(() => {
-    if (state?.ok) controls?.close();
-  }, [state, controls]);
+  useCloseWhenSaved(state);
   return (
     <form action={action} className="flex flex-col gap-2">
       <input type="hidden" name="group" value={group} />

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CategoryId } from "../categories/category.types";
 import { amountMinorSchema } from "../money/money.schemas";
+import type { ReferenceKind } from "../statements/statement.types";
 import { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import { categorizeByRules } from "./categorization.helpers";
 import type { CategorizationRuleId } from "./categorization.types";
@@ -21,6 +22,7 @@ type Match = readonly [
   ruleId: CategorizationRuleId,
   categoryId: CategoryId,
   review?: typeof REVIEW,
+  reference?: ReferenceKind,
 ];
 
 const MATCHES: readonly Match[] = [
@@ -45,8 +47,25 @@ const MATCHES: readonly Match[] = [
   ],
   ["RETIRO CAJERO  ATM PLAZA CENTR", OUT, "cash_withdrawal", "cash_withdrawal"],
   ["RETIRO CORRESPONSAL CB", OUT, "cash_withdrawal", "cash_withdrawal"],
+  // A Nequi send asks whether its number is the user's, when it has one.
+  [
+    "TRANSFERENCIAS A NEQUI",
+    OUT,
+    "nequi_out_number",
+    "transfers_to_people",
+    REVIEW,
+    "phone",
+  ],
   ["TRANSFERENCIAS A NEQUI", OUT, "nequi_out", "transfers_to_people"],
   ["Transferencias a Nequi", OUT, "nequi_out", "transfers_to_people"],
+  [
+    "TRANSFERENCIAS A NEQUI",
+    OUT,
+    "nequi_out",
+    "transfers_to_people",
+    undefined,
+    "code",
+  ],
   ["TRANSFERENCIA DESDE NEQUI", IN, "nequi_in", "own_account_transfer", REVIEW],
   [
     "TRANSFERENCIA CTA SUC VIRTUAL",
@@ -194,19 +213,30 @@ const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
     ["ABONO INTERESES AHORROS", 0],
   ];
 
-const movement = (description: string, amount: number) => ({
+const movement = (
+  description: string,
+  amount: number,
+  referenceKind?: ReferenceKind,
+) => ({
   descriptionNormalized: description,
   amountMinor: amountMinorSchema.parse(amount),
+  referenceKind,
 });
 
-const categorize = (description: string, amount: number) =>
-  categorizeByRules(movement(description, amount), { holderName: HOLDER });
+const categorize = (
+  description: string,
+  amount: number,
+  referenceKind?: ReferenceKind,
+) =>
+  categorizeByRules(movement(description, amount, referenceKind), {
+    holderName: HOLDER,
+  });
 
 describe("categorizeByRules", () => {
   it.for(MATCHES)(
     "reads %j (%i) with %s",
-    ([description, amount, ruleId, categoryId, review]) => {
-      expect(categorize(description, amount)).toEqual({
+    ([description, amount, ruleId, categoryId, review, reference]) => {
+      expect(categorize(description, amount, reference)).toEqual({
         ruleId,
         categoryId,
         isPendingReview: review === REVIEW,

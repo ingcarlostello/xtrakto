@@ -6,6 +6,7 @@ import {
   SAVINGS_WORDS,
   UTILITY_WORDS,
 } from "./categorization-words.constants";
+import { REFERENCE_KIND } from "../statements/statement.constants";
 import { MONEY_DIRECTION, NO_DESCRIPTION } from "./categorization.constants";
 import { MERCHANT_RULES } from "./merchant-rules.constants";
 import type { CategorizationRule } from "./categorization.types";
@@ -104,7 +105,18 @@ export const CATEGORIZATION_RULES = [
     categoryId: "cash_withdrawal",
     reasonEs: "sacaste efectivo: no sabemos en qué se usó",
   },
-  // Transfers.
+  // Transfers. A Nequi send that names its number asks whether it's the
+  // user's (6.3d); only movements exports carry it.
+  {
+    id: "nequi_out_number",
+    startsWith: ["TRANSFERENCIAS A NEQUI"],
+    withReference: REFERENCE_KIND.PHONE,
+    direction: OUT,
+    categoryId: "transfers_to_people",
+    isGuess: true,
+    reasonEs:
+      "un envío a Nequi es un pago a una persona, salvo que el número sea tuyo",
+  },
   {
     id: "nequi_out",
     startsWith: ["TRANSFERENCIAS A NEQUI"],

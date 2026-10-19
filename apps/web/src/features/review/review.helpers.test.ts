@@ -9,6 +9,8 @@ import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import {
   answerPlan,
   answersToOffer,
+  numberRules,
+  numbersOf,
   pickQuarter,
   reviewGroupsOf,
   reviewHref,
@@ -32,6 +34,8 @@ const movement = (
   isPendingReview: true,
   categoryId: GUESSES.get(ruleId) ?? "other_spending",
   isUsersCategory: false,
+  referenceHash: null,
+  referenceLast4: null,
 });
 
 // The same movement once the user answered it with a category.
@@ -221,6 +225,103 @@ describe("reviewGroupsOf", () => {
 
   it("asks nothing without movements", () => {
     expect(reviewGroupsOf([])).toEqual([]);
+  });
+});
+
+// A Nequi send to a number, by its last 4 digits, waiting for review.
+const sent = (id: string, last4: string, amount: number): ReviewMovement => ({
+  ...movement(id, ["nequi_out_number", "TRANSFERENCIAS A NEQUI", amount]),
+  referenceHash: last4.repeat(16),
+  referenceLast4: last4,
+});
+
+describe("numbersOf", () => {
+  it("asks about each number the sends went to, the most sent first", () => {
+    expect(
+      numbersOf([
+        sent("n1", "5531", -50_000),
+        sent("n2", "1270", -100_000),
+        sent("n3", "1270", -200_000),
+      ]),
+    ).toEqual([
+      {
+        referenceHash: "1270".repeat(16),
+        last4: "1270",
+        text: "TRANSFERENCIAS A NEQUI",
+        count: 2,
+        amountMinor: -300_000,
+        isMine: false,
+      },
+      {
+        referenceHash: "5531".repeat(16),
+        last4: "5531",
+        text: "TRANSFERENCIAS A NEQUI",
+        count: 1,
+        amountMinor: -50_000,
+        isMine: false,
+      },
+    ]);
+  });
+
+  it("knows a number is the user's once their rule says so, and only then", () => {
+    const numbers = numbersOf([
+      answered("own_account_transfer", sent("n1", "1270", -1_000)),
+      answered("transfers_to_people", sent("n2", "5531", -1_000)),
+      dismissed(sent("n3", "9082", -1_000)),
+    ]);
+
+    expect(numbers.map(({ last4, isMine }) => [last4, isMine])).toEqual([
+      ["1270", true],
+      ["5531", false],
+      ["9082", false],
+    ]);
+  });
+
+  it("gives the numbers only to the group that asks by number", () => {
+    const groups = reviewGroupsOf([
+      sent("n1", "1270", -1_000),
+      ...QUARTER.slice(4, 5),
+    ]);
+    const pendingOf = (id: string) =>
+      groups.find((group) => group.id === id)?.pending;
+
+    expect(pendingOf("nequi_numbers")?.numbers).toHaveLength(1);
+    expect(pendingOf("key_people")).not.toHaveProperty("numbers");
+  });
+});
+
+describe("numberRules", () => {
+  const numbers = numbersOf([
+    sent("n1", "1270", -1_000),
+    sent("n2", "5531", -1_000),
+    answered("own_account_transfer", sent("n3", "9082", -1_000)),
+  ]);
+
+  it("saves each number's rule: the user's own for those marked, someone else's for the rest", () => {
+    expect(numberRules(numbers, new Set(["1270".repeat(16)]))).toEqual([
+      {
+        target: "reference",
+        referenceHash: "1270".repeat(16),
+        referenceLast4: "1270",
+        categoryId: "own_account_transfer",
+      },
+      {
+        target: "reference",
+        referenceHash: "5531".repeat(16),
+        referenceLast4: "5531",
+        categoryId: "transfers_to_people",
+      },
+    ]);
+  });
+
+  it("keeps a number already the user's, which only 6.3f takes back", () => {
+    const rules = numberRules(numbers, new Set());
+
+    expect(
+      rules.flatMap((rule) =>
+        rule.target === "reference" ? [rule.referenceHash] : [],
+      ),
+    ).not.toContain("9082".repeat(16));
   });
 });
 

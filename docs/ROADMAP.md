@@ -184,8 +184,9 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3a User rules
 - [x] 6.3b Quick review: ask and answer
 - [x] 6.3c Quick review: answered groups and the banner
-- [ ] 6.3d Nequi numbers and "Lo que está en juego"
-- [ ] 6.3e Detail panel and corrections
+- [x] 6.3d Nequi numbers
+- [ ] 6.3e "Lo que está en juego"
+- [ ] 6.3f Detail panel and corrections
 - [ ] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
@@ -1118,7 +1119,7 @@ Phase 6.2 was split in two (about 550 changed lines), with the human's approval.
 
 #### 6.3a User rules
 
-Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval, and in five when 6.3b came out at about 750. Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
+Phase 6.3 was split in four (about 1,500 changed lines), with the human's approval, in five when 6.3b came out at about 750, and in six when 6.3d was estimated at about 600 (2026-10-19). Decided with the human on 2026-10-16: the quick review asks about a period and an account, like Movimientos, and an answer becomes a rule for every statement; of the card payments, only the PSE ones are asked (`PAGO SUC VIRT TC` stays sure, though `v8-02` asks about it); answered groups stay on the review, closed and with "Cambiar", so a movement keeps the rule that guessed it after the user decides. "No sé" keeps the best guess and takes those movements out of the review without a rule, and the bank's `0` is answered by group but never makes a rule.
 
 **Tasks**
 
@@ -1155,23 +1156,37 @@ The quick review was split in two (about 750 changed lines), with the human's ap
 
 **Commit:** `feat(web): answered groups and the review banner`
 
-#### 6.3d Nequi numbers and "Lo que está en juego"
+#### 6.3d Nequi numbers
+
+Phase 6.3d was split in two (about 600 changed lines), with the human's approval: the Nequi numbers here, "Lo que está en juego" in 6.3e. Decided with the human on 2026-10-19: a Nequi send that carries the recipient's number (only movements exports do) is a best guess, a payment to a person waiting for review, so the review, the banner and Movimientos count the same, though `v8-03` draws it as sure; and a number the user says isn't theirs is remembered, as that number's rule for money going out.
 
 **Tasks**
 
-- The Nequi group of `v8-02`: the period's Nequi numbers (only movements exports carry them) with their count and total and an "Es mío" switch; "Guardar" saves a reference rule for each one marked, and "Ninguno es mío" answers the group.
-- "Lo que está en juego": the progress ("2 de 6 respondidos"), and each open group with its amount, what it counts as today and what another answer would change in the period's totals ("Si son compras, tu gasto real sube a $30,4M"), with "Ver mi resumen" and "Responder después".
+- A rule for Nequi sends with a phone number (`nequi_out_number`, before `nequi_out`): a payment to a person, to review. A rule can ask for a reference of a kind.
+- A reference rule holds the ways its category allows: money that only moves, both; a payment to a person, money out; an income, money in. An ADR records it.
+- The Nequi group of `v8-02`: the quarter's numbers with their count and total and an "Es mío" switch. "Guardar" saves a rule for each number, moved for those marked and a payment to a person for the rest, and "Ninguno es mío" a payment to a person for every one. Answered, the group closes like the others, and "Cambiar" can mark more numbers as the user's; taking one back comes with 6.3f.
+- The switch joins the design system.
 
-**Done when:** a number marked as the user's counts as moved in every statement; the panel's figures are tested.
+**Done when:** a number marked as the user's counts as moved in every statement and in the next upload, and one marked as someone else's isn't asked again for money going out.
 
-**Commit:** `feat(web): Nequi numbers and what's at stake in the review`
+**Commit:** `feat(web): Nequi numbers in the quick review`
 
-#### 6.3e Detail panel and corrections
+#### 6.3e "Lo que está en juego"
+
+**Tasks**
+
+- "Lo que está en juego" beside the groups (`v8-02`): the progress ("2 de 6 respondidos", the movements waiting), and each open group with its amount, what it counts as today and what another answer would change in the period's totals ("Si son compras, tu gasto real sube a $30,4M"), with "Ver mi resumen" and "Responder después".
+
+**Done when:** the panel's figures are tested, and it works at phone width and with the keyboard.
+
+**Commit:** `feat(web): what's at stake in the review`
+
+#### 6.3f Detail panel and corrections
 
 **Tasks**
 
 - The detail panel of `v8-03`, moved here from 5.7: the movement's real fields (date, amount, "Así lo escribe el banco", channel, reference, balance after, source statement) and its kind and category with the reason ("Regla del sistema, sin IA"), which the user can change for that movement ("Guardar cambios") or for every movement with the same text ("Aplicar a los 3 parecidos", a user rule).
-- Mark a reference (a Nequi number) or a transfer recipient as "my own account", and undo it: its movements go back to what the table of rules says.
+- Mark a reference (a Nequi number) or a transfer recipient as "my own account", and undo it, also a Nequi number marked in the quick review (6.3d): its movements go back to what the table of rules says.
 - These corrections are the labeled data for Stage 14.
 - Probably near 500 lines: it may split again when it starts.
 
@@ -1537,7 +1552,7 @@ Starting point for the rule-based categorizer (`CATEGORIZATION_RULES` in `@xtrak
 | `TRANSF DE <NAME>`                          | Incoming transfer                                      | `income_transfer`                                                                 | `own_account_transfer` (moved +, never income) with the holder's name: whole words from the first name to a surname, or to review when the bank cut it                                                                                                           |
 | `TRANSF A <NAME>`                           | Outgoing transfer                                      | `transfers_to_people`                                                             | `own_account_transfer` with the holder's name, as for `TRANSF DE`; a utility written this way → `utilities`                                                                                                                                                      |
 | `TRANSF QR <NAME>`                          | Transfer to a person by QR                             | `transfers_to_people`                                                             | Channel QR; seen in real files                                                                                                                                                                                                                                   |
-| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)         | `transfers_to_people`                                                             | Was `digital_wallet` before v8. Internal if the phone is marked as the user's own                                                                                                                                                                                |
+| `TRANSFERENCIAS A NEQUI`                    | Transfer to a Nequi wallet (reference = phone)         | `transfers_to_people`; review with a phone number                                 | Was `digital_wallet` before v8. Only movements exports carry the number, which the user marks as theirs (internal) or someone else's (6.3d)                                                                                                                      |
 | `TRANSFERENCIA DESDE NEQUI`                 | Money in from a Nequi wallet                           | `own_account_transfer`, review                                                    | Most likely the user's own Nequi (moved +, design v8); someone else's: income                                                                                                                                                                                    |
 | `TRANSFERENCIA CTA SUC VIRTUAL`             | Transfer through the virtual branch                    | `transfers_to_people` (out), `income_transfer` (in)                               | Ambiguous; let the user correct it                                                                                                                                                                                                                               |
 | `PAGO SUC VIRT TC <BRAND> …`                | Credit card payment                                    | `credit_card_payment`                                                             | Internal                                                                                                                                                                                                                                                         |

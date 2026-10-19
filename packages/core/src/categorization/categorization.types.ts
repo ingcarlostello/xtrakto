@@ -3,6 +3,7 @@ import type {
   ParsedTransaction,
   PreparedStatement,
   PreparedTransaction,
+  ReferenceKind,
 } from "../statements/statement.types";
 import type { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import type { MONEY_DIRECTION } from "./categorization.constants";
@@ -17,7 +18,9 @@ export type HolderNameMatch = "whole" | "cut";
  * A rule the user made by answering the quick review or correcting a
  * movement (6.3). A text rule holds for the movements whose text is the
  * same as `userRuleTextOf` writes it, going the same way. A reference names
- * one person or account, so its rule holds both ways.
+ * one person or account, so its rule holds the ways its category allows:
+ * money that only moves, both; a payment to someone, money going out; an
+ * income, money coming in (ADR 0026).
  */
 export type UserCategoryRule =
   | {
@@ -43,10 +46,10 @@ export type CategorizationContext = {
   readonly userRules?: readonly UserCategoryRule[];
 };
 
-/** What the rules read from a movement. */
+/** What the rules read from a movement: its text, its amount and what its reference holds. */
 export type CategorizableTransaction = Pick<
   ParsedTransaction,
-  "descriptionNormalized" | "amountMinor"
+  "descriptionNormalized" | "amountMinor" | "referenceKind"
 >;
 
 /**
@@ -75,6 +78,8 @@ export type CategorizationRule = TextPattern & {
   readonly id: string;
   /** The words after the prefix name the account holder, whole or cut. */
   readonly namesHolder?: HolderNameMatch;
+  /** The movement's reference holds this, such as the number a Nequi send went to. */
+  readonly withReference?: ReferenceKind;
   readonly direction: MoneyDirection;
   readonly categoryId: CategoryId;
   /** The category is only a best guess, which the quick review asks about. */

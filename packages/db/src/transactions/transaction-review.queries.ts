@@ -28,6 +28,9 @@ export type ReviewMovement = {
   readonly categoryId: CategoryId;
   /** The user answered with a category; else the guess stands. */
   readonly isUsersCategory: boolean;
+  /** The number it went to or came from, as its HMAC, when the bank wrote it. */
+  readonly referenceHash: string | null;
+  readonly referenceLast4: string | null;
 };
 
 export type ReviewFilter = {
@@ -51,6 +54,8 @@ const REVIEW_COLUMNS = {
   isPendingReview: transactions.isPendingReview,
   categoryId: transactions.categoryId,
   categorySource: transactions.categorySource,
+  referenceHash: transactions.referenceHash,
+  referenceLast4: transactions.referenceLast4,
 };
 
 /**

@@ -55,10 +55,14 @@ const namesHolderAsRuleSays = (
  * The category the first matching rule gives a movement, and whether it's
  * only a best guess to review. `null` when no rule applies: Stage 8's LLM
  * will try those. The account's holder name lets transfers to or from it
- * count as moved.
+ * count as moved, and a rule can ask what the reference holds.
  */
 export const categorizeByRules = (
-  { descriptionNormalized, amountMinor }: CategorizableTransaction,
+  {
+    descriptionNormalized,
+    amountMinor,
+    referenceKind,
+  }: CategorizableTransaction,
   { holderName }: CategorizationContext = {},
 ): RuleCategorization | null => {
   const direction = moneyDirectionOf(amountMinor);
@@ -68,6 +72,11 @@ export const categorizeByRules = (
     holderName === undefined ? undefined : wordsOf(foldText(holderName));
   const match = COMPILED_RULES.find(({ rule, wordsAfter }) => {
     if (rule.direction !== direction) return false;
+    if (
+      rule.withReference !== undefined &&
+      rule.withReference !== referenceKind
+    )
+      return false;
     const rest = wordsAfter(description);
     return rest !== undefined && namesHolderAsRuleSays(rule, rest, holderWords);
   });

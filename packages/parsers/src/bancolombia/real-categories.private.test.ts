@@ -48,9 +48,9 @@ const FIXED_TEXTS: readonly (readonly [
   ["RETIRO CORRESPONSAL", false, "cash_withdrawal"],
   ["COMIS", false, "bank_fee"],
   ["AJUSTE", false, "bank_fee"],
-  ["TRANSFERENCIAS A NEQUI", false, "nequi_out"],
   ["PAGO SUC VIRT TC", false, "card_payment"],
 ];
+const NEQUI_SEND = "TRANSFERENCIAS A NEQUI";
 // The 4x1000 can appear anywhere in a description.
 const TAX_TEXT = "4X1000";
 
@@ -199,6 +199,24 @@ describe.skipIf(categorized.length === 0)(
         expect(otherRules(withText, ruleId)).toEqual([]);
       },
     );
+
+    // A Nequi send asks whether its number is the user's when the export
+    // names it (6.3d); the quarterly statement never does.
+    it("gives every Nequi send its rule, by whether it names its number", () => {
+      const sends = categorized.filter(
+        ({ movement }) =>
+          startsWithText(movement, NEQUI_SEND) && movement.amountMinor < 0,
+      );
+      const wrong = sends.filter(
+        ({ movement, result }) =>
+          result?.ruleId !==
+          (movement.referenceKind === "phone"
+            ? "nequi_out_number"
+            : "nequi_out"),
+      );
+
+      expect(wrong.length).toBe(0);
+    });
 
     it("gives every 4x1000 charge its rule", () => {
       const charges = categorized.filter(

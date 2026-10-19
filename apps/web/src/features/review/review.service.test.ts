@@ -18,8 +18,13 @@ import {
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
-import { answerReviewGroup, getReview } from "./review.service";
+import {
+  answerReviewGroup,
+  answerReviewNumbers,
+  getReview,
+} from "./review.service";
 
 // Against the test database, as the application role, after real uploads.
 const database = vi.hoisted(() => ({ current: undefined as unknown }));
@@ -36,6 +41,7 @@ const FIXTURES = new URL(
 );
 const HOUR_MS = 3_600_000;
 const QUARTER = { kind: "quarter", year: 2026, quarter: 3 } as const;
+const OCTOBER_QUARTER = { kind: "quarter", year: 2026, quarter: 4 } as const;
 const OCTOBER = periodSchema.parse({ from: "2026-10-01", to: "2026-10-31" });
 
 // A fixture as the browser sends it: minimized by its format's parser.
@@ -95,6 +101,39 @@ describe.skipIf(!testDatabase)("quick review", () => {
     const review = await getReview(clerkUserId, {});
     if (!review) throw new Error("Nothing to review.");
     return { clerkUserId, userId, accountId: review.account.id };
+  };
+
+  // A user with October's movements export only, which sends to two Nequi
+  // numbers, ••4567 and ••6543.
+  const newExportUser = async () => {
+    const clerkUserId = `test_${randomUUID()}`;
+    const userId = await findOrCreateUser(app.db, clerkUserId);
+    await upload(userId, "movements-basic");
+    const review = await getReview(clerkUserId, {});
+    if (!review) throw new Error("Nothing to review.");
+    return { clerkUserId, userId, accountId: review.account.id };
+  };
+
+  // The Nequi numbers of a quarter, as the review shows them.
+  const nequiOf = async (
+    clerkUserId: string,
+    period: MovementPeriod = OCTOBER_QUARTER,
+  ) =>
+    (await getReview(clerkUserId, { period }))?.groups.find(
+      ({ id }) => id === "nequi_numbers",
+    );
+
+  const numberHash = async (clerkUserId: string, last4: string) => {
+    const group = await nequiOf(clerkUserId);
+    const numbers = [
+      ...(group?.pending?.numbers ?? []),
+      ...(group?.answered?.numbers ?? []),
+    ];
+    const hash = numbers.find(
+      (number) => number.last4 === last4,
+    )?.referenceHash;
+    if (!hash) throw new Error(`No Nequi number ending in ${last4}.`);
+    return hash;
   };
 
   const keyPaymentOf = async (userId: UserId, accountId: string) => {
@@ -161,8 +200,8 @@ describe.skipIf(!testDatabase)("quick review", () => {
         count: 1,
       },
     ]);
-    // October, the latest quarter now, asks nothing: its key payment comes
-    // answered by the rule.
+    // In October, the latest quarter now, its key payment comes answered by
+    // the rule; only its Nequi numbers ask (6.3d).
     const latest = await getReview(clerkUserId, {});
     expect(
       latest?.groups.map(({ id, pending, answered }) => ({
@@ -170,7 +209,10 @@ describe.skipIf(!testDatabase)("quick review", () => {
         isOpen: pending !== null,
         said: answered?.outcomes.map(({ said }) => said),
       })),
-    ).toEqual([{ id: "key_people", isOpen: false, said: ["Compras"] }]);
+    ).toEqual([
+      { id: "key_people", isOpen: false, said: ["Compras"] },
+      { id: "nequi_numbers", isOpen: true, said: undefined },
+    ]);
     const movements = await keyPaymentOf(userId, accountId);
     expect(movements.map(({ date }) => date)).toEqual([
       expect.stringMatching(/^2026-10-/),
@@ -189,9 +231,11 @@ describe.skipIf(!testDatabase)("quick review", () => {
         offset: 0,
       }),
     );
-    expect(october.items.some(({ isPendingReview }) => isPendingReview)).toBe(
-      false,
-    );
+    expect(
+      october.items
+        .filter(({ isPendingReview }) => isPendingReview)
+        .map(({ descriptionRaw }) => descriptionRaw),
+    ).toEqual(["TRANSFERENCIAS A NEQUI", "TRANSFERENCIAS A NEQUI"]);
   });
 
   it("asks an answered group again, and changes the answer in every statement", async () => {
@@ -274,6 +318,91 @@ describe.skipIf(!testDatabase)("quick review", () => {
     expect(
       await withUserContext(app.db, userId, listUserCategoryRules),
     ).toEqual([]);
+  });
+
+  it("marks a Nequi number as the user's in every statement and in the next upload", async () => {
+    const { clerkUserId, userId, accountId } = await newExportUser();
+    const mine = await numberHash(clerkUserId, "4567");
+
+    const answered = await answerReviewNumbers(clerkUserId, {
+      account: accountId,
+      period: OCTOBER_QUARTER,
+      mine: [mine],
+    });
+    // July's export sends to ••4567 again.
+    await upload(userId, "movements-overlap");
+
+    expect(answered).toEqual({ ok: true, value: null });
+    expect((await nequiOf(clerkUserId))?.answered?.outcomes).toEqual([
+      {
+        said: "Son tuyos",
+        categoryId: "own_account_transfer",
+        isGuessKept: false,
+        count: 1,
+      },
+      {
+        said: "No son tuyos",
+        categoryId: "transfers_to_people",
+        isGuessKept: false,
+        count: 1,
+      },
+    ]);
+    expect(await nequiOf(clerkUserId, QUARTER)).toMatchObject({
+      pending: null,
+      answered: { outcomes: [{ said: "Son tuyos", count: 1 }] },
+    });
+  });
+
+  it("doesn't ask again about money going out to a number that isn't the user's", async () => {
+    const { clerkUserId, userId, accountId } = await newExportUser();
+
+    await answerReviewNumbers(clerkUserId, {
+      account: accountId,
+      period: OCTOBER_QUARTER,
+      mine: [],
+    });
+    await upload(userId, "movements-overlap");
+
+    expect(await nequiOf(clerkUserId, QUARTER)).toMatchObject({
+      pending: null,
+      answered: {
+        outcomes: [
+          { said: "No son tuyos", categoryId: "transfers_to_people", count: 1 },
+        ],
+      },
+    });
+  });
+
+  it('marks more numbers with "Cambiar", keeping those already the user\'s', async () => {
+    const { clerkUserId, accountId } = await newExportUser();
+    const answer = async (last4: string) =>
+      answerReviewNumbers(clerkUserId, {
+        account: accountId,
+        period: OCTOBER_QUARTER,
+        mine: [await numberHash(clerkUserId, last4)],
+      });
+    await answer("4567");
+
+    await answer("6543");
+
+    expect((await nequiOf(clerkUserId))?.answered?.numbers).toMatchObject([
+      { last4: "4567", isMine: true },
+      { last4: "6543", isMine: true },
+    ]);
+  });
+
+  it("marks nothing on another user's account", async () => {
+    const owner = await newExportUser();
+    const other = await newExportUser();
+
+    const answered = await answerReviewNumbers(other.clerkUserId, {
+      account: owner.accountId,
+      period: OCTOBER_QUARTER,
+      mine: [await numberHash(owner.clerkUserId, "4567")],
+    });
+
+    expect(answered).toEqual({ ok: false, error: { code: "NOT_FOUND" } });
+    expect((await nequiOf(owner.clerkUserId))?.pending?.count).toBe(2);
   });
 
   it("answers nothing on another user's account", async () => {

@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   Landmark,
+  Smartphone,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -44,6 +45,15 @@ export const REVIEW_COPY = {
   underAMinute: "Menos de un minuto",
   aMinute: "Un minuto",
   aboutMinutes: { before: "Unos", after: "minutos" },
+  // The Nequi numbers: "TRANSFERENCIAS A NEQUI · ref ••• 1270", "6 envíos ·
+  // $480.000", and its switch read "Es mío: Nequi terminado en 1270".
+  numbersLabel: "Números de Nequi",
+  reference: "ref",
+  dots: "•••",
+  sends: { one: "envío", other: "envíos" },
+  numberEnding: "Nequi terminado en",
+  isYours: "Es tuyo",
+  save: "Guardar",
   // The summary's banner while groups wait (design-system.md §9).
   bannerYouHave: "Tienes",
   bannerToReview: "por revisar",
@@ -51,6 +61,9 @@ export const REVIEW_COPY = {
     "Mientras tanto usamos nuestra mejor suposición. Confírmalos: pueden cambiar tu gasto real.",
   bannerAction: "Revisar ahora",
 } as const;
+
+/** The most Nequi numbers one answer marks: a quarter's, with room to spare. */
+export const MAX_NUMBERS = 200;
 
 /**
  * What each answer gives the movements of its group, and how an answered
@@ -130,6 +143,17 @@ export const REVIEW_ANSWERS = {
     said: "Volvió de tus cuentas",
     categoryId: "own_account_transfer",
   },
+  // A Nequi number's answers: its switch, and the button for every number.
+  not_mine: {
+    label: "Ninguno es mío",
+    said: "No son tuyos",
+    categoryId: "transfers_to_people",
+  },
+  my_number: {
+    label: "Es mío",
+    said: "Son tuyos",
+    categoryId: "own_account_transfer",
+  },
 } as const satisfies Record<string, ReviewAnswer>;
 
 /**
@@ -178,6 +202,17 @@ export const REVIEW_GROUPS = [
     context:
       "Viene de tu nombre o de un Nequi. Si es tuya, no la contamos como ingreso.",
     answers: ["came_back", "income"],
+  },
+  {
+    id: "nequi_numbers",
+    name: "Números de Nequi",
+    ruleIds: ["nequi_out_number"],
+    icon: Smartphone,
+    question: "¿Alguno de estos números de Nequi es tuyo?",
+    context:
+      "Solo los archivos de movimientos traen el número; el extracto trimestral no. Los que marques como tuyos pasan a movido.",
+    answers: ["not_mine", "my_number"],
+    asksByNumber: true,
   },
   {
     id: "corresponsal",

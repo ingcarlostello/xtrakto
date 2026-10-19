@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { answerReviewSchema, reviewSearchSchema } from "./review.schemas";
+import {
+  answerNumbersSchema,
+  answerReviewSchema,
+  reviewSearchSchema,
+} from "./review.schemas";
 
 const ACCOUNT_ID = "3f8a1c2e-1234-4abc-9def-0123456789ab";
 const ANSWER = {
@@ -29,6 +33,46 @@ describe("answerReviewSchema", () => {
     expect(answerReviewSchema.safeParse({ ...ANSWER, ...change }).success).toBe(
       false,
     );
+  });
+});
+
+describe("answerNumbersSchema", () => {
+  const MINE = "a".repeat(64);
+  const NUMBERS = {
+    account: ACCOUNT_ID,
+    period: "2026-q4",
+    answer: "save",
+    mine: [MINE],
+  };
+  const Q4 = { kind: "quarter", year: 2026, quarter: 4 };
+
+  it("reads the numbers marked as the user's with Guardar", () => {
+    expect(answerNumbersSchema.parse(NUMBERS)).toEqual({
+      account: ACCOUNT_ID,
+      period: Q4,
+      mine: [MINE],
+    });
+  });
+
+  it("marks none with Ninguno es mío, whatever the switches said", () => {
+    expect(answerNumbersSchema.parse({ ...NUMBERS, answer: "none" })).toEqual({
+      account: ACCOUNT_ID,
+      period: Q4,
+      mine: [],
+    });
+  });
+
+  it.each([
+    ["a number that isn't an HMAC", { mine: ["3001234567"] }],
+    ["an HMAC in capitals", { mine: ["A".repeat(64)] }],
+    ["more numbers than a quarter holds", { mine: Array(201).fill(MINE) }],
+    ["another answer", { answer: "maybe" }],
+    ["an account that isn't an id", { account: "8901" }],
+    ["no period", { period: undefined }],
+  ])("refuses %s", (_, change) => {
+    expect(
+      answerNumbersSchema.safeParse({ ...NUMBERS, ...change }).success,
+    ).toBe(false);
   });
 });
 

@@ -5,11 +5,12 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { AnsweredGroup } from "@/features/review/components/AnsweredGroup";
 import { NothingToReview } from "@/features/review/components/NothingToReview";
+import { NumbersCard } from "@/features/review/components/NumbersCard";
 import { ReviewGroupCard } from "@/features/review/components/ReviewGroupCard";
 import { ReviewGroupItem } from "@/features/review/components/ReviewGroupItem";
 import { reviewStatus } from "@/features/review/review-display.helpers";
 import { REVIEW_COPY as COPY } from "@/features/review/review.constants";
-import { scopeText } from "@/features/review/review.helpers";
+import { reviewGroupById, scopeText } from "@/features/review/review.helpers";
 import { reviewSearchSchema } from "@/features/review/review.schemas";
 import { getReview } from "@/features/review/review.service";
 import type {
@@ -44,8 +45,12 @@ function GroupItem({
   group: ReviewGroup;
   review: Review;
 }) {
+  // The Nequi numbers are asked number by number.
+  const Card = reviewGroupById(group.id).asksByNumber
+    ? NumbersCard
+    : ReviewGroupCard;
   const card = (movements: GroupMovements, isChange: boolean) => (
-    <ReviewGroupCard
+    <Card
       id={group.id}
       movements={movements}
       accountId={account.id}

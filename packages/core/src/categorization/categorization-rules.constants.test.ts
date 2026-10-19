@@ -76,6 +76,7 @@ describe("CATEGORIZATION_RULES", () => {
       "no_description_out",
       "no_description_in",
       "corresponsal_deposit",
+      "nequi_out_number",
       "nequi_in",
       "own_name_out_cut",
       "own_name_in_cut",

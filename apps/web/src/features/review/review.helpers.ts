@@ -25,6 +25,7 @@ import type {
   ReviewGroup,
   ReviewGroupDefinition,
   ReviewGroupId,
+  ReviewNumber,
   ReviewOutcome,
   ReviewText,
 } from "./review.types";
@@ -53,11 +54,75 @@ const textsOf = (movements: readonly ReviewMovement[]): ReviewText[] => {
     .sort((a, b) => b.count - a.count || a.text.localeCompare(b.text, "es"));
 };
 
-const movementsOf = (movements: readonly ReviewMovement[]): GroupMovements => ({
+const MY_NUMBER = REVIEW_ANSWERS.my_number.categoryId;
+const SOMEONE_ELSES_NUMBER = REVIEW_ANSWERS.not_mine.categoryId;
+
+const isUsersNumber = ({ isUsersCategory, categoryId }: ReviewMovement) =>
+  isUsersCategory && categoryId === MY_NUMBER;
+
+/**
+ * Each number the movements went to, with how many and how much, the most
+ * first; the user's own once their rule makes it theirs.
+ */
+export const numbersOf = (
+  movements: readonly ReviewMovement[],
+): ReviewNumber[] => {
+  const byNumber = new Map<string, ReviewMovement[]>();
+  for (const movement of movements)
+    if (movement.referenceHash !== null)
+      byNumber.set(movement.referenceHash, [
+        ...(byNumber.get(movement.referenceHash) ?? []),
+        movement,
+      ]);
+  return [...byNumber]
+    .map(([referenceHash, sent]) => ({
+      referenceHash,
+      last4: sent[0]?.referenceLast4 ?? null,
+      text: textsOf(sent)[0]?.text ?? "",
+      count: sent.length,
+      amountMinor: sumAmounts(sent.map(({ amountMinor }) => amountMinor)),
+      isMine: sent.every(isUsersNumber),
+    }))
+    .sort(
+      (a, b) =>
+        b.count - a.count || (a.last4 ?? "").localeCompare(b.last4 ?? ""),
+    );
+};
+
+const movementsOf = (
+  movements: readonly ReviewMovement[],
+  { asksByNumber = false }: ReviewGroupDefinition,
+): GroupMovements => ({
   texts: textsOf(movements),
   amountMinor: sumAmounts(movements.map(({ amountMinor }) => amountMinor)),
   count: movements.length,
+  ...(asksByNumber ? { numbers: numbersOf(movements) } : {}),
 });
+
+/**
+ * What answering the Nequi numbers saves: each number's rule, the user's
+ * own for those marked and someone else's for the rest, which holds for
+ * money going out to it (ADR 0026). A number already theirs stays theirs:
+ * taking one back comes with 6.3f.
+ */
+export const numberRules = (
+  numbers: readonly ReviewNumber[],
+  mine: ReadonlySet<string>,
+): UserCategoryRule[] =>
+  numbers.flatMap(({ referenceHash, last4, isMine }) =>
+    isMine
+      ? []
+      : [
+          {
+            target: "reference" as const,
+            referenceHash,
+            ...(last4 === null ? {} : { referenceLast4: last4 }),
+            categoryId: mine.has(referenceHash)
+              ? MY_NUMBER
+              : SOMEONE_ELSES_NUMBER,
+          },
+        ],
+  );
 
 const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
   CATEGORIES.map(({ id, labelEs }) => [id, labelEs]),
@@ -120,14 +185,14 @@ export const reviewGroupsOf = (
       answered.length === 0
         ? null
         : {
-            ...movementsOf(answered),
+            ...movementsOf(answered, definition),
             outcomes: outcomesOf(definition, answered),
           };
     if (pending.length > 0)
       return [
         {
           id: definition.id,
-          pending: movementsOf(pending),
+          pending: movementsOf(pending, definition),
           answered: withOutcomes,
         },
       ];

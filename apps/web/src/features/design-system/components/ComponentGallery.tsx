@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { ReviewBanner } from "@/components/review-banner/ReviewBanner";
 import { GallerySection } from "./GallerySection";
 
@@ -160,6 +161,16 @@ function Forms() {
           Marcada
         </label>
       </div>
+      <div className="flex flex-wrap gap-6 text-sm font-bold">
+        <label className="flex items-center gap-3">
+          Es mío
+          <Switch aria-label="Es mío: Nequi terminado en 1270" />
+        </label>
+        <label className="flex items-center gap-3">
+          Es mío
+          <Switch defaultChecked aria-label="Es mío: Nequi terminado en 5531" />
+        </label>
+      </div>
     </div>
   );
 }
@@ -261,7 +272,7 @@ function DataSections() {
       </GallerySection>
       <GallerySection
         title="Formularios"
-        description="Cada campo con su etiqueta; el error, en rojo debajo. La casilla nunca viene marcada."
+        description="Cada campo con su etiqueta; el error, en rojo debajo. La casilla nunca viene marcada, y el interruptor dice siempre qué cambia."
       >
         <Forms />
       </GallerySection>
