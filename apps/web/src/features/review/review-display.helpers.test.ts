@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   answeredTitle,
   bannerTitle,
+  numberView,
   outcomeText,
   pendingOf,
   reviewStatus,
@@ -10,6 +11,7 @@ import {
 import type {
   GroupMovements,
   ReviewGroup,
+  ReviewNumber,
   ReviewOutcome,
 } from "./review.types";
 
@@ -75,6 +77,24 @@ describe("answeredTitle", () => {
     expect(answeredTitle("Compras", texts("COMPRA EN  TIENDA"))).toBe(
       "Compras (“COMPRA EN  TIENDA”)",
     );
+  });
+
+  it("names a group asked by number by its numbers", () => {
+    const number = (last4: string | null) => ({
+      referenceHash: "a".repeat(64),
+      last4,
+      text: "TRANSFERENCIAS A NEQUI",
+      count: 1,
+      amountMinor: amountMinorSchema.parse(-1_000),
+      isMine: true,
+    });
+
+    expect(
+      answeredTitle("Números de Nequi", {
+        ...texts("TRANSFERENCIAS A NEQUI"),
+        numbers: [number("4567"), number(null), number("6543")],
+      }),
+    ).toBe("Números de Nequi (••• 4567 y ••• 6543)");
   });
 
   it("quotes nothing for the bank's 0, which names nothing", () => {
@@ -169,5 +189,41 @@ describe("bannerTitle", () => {
     [{ groups: 1, movements: 1 }, "Tienes 1 grupo por revisar (1 movimiento)"],
   ])("counts what waits: %j", (pending, title) => {
     expect(bannerTitle(pending)).toBe(title);
+  });
+});
+
+describe("numberView", () => {
+  const NUMBER: ReviewNumber = {
+    referenceHash: "a".repeat(64),
+    last4: "1270",
+    text: "TRANSFERENCIAS A NEQUI",
+    count: 6,
+    amountMinor: amountMinorSchema.parse(-48_000_000),
+    isMine: false,
+  };
+
+  it("shows a number with the bank's text, what went there, and what its switch says", () => {
+    expect(numberView(NUMBER)).toEqual({
+      referenceHash: "a".repeat(64),
+      chip: "TRANSFERENCIAS A NEQUI · ref ••• 1270",
+      detail: "6 envíos · $480.000",
+      label: "Es mío: Nequi terminado en 1270",
+      isMine: false,
+    });
+  });
+
+  it("counts one send, and names no digits it doesn't have", () => {
+    expect(
+      numberView({
+        ...NUMBER,
+        last4: null,
+        count: 1,
+        amountMinor: amountMinorSchema.parse(-2_500_000),
+      }),
+    ).toMatchObject({
+      chip: "TRANSFERENCIAS A NEQUI",
+      detail: "1 envío · $25.000",
+      label: "Es mío",
+    });
   });
 });

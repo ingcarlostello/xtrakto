@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { AnswerState } from "../review.types";
 
 /** What a group's parts ask of it: open again with "Cambiar", or close. */
 export type ReviewGroupControls = {
@@ -19,6 +20,18 @@ export const ReviewGroupContext = createContext<ReviewGroupControls | null>(
 
 /** The controls of the group a part sits in; `null` outside one. */
 export const useReviewGroupControls = () => useContext(ReviewGroupContext);
+
+/**
+ * Closes the group once its answer is saved: one asked again with
+ * "Cambiar" closes then; one that waited closes as the page refreshes with
+ * its answer.
+ */
+export const useCloseWhenSaved = (state: AnswerState) => {
+  const controls = useReviewGroupControls();
+  useEffect(() => {
+    if (state?.ok) controls?.close();
+  }, [state, controls]);
+};
 
 // What the focus lands on when a group opens or closes: the open card's
 // question, or the answered group itself.

@@ -1,11 +1,18 @@
-import { categoryKind, NO_DESCRIPTION } from "@xtrakto/core";
+import {
+  categoryKind,
+  CURRENCY,
+  formatAmount,
+  isAmountMinor,
+  NO_DESCRIPTION,
+} from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { countText, type Noun } from "@/utils/count-text.utils";
-import { REVIEW_COPY as COPY } from "./review.constants";
+import { REVIEW_ANSWERS, REVIEW_COPY as COPY } from "./review.constants";
 import type {
   GroupMovements,
   PendingReview,
   ReviewGroup,
+  ReviewNumber,
   ReviewOutcome,
 } from "./review.types";
 
@@ -27,15 +34,21 @@ const listOf = (items: readonly string[], more: number): string => {
 /**
  * An answered group's name with the bank's texts it answered, as printed:
  * `Transferencias a tu nombre (“TRANSF A ANA LUCIA MAR” y “Ana Lucia Mar”)`.
- * The bank's `0` names nothing, so it isn't quoted.
+ * The bank's `0` names nothing, so it isn't quoted; a group asked by number
+ * names its numbers instead (`Números de Nequi (••• 1270 y ••• 5531)`).
  */
 export const answeredTitle = (
   name: string,
-  { texts }: GroupMovements,
+  { texts, numbers }: GroupMovements,
 ): string => {
-  const quoted = texts.flatMap(({ text }) =>
-    text.trim() === NO_DESCRIPTION ? [] : [`“${text}”`],
-  );
+  const quoted =
+    numbers === undefined
+      ? texts.flatMap(({ text }) =>
+          text.trim() === NO_DESCRIPTION ? [] : [`“${text}”`],
+        )
+      : numbers.flatMap(({ last4 }) =>
+          last4 === null ? [] : [`${COPY.dots} ${last4}`],
+        );
   if (quoted.length === 0) return name;
   const shown = quoted.slice(0, QUOTED_TEXTS);
   return `${name} (${listOf(shown, quoted.length - shown.length)})`;
@@ -108,3 +121,41 @@ export const reviewStatus = (groups: readonly ReviewGroup[]): ReviewStatus => {
 /** "Tienes 4 grupos por revisar (24 movimientos)". */
 export const bannerTitle = ({ groups, movements }: PendingReview): string =>
   `${COPY.bannerYouHave} ${countText(groups, COPY.groups)} ${COPY.bannerToReview} (${countText(movements, COPY.movements)})`;
+
+/** A Nequi number as its row shows it, and the value its switch sends. */
+export type NumberView = {
+  readonly referenceHash: string;
+  /** "TRANSFERENCIAS A NEQUI · ref ••• 1270". */
+  readonly chip: string;
+  /** "6 envíos · $480.000". */
+  readonly detail: string;
+  /** Its switch, read: "Es mío: Nequi terminado en 1270". */
+  readonly label: string;
+  readonly isMine: boolean;
+};
+
+export const numberView = ({
+  referenceHash,
+  last4,
+  text,
+  count,
+  amountMinor,
+  isMine,
+}: ReviewNumber): NumberView => {
+  const sent = Math.abs(amountMinor);
+  const total = isAmountMinor(sent) ? formatAmount(sent, CURRENCY.COP) : null;
+  const isMineLabel = REVIEW_ANSWERS.my_number.label;
+  return {
+    referenceHash,
+    chip:
+      last4 === null
+        ? text
+        : `${text} · ${COPY.reference} ${COPY.dots} ${last4}`,
+    detail: [countText(count, COPY.sends), total].filter(Boolean).join(" · "),
+    label:
+      last4 === null
+        ? isMineLabel
+        : `${isMineLabel}: ${COPY.numberEnding} ${last4}`,
+    isMine,
+  };
+};

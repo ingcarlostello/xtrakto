@@ -21,10 +21,12 @@ type ReviewGroupCardProps = {
   isChange?: boolean;
 };
 
-// The neutral chip, the question and its context, and the amount at stake,
-// which moves under the question on phones. The question takes the focus
-// when "Cambiar" asks again.
-function GroupHeading({
+/**
+ * The neutral chip, the question and its context, and the amount at stake,
+ * which moves under the question on phones. The question takes the focus
+ * when "Cambiar" asks again.
+ */
+export function GroupHeading({
   id,
   movements,
 }: Pick<ReviewGroupCardProps, "id" | "movements">) {

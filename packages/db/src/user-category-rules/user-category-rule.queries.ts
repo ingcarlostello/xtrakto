@@ -3,6 +3,7 @@ import {
   type CategoryId,
   MONEY_DIRECTION,
   type MoneyDirection,
+  referenceRuleDirection,
   type UserCategoryRule,
   userRuleTextOf,
 } from "@xtrakto/core";
@@ -95,13 +96,17 @@ const upsertDescriptionRule = (
       set: { categoryId, updatedAt: sql`now()` },
     });
 
-const goingWay = (direction: MoneyDirection): SQL =>
-  direction === MONEY_DIRECTION.IN
-    ? sql`${transactions.amountMinor} > 0`
-    : sql`${transactions.amountMinor} < 0`;
+const goingWay = (direction: MoneyDirection | undefined): SQL => {
+  if (direction === MONEY_DIRECTION.IN)
+    return sql`${transactions.amountMinor} > 0`;
+  if (direction === MONEY_DIRECTION.OUT)
+    return sql`${transactions.amountMinor} < 0`;
+  return sql`${transactions.amountMinor} <> 0`;
+};
 
-// The user's movements a rule holds for, or none. A text rule compares texts
-// as `userRuleTextOf` writes them, which SQL can't, so it reads the user's
+// The user's movements a rule holds for, or none. A reference's rule holds
+// the ways its category allows (ADR 0026). A text rule compares texts as
+// `userRuleTextOf` writes them, which SQL can't, so it reads the user's
 // distinct texts going that way first.
 const movementsOfRule = async (
   { tx, userId }: UserContext,
@@ -110,7 +115,7 @@ const movementsOfRule = async (
   if (rule.target === "reference")
     return and(
       eq(transactions.referenceHash, rule.referenceHash),
-      sql`${transactions.amountMinor} <> 0`,
+      goingWay(referenceRuleDirection(rule.categoryId)),
     );
   const rows = await tx
     .selectDistinct({ description: transactions.descriptionNormalized })

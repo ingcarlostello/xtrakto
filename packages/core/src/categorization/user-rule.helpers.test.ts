@@ -4,11 +4,15 @@ import type { UserCategoryRule } from "./categorization.types";
 import {
   compileUserRules,
   descriptionRuleFor,
+  referenceRuleDirection,
   userCategoryOf,
 } from "./user-rule.helpers";
 
 const MY_NEQUI = "a".repeat(64);
 const SOMEONE_ELSES_NEQUI = "b".repeat(64);
+// A number the user said isn't theirs, and one that pays them.
+const NOT_MY_NEQUI = "c".repeat(64);
+const PAYER_NEQUI = "d".repeat(64);
 
 const movement = (
   descriptionNormalized: string,
@@ -40,6 +44,16 @@ const RULES: readonly UserCategoryRule[] = [
     referenceHash: MY_NEQUI,
     categoryId: "own_account_transfer",
   },
+  {
+    target: "reference",
+    referenceHash: NOT_MY_NEQUI,
+    categoryId: "transfers_to_people",
+  },
+  {
+    target: "reference",
+    referenceHash: PAYER_NEQUI,
+    categoryId: "income_transfer",
+  },
 ];
 
 describe("userCategoryOf", () => {
@@ -68,6 +82,21 @@ describe("userCategoryOf", () => {
     ).toBe("transfers_to_people");
   });
 
+  it("holds a reference rule only the way its category allows, and lets the text's decide the other", () => {
+    expect(categoryOf("TRANSFERENCIAS A NEQUI", -9_000_000, NOT_MY_NEQUI)).toBe(
+      "transfers_to_people",
+    );
+    expect(
+      categoryOf("TRANSFERENCIA DESDE NEQUI", 9_000_000, NOT_MY_NEQUI),
+    ).toBeUndefined();
+    expect(
+      categoryOf("TRANSFERENCIA DESDE NEQUI", 9_000_000, PAYER_NEQUI),
+    ).toBe("income_transfer");
+    expect(categoryOf("TRANSFERENCIAS A NEQUI", -9_000_000, PAYER_NEQUI)).toBe(
+      "transfers_to_people",
+    );
+  });
+
   it("gives nothing to a movement of 0, or to one no rule of the user's knows", () => {
     expect(categoryOf("PAGO LLAVE INVERSIONES XY", 0)).toBeUndefined();
     expect(categoryOf("COMPRA EN TIENDA", -1)).toBeUndefined();
@@ -77,6 +106,18 @@ describe("userCategoryOf", () => {
         compileUserRules([]),
       ),
     ).toBeUndefined();
+  });
+});
+
+describe("referenceRuleDirection", () => {
+  it.each([
+    ["own_account_transfer", undefined],
+    ["investment", undefined],
+    ["transfers_to_people", "out"],
+    ["other_spending", "out"],
+    ["income_transfer", "in"],
+  ] as const)("holds %s's rule %s", (categoryId, direction) => {
+    expect(referenceRuleDirection(categoryId)).toBe(direction);
   });
 });
 

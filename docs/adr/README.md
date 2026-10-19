@@ -16,30 +16,31 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 
 ## Index
 
-| ADR                                                               | Title                                                              | Status   |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------ | -------- |
-| [0001](0001-monorepo-pnpm-turborepo.md)                           | Monorepo with pnpm workspaces and Turborepo                        | Accepted |
-| [0002](0002-typescript-backend-python-for-ml.md)                  | TypeScript on Node for the backend; Python only for ML training    | Accepted |
-| [0003](0003-postgresql-with-drizzle.md)                           | PostgreSQL with Drizzle                                            | Accepted |
-| [0004](0004-clerk-for-authentication.md)                          | Clerk for authentication                                           | Accepted |
-| [0005](0005-inngest-for-background-work.md)                       | Inngest for background work                                        | Accepted |
-| [0006](0006-money-as-integer-minor-units.md)                      | Money as integer minor units                                       | Accepted |
-| [0007](0007-transaction-dates-as-local-date.md)                   | Transaction dates as `LocalDate`                                   | Accepted |
-| [0008](0008-files-read-in-the-browser.md)                         | Files are read in the browser                                      | Accepted |
-| [0009](0009-deterministic-parsing-first.md)                       | Deterministic parsing first, LLM as a fallback                     | Accepted |
-| [0010](0010-typescript-6-until-typescript-eslint-supports-7.md)   | TypeScript 6.0 until typescript-eslint supports TypeScript 7       | Accepted |
-| [0011](0011-sheetjs-for-spreadsheet-extraction.md)                | SheetJS for spreadsheet extraction                                 | Accepted |
-| [0012](0012-long-numbers-masked-when-parsed.md)                   | Long numbers in descriptions are masked when parsed                | Accepted |
-| [0013](0013-neon-for-postgresql.md)                               | Neon for PostgreSQL                                                | Accepted |
-| [0014](0014-forced-rls-with-transaction-local-user.md)            | Forced Row-Level Security with a transaction-local user id         | Accepted |
-| [0015](0015-shadcn-ui-on-base-ui.md)                              | shadcn/ui on Base UI                                               | Accepted |
-| [0016](0016-users-delete-only-their-own-row.md)                   | Users delete only their own row                                    | Accepted |
-| [0017](0017-content-minimized-before-sending.md)                  | Extracted content is minimized in the browser before sending       | Accepted |
-| [0018](0018-verified-quarterly-statement-covers-other-formats.md) | A verified quarterly statement covers the other format's movements | Accepted |
-| [0019](0019-two-inngest-steps-with-ids-codes-and-counts.md)       | Two Inngest steps that keep only ids, codes and counts             | Accepted |
-| [0020](0020-promo-video-rendered-with-remotion.md)                | Promo video rendered with Remotion                                 | Accepted |
-| [0021](0021-insert-only-public-waitlist.md)                       | An insert-only public waitlist                                     | Accepted |
-| [0022](0022-waitlist-only-deployment.md)                          | A waitlist-only deployment                                         | Accepted |
-| [0023](0023-rules-give-a-best-guess-and-flag-what-to-review.md)   | Rules give a best guess and flag what to review                    | Accepted |
-| [0024](0024-kind-comes-from-the-category.md)                      | A movement's kind comes from its category                          | Accepted |
-| [0025](0025-user-rules-come-first-and-keep-the-rules-guess.md)    | The user's rules come first and keep the rule's guess              | Accepted |
+| ADR                                                               | Title                                                                                  | Status   |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- |
+| [0001](0001-monorepo-pnpm-turborepo.md)                           | Monorepo with pnpm workspaces and Turborepo                                            | Accepted |
+| [0002](0002-typescript-backend-python-for-ml.md)                  | TypeScript on Node for the backend; Python only for ML training                        | Accepted |
+| [0003](0003-postgresql-with-drizzle.md)                           | PostgreSQL with Drizzle                                                                | Accepted |
+| [0004](0004-clerk-for-authentication.md)                          | Clerk for authentication                                                               | Accepted |
+| [0005](0005-inngest-for-background-work.md)                       | Inngest for background work                                                            | Accepted |
+| [0006](0006-money-as-integer-minor-units.md)                      | Money as integer minor units                                                           | Accepted |
+| [0007](0007-transaction-dates-as-local-date.md)                   | Transaction dates as `LocalDate`                                                       | Accepted |
+| [0008](0008-files-read-in-the-browser.md)                         | Files are read in the browser                                                          | Accepted |
+| [0009](0009-deterministic-parsing-first.md)                       | Deterministic parsing first, LLM as a fallback                                         | Accepted |
+| [0010](0010-typescript-6-until-typescript-eslint-supports-7.md)   | TypeScript 6.0 until typescript-eslint supports TypeScript 7                           | Accepted |
+| [0011](0011-sheetjs-for-spreadsheet-extraction.md)                | SheetJS for spreadsheet extraction                                                     | Accepted |
+| [0012](0012-long-numbers-masked-when-parsed.md)                   | Long numbers in descriptions are masked when parsed                                    | Accepted |
+| [0013](0013-neon-for-postgresql.md)                               | Neon for PostgreSQL                                                                    | Accepted |
+| [0014](0014-forced-rls-with-transaction-local-user.md)            | Forced Row-Level Security with a transaction-local user id                             | Accepted |
+| [0015](0015-shadcn-ui-on-base-ui.md)                              | shadcn/ui on Base UI                                                                   | Accepted |
+| [0016](0016-users-delete-only-their-own-row.md)                   | Users delete only their own row                                                        | Accepted |
+| [0017](0017-content-minimized-before-sending.md)                  | Extracted content is minimized in the browser before sending                           | Accepted |
+| [0018](0018-verified-quarterly-statement-covers-other-formats.md) | A verified quarterly statement covers the other format's movements                     | Accepted |
+| [0019](0019-two-inngest-steps-with-ids-codes-and-counts.md)       | Two Inngest steps that keep only ids, codes and counts                                 | Accepted |
+| [0020](0020-promo-video-rendered-with-remotion.md)                | Promo video rendered with Remotion                                                     | Accepted |
+| [0021](0021-insert-only-public-waitlist.md)                       | An insert-only public waitlist                                                         | Accepted |
+| [0022](0022-waitlist-only-deployment.md)                          | A waitlist-only deployment                                                             | Accepted |
+| [0023](0023-rules-give-a-best-guess-and-flag-what-to-review.md)   | Rules give a best guess and flag what to review                                        | Accepted |
+| [0024](0024-kind-comes-from-the-category.md)                      | A movement's kind comes from its category                                              | Accepted |
+| [0025](0025-user-rules-come-first-and-keep-the-rules-guess.md)    | The user's rules come first and keep the rule's guess                                  | Accepted |
+| [0026](0026-nequi-numbers-and-reference-rules-by-direction.md)    | Nequi numbers wait for review, and a reference rule holds the ways its category allows | Accepted |

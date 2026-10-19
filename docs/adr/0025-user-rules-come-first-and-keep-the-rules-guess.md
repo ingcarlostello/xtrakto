@@ -1,6 +1,6 @@
 # 0025. The user's rules come first and keep the rule's guess
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0026](0026-nequi-numbers-and-reference-rules-by-direction.md), where a reference's rule holds the ways its category allows
 - **Date:** 2026-10-16
 
 ## Context
@@ -25,4 +25,4 @@ Phase 6.3 lets the user answer the quick review by group and correct a movement,
 
 - An answer changes movements of every period and account of the user, as "Tus reglas" promises ("aplicado a todos tus extractos").
 - A rule whose text the bank writes differently next time doesn't hold; the review asks again.
-- Undoing an answer (6.3d) must recategorize its movements by the table again, from their texts and the account's holder name.
+- Undoing an answer (6.3f) must recategorize its movements by the table again, from their texts and the account's holder name.

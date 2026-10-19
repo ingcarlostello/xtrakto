@@ -33,6 +33,7 @@ export type {
 } from "./categorization/categorization.types";
 export {
   descriptionRuleFor,
+  referenceRuleDirection,
   userRuleTextOf,
 } from "./categorization/user-rule.helpers";
 export { CHANNELS } from "./categorization/channel.constants";

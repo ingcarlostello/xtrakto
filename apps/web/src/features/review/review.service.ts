@@ -24,11 +24,21 @@ import { periodDays } from "@/utils/transactions-url.helpers";
 import { REVIEW_ANSWERS } from "./review.constants";
 import {
   answerPlan,
+  numberRules,
+  numbersOf,
   pickQuarter,
   reviewGroupById,
   reviewGroupsOf,
 } from "./review.helpers";
-import type { Review, ReviewAnswerInput, ReviewRequest } from "./review.types";
+import type {
+  NumbersAnswerInput,
+  Review,
+  ReviewAnswerInput,
+  ReviewGroupId,
+  ReviewRequest,
+} from "./review.types";
+
+const NEQUI_NUMBERS: ReviewGroupId = "nequi_numbers";
 
 /**
  * The quick review of the signed-in user's account and quarter the URL
@@ -72,16 +82,20 @@ const saveAnswer = async (
   await setUserCategory(ctx, { movementIds, categoryId });
 };
 
+type AnsweredScope = Pick<ReviewAnswerInput, "group" | "account" | "period">;
+
 /**
- * Answers a group of the quick review for the signed-in user's account and
- * quarter: what waits for review in it, or, once nothing does, what was
- * answered, which "Cambiar" asks about again. "No sé" takes the movements
- * out of the review, and any other answer gives them its category. Not
- * found when the account isn't theirs.
+ * Answers a group of the signed-in user's account and quarter with `save`:
+ * what waits for review in it, or, once nothing does, what was answered,
+ * which "Cambiar" asks about again. Not found when the account isn't theirs.
  */
-export const answerReviewGroup = async (
+const answerInScope = async (
   clerkUserId: string,
-  { group, answer, account, period }: ReviewAnswerInput,
+  { group, account, period }: AnsweredScope,
+  save: (
+    ctx: UserContext,
+    movements: readonly ReviewMovement[],
+  ) => Promise<void>,
 ): Promise<Result<null, AppError>> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
@@ -96,7 +110,20 @@ export const answerReviewGroup = async (
       ruleIds: reviewGroupById(group).ruleIds,
     });
     const pending = ofGroup.filter(({ isPendingReview }) => isPendingReview);
-    const movements = pending.length > 0 ? pending : ofGroup;
+    await save(ctx, pending.length > 0 ? pending : ofGroup);
+    return ok(null);
+  });
+};
+
+/**
+ * Answers a group of the quick review: "No sé" takes its movements out of
+ * the review, and any other answer gives them its category.
+ */
+export const answerReviewGroup = (
+  clerkUserId: string,
+  { answer, ...scope }: ReviewAnswerInput,
+): Promise<Result<null, AppError>> =>
+  answerInScope(clerkUserId, scope, async (ctx, movements) => {
     const { categoryId } = REVIEW_ANSWERS[answer];
     if (categoryId === null)
       await dismissReview(
@@ -104,6 +131,22 @@ export const answerReviewGroup = async (
         movements.map(({ id }) => id),
       );
     else await saveAnswer(ctx, movements, categoryId);
-    return ok(null);
   });
-};
+
+/**
+ * Answers the Nequi numbers: each number's rule, the user's own for those
+ * marked and someone else's for the rest, in every statement. A number not
+ * among the quarter's is ignored.
+ */
+export const answerReviewNumbers = (
+  clerkUserId: string,
+  { mine, ...scope }: NumbersAnswerInput,
+): Promise<Result<null, AppError>> =>
+  answerInScope(
+    clerkUserId,
+    { ...scope, group: NEQUI_NUMBERS },
+    async (ctx, movements) => {
+      const rules = numberRules(numbersOf(movements), new Set(mine));
+      for (const rule of rules) await saveUserCategoryRule(ctx, rule);
+    },
+  );

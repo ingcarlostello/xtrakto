@@ -263,13 +263,13 @@ describe.skipIf(!testDatabase)("user category rules", () => {
         amountMinor: -90_000,
         categoryId: "own_account_transfer",
         categorySource: "user",
-        categoryRuleId: "nequi_out",
+        categoryRuleId: "nequi_out_number",
       },
       {
         amountMinor: -50_000,
         categoryId: "own_account_transfer",
         categorySource: "user",
-        categoryRuleId: "nequi_out",
+        categoryRuleId: "nequi_out_number",
       },
       {
         amountMinor: 20_000,
@@ -284,6 +284,53 @@ describe.skipIf(!testDatabase)("user category rules", () => {
       categoryId: "transfers_to_people",
       categorySource: "rule",
     });
+  });
+
+  // A number the user says isn't theirs: a payment to someone holds for
+  // money going out to it, while money coming in from it still asks.
+  it("gives a payment to someone's reference rule only to the money going out", async () => {
+    const userId = await newUser();
+    const before = await movementsOf(userId);
+    const number = before.find(
+      ({ referenceLast4 }) => referenceLast4 === "4567",
+    )?.referenceHash;
+    if (!number) throw new Error("No Nequi reference saved.");
+
+    const changed = await inContext(userId, (ctx) =>
+      saveUserCategoryRule(ctx, {
+        target: "reference",
+        referenceHash: number,
+        categoryId: "transfers_to_people",
+      }),
+    );
+    const after = await movementsOf(userId);
+
+    expect(changed).toBe(2);
+    expect(
+      after
+        .filter(({ referenceHash }) => referenceHash === number)
+        .map(({ amountMinor, categoryId, categorySource }) => ({
+          amountMinor,
+          categoryId,
+          categorySource,
+        })),
+    ).toEqual([
+      {
+        amountMinor: -90_000,
+        categoryId: "transfers_to_people",
+        categorySource: "user",
+      },
+      {
+        amountMinor: -50_000,
+        categoryId: "transfers_to_people",
+        categorySource: "user",
+      },
+      {
+        amountMinor: 20_000,
+        categoryId: "own_account_transfer",
+        categorySource: "rule",
+      },
+    ]);
   });
 
   it("changes nothing of another user's, who can't read the rule", async () => {

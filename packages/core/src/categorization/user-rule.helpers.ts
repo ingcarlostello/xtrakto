@@ -1,6 +1,7 @@
+import { categoryKind } from "../categories/category.helpers";
 import type { CategoryId } from "../categories/category.types";
 import { foldText } from "../text/text.utils";
-import { NO_DESCRIPTION } from "./categorization.constants";
+import { MONEY_DIRECTION, NO_DESCRIPTION } from "./categorization.constants";
 import { moneyDirectionOf } from "./categorization.helpers";
 import type {
   CategorizableTransaction,
@@ -54,8 +55,36 @@ export const compileUserRules = (
 });
 
 /**
+ * The way a reference's rule holds, which its category allows (ADR 0026):
+ * a payment to someone only for money going out, an income only for money
+ * coming in, and money that only moves either way (`undefined`).
+ */
+export const referenceRuleDirection = (
+  categoryId: CategoryId,
+): MoneyDirection | undefined => {
+  const kind = categoryKind(categoryId);
+  if (kind === "spending") return MONEY_DIRECTION.OUT;
+  if (kind === "income") return MONEY_DIRECTION.IN;
+  return undefined;
+};
+
+// A reference's rule, when it holds for money going this way.
+const referenceCategory = (
+  referenceHash: string | undefined,
+  direction: MoneyDirection,
+  byReference: CompiledUserRules["byReference"],
+): CategoryId | undefined => {
+  const categoryId =
+    referenceHash === undefined ? undefined : byReference.get(referenceHash);
+  if (categoryId === undefined) return undefined;
+  const holds = referenceRuleDirection(categoryId);
+  return holds === undefined || holds === direction ? categoryId : undefined;
+};
+
+/**
  * The category the user's rules give a movement: its reference's rule
- * first, since a reference names one account, then its text's.
+ * first, since a reference names one account, when it holds for its way;
+ * then its text's.
  */
 export const userCategoryOf = (
   { descriptionNormalized, amountMinor, referenceHash }: UserRuleMovement,
@@ -63,10 +92,8 @@ export const userCategoryOf = (
 ): CategoryId | undefined => {
   const direction = moneyDirectionOf(amountMinor);
   if (direction === undefined) return undefined;
-  const ofReference =
-    referenceHash === undefined ? undefined : byReference.get(referenceHash);
   return (
-    ofReference ??
+    referenceCategory(referenceHash, direction, byReference) ??
     byDescription.get(
       descriptionKey(direction, userRuleTextOf(descriptionNormalized)),
     )

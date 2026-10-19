@@ -33,6 +33,8 @@ export type ReviewGroupDefinition = {
   readonly context: string;
   /** The best guess first. */
   readonly answers: readonly ReviewAnswerId[];
+  /** Asked number by number, each with its switch (the Nequi numbers, 6.3d). */
+  readonly asksByNumber?: boolean;
 };
 
 export type ReviewGroupId = (typeof REVIEW_GROUPS)[number]["id"];
@@ -40,12 +42,26 @@ export type ReviewGroupId = (typeof REVIEW_GROUPS)[number]["id"];
 /** A bank text as printed, and how many of the group's movements carry it. */
 export type ReviewText = { readonly text: string; readonly count: number };
 
+/** A number the movements went to, as its HMAC and last 4 digits, and what went there. */
+export type ReviewNumber = {
+  readonly referenceHash: string;
+  readonly last4: string | null;
+  /** The bank's text of its movements, as printed. */
+  readonly text: string;
+  readonly count: number;
+  readonly amountMinor: AmountMinor;
+  /** The user's rule says it's theirs. */
+  readonly isMine: boolean;
+};
+
 /** Some of a group's movements in the period. */
 export type GroupMovements = {
   readonly texts: readonly ReviewText[];
   /** What the movements add up to, signed. */
   readonly amountMinor: AmountMinor;
   readonly count: number;
+  /** For a group asked by number: each number, the most movements first. */
+  readonly numbers?: readonly ReviewNumber[];
 };
 
 /** What some of a group's answered movements count as now. */
@@ -100,6 +116,13 @@ export type ReviewAnswerInput = {
   readonly answer: ReviewAnswerId;
   readonly account: string;
   readonly period: MovementPeriod;
+};
+
+/** The Nequi numbers' answer: the ones the user marked as theirs, by HMAC. */
+export type NumbersAnswerInput = {
+  readonly account: string;
+  readonly period: MovementPeriod;
+  readonly mine: readonly string[];
 };
 
 /**
