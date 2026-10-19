@@ -32,8 +32,9 @@ import type { Review, ReviewAnswerInput, ReviewRequest } from "./review.types";
 
 /**
  * The quick review of the signed-in user's account and quarter the URL
- * asks, or of their latest: what waits for review there, by group. `null`
- * until a movement counts. The Clerk id must come from the session.
+ * asks, or of their latest: by group, what waits for review there and what
+ * was answered. `null` until a movement counts. The Clerk id must come from
+ * the session.
  */
 export const getReview = async (
   clerkUserId: string,
@@ -73,8 +74,10 @@ const saveAnswer = async (
 
 /**
  * Answers a group of the quick review for the signed-in user's account and
- * quarter: "No sé" takes its movements out of the review, and any other
- * answer gives them its category. Not found when the account isn't theirs.
+ * quarter: what waits for review in it, or, once nothing does, what was
+ * answered, which "Cambiar" asks about again. "No sé" takes the movements
+ * out of the review, and any other answer gives them its category. Not
+ * found when the account isn't theirs.
  */
 export const answerReviewGroup = async (
   clerkUserId: string,
@@ -87,11 +90,13 @@ export const answerReviewGroup = async (
     const accounts = await listMovementAccounts(ctx);
     if (!accounts.some(({ id }) => id === account))
       return err({ code: APP_ERROR_CODE.NOT_FOUND });
-    const movements = await listReviewMovements(ctx, {
+    const ofGroup = await listReviewMovements(ctx, {
       accountId: account,
       period: periodDays(period),
       ruleIds: reviewGroupById(group).ruleIds,
     });
+    const pending = ofGroup.filter(({ isPendingReview }) => isPendingReview);
+    const movements = pending.length > 0 ? pending : ofGroup;
     const { categoryId } = REVIEW_ANSWERS[answer];
     if (categoryId === null)
       await dismissReview(

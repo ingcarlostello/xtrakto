@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { ReviewBanner } from "@/components/review-banner/ReviewBanner";
 import { GallerySection } from "./GallerySection";
 
 // Sample figures from docs/ui: fictional, never real statement data.
@@ -181,7 +182,23 @@ function StatusPills() {
         title="Encadenado"
         detail="Empieza donde terminó abr–jun 2026"
       />
+      <StatusPill
+        tone="info"
+        title="6 grupos · 38 movimientos"
+        detail="Unos 2 minutos"
+      />
     </div>
+  );
+}
+
+function ReviewBannerSample() {
+  return (
+    <ReviewBanner
+      title="Tienes 4 grupos por revisar (24 movimientos)"
+      description="Mientras tanto usamos nuestra mejor suposición. Confírmalos: pueden cambiar tu gasto real."
+      action="Revisar ahora"
+      href="/review"
+    />
   );
 }
 
@@ -197,7 +214,7 @@ function BaseSections() {
       </GallerySection>
       <GallerySection
         title="Píldora de estado"
-        description="El punto repite lo que dicen las palabras: verde si está bien, naranja si hay algo que mirar."
+        description="El punto repite lo que dicen las palabras: verde si está bien, naranja si hay algo que mirar, azul si solo informa."
       >
         <StatusPills />
       </GallerySection>
@@ -235,6 +252,12 @@ function DataSections() {
           <RawTextChip text="COMPRA EN  MERCADO XYZ" count={3} />
           <RawTextChip text="PAGO LLAVE INVERSIONES XY" count={1} />
         </div>
+      </GallerySection>
+      <GallerySection
+        title="Aviso de revisión"
+        description="En el resumen, mientras haya grupos por revisar, con el camino para responderlos."
+      >
+        <ReviewBannerSample />
       </GallerySection>
       <GallerySection
         title="Formularios"

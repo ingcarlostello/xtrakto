@@ -7,6 +7,8 @@ const DOT_TONES = {
   attention: "bg-spending ring-spending/18",
   // A file without balances to verify, such as a movements export.
   none: "bg-ink-faint ring-ink-faint/18",
+  // Information, such as what the quick review holds (v8-02).
+  info: "bg-moved ring-moved/18",
 } as const;
 
 export type StatusTone = keyof typeof DOT_TONES;

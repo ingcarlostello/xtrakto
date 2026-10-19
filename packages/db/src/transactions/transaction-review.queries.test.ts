@@ -18,6 +18,7 @@ import { findOrCreateUser } from "../users/user.queries";
 import {
   dismissReview,
   listReviewMovements,
+  type ReviewMovement,
   setUserCategory,
 } from "./transaction-review.queries";
 import { transactions } from "./transaction.schemas";
@@ -147,32 +148,52 @@ describe.skipIf(!testDatabase)("review movements", () => {
       return row;
     });
 
-  it("lists the period's movements of the account that count and wait for review, the oldest first", async () => {
+  // What the review needs of each movement, without its ids.
+  const stateOf = ({
+    ruleId,
+    descriptionRaw,
+    amountMinor,
+    isPendingReview,
+    categoryId,
+    isUsersCategory,
+  }: ReviewMovement) => ({
+    ruleId,
+    descriptionRaw,
+    amountMinor,
+    isPendingReview,
+    categoryId,
+    isUsersCategory,
+  });
+
+  it("lists the period's movements of the account that count and that the rules guessed, the oldest first", async () => {
     const { userId, accountId } = await newUser();
 
     const movements = await quarterOf(userId, accountId);
 
-    expect(
-      movements.map(({ ruleId, descriptionRaw, amountMinor }) => ({
-        ruleId,
-        descriptionRaw,
-        amountMinor,
-      })),
-    ).toEqual([
+    expect(movements.map(stateOf)).toEqual([
       {
         ruleId: "key_payment_saving",
         descriptionRaw: "PAGO LLAVE INVERSIONES XY",
         amountMinor: -200_000,
+        isPendingReview: true,
+        categoryId: "investment",
+        isUsersCategory: false,
       },
       {
         ruleId: "key_payment",
         descriptionRaw: "PAGO LLAVE Maria Lopez",
         amountMinor: -50_000,
+        isPendingReview: true,
+        categoryId: "transfers_to_people",
+        isUsersCategory: false,
       },
       {
         ruleId: "no_description_out",
         descriptionRaw: "0",
         amountMinor: -22_000,
+        isPendingReview: true,
+        categoryId: "other_spending",
+        isUsersCategory: false,
       },
     ]);
   });
@@ -213,7 +234,12 @@ describe.skipIf(!testDatabase)("review movements", () => {
       categoryRuleId: "no_description_out",
       isPendingReview: false,
     });
-    expect(await quarterOf(userId, accountId)).toHaveLength(2);
+    // Still the review's, answered: the review shows what it counts as now.
+    expect((await quarterOf(userId, accountId)).map(stateOf)[2]).toMatchObject({
+      isPendingReview: false,
+      categoryId: "own_account_transfer",
+      isUsersCategory: true,
+    });
   });
 
   it("takes movements out of the review, keeping their best guess", async () => {
@@ -232,7 +258,11 @@ describe.skipIf(!testDatabase)("review movements", () => {
       categoryRuleId: "key_payment",
       isPendingReview: false,
     });
-    expect(await quarterOf(userId, accountId)).toHaveLength(2);
+    expect((await quarterOf(userId, accountId)).map(stateOf)[1]).toMatchObject({
+      isPendingReview: false,
+      categoryId: "transfers_to_people",
+      isUsersCategory: false,
+    });
   });
 
   it("never changes another user's movements", async () => {
@@ -248,6 +278,12 @@ describe.skipIf(!testDatabase)("review movements", () => {
     ]);
 
     expect(changed).toEqual([0, 0]);
-    expect(await quarterOf(owner.userId, owner.accountId)).toHaveLength(3);
+    const movements = await quarterOf(owner.userId, owner.accountId);
+    expect(movements).toHaveLength(3);
+    for (const movement of movements)
+      expect(movement).toMatchObject({
+        isPendingReview: true,
+        isUsersCategory: false,
+      });
   });
 });

@@ -9,6 +9,7 @@ import {
   countTransactions,
   findUnreconciledStatement,
 } from "@/features/transactions/transaction.service";
+import { PendingReviewBanner } from "@/features/review/components/PendingReviewBanner";
 import { HowItWorks } from "@/features/upload/components/HowItWorks";
 import { requireSignedIn } from "@/lib/auth";
 
@@ -17,9 +18,10 @@ const COPY = PAGE_COPY.summary;
 export const metadata: Metadata = { title: COPY.title };
 
 // Before the first upload (docs/ui/v8-12): what uploading brings, and the
-// bank's download paths beside it. Once movements count, the way to them
-// instead, and to a statement that doesn't reconcile when nothing else
-// counts. The summary page (Phase 6.7) replaces them.
+// bank's download paths beside it. Once movements count, the review banner
+// while groups wait and the way to the movements, or to a statement that
+// doesn't reconcile when nothing else counts. The summary page (Phase 6.7)
+// replaces them.
 export default async function SummaryPage() {
   const clerkUserId = await requireSignedIn();
   const movements = await countTransactions(clerkUserId);
@@ -32,6 +34,7 @@ export default async function SummaryPage() {
         title={COPY.title}
         subtitle={isFirstUpload ? COPY.subtitle : undefined}
       />
+      {movements > 0 && <PendingReviewBanner clerkUserId={clerkUserId} />}
       <div className="flex flex-wrap items-start gap-5.5">
         <div className="flex min-w-0 flex-[2_1_600px] flex-col">
           {movements > 0 && <TransactionsReady count={movements} />}

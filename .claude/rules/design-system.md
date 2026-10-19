@@ -410,6 +410,8 @@ A movements export without balances becomes "Verificado por tu extracto trimestr
 
 On the upload screen the same pill counts the month's statements, beside the page title (full width under it on phones): "7 de 10 disponibles" · "Archivos este mes" with the verified dot; with none left, "0 de 10 disponibles" · "Se renuevan el 1 de noviembre" with the attention dot (`StatusPill`, `components/status-pill/`).
 
+On the quick review it counts the quarter's groups and their movements, answered or not, beside the title (full width under it on phones), as `v8-02` does: "6 grupos · 38 movimientos" · "Unos 2 minutos" with the information dot (`--moved`, tone `info`), about 30 seconds per open group ("Menos de un minuto", "Un minuto"); once none is open, "Todo respondido" with the verified dot.
+
 ### Chart card
 
 - `--surface-card`, `--radius-lg`, padding 24.
@@ -499,6 +501,8 @@ The bank's text exactly as printed, for the quick review, the profile and the de
 
 On the summary while review groups are pending: the attention surface (`#FFF6EF`), `--radius-lg`, a white icon chip with the 9px orange dot, a title with the count ("Tienes 4 grupos por revisar (24 movimientos)"), one line ("Mientras tanto usamos nuestra mejor suposición. Confírmalos: pueden cambiar tu gasto real.") and a Primary "Revisar ahora".
 
+As Phase 6.3c builds it (`ReviewBanner`, `components/review-banner/`): under the page title, as wide as the page, padding 20, the `circle-alert` chip, the title in Manrope 700 15px and the line in Caption `--text-secondary`; the button goes under them on phones. It counts the open groups and their movements of the account and quarter the review opens on, links to that review with both in the URL, and leaves once nothing waits.
+
 ### Review group card
 
 The quick review asks one question per group:
@@ -511,7 +515,13 @@ As Phase 6.3b builds the quick review (`/review`, `ReviewGroupCard`):
 
 - **The page:** the title "Revisa antes de ver tu resumen" and v8's subtitle, then the account's quarter in Body small 600 `--text-secondary` ("Jul – sep 2026 · Cuenta de ahorros ••••8901"). The quarter is the account's latest, or the one the URL asks, as in Movimientos, with no picker. Below, one open card per group, at most 896px wide. A quarter with nothing to ask shows a card with "Nada por revisar en este trimestre", one line, and the link action "Ver movimientos". The dock lights Resumen.
 - **An open card:** a grid with the 44px neutral chip (`--surface-muted`, ink icon at 1.7), the question (Manrope 700 16px) and its context (Caption `--text-muted`), and the amount at stake with its sign and its count on the right. On phones the amount moves under the question. Then the raw-text chips, most repeated first, and the answers: small pills of 44px, the suggested one Primary and the others Secondary, inside a `role="group"` named "Respuestas", then "Sugerido: la primera" in Caption `--text-muted`.
-- **Sending:** each answer is a submit button of one form. While it sends, every button keeps its focus and waits (`aria-disabled`). An answered group leaves the page until 6.3c closes it in place. An answer that couldn't be saved says "No pudimos guardar tu respuesta. Vuelve a intentarlo." under the buttons, in Caption 600 `--danger`, as an alert.
+- **Sending:** each answer is a submit button of one form. While it sends, every button keeps its focus and waits (`aria-disabled`). An answer that couldn't be saved says "No pudimos guardar tu respuesta. Vuelve a intentarlo." under the buttons, in Caption 600 `--danger`, as an alert.
+
+As Phase 6.3c closes answered groups (`AnsweredGroup`, `ReviewGroupItem`):
+
+- **In its place:** an answered group stays where it was, in the review's order, as a card (`--surface-card`, `--radius-lg`, padding 20): the 44px check chip (`--income-soft`, `check` in `--income-on-soft`), the group's name with up to two of the bank's texts it answered, quoted as printed ("Transferencias a tu nombre (“TRANSF A ANA LUCIA MAR” y “Ana Lucia Mar”)", then "y 2 más"; the bank's `0` isn't quoted) in Body 700, and what its movements count as now in Caption `--text-muted`, one sentence per answer: "Son tuyas: 5 movimientos cuentan como movido.", or for "No sé" "No sé: 2 movimientos siguen como movido, nuestra mejor suposición." The link action "Cambiar" sits on the right, under the text on phones, and is read with the group's name ("Cambiar: Transferencias a tu nombre"). A group with movements still waiting stays open, asking only about those. Once every group is answered, the cards stay and the status pill says "Todo respondido".
+- **Cambiar** opens the card again in the same place, about the movements answered, with every answer but "No sé" (an answer changes, it doesn't go back to the guess) and the link action "Mantener mi respuesta" under them, which closes it unchanged.
+- **The focus** stays on the group: once answered, or kept, on the closed card (a `role="group"` named by its title and described by its sentence, with the focus ring around it); when "Cambiar" opens it, on its question. A group loaded already answered takes no focus.
 
 ### Coverage timeline
 

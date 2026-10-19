@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { answerReview } from "../actions/answer-review.action";
+import { useReviewGroupControls } from "../hooks/use-review-group";
 import { REVIEW_COPY } from "../review.constants";
 import type { ReviewAnswerId, ReviewGroupId } from "../review.types";
+import { KeepAnswerButton } from "./ChangeAnswerButtons";
 
 type Answers = readonly { id: ReviewAnswerId; label: string }[];
 
@@ -14,6 +16,8 @@ type AnswerFormProps = {
   accountId: string;
   /** The quarter, as the URL writes it. */
   period: string;
+  /** Asked again: "Mantener mi respuesta" closes it unchanged. */
+  canKeep: boolean;
 };
 
 // The suggested answer first, as the primary button (design-system.md §9,
@@ -50,20 +54,35 @@ function AnswerButtons({
   );
 }
 
-/** A group's answers, each a button of one form that sends the group, the account and the quarter. */
+/**
+ * A group's answers, each a button of one form that sends the group, the
+ * account and the quarter. Once saved, the group closes in its place.
+ */
 export function AnswerForm({
   group,
   answers,
   accountId,
   period,
+  canKeep,
 }: AnswerFormProps) {
   const [state, action, isPending] = useActionState(answerReview, null);
+  const controls = useReviewGroupControls();
+  // Once saved, a group asked again with "Cambiar" closes; one that waited
+  // closes as the page refreshes with its answer.
+  useEffect(() => {
+    if (state?.ok) controls?.close();
+  }, [state, controls]);
   return (
     <form action={action} className="flex flex-col gap-2">
       <input type="hidden" name="group" value={group} />
       <input type="hidden" name="account" value={accountId} />
       <input type="hidden" name="period" value={period} />
       <AnswerButtons answers={answers} isPending={isPending} />
+      {canKeep && (
+        <div>
+          <KeepAnswerButton />
+        </div>
+      )}
       {state?.ok === false && (
         <p role="alert" className="text-caption font-semibold text-danger">
           {REVIEW_COPY.failed}

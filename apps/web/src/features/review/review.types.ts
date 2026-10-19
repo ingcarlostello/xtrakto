@@ -14,6 +14,8 @@ import type { REVIEW_ANSWERS, REVIEW_GROUPS } from "./review.constants";
 /** An answer and the category it gives; `null` keeps the best guess ("No sé"). */
 export type ReviewAnswer = {
   readonly label: string;
+  /** The answer as an answered group says it back: "Son tuyas". */
+  readonly said: string;
   readonly categoryId: CategoryId | null;
 };
 
@@ -22,6 +24,8 @@ export type ReviewAnswerId = keyof typeof REVIEW_ANSWERS;
 /** One question of the quick review. */
 export type ReviewGroupDefinition = {
   readonly id: string;
+  /** What the group is, once answered: "Transferencias a tu nombre". */
+  readonly name: string;
   /** The rules whose guesses it asks about. */
   readonly ruleIds: readonly CategorizationRuleId[];
   readonly icon: LucideIcon;
@@ -36,13 +40,46 @@ export type ReviewGroupId = (typeof REVIEW_GROUPS)[number]["id"];
 /** A bank text as printed, and how many of the group's movements carry it. */
 export type ReviewText = { readonly text: string; readonly count: number };
 
-/** A question with its movements in the period. */
-export type ReviewGroup = {
-  readonly id: ReviewGroupId;
+/** Some of a group's movements in the period. */
+export type GroupMovements = {
   readonly texts: readonly ReviewText[];
   /** What the movements add up to, signed. */
   readonly amountMinor: AmountMinor;
   readonly count: number;
+};
+
+/** What some of a group's answered movements count as now. */
+export type ReviewOutcome = {
+  /** The answer said back, "No sé", or the label of a category given elsewhere. */
+  readonly said: string;
+  readonly categoryId: CategoryId;
+  /** "No sé": they keep the best guess. */
+  readonly isGuessKept: boolean;
+  readonly count: number;
+};
+
+/** A group's answered movements, and what they count as now. */
+export type AnsweredMovements = GroupMovements & {
+  readonly outcomes: readonly ReviewOutcome[];
+};
+
+/**
+ * A question with its movements in the period: open while some wait for an
+ * answer (`pending`), closed once none does. What was answered is what
+ * "Cambiar" asks about again.
+ */
+export type ReviewGroup = { readonly id: ReviewGroupId } & (
+  | {
+      readonly pending: GroupMovements;
+      readonly answered: AnsweredMovements | null;
+    }
+  | { readonly pending: null; readonly answered: AnsweredMovements }
+);
+
+/** What waits for an answer in a quarter: the summary's banner says it. */
+export type PendingReview = {
+  readonly groups: number;
+  readonly movements: number;
 };
 
 /** The quick review of one account's quarter. */

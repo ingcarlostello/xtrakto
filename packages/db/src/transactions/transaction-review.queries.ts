@@ -1,8 +1,10 @@
-import type {
-  AmountMinor,
-  CategorizationRuleId,
-  CategoryId,
-  Period,
+import {
+  type AmountMinor,
+  CATEGORIZATION_RULES,
+  type CategorizationRuleId,
+  CATEGORY_SOURCE,
+  type CategoryId,
+  type Period,
 } from "@xtrakto/core";
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
@@ -11,38 +13,57 @@ import { usersCategory } from "../user-category-rules/user-category-rule.queries
 import type { UserContext } from "../user-context/user-context.types";
 import { transactions } from "./transaction.schemas";
 
-/** A movement the quick review asks about, and the rule that guessed it. */
+/**
+ * A movement the quick review asks or asked about: the rule that guessed it,
+ * whether it still waits for an answer, and the category it has now.
+ */
 export type ReviewMovement = {
   readonly id: string;
   readonly ruleId: CategorizationRuleId;
   readonly descriptionRaw: string;
   readonly descriptionNormalized: string;
   readonly amountMinor: AmountMinor;
+  readonly isPendingReview: boolean;
+  /** The rule's guess, or the user's answer. */
+  readonly categoryId: CategoryId;
+  /** The user answered with a category; else the guess stands. */
+  readonly isUsersCategory: boolean;
 };
 
 export type ReviewFilter = {
   readonly accountId: string;
   readonly period: Period;
-  /** Only what these rules guessed; everything to review without it. */
+  /** Only what these rules guessed; what every guessing rule did without it. */
   readonly ruleIds?: readonly CategorizationRuleId[];
 };
 
+const GUESSING_RULE_IDS: readonly CategorizationRuleId[] =
+  CATEGORIZATION_RULES.flatMap((rule) =>
+    "isGuess" in rule && rule.isGuess ? [rule.id] : [],
+  );
+
+const REVIEW_COLUMNS = {
+  id: transactions.id,
+  ruleId: transactions.categoryRuleId,
+  descriptionRaw: transactions.descriptionRaw,
+  descriptionNormalized: transactions.descriptionNormalized,
+  amountMinor: transactions.amountMinor,
+  isPendingReview: transactions.isPendingReview,
+  categoryId: transactions.categoryId,
+  categorySource: transactions.categorySource,
+};
+
 /**
- * An account's movements that count in a period and wait for review, the
- * oldest first: what the quick review asks about (6.3b).
+ * An account's movements that count in a period and that a rule guessed,
+ * the oldest first: those waiting for review and those the user answered,
+ * which keep the rule's id (6.3b, 6.3c).
  */
 export const listReviewMovements = async (
   { tx, userId }: UserContext,
-  { accountId, period, ruleIds }: ReviewFilter,
+  { accountId, period, ruleIds = GUESSING_RULE_IDS }: ReviewFilter,
 ): Promise<ReviewMovement[]> => {
   const rows = await tx
-    .select({
-      id: transactions.id,
-      ruleId: transactions.categoryRuleId,
-      descriptionRaw: transactions.descriptionRaw,
-      descriptionNormalized: transactions.descriptionNormalized,
-      amountMinor: transactions.amountMinor,
-    })
+    .select(REVIEW_COLUMNS)
     .from(transactions)
     .innerJoin(statements, eq(statements.id, transactions.statementId))
     .where(
@@ -52,16 +73,22 @@ export const listReviewMovements = async (
         gte(transactions.date, period.from),
         lte(transactions.date, period.to),
         countedMovement,
-        eq(transactions.isPendingReview, true),
-        ruleIds === undefined
-          ? undefined
-          : inArray(transactions.categoryRuleId, [...ruleIds]),
+        inArray(transactions.categoryRuleId, [...ruleIds]),
       ),
     )
     .orderBy(asc(transactions.date), asc(transactions.position));
-  // A guess always names its rule (CHECK), so none is left out.
-  return rows.flatMap(({ ruleId, ...movement }) =>
-    ruleId === null ? [] : [{ ...movement, ruleId }],
+  // A rule's id goes with a category (CHECK), so none is left out.
+  return rows.flatMap(({ ruleId, categoryId, categorySource, ...movement }) =>
+    ruleId === null || categoryId === null
+      ? []
+      : [
+          {
+            ...movement,
+            ruleId,
+            categoryId,
+            isUsersCategory: categorySource === CATEGORY_SOURCE.USER,
+          },
+        ],
   );
 };
 

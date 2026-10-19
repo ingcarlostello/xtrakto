@@ -23,6 +23,16 @@ describe("REVIEW_GROUPS", () => {
       expect(new Set(answers).size).toBe(answers.length);
   });
 
+  // An answered group tells its answer by its movements' category.
+  it.for(REVIEW_GROUPS)(
+    "gives each of $id's answers a category of its own",
+    ({ answers }) => {
+      const categories = answers.map((id) => REVIEW_ANSWERS[id].categoryId);
+
+      expect(new Set(categories).size).toBe(categories.length);
+    },
+  );
+
   it.for(REVIEW_GROUPS)(
     "offers the guess of $id's rules as its first answer",
     ({ ruleIds, answers }) => {

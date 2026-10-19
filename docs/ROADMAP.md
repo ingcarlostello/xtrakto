@@ -183,7 +183,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.2b Kinds in Movimientos
 - [x] 6.3a User rules
 - [x] 6.3b Quick review: ask and answer
-- [ ] 6.3c Quick review: answered groups and the banner
+- [x] 6.3c Quick review: answered groups and the banner
 - [ ] 6.3d Nequi numbers and "Lo que está en juego"
 - [ ] 6.3e Detail panel and corrections
 - [ ] 6.4 Summary computations
