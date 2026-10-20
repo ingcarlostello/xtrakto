@@ -375,6 +375,20 @@ Chips whose filter lives in the URL are links instead, inside a named `<nav>`, a
 - Amount: Amount XL.
 - Explanation: Caption, `--text-muted`, one sentence.
 - Action link that names the destination ("Ver en qué gastaste").
+- **As Phase 6.7a builds it** (`StatCard`, `ProgressRing`, `components/stat-card/`): the label is the card's `h3`, the amount is ink, and the action link sits at the card's bottom, so a row of cards lines its links up. The ring is hidden from screen readers, since the explanation says its share in words; with nothing to show it draws only its track, since a round cap would draw a dot.
+
+### Summary ("Resumen")
+
+As Phase 6.7a builds `v8-01` at `/`, for the account and period in the URL:
+
+- **The top:** "Resumen de tu cuenta de ahorros", the color legend, the period controls of Movimientos and Pagos fijos with the Primary "Subir extracto" after the months (full width on phones), and the review banner while groups wait.
+- **"Tu trimestre de un vistazo"** ("Tu mes de un vistazo" for a month; Section title) with the headline in Caption `--text-muted`: "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto.", or only what went out when nothing moved, or "No salió plata de tu cuenta.". Below, the three stat cards, `repeat(auto-fit, minmax(190px, 1fr))` with 16px gaps, stacked on phones, each with its compact total:
+  - **Ingresos**, its ring the share of its largest kind: "El 85% llegó en 2 transferencias." ("abonos de intereses", "consignaciones", "devoluciones"), and "No incluye $2,8M que volvió de tus cuentas." when money came back; "Ver ingresos".
+  - **Gasto real**, its ring its share of what went out: "El 45% de lo que salió." and its four largest categories, "Créditos, mercado, efectivo y pagos a personas."; "Ver en qué gastaste".
+  - **Movido**, its ring the share of what went out to the user's own: "El 55% de lo que salió: a tu inversión y a tus tarjetas. Además volvieron $2,8M."; "Ver a dónde se movió".
+  - Each link opens Movimientos on the period with its kind's filter. A kind without movements says so ("No hubo gasto real en este periodo.") over an empty ring.
+- Before any movement counts, the page keeps its empty state (§14), or the way to a statement that doesn't reconcile.
+- "Tu cuenta" (6.7b), the day-by-day chart (6.7c) and "Dónde se fue más" (6.7d) come next; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
 
 ### Kind total tile
 
@@ -635,7 +649,7 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a new account: signed in, without the app's header and dock, in the waitlist's 1120px column.
 
 - **Header:** the logo, which links nowhere; "Paso 1 de 3" in Caption `--text-muted` and the link action "Saltar" (read "Saltar la bienvenida"), which goes to the upload screen from every step. Below, three 6px segments 8px apart, at most 420px wide (the full width on phones): `--primary` up to the current step, then `--chart-axis`, since `--ring-track` vanishes on the page's background. They only repeat the step's text (`aria-hidden`).
-- **Step 1:** the Landing headline, the subtitle in Body `--text-secondary` (18px from `sm`), what works today as a list with neutral 44px chips (`--surface` at 80% with `--shadow-chip`, ink icons), and the Primary "Empezar" with "Gratis. Sin conectar tu banco: tú subes el archivo." beside it. Beside them from `lg`, below on phones, an example panel: the neutral badge "Ejemplo", "Julio a septiembre", the statement object and the verified status pill. v8's kind rings come back with the summary (6.7).
+- **Step 1:** the Landing headline, the subtitle in Body `--text-secondary` (18px from `sm`), what works today as a list with neutral 44px chips (`--surface` at 80% with `--shadow-chip`, ink icons), and the Primary "Empezar" with "Gratis. Sin conectar tu banco: tú subes el archivo." beside it. Beside them from `lg`, below on phones, an example panel: the neutral badge "Ejemplo", "Julio a septiembre", the three kinds of an invented quarter (each on `--surface` with `--radius-md` and `--shadow-card`: its ring, its label in Manrope 700 14px and its total in its kind's text color, 18px on phones and Amount L from `sm`), then the statement object and the verified status pill. The rings came back with the summary (6.7a).
 - **Step 2:** a card at most 820px wide whose page title is the question. Each file is a radio card (`--surface`, `--radius-md`, `--shadow-card`, padding 20): a 44px chip, `--primary-soft` with a `--primary` icon once chosen and `--surface-muted` with ink before; the title in Body 700, with the `ok` badge "Recomendado" on the quarterly statement; its line in Caption `--text-muted`; and, once chosen, a 2px `--primary` border and a 24px `--primary` circle with a white check. The radios are native, so the arrow keys move the choice, and the focus ring goes around the card. Then "No te pedimos tu nombre…" in Caption `--text-secondary` on `--primary-soft-2` (radius 16, padding 16, `user-round` in `--primary-strong`), and a Secondary "Atrás" and a Primary "Continuar" at each end.
 - **Step 3:** two cards side by side from `lg` (5:4), stacked on phones: the guides (the page title; a subtitle that follows the step 2 choice; one `--surface-muted` panel per file, the chosen one first, with its icon, its name in Body 700 and its numbered steps, 28px `--primary-soft` circles with `--primary-strong` numbers) and "Súbelos aquí" with the drop zone.
 
