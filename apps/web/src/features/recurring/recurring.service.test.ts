@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { extractedContentSchema } from "@xtrakto/core";
+import { type ExtractedContent, extractedContentSchema } from "@xtrakto/core";
 import {
   createDb,
   createIngestionJobWithinLimit,
@@ -29,6 +29,8 @@ const FIXTURES = new URL(
   import.meta.url,
 );
 const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
 
 // The fixed payments of quarterly-year-rollover, the largest first.
 const SPENDING = [
@@ -42,19 +44,68 @@ const SPENDING = [
 ];
 const MOVED = ["AHORRO DOLAR", "TC MASTER PESOS"];
 
-// A fixture as the browser sends it: minimized by its parser.
-const fixture = (name: string) => {
-  const json: unknown = JSON.parse(
-    readFileSync(new URL(`${name}.json`, FIXTURES), "utf8"),
-  );
-  const content = extractedContentSchema.parse(json);
+// Content as the browser sends it: minimized by its parser.
+const minimized = (content: ExtractedContent) => {
   const parser = findParser(content);
-  if (!parser.ok) throw new Error(`No parser recognizes ${name}.`);
+  if (!parser.ok) throw new Error("No parser recognizes the content.");
   return {
     formatId: parser.value.id,
     extractedContent: parser.value.minimize(content),
   };
 };
+
+const fixture = (name: string) =>
+  minimized(
+    extractedContentSchema.parse(
+      JSON.parse(readFileSync(new URL(`${name}.json`, FIXTURES), "utf8")),
+    ),
+  );
+
+type AprilRow = readonly [day: number, description: string, pesos: number];
+
+// The month after quarterly-year-rollover, as the movements export writes
+// it: each day's midnight in Bogotá stored as 05:00 UTC, amounts in pesos.
+const aprilExport = (rows: readonly AprilRow[]) =>
+  minimized(
+    extractedContentSchema.parse({
+      type: "spreadsheet",
+      sheets: [
+        {
+          name: "Hoja1",
+          rows: [
+            ["Fecha", "Descripción", "Referencia", "Valor"],
+            ...rows.map(([day, description, pesos]) => [
+              {
+                excelSerial:
+                  (Date.UTC(2027, 3, day) - EXCEL_EPOCH) / DAY_MS + 5 / 24,
+              },
+              description,
+              null,
+              pesos,
+            ]),
+          ],
+        },
+      ],
+    }),
+  );
+
+// April's fixed payments to the 6th: internet, due on the 5th, didn't come.
+const APRIL_TO_THE_6TH: readonly AprilRow[] = [
+  [2, "PAGO PSE Financiera Andes S", -1_540_000],
+  [3, "PAGO PSE EMPRESA DE ENERGIA", -170_000],
+  [4, "PAGO PSE Financiera Andes S", -311_000],
+  [4, "PAGO LLAVE AHORRO DOLAR", -2_000_000],
+  [6, "PAGO SUC VIRT TC MASTER PESOS", -1_500_000],
+];
+
+// The rest of April, to its last day: all but the gym.
+const REST_OF_APRIL: readonly AprilRow[] = [
+  [5, "PAGO PSE HOGAR CONECTADO SA", -129_900],
+  [11, "PAGO PSE GAS NATURAL CIUDAD", -30_990],
+  [19, "PAGO PSE Acueducto Municipa", -97_000],
+  [22, "PAGO QR Telefonia Movil", -62_000],
+  [30, "ABONO INTERESES AHORROS", 4.32],
+];
 
 const labels = (payments: readonly { label: string }[]) =>
   payments.map(({ label }) => label);
@@ -71,22 +122,26 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
     await app.pool.end();
   });
 
-  // A user who uploaded a fixture, as the action and the function do it.
-  const userWith = async (name: string) => {
+  // A user who uploaded files in order, as the action and the function do it.
+  const userWith = async (
+    ...uploads: readonly ReturnType<typeof fixture>[]
+  ) => {
     const clerkUserId = `test_${randomUUID()}`;
     const userId = await findOrCreateUser(app.db, clerkUserId);
-    const created = await withUserContext(app.db, userId, (ctx) =>
-      createIngestionJobWithinLimit(ctx, fixture(name), {
-        limit: 100,
-        month: {
-          start: new Date(Date.now() - HOUR_MS),
-          end: new Date(Date.now() + HOUR_MS),
-        },
-      }),
-    );
-    if (!created.ok) throw new Error("No job created.");
-    await claimJob({ jobId: created.value, userId });
-    await ingestJob({ jobId: created.value, userId });
+    for (const upload of uploads) {
+      const created = await withUserContext(app.db, userId, (ctx) =>
+        createIngestionJobWithinLimit(ctx, upload, {
+          limit: 100,
+          month: {
+            start: new Date(Date.now() - HOUR_MS),
+            end: new Date(Date.now() + HOUR_MS),
+          },
+        }),
+      );
+      if (!created.ok) throw new Error("No job created.");
+      await claimJob({ jobId: created.value, userId });
+      await ingestJob({ jobId: created.value, userId });
+    }
     const [account] = await withUserContext(app.db, userId, (ctx) =>
       listMovementAccounts(ctx),
     );
@@ -95,7 +150,7 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
   };
 
   it("finds the fixed payments of the latest quarter's last month", async () => {
-    const { clerkUserId } = await userWith("quarterly-year-rollover");
+    const { clerkUserId } = await userWith(fixture("quarterly-year-rollover"));
 
     const recurring = await getRecurringPayments(clerkUserId, {});
 
@@ -107,6 +162,7 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
     expect(recurring?.month).toEqual({ year: 2027, month: 3 });
     expect(labels(recurring?.payments.spending ?? [])).toEqual(SPENDING);
     expect(labels(recurring?.payments.moved ?? [])).toEqual(MOVED);
+    expect(recurring?.stopped).toEqual([]);
     const [loan, energy] = recurring?.payments.spending ?? [];
     expect(loan?.months.at(-1)?.payments).toEqual([-154_000_000, -31_100_000]);
     expect(energy?.trend).toEqual({ kind: "rose", percent: 12 });
@@ -117,7 +173,7 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
   });
 
   it("finds in a month only what repeated three months by then", async () => {
-    const { clerkUserId } = await userWith("quarterly-year-rollover");
+    const { clerkUserId } = await userWith(fixture("quarterly-year-rollover"));
     const inMonth = (month: number) =>
       getRecurringPayments(clerkUserId, {
         period: { kind: "month", year: 2027, month },
@@ -133,8 +189,37 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
     expect(february?.payments).toEqual({ spending: [], moved: [] });
   });
 
+  it("stops a fixed payment that didn't come in a whole month", async () => {
+    const { clerkUserId } = await userWith(
+      fixture("quarterly-year-rollover"),
+      aprilExport([...APRIL_TO_THE_6TH, ...REST_OF_APRIL]),
+    );
+
+    const recurring = await getRecurringPayments(clerkUserId, {});
+
+    expect(recurring?.month).toEqual({ year: 2027, month: 4 });
+    expect(labels(recurring?.payments.spending ?? [])).toEqual(
+      SPENDING.filter((label) => label !== "GIMNASIO FIT"),
+    );
+    expect(labels(recurring?.payments.moved ?? [])).toEqual(MOVED);
+    expect(labels(recurring?.stopped ?? [])).toEqual(["GIMNASIO FIT"]);
+  });
+
+  it("still expects last month's payments while the month's movements go on", async () => {
+    const { clerkUserId } = await userWith(
+      fixture("quarterly-year-rollover"),
+      aprilExport(APRIL_TO_THE_6TH),
+    );
+
+    const recurring = await getRecurringPayments(clerkUserId, {});
+
+    expect(recurring?.month).toEqual({ year: 2027, month: 4 });
+    expect(labels(recurring?.payments.spending ?? [])).toEqual(SPENDING);
+    expect(recurring?.stopped).toEqual([]);
+  });
+
   it("finds none in a quarter whose payments don't repeat, and keeps its last month", async () => {
-    const { clerkUserId } = await userWith("quarterly-basic");
+    const { clerkUserId } = await userWith(fixture("quarterly-basic"));
 
     const recurring = await getRecurringPayments(clerkUserId, {});
 
@@ -143,8 +228,8 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
   });
 
   it("opens the user's own account when the URL names another user's", async () => {
-    const owner = await userWith("quarterly-year-rollover");
-    const stranger = await userWith("quarterly-basic");
+    const owner = await userWith(fixture("quarterly-year-rollover"));
+    const stranger = await userWith(fixture("quarterly-basic"));
 
     const recurring = await getRecurringPayments(stranger.clerkUserId, {
       accountId: owner.accountId,

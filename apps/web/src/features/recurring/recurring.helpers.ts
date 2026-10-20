@@ -1,8 +1,12 @@
-import type {
-  CalendarMonth,
-  RecurringPayment,
-  RecurringPayments,
+import {
+  type CalendarMonth,
+  type LocalDate,
+  monthPeriod,
+  type RecurringMonth,
+  type RecurringPayment,
+  type RecurringPayments,
 } from "@xtrakto/core";
+import type { PagePayments } from "./recurring.types";
 
 const MONTHS_A_YEAR = 12;
 
@@ -21,18 +25,44 @@ export const monthBefore = (
   };
 };
 
-/** The payments a page of `month` shows: those paid in it, none without one. */
-export const paidIn = (
+/** The month a day falls in. */
+export const calendarMonthOf = (date: LocalDate): CalendarMonth => ({
+  year: Number(date.slice(0, 4)),
+  month: Number(date.slice(5, 7)),
+});
+
+/** What a payment added up to in a month, when it was paid in it. */
+export const paidMonth = (
+  payment: RecurringPayment,
+  month: CalendarMonth,
+): RecurringMonth | undefined =>
+  payment.months.find((paid) => isSameMonth(paid.month, month));
+
+/**
+ * The payments of a page whose movements end on `lastDate`, in that day's
+ * month: those paid in it and, while its movements don't reach its last day,
+ * those of the month before, which may still come. The real spending that
+ * repeated before and doesn't now stopped.
+ */
+export const splitByMonth = (
   { spending, moved }: RecurringPayments,
-  month: CalendarMonth | undefined,
-): RecurringPayments => {
-  const isPaid = (payment: RecurringPayment) => {
-    const last = payment.months.at(-1);
+  lastDate: LocalDate,
+): PagePayments => {
+  const month = calendarMonthOf(lastDate);
+  const isInProgress = lastDate < monthPeriod(month).to;
+  const isExpected = ({ months }: RecurringPayment) => {
+    const last = months.at(-1)?.month;
+    if (last === undefined) return false;
     return (
-      month !== undefined &&
-      last !== undefined &&
-      isSameMonth(last.month, month)
+      isSameMonth(last, month) ||
+      (isInProgress && isSameMonth(last, monthBefore(month, 1)))
     );
   };
-  return { spending: spending.filter(isPaid), moved: moved.filter(isPaid) };
+  return {
+    payments: {
+      spending: spending.filter(isExpected),
+      moved: moved.filter(isExpected),
+    },
+    stopped: spending.filter((payment) => !isExpected(payment)),
+  };
 };

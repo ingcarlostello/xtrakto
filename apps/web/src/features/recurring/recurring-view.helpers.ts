@@ -1,10 +1,13 @@
 import {
   type AmountMinor,
+  amountMinorSchema,
   type AmountTrend,
   type CalendarMonth,
   CHANNELS,
   CURRENCY,
   formatAmount,
+  formatCompactAmount,
+  formatDayInWords,
   formatMonthName,
   formatShortMonth,
   formatSignedAmount,
@@ -13,25 +16,45 @@ import {
   type RecurringPayments,
   sumAmounts,
 } from "@xtrakto/core";
-import { countText } from "@/utils/count-text.utils";
+import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
+import type {
+  HrefOf,
+  PeriodLink,
+} from "@/components/period-controls/period-controls.types";
+import { countText, formatCount } from "@/utils/count-text.utils";
+import {
+  type RecurringFilter,
+  recurringHref,
+} from "@/utils/transactions-url.helpers";
 import { RECURRING_COPY as COPY } from "./recurring.constants";
-import { isSameMonth, monthBefore } from "./recurring.helpers";
-import type { MonthBar, RecurringRowView } from "./recurring.types";
+import { isSameMonth, monthBefore, paidMonth } from "./recurring.helpers";
+import type {
+  AccountRecurring,
+  MonthBar,
+  RecurringRowView,
+  RecurringTile,
+  RecurringView,
+} from "./recurring.types";
 
 const DOTS = "•••";
+const MONTHS_A_YEAR = 12;
 
 const CHANNEL_LABELS: ReadonlyMap<string, string> = new Map(
   CHANNELS.map(({ id, labelEs }) => [id, labelEs]),
 );
 
-const monthWord = (month: CalendarMonth): string =>
+/** A month in running text: `"septiembre"`. */
+export const monthWord = (month: CalendarMonth): string =>
   formatMonthName(month).toLowerCase();
 
-// "julio, agosto y septiembre".
-const joined = (items: readonly string[]): string =>
+/** `"julio, agosto y septiembre"`, or with another word: `"transferencia o PSE"`. */
+export const joined = (
+  items: readonly string[],
+  conjunction: string = COPY.and,
+): string =>
   items.length < 2
     ? items.join("")
-    : `${items.slice(0, -1).join(", ")} ${COPY.and} ${items.at(-1)}`;
+    : `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
 
 // What some money adds up to, without its direction: "$1.540.000".
 const withoutSign = (amount: AmountMinor): string => {
@@ -39,8 +62,15 @@ const withoutSign = (amount: AmountMinor): string => {
   return formatAmount(isAmountMinor(size) ? size : amount, CURRENCY.COP);
 };
 
-const monthOf = (payment: RecurringPayment, month: CalendarMonth) =>
-  payment.months.find((paid) => isSameMonth(paid.month, month));
+/** Who was paid, or the number paid by its channel: "Nequi ••• 1270". */
+export const paymentTitle = ({
+  label,
+  referenceLast4,
+  channels,
+}: RecurringPayment): string =>
+  referenceLast4 === null
+    ? label
+    : `${CHANNEL_LABELS.get(channels[0] ?? "") ?? label} ${DOTS} ${referenceLast4}`;
 
 /** "Encontramos 7 gastos fijos y 2 pagos que se repiten pero no son gasto." */
 export const foundText = ({
@@ -64,9 +94,25 @@ export const pageSubtitle = (payments: RecurringPayments): string =>
 export const barMonths = (month: CalendarMonth): readonly CalendarMonth[] =>
   [2, 1, 0].map((back) => monthBefore(month, back));
 
-/** "Ordenados por monto. Las barras muestran julio, agosto y septiembre." */
-export const listSubtitle = (month: CalendarMonth): string =>
-  `${COPY.sorted} ${COPY.barsShow} ${joined(barMonths(month).map(monthWord))}.`;
+/**
+ * "Ordenados por monto. Las barras muestran julio, agosto y septiembre.", or
+ * for the payments that stopped, "Se repetían cada mes, pero no aparecen en
+ * septiembre. …".
+ */
+export const listSubtitle = (
+  month: CalendarMonth,
+  view: RecurringView = "active",
+): string => {
+  const first =
+    view === "active"
+      ? COPY.sorted
+      : `${COPY.stoppedSubtitle} ${monthWord(month)}.`;
+  return `${first} ${COPY.barsShow} ${joined(barMonths(month).map(monthWord))}.`;
+};
+
+/** "No hay pagos fijos en septiembre." */
+export const noneText = (month: CalendarMonth): string =>
+  `${COPY.noneIn} ${monthWord(month)}.`;
 
 /** "Total en septiembre", and what the fixed payments added up to in it. */
 export const monthTotal = (
@@ -75,7 +121,11 @@ export const monthTotal = (
 ): { readonly label: string; readonly amount: string } => ({
   label: `${COPY.totalIn} ${monthWord(month)}`,
   amount: formatSignedAmount(
-    sumAmounts(spending.flatMap((p) => monthOf(p, month)?.amountMinor ?? [])),
+    sumAmounts(
+      spending.flatMap(
+        (payment) => paidMonth(payment, month)?.amountMinor ?? [],
+      ),
+    ),
     CURRENCY.COP,
   ),
 });
@@ -87,11 +137,11 @@ export const monthBars = (
 ): readonly MonthBar[] => {
   const months = barMonths(month);
   const sizes = months.map((m) =>
-    Math.abs(monthOf(payment, m)?.amountMinor ?? 0),
+    Math.abs(paidMonth(payment, m)?.amountMinor ?? 0),
   );
   const most = Math.max(...sizes, 1);
   return months.map((m, index) => {
-    const paid = monthOf(payment, m);
+    const paid = paidMonth(payment, m);
     return {
       key: `${m.year}-${m.month}`,
       label: formatShortMonth(m),
@@ -119,26 +169,36 @@ const cadenceOf = ({ days }: RecurringPayment): string =>
     ? `${COPY.monthly} · ${COPY.onDay} ${days.first}`
     : `${COPY.monthly} · ${COPY.between} ${days.first} ${COPY.andThe} ${days.last}`;
 
-// Who was paid, or the number paid by its channel: "Nequi ••• 1270".
-const titleOf = ({ label, referenceLast4, channels }: RecurringPayment) =>
-  referenceLast4 === null
-    ? label
-    : `${CHANNEL_LABELS.get(channels[0] ?? "") ?? label} ${DOTS} ${referenceLast4}`;
-
 // "2 cuotas: $1.540.000 y $311.000.", when the month held several.
 const installmentsOf = (payment: RecurringPayment, month: CalendarMonth) => {
-  const payments = monthOf(payment, month)?.payments ?? [];
+  const payments = paidMonth(payment, month)?.payments ?? [];
   if (payments.length < 2) return undefined;
   const noun =
     payment.categoryId === "loan_payment" ? COPY.installments : COPY.payments;
   return `${countText(payments.length, noun)}: ${joined(payments.map(withoutSign))}.`;
 };
 
-// Its month's amount, or the range it moves in when it moves a lot.
+// When it was last paid, for one that stopped; or that it hasn't come yet
+// in the page's month, for one still expected in it.
+const noteOf = (
+  payment: RecurringPayment,
+  month: CalendarMonth,
+  view: RecurringView,
+): string | undefined => {
+  if (view === "stopped")
+    return `${COPY.lastPaid} ${formatDayInWords(payment.lastDate)}.`;
+  return paidMonth(payment, month) === undefined
+    ? `${COPY.notYet} ${monthWord(month)}.`
+    : undefined;
+};
+
+// Its month's amount, else its latest; or the range it moves in when it
+// moves a lot.
 const amountOf = (payment: RecurringPayment, month: CalendarMonth): string => {
   if (payment.trend.kind !== "variable")
     return formatSignedAmount(
-      monthOf(payment, month)?.amountMinor ?? payment.typicalAmountMinor,
+      (paidMonth(payment, month) ?? payment.months.at(-1))?.amountMinor ??
+        payment.typicalAmountMinor,
       CURRENCY.COP,
     );
   const bySize = payment.months
@@ -149,17 +209,19 @@ const amountOf = (payment: RecurringPayment, month: CalendarMonth): string => {
   return `${withoutSign(least)} ${COPY.rangeTo} ${withoutSign(most)}`;
 };
 
-/** A payment as its row reads, in the page's month. */
+/** A payment as its row reads, in the page's month and the list it's in. */
 export const rowView = (
   payment: RecurringPayment,
   month: CalendarMonth,
+  view: RecurringView = "active",
 ): RecurringRowView => {
   const [bankText = payment.label, ...others] = payment.bankTexts;
   const installmentsText = installmentsOf(payment, month);
+  const note = noteOf(payment, month, view);
   return {
     key: `${payment.label}-${payment.referenceLast4 ?? ""}-${payment.categoryId}`,
     categoryId: payment.categoryId,
-    title: titleOf(payment),
+    title: paymentTitle(payment),
     bankText,
     ...(others.length > 0
       ? {
@@ -167,10 +229,124 @@ export const rowView = (
         }
       : {}),
     ...(installmentsText === undefined ? {} : { installmentsText }),
+    ...(note === undefined ? {} : { note }),
     cadence: cadenceOf(payment),
     channels: payment.channels.map((id) => CHANNEL_LABELS.get(id) ?? id),
     trend: trendView(payment.trend),
     hasSeveralChannels: payment.channels.length > 1,
     amount: amountOf(payment, month),
   };
+};
+
+/** What a payment takes in a month: its latest month's amount. */
+export const latestAmountOf = (payment: RecurringPayment): AmountMinor =>
+  payment.months.at(-1)?.amountMinor ?? payment.typicalAmountMinor;
+
+/** Some money in a tile or a note, without its direction: "$2,5M". */
+export const compactSize = (amount: AmountMinor): string =>
+  formatCompactAmount(amountMinorSchema.parse(Math.abs(amount)), CURRENCY.COP);
+
+// "Lo que suman estos 7 pagos en 12 meses."
+const yearlyCaption = (count: number): string =>
+  count === 1
+    ? COPY.tiles.yearlyOne
+    : `${COPY.tiles.yearlyOther} ${formatCount(count)} ${COPY.tiles.yearlyOtherEnd}`;
+
+// The payment that rose the most, by its percent, then by its money: from
+// its first month to its last, as its trend measures it.
+const roseTile = (
+  spending: readonly RecurringPayment[],
+): RecurringTile | undefined => {
+  const [most] = spending
+    .flatMap((payment) => {
+      const [first] = payment.months;
+      const last = payment.months.at(-1);
+      if (payment.trend.kind !== "rose" || !first || !last) return [];
+      const rise = Math.abs(last.amountMinor) - Math.abs(first.amountMinor);
+      return [{ payment, percent: payment.trend.percent, first, last, rise }];
+    })
+    .sort((a, b) => b.percent - a.percent || b.rise - a.rise);
+  if (most === undefined) return undefined;
+  const { payment, percent, first, last, rise } = most;
+  const { tiles } = COPY;
+  return {
+    kind: "rose",
+    categoryId: payment.categoryId,
+    label: `${paymentTitle(payment)} ${tiles.rose} ${percent}%`,
+    amount: formatSignedAmount(amountMinorSchema.parse(rise), CURRENCY.COP),
+    caption: `${tiles.from} ${withoutSign(first.amountMinor)} ${tiles.in} ${monthWord(first.month)} ${tiles.to} ${withoutSign(last.amountMinor)} ${tiles.in} ${monthWord(last.month)}. ${tiles.check}`,
+  };
+};
+
+/**
+ * The tiles above the list (docs/ui/v8-04): what the fixed payments take each
+ * month, each one's latest; that in twelve months; and the one that rose the
+ * most, when one did. None without fixed payments.
+ */
+export const recurringTiles = (
+  spending: readonly RecurringPayment[],
+): readonly RecurringTile[] => {
+  if (spending.length === 0) return [];
+  const monthly = sumAmounts(spending.map(latestAmountOf));
+  const yearly = amountMinorSchema.parse(monthly * MONTHS_A_YEAR);
+  const rose = roseTile(spending);
+  return [
+    {
+      kind: "monthly",
+      label: COPY.tiles.monthly,
+      amount: compactSize(monthly),
+      caption: COPY.tiles.monthlyCaption,
+    },
+    {
+      kind: "yearly",
+      label: COPY.tiles.yearly,
+      amount: compactSize(yearly),
+      caption: yearlyCaption(spending.length),
+    },
+    ...(rose === undefined ? [] : [rose]),
+  ];
+};
+
+/** What the list shows: the payments that stopped when the URL asks and some did. */
+export const viewOf = (
+  filter: RecurringFilter | undefined,
+  stopped: readonly RecurringPayment[],
+): RecurringView =>
+  filter === "stopped" && stopped.length > 0 ? "stopped" : "active";
+
+/** The page's links to another account or period, which keep its list. */
+export const recurringHrefOf =
+  (view: RecurringView): HrefOf =>
+  (link) =>
+    recurringHref({ ...link, ...(view === "stopped" ? { filter: view } : {}) });
+
+// The account, only when there are several, and the period shown.
+const linkOf = ({
+  accounts,
+  account,
+  period,
+}: AccountRecurring): PeriodLink => ({
+  ...(accounts.length > 1 ? { accountId: account.id } : {}),
+  period,
+});
+
+/** "Activos · 7 / Ya no aparecen · 1", as links; none when nothing stopped. */
+export const listFilters = (
+  recurring: AccountRecurring,
+  view: RecurringView,
+): readonly FilterChip[] => {
+  if (recurring.stopped.length === 0) return [];
+  const link = linkOf(recurring);
+  return [
+    {
+      label: `${COPY.active} · ${formatCount(recurring.payments.spending.length)}`,
+      href: recurringHref(link),
+      isCurrent: view === "active",
+    },
+    {
+      label: `${COPY.stopped} · ${formatCount(recurring.stopped.length)}`,
+      href: recurringHref({ ...link, filter: "stopped" }),
+      isCurrent: view === "stopped",
+    },
+  ];
 };
