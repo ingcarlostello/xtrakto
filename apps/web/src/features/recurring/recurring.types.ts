@@ -5,13 +5,6 @@ import type {
   RecurringPayments,
 } from "@xtrakto/core";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
-
-/** What the URL asks the page for. */
-export type RecurringRequest = {
-  readonly accountId?: string;
-  readonly period?: MovementPeriod;
-};
 
 /** The payments a page shows in its month. */
 export type PagePayments = {

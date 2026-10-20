@@ -10,6 +10,7 @@ import { PERIOD_COPY as COPY } from "./period-controls.constants";
 import type {
   HrefOf,
   PeriodChoices,
+  PeriodLink,
   PeriodOption,
 } from "./period-controls.types";
 
@@ -22,6 +23,15 @@ const QUARTER_BADGES = {
 // Links keep the account only when there are several.
 const accountOf = ({ accounts, account }: PeriodChoices) =>
   accounts.length > 1 ? account.id : undefined;
+
+/** A link to the account and period a page shows, the account only when there are several. */
+export const periodLinkOf = (choices: PeriodChoices): PeriodLink => {
+  const accountId = accountOf(choices);
+  return {
+    ...(accountId === undefined ? {} : { accountId }),
+    period: choices.period,
+  };
+};
 
 /** The quarters to choose from, each with its status. */
 export const quarterOptions = (

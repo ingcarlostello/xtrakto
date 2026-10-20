@@ -1,47 +1,42 @@
 import "server-only";
-import {
-  APP_ERROR_CODE,
-  type AppError,
-  err,
-  ok,
-  type Period,
-  type Result,
-  summarizeMovements,
-} from "@xtrakto/core";
+import { summarizeMovements } from "@xtrakto/core";
 import {
   findUserId,
-  listAccounts,
   listBankFigures,
   listSummaryMovements,
   withUserContext,
 } from "@xtrakto/db";
+import type { PeriodRequest } from "@/components/period-controls/period-controls.types";
+import { locateAccountPeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
+import { periodDays } from "@/utils/transactions-url.helpers";
 import type { AccountSummary } from "./summary.types";
 
 /**
- * The summary of one of the signed-in user's accounts for a period: what
- * its movements that count add up to (`summarizeMovements`), and the bank's
- * own figures from its quarterly statements there. Not found when the
- * account isn't theirs.
+ * The signed-in user's summary, in the account and period the URL asks, or
+ * the latest: what its movements that count add up to
+ * (`summarizeMovements`), and the bank's own figures from its quarterly
+ * statements there. `null` until a movement counts; reading never creates
+ * the user's row. The Clerk id must come from the session.
  */
-export const getAccountSummary = async (
+export const getSummary = async (
   clerkUserId: string,
-  {
-    accountId,
-    period,
-  }: { readonly accountId: string; readonly period: Period },
-): Promise<Result<AccountSummary, AppError>> => {
+  request: PeriodRequest,
+): Promise<AccountSummary | null> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
-  if (!userId) return err({ code: APP_ERROR_CODE.NOT_FOUND });
+  if (!userId) return null;
   return withUserContext(db, userId, async (ctx) => {
-    const accounts = await listAccounts(ctx);
-    if (!accounts.some(({ id }) => id === accountId))
-      return err({ code: APP_ERROR_CODE.NOT_FOUND });
-    const scope = { accountId, period };
-    return ok({
+    const located = await locateAccountPeriod(ctx, request);
+    if (!located) return null;
+    const scope = {
+      accountId: located.account.id,
+      period: periodDays(located.period),
+    };
+    return {
+      ...located,
       summary: summarizeMovements(await listSummaryMovements(ctx, scope)),
       bankFigures: await listBankFigures(ctx, scope),
-    });
+    };
   });
 };

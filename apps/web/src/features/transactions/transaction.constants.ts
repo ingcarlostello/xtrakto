@@ -191,11 +191,4 @@ export const TRANSACTIONS_COPY = {
     emptyDescription:
       "Verás cómo lo escribe el banco, su canal, de qué archivo viene y por qué tiene su categoría.",
   },
-  // The summary, once movements count and before Phase 6.7 builds it.
-  ready: {
-    title: "Ya tienes",
-    description:
-      "Míralos día por día, con el texto tal como lo escribe el banco.",
-    action: "Ver movimientos",
-  },
 } as const;

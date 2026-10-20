@@ -7,8 +7,8 @@ import {
   monthWeeks,
   type RecurringPayment,
 } from "@xtrakto/core";
+import { compactSize } from "@/utils/money-text.utils";
 import {
-  compactSize,
   joined,
   latestAmountOf,
   monthWord,

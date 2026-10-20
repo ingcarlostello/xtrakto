@@ -12,6 +12,7 @@ import type {
 import {
   accountOptions,
   monthOptions,
+  periodLinkOf,
   quarterOptions,
 } from "./period-options.helpers";
 
@@ -85,6 +86,14 @@ describe("period options", () => {
     expect(
       monthOptions(choices([ACCOUNT, OTHER]), hrefOf)[0]?.href.query,
     ).toEqual({ account: "a1", period: "2026-07" });
+  });
+
+  it("links to the page's period, with the account only when there are several", () => {
+    expect(periodLinkOf(choices())).toStrictEqual({ period: AUGUST });
+    expect(periodLinkOf(choices([ACCOUNT, OTHER]))).toStrictEqual({
+      accountId: "a1",
+      period: AUGUST,
+    });
   });
 
   it("opens each account on its latest quarter", () => {

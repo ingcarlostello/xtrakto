@@ -6,7 +6,6 @@ import {
   CHANNELS,
   CURRENCY,
   formatAmount,
-  formatCompactAmount,
   formatDayInWords,
   formatMonthName,
   formatShortMonth,
@@ -17,11 +16,10 @@ import {
   sumAmounts,
 } from "@xtrakto/core";
 import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
-import type {
-  HrefOf,
-  PeriodLink,
-} from "@/components/period-controls/period-controls.types";
+import type { HrefOf } from "@/components/period-controls/period-controls.types";
+import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
+import { compactSize } from "@/utils/money-text.utils";
 import {
   type RecurringFilter,
   recurringHref,
@@ -242,10 +240,6 @@ export const rowView = (
 export const latestAmountOf = (payment: RecurringPayment): AmountMinor =>
   payment.months.at(-1)?.amountMinor ?? payment.typicalAmountMinor;
 
-/** Some money in a tile or a note, without its direction: "$2,5M". */
-export const compactSize = (amount: AmountMinor): string =>
-  formatCompactAmount(amountMinorSchema.parse(Math.abs(amount)), CURRENCY.COP);
-
 // "Lo que suman estos 7 pagos en 12 meses."
 const yearlyCaption = (count: number): string =>
   count === 1
@@ -320,23 +314,13 @@ export const recurringHrefOf =
   (link) =>
     recurringHref({ ...link, ...(view === "stopped" ? { filter: view } : {}) });
 
-// The account, only when there are several, and the period shown.
-const linkOf = ({
-  accounts,
-  account,
-  period,
-}: AccountRecurring): PeriodLink => ({
-  ...(accounts.length > 1 ? { accountId: account.id } : {}),
-  period,
-});
-
 /** "Activos · 7 / Ya no aparecen · 1", as links; none when nothing stopped. */
 export const listFilters = (
   recurring: AccountRecurring,
   view: RecurringView,
 ): readonly FilterChip[] => {
   if (recurring.stopped.length === 0) return [];
-  const link = linkOf(recurring);
+  const link = periodLinkOf(recurring);
   return [
     {
       label: `${COPY.active} · ${formatCount(recurring.payments.spending.length)}`,

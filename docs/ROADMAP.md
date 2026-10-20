@@ -194,7 +194,11 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.5b Recurring payments page _(design v8)_
 - [x] 6.5c Recurring payments: what to expect _(design v8)_
 - [x] 6.6 Insights ("Para revisar")
-- [ ] 6.7 Summary page
+- [x] 6.7a Summary at a glance
+- [ ] 6.7b Your account card
+- [ ] 6.7c Balance and real spending, day by day
+- [ ] 6.7d Where it went and what to review
+- [ ] 6.7e Interest by month in Movimientos
 - [ ] 6.8 Categories page _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
@@ -1308,17 +1312,60 @@ Decided with the human when it started (2026-10-20): the card payments' insight,
 
 #### 6.7 Summary page
 
+Following design v8 (`docs/ui/v8-01`), with Server Components and client components only for interactive charts. Split in five when it started (about 1,500 changed lines estimated), with the human's approval (2026-10-20). v8 shows the share of real spending and of what moved as the KPI tiles' rings, so they take the place of the "real vs moved bar" this phase named; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
+
+#### 6.7a Summary at a glance
+
 **Tasks**
 
-- Following design v8 (`docs/ui/v8-01`): headline (real spending vs total outflows), KPIs, real vs moved bar, categories, the balance and real spending day by day (6.4), recurring payments and insights, the review banner, and the account card with the bank's own figures and its status pill.
+- The summary page for the account and period in the URL, with the period controls of Movimientos and Pagos fijos and "Subir extracto": the title row with the color legend, the review banner, and "Tu trimestre de un vistazo": the headline (what went out, and that not all of it was spending) and the three KPI tiles, Ingresos, Gasto real and Movido, each with its ring, what it means, and the way to its movements.
 - The KPI tile (stat card with its progress ring, design system §9), moved here from 4.3.
-- Server Components; client components only for interactive charts.
-- In the transactions list, group the daily interest rows into one line per month.
 - Onboarding's welcome example gets its kind rings back, left out in 5.8.
 
 **Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
 
-**Commit:** `feat(web): summary page`
+**Commit:** `feat(web): summary at a glance`
+
+#### 6.7b Your account card
+
+**Tasks**
+
+- "Tu cuenta" (`v8-01`): the balance at the period's end, the account, the bank's own figures (average balance, interest paid) and the status pill (verified, chained, without balance, doesn't reconcile), with the statement illustration.
+
+**Done when:** each status reads right from seeded data, at phone width too.
+
+**Commit:** `feat(web): your account card`
+
+#### 6.7c Balance and real spending, day by day
+
+**Tasks**
+
+- The chart card of `v8-01` from 6.4's days: the balance as a line with its area, the cumulative real spending dashed, their legend, the reading guide, axes with printed values, and one highlighted event explained in plain language; a text alternative that states the conclusion.
+
+**Done when:** the chart's figures are tested, and it reads at phone width and without a mouse.
+
+**Commit:** `feat(web): balance and real spending day by day`
+
+#### 6.7d Where it went and what to review
+
+**Tasks**
+
+- "Dónde se fue más" (`v8-01`): the categories that weigh most in real spending, each with what it means, notes from 6.6's insights and the recurring payments ("Dos cuotas, a inicios de mes."), and the attention tile for what needs a look ("Costos del banco · revisar").
+- Pagos fijos's tile that rose and its titles take core's words (6.6).
+
+**Done when:** the tiles' figures and notes are tested, at phone width and with the keyboard.
+
+**Commit:** `feat(web): where it went and what to review`
+
+#### 6.7e Interest by month in Movimientos
+
+**Tasks**
+
+- In the transactions list, group the daily interest rows into one line per month ("Intereses de septiembre", "30 abonos diarios, agrupados en una línea").
+
+**Done when:** the list, its counts and its pages read right with the grouped rows.
+
+**Commit:** `feat(web): interest by month in the movements list`
 
 #### 6.8 Categories page _(added with design v8)_
 

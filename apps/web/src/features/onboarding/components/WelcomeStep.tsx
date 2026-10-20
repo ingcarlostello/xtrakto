@@ -1,10 +1,13 @@
 import { ArrowLeftRight, CircleCheck, Layers, List } from "lucide-react";
 import Link from "next/link";
 import { StatementIllustration } from "@/components/empty-state/StatementIllustration";
+import { TONE_CLASSES } from "@/components/movement-icon/category-icons.constants";
+import { ProgressRing } from "@/components/stat-card/ProgressRing";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/utils/cn.utils";
 import { WELCOME_COPY as COPY } from "../onboarding.constants";
 
 const FEATURES = [
@@ -36,8 +39,33 @@ function Features() {
   );
 }
 
-// A verified quarter, said to be an example. Its kind rings come back with
-// the summary (6.7).
+// The example quarter's kinds: each one's ring, label and total in its color.
+function ExampleKinds() {
+  return (
+    <ul className="grid grid-cols-3 gap-2.5">
+      {COPY.example.kinds.map(({ tone, label, percent, amount }) => (
+        <li
+          key={tone}
+          className="flex min-w-0 flex-col gap-2 rounded-md bg-surface p-3.5 shadow-card"
+        >
+          <ProgressRing percent={percent} tone={tone} />
+          <p className="text-sm font-bold">{label}</p>
+          <p
+            className={cn(
+              "font-display text-lg font-medium tabular-nums sm:text-amount-l",
+              TONE_CLASSES[tone].amount,
+            )}
+          >
+            {amount}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// A verified quarter, said to be an example, with its kinds as the summary
+// shows them.
 function VerifiedExample() {
   const { example } = COPY;
   return (
@@ -46,6 +74,7 @@ function VerifiedExample() {
         <Badge>{example.badge}</Badge>
         <span className="text-caption text-ink-muted">{example.period}</span>
       </div>
+      <ExampleKinds />
       <div className="flex items-center gap-5">
         <StatementIllustration className="w-20 shrink-0 sm:w-24" />
         <div className="flex min-w-0 flex-col gap-3">

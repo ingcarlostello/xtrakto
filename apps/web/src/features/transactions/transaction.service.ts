@@ -174,17 +174,6 @@ export const getAccountTransactions = async (
   });
 };
 
-/** How many of the signed-in user's movements count, in every account. */
-export const countTransactions = async (
-  clerkUserId: string,
-): Promise<number> => {
-  const db = getDb();
-  const userId = await findUserId(db, clerkUserId);
-  return userId
-    ? withUserContext(db, userId, (ctx) => countCountedMovements(ctx))
-    : 0;
-};
-
 /** The signed-in user's latest statement that doesn't reconcile, if any. */
 export const findUnreconciledStatement = async (
   clerkUserId: string,
