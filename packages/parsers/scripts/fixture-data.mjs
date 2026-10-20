@@ -125,16 +125,57 @@ export const PREVIOUS_MOVEMENTS = [
   ["2026-06-30", INTEREST, 275],
 ];
 
-// From the period's first day, the last of 2026, into 2027.
+// The fixed payments of each month, as design v8-04 shows them: a loan in
+// two installments, energy that rises, internet, a gym, water that varies a
+// little, a phone plan, gas paid by transfer once and by PSE after, and what
+// repeats without being spending (a card that varies a lot, savings).
+const fixedPayments = (month, { energy, water, card }) => [
+  [`2027-${month}-02`, "PAGO PSE Financiera Andes S", -154_000_000],
+  [`2027-${month}-03`, "PAGO PSE EMPRESA DE ENERGIA", energy],
+  [`2027-${month}-04`, "PAGO PSE Financiera Andes S", -31_100_000],
+  [`2027-${month}-04`, "PAGO LLAVE AHORRO DOLAR", -200_000_000],
+  [`2027-${month}-05`, "PAGO PSE HOGAR CONECTADO SA", -12_990_000],
+  [`2027-${month}-06`, "PAGO SUC VIRT TC MASTER PESOS", card],
+  [`2027-${month}-10`, "COMPRA EN  GIMNASIO FIT", -11_000_000],
+  [`2027-${month}-10`, "PAGO INTERBANC EMPRESA EJEMPLO", 320_000_000],
+  [
+    `2027-${month}-11`,
+    month === "01"
+      ? "TRANSF A GAS NATURAL CIUDAD"
+      : "PAGO PSE GAS NATURAL CIUDAD",
+    -3_099_000,
+  ],
+  [`2027-${month}-19`, "PAGO PSE Acueducto Municipa", water],
+  [`2027-${month}-22`, "PAGO QR Telefonia Movil", -6_200_000],
+];
+
+// From the period's first day, the last of 2026, into 2027, with three
+// months of fixed payments, by date as the statement prints them (a stable
+// sort keeps each day's order).
+const byDate = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
+
 export const ROLLOVER_MOVEMENTS = [
   ["2026-12-31", INTEREST, 98],
   ["2027-01-01", INTEREST, 95],
-  ["2027-01-02", "PAGO PSE EMPRESA DE ENERGIA", -15_000_000],
-  ["2027-01-10", "PAGO INTERBANC EMPRESA EJEMPLO", 320_000_000],
+  ...fixedPayments("01", {
+    energy: -15_000_000,
+    water: -9_200_000,
+    card: -4_800_000,
+  }),
+  ...fixedPayments("02", {
+    energy: -15_400_000,
+    water: -9_800_000,
+    card: -120_000_000,
+  }),
   ["2027-02-14", "PAGO QR CAFE DEL PARQUE", -2_200_000],
   ["2027-02-28", INTEREST, 410],
+  ...fixedPayments("03", {
+    energy: -16_800_000,
+    water: -9_600_000,
+    card: -209_000_000,
+  }),
   ["2027-03-31", INTEREST, 432],
-];
+].sort(byDate);
 
 // A week, dated like the quarterly statement: generate-fixtures.mjs moves the
 // interest rows to the dates the movements export shows.

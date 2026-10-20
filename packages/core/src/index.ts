@@ -54,6 +54,7 @@ export {
   formatMonthName,
   formatMonthRange,
   formatQuarter,
+  formatShortMonth,
   formatWeekdayInWords,
 } from "./dates/date-display.helpers";
 export {

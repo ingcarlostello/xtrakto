@@ -180,7 +180,7 @@ const paymentOf = (
     months: months.map(({ month, amountMinor, payments: inMonth }) => ({
       month,
       amountMinor,
-      count: inMonth.length,
+      payments: inMonth.map((payment) => payment.amountMinor),
     })),
     typicalAmountMinor: typical.amountMinor,
     days: { first: Math.min(...days), last: Math.max(...days) },

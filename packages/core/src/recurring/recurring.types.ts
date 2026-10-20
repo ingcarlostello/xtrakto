@@ -29,11 +29,12 @@ export type AmountTrend =
   /** "Monto variable". */
   | { readonly kind: "variable" };
 
-/** A month of a payment that repeats: its payments added up, and how many. */
+/** A month of a payment that repeats: its payments added up, and each one. */
 export type RecurringMonth = {
   readonly month: CalendarMonth;
   readonly amountMinor: AmountMinor;
-  readonly count: number;
+  /** In date order: a loan's two installments, "$1.540.000 y $311.000". */
+  readonly payments: readonly AmountMinor[];
 };
 
 /** A payment made month after month, with what the bank and its months say. */
