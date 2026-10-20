@@ -17,6 +17,12 @@ export type PeriodChoices = {
   readonly period: MovementPeriod;
 };
 
+/** What a page with period controls asks the URL for. */
+export type PeriodRequest = {
+  readonly accountId?: string;
+  readonly period?: MovementPeriod;
+};
+
 /** Where an option leads: an account, a period, or both, of the page. */
 export type PeriodLink = {
   /** Left out when the user has a single account. */
@@ -27,7 +33,7 @@ export type PeriodLink = {
 
 /** A link of a page with period controls, which keeps its own filters. */
 export type PeriodHref = {
-  readonly pathname: "/transactions" | "/recurring";
+  readonly pathname: "/" | "/transactions" | "/recurring";
   readonly query: Readonly<Record<string, string | number>>;
 };
 
