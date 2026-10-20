@@ -3,6 +3,7 @@ import { APP_ERROR_CODE } from "../result/app-error.constants";
 import { DEFAULT_TIME_ZONE } from "./date.constants";
 import {
   compareLocalDates,
+  daysBetween,
   inferDayMonthDate,
   isLocalDate,
   isWithinPeriod,
@@ -70,6 +71,32 @@ describe("isWithinPeriod", () => {
     { day: "2026/10/01", isInside: false },
   ])("returns $isInside for $day, both ends included", ({ day, isInside }) => {
     expect(isWithinPeriod(date(day), quarter)).toBe(isInside);
+  });
+});
+
+describe("daysBetween", () => {
+  it.each([
+    {
+      span: "a quarter from its previous quarter's last day",
+      from: "2026/06/30",
+      to: "2026/09/30",
+      days: 92,
+    },
+    {
+      span: "across a new year",
+      from: "2026/12/31",
+      to: "2027/03/31",
+      days: 90,
+    },
+    {
+      span: "through a leap day",
+      from: "2028/02/01",
+      to: "2028/03/01",
+      days: 29,
+    },
+    { span: "the same day", from: "2026/07/01", to: "2026/07/01", days: 0 },
+  ])("counts $span", ({ from, to, days }) => {
+    expect(daysBetween(date(from), date(to))).toBe(days);
   });
 });
 

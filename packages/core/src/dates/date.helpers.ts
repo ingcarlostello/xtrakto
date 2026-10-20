@@ -1,6 +1,7 @@
 import { TZDate, tz } from "@date-fns/tz";
 import {
   addMonths,
+  differenceInCalendarDays,
   format,
   isExists,
   lastDayOfMonth,
@@ -44,6 +45,16 @@ export const compareLocalDates = (a: LocalDate, b: LocalDate): number => {
 
 export const isWithinPeriod = (date: LocalDate, period: Period): boolean =>
   date >= period.from && date <= period.to;
+
+// A local date as midnight UTC, which date-fns counts days on.
+const utcMidnight = (date: LocalDate): TZDate => {
+  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
+  return new TZDate(year, month - 1, day, "UTC");
+};
+
+/** The days from one date to another: 92 from 2026-06-30 to 2026-09-30. */
+export const daysBetween = (from: LocalDate, to: LocalDate): number =>
+  differenceInCalendarDays(utcMidnight(to), utcMidnight(from));
 
 /**
  * The calendar day of an instant in a time zone. Throws on an invalid instant
