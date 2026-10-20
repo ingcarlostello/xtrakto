@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { extractedContentSchema, periodSchema } from "@xtrakto/core";
+import { extractedContentSchema } from "@xtrakto/core";
 import {
   createDb,
   createIngestionJobWithinLimit,
@@ -12,8 +12,9 @@ import {
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
-import { getAccountSummary } from "./summary.service";
+import { getSummary } from "./summary.service";
 
 // Against the test database, as the application role, after real uploads.
 const database = vi.hoisted(() => ({ current: undefined as unknown }));
@@ -29,14 +30,16 @@ const FIXTURES = new URL(
   import.meta.url,
 );
 const HOUR_MS = 3_600_000;
-const THIRD_QUARTER = periodSchema.parse({
-  from: "2026-07-01",
-  to: "2026-09-30",
-});
-const FOURTH_QUARTER = periodSchema.parse({
-  from: "2026-10-01",
-  to: "2026-12-31",
-});
+const THIRD_QUARTER: MovementPeriod = {
+  kind: "quarter",
+  year: 2026,
+  quarter: 3,
+};
+const FOURTH_QUARTER: MovementPeriod = {
+  kind: "quarter",
+  year: 2026,
+  quarter: 4,
+};
 
 const total = (amountMinor: number, count: number) => ({ amountMinor, count });
 const NOTHING = total(0, 0);
@@ -118,14 +121,15 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     return { clerkUserId, accountId: account.id };
   };
 
+  // The figures of the period the URL asks.
   const summaryOf = async (
     names: readonly string[],
     period = THIRD_QUARTER,
   ) => {
     const { clerkUserId, accountId } = await userWith(names);
-    const result = await getAccountSummary(clerkUserId, { accountId, period });
-    if (!result.ok) throw new Error(result.error.code);
-    return result.value;
+    const result = await getSummary(clerkUserId, { accountId, period });
+    if (!result) throw new Error("No summary.");
+    return { summary: result.summary, bankFigures: result.bankFigures };
   };
 
   it("adds up a quarterly statement's quarter", async () => {
@@ -248,15 +252,33 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     expect(bankFigures).toEqual([]);
   });
 
-  it("refuses another user's account", async () => {
+  it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {
+    const { clerkUserId, accountId } = await userWith([
+      "quarterly-basic",
+      "movements-basic",
+    ]);
+
+    const result = await getSummary(clerkUserId, {});
+
+    expect(result?.account.id).toBe(accountId);
+    expect(result?.period).toEqual(FOURTH_QUARTER);
+    // October's week alone, not July to September.
+    expect(result?.summary.outflows).toEqual(total(-64_852_050, 9));
+  });
+
+  it("opens the user's own account when the URL names another user's", async () => {
     const owner = await userWith(["movements-basic"]);
     const stranger = await userWith(["movements-basic"]);
 
-    expect(
-      await getAccountSummary(stranger.clerkUserId, {
-        accountId: owner.accountId,
-        period: FOURTH_QUARTER,
-      }),
-    ).toEqual({ ok: false, error: { code: "NOT_FOUND" } });
+    const result = await getSummary(stranger.clerkUserId, {
+      accountId: owner.accountId,
+      period: FOURTH_QUARTER,
+    });
+
+    expect(result?.account.id).toBe(stranger.accountId);
+  });
+
+  it("reads nothing for a user without movements", async () => {
+    expect(await getSummary(`test_${randomUUID()}`, {})).toBeNull();
   });
 });

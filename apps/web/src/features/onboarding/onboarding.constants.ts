@@ -57,6 +57,12 @@ export const WELCOME_COPY = {
     verified: "Saldo verificado",
     verifiedDetail: "312 movimientos cuadran",
     note: "Nunca te mostramos un número que no cuadre con tu banco.",
+    // An invented quarter, as the summary's tiles show one (v8-15).
+    kinds: [
+      { tone: "income", label: "Ingresos", percent: 85, amount: "$46,8M" },
+      { tone: "spending", label: "Gasto real", percent: 45, amount: "$24,4M" },
+      { tone: "moved", label: "Movido", percent: 55, amount: "$29,8M" },
+    ],
   },
 } as const;
 

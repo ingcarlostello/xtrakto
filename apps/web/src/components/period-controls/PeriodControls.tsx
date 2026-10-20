@@ -1,6 +1,7 @@
 import { formatQuarter } from "@xtrakto/core";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { accountShortLabel } from "@/utils/account-label.helpers";
 import { cn } from "@/utils/cn.utils";
 import { quarterOf } from "@/utils/transactions-url.helpers";
@@ -48,15 +49,18 @@ function MonthLinks({ options }: { options: readonly PeriodOption[] }) {
 
 /**
  * The account switch, when there are several, the quarter picker and the
- * months (docs/ui/v8-03), whose links are the page's own (`hrefOf`); they
- * stack at full width on phones.
+ * months (docs/ui/v8-03), whose links are the page's own (`hrefOf`), then
+ * the page's action when it has one ("Subir extracto"); they stack at full
+ * width on phones.
  */
 export function PeriodControls({
   choices,
   hrefOf,
+  action,
 }: {
   choices: PeriodChoices;
   hrefOf: HrefOf;
+  action?: ReactNode;
 }) {
   const quarter = formatQuarter(quarterOf(choices.period));
   return (
@@ -74,6 +78,7 @@ export function PeriodControls({
         options={quarterOptions(choices, hrefOf)}
       />
       <MonthLinks options={monthOptions(choices, hrefOf)} />
+      {action}
     </div>
   );
 }

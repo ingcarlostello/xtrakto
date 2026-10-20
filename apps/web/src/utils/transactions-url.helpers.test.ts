@@ -7,6 +7,7 @@ import {
   periodOfStatement,
   periodParam,
   reviewHref,
+  summaryHref,
   transactionsHref,
 } from "./transactions-url.helpers";
 
@@ -113,5 +114,15 @@ describe("reviewHref", () => {
       pathname: "/review",
       query: { account: "a1", period: "2026-q3" },
     });
+  });
+});
+
+describe("summaryHref", () => {
+  it("links to the summary of an account's period, or the latest", () => {
+    expect(summaryHref({ accountId: "a1", period: QUARTER })).toEqual({
+      pathname: "/",
+      query: { account: "a1", period: "2026-q3" },
+    });
+    expect(summaryHref({})).toEqual({ pathname: "/", query: {} });
   });
 });

@@ -172,3 +172,24 @@ export const recurringHref = ({
     ...(filter === undefined ? {} : { [TRANSACTIONS_PARAMS.filter]: filter }),
   },
 });
+
+/** The summary of an account's period, when given (6.7a). */
+export const summaryHref = ({
+  accountId,
+  period,
+}: {
+  /** Left out when the user has a single account. */
+  readonly accountId?: string;
+  /** Left out to open on the account's latest quarter. */
+  readonly period?: MovementPeriod;
+}) => ({
+  pathname: "/" as const,
+  query: {
+    ...(accountId === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.account]: accountId }),
+    ...(period === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+  },
+});

@@ -1,15 +1,15 @@
 import { CHANNELS } from "@xtrakto/core";
-import { Bell, CircleAlert, ShoppingCart, Tag, Upload } from "lucide-react";
+import { Bell, CircleAlert, Tag, Upload } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
+import { StatCard } from "@/components/stat-card/StatCard";
 import {
   Card,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -52,32 +52,17 @@ function Buttons() {
   );
 }
 
-function SpendingTile() {
-  return (
-    <Card>
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-9.5 items-center justify-center rounded-full bg-spending-soft text-spending-text">
-          <ShoppingCart className="size-5" strokeWidth={1.9} />
-        </span>
-        <CardTitle>Gasto real</CardTitle>
-      </div>
-      <p className="font-display text-amount-xl font-medium tabular-nums">
-        $24,4M
-      </p>
-      <CardDescription>
-        El 45% de lo que salió. Compras, créditos, efectivo y pagos a personas.
-      </CardDescription>
-      <CardFooter>
-        <Button variant="link">Ver en qué gastaste</Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
 function Cards() {
   return (
     <div className="grid gap-5.5 md:grid-cols-3">
-      <SpendingTile />
+      <StatCard
+        tone="spending"
+        label="Gasto real"
+        percent={45}
+        amount="$24,4M"
+        note="El 45% de lo que salió. Compras, créditos, efectivo y pagos a personas."
+        action={<Button variant="link">Ver en qué gastaste</Button>}
+      />
       <Card variant="card">
         <CardHeader>
           <CardTitle>Tu saldo y tu gasto real, día a día</CardTitle>
