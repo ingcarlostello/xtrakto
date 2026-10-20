@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { channelOf } from "./channel.helpers";
+import { channelOf, payeeOf } from "./channel.helpers";
 
 describe("channelOf", () => {
   it.each([
@@ -34,4 +34,20 @@ describe("channelOf", () => {
   ])("finds no channel in %j", (description) => {
     expect(channelOf(description)).toBeNull();
   });
+});
+
+describe("payeeOf", () => {
+  it.each([
+    ["PAGO PSE Empresa de Energía", ["EMPRESA", "DE", "ENERGIA"], 2],
+    ["TRANSF A  GAS NATURAL CIUDAD", ["GAS", "NATURAL", "CIUDAD"], 2],
+    ["PAGO SUC VIRT TC MASTER PESOS", ["TC", "MASTER", "PESOS"], 3],
+    ["TRANSFERENCIAS A NEQUI", [], 3],
+    ["RETIRO CORRESPONSAL CB", ["RETIRO", "CORRESPONSAL", "CB"], 0],
+    ["APERTURA INV VIRTUAL SVP", ["APERTURA", "INV", "VIRTUAL", "SVP"], 0],
+  ])(
+    "reads who %j names after its channel",
+    (description, words, channelWords) => {
+      expect(payeeOf(description)).toEqual({ words, channelWords });
+    },
+  );
 });
