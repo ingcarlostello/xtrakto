@@ -2,7 +2,6 @@ import {
   type AmountMinor,
   type ExtractedContent,
   err,
-  type LocalDate,
   ok,
   type Period,
   type Result,
@@ -15,13 +14,12 @@ import {
   gte,
   inArray,
   lt,
-  ne,
   or,
   type SQL,
   sql,
 } from "drizzle-orm";
-import { alias, QueryBuilder } from "drizzle-orm/pg-core";
 import type { Database, DbTransaction } from "../client/db-client.types";
+import { chainedFrom } from "../statements/statement-chain.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 import { INGESTION_JOB_STATUS } from "./ingestion-job.constants";
@@ -270,26 +268,6 @@ export const expireStaleIngestionJobs = async (
   return rows[0]?.expired ?? 0;
 };
 
-// A statement that reconciles is chained when it opens with the closing
-// balance of the account's verified statement that ends the day it starts.
-// Found when read, so the order the two were uploaded in doesn't matter.
-const previous = alias(statements, "previous");
-const PREVIOUS_START = new QueryBuilder()
-  .select({ from: previous.periodFrom })
-  .from(previous)
-  .where(
-    and(
-      eq(previous.accountId, statements.accountId),
-      eq(previous.userId, statements.userId),
-      ne(previous.id, statements.id),
-      eq(previous.balanceVerified, true),
-      eq(previous.periodTo, statements.periodFrom),
-      eq(previous.closingBalanceMinor, statements.openingBalanceMinor),
-    ),
-  )
-  .orderBy(previous.periodFrom)
-  .limit(1);
-
 // What the upload screen reads of a job and its statement: never the content.
 const RESULT_COLUMNS = {
   id: ingestionJobs.id,
@@ -305,7 +283,7 @@ const RESULT_COLUMNS = {
   isVerified: statements.balanceVerified,
   hasBalances: sql<boolean>`${statements.openingBalanceMinor} is not null`,
   differenceMinor: statements.balanceDifferenceMinor,
-  chainedFrom: sql<LocalDate | null>`case when ${statements.balanceVerified} then (${PREVIOUS_START}) end`,
+  chainedFrom,
 };
 
 const balanceOf = (

@@ -129,11 +129,14 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     const { clerkUserId, accountId } = await userWith(names);
     const result = await getSummary(clerkUserId, { accountId, period });
     if (!result) throw new Error("No summary.");
-    return { summary: result.summary, bankFigures: result.bankFigures };
+    const { summary, balance, bankFigures, unreconciled } = result;
+    return { summary, balance, bankFigures, unreconciled };
   };
 
   it("adds up a quarterly statement's quarter", async () => {
-    const { summary, bankFigures } = await summaryOf(["quarterly-basic"]);
+    const { summary, balance, bankFigures, unreconciled } = await summaryOf([
+      "quarterly-basic",
+    ]);
 
     expect(summary.outflows).toEqual(total(-535_100_000, 20));
     expect(summary.kinds).toEqual(BASIC_KINDS);
@@ -182,8 +185,34 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
         period: { from: "2026-06-30", to: "2026-09-30" },
         averageBalanceMinor: 513_425_900,
         interestMinor: 1_882,
+        movementCount: 33,
+        chainedTo: null,
       },
     ]);
+    // After the quarter's last movement, its interest on the 30th.
+    expect(balance).toEqual({ date: "2026-09-30", amountMinor: 781_851_882 });
+    expect(unreconciled).toEqual([]);
+  });
+
+  it("leaves out a statement that doesn't reconcile on another quarter's days", async () => {
+    const { unreconciled } = await summaryOf(
+      ["quarterly-broken-balance", "movements-basic"],
+      FOURTH_QUARTER,
+    );
+
+    expect(unreconciled).toEqual([]);
+  });
+
+  it("finds the quarter a verified statement chains on to", async () => {
+    const { bankFigures } = await summaryOf([
+      "quarterly-previous",
+      "quarterly-basic",
+    ]);
+
+    expect(bankFigures[0]?.chainedTo).toEqual({
+      from: "2026-03-31",
+      to: "2026-06-30",
+    });
   });
 
   it("counts July once when its export comes after the quarterly statement", async () => {
@@ -195,10 +224,18 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
   });
 
   it("counts only the export on the days of a quarterly statement that doesn't reconcile", async () => {
-    const { summary, bankFigures } = await summaryOf([
+    const { summary, balance, bankFigures, unreconciled } = await summaryOf([
       "quarterly-broken-balance",
       "movements-overlap",
     ]);
+
+    // The export prints no balances, and the statement that does is broken.
+    expect(balance).toBeNull();
+    expect(unreconciled).toHaveLength(1);
+    expect(unreconciled[0]?.period).toEqual({
+      from: "2026-06-30",
+      to: "2026-09-30",
+    });
 
     expect(summary.outflows).toEqual(total(-218_920_000, 8));
     expect(summary.kinds).toEqual(JULY_EXPORT_KINDS);

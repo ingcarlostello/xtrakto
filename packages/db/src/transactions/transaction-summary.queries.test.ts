@@ -125,10 +125,12 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
     );
     const without = { referenceHash: null, referenceLast4: null };
 
+    // Each with the balance its quarterly statement printed after it.
     expect(movements).toEqual([
       {
         date: "2026-07-05",
         amountMinor: 1_000_000,
+        balanceAfterMinor: 1_100_000,
         descriptionRaw: SALARY,
         ...without,
         categoryId: "income_transfer",
@@ -137,6 +139,7 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
       {
         date: "2026-07-15",
         amountMinor: -4_000,
+        balanceAfterMinor: 1_096_000,
         descriptionRaw: "IMPTO GOBIERNO 4X1000",
         ...without,
         categoryId: "taxes_and_fees",
@@ -145,6 +148,7 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
       {
         date: "2026-08-20",
         amountMinor: -50_000,
+        balanceAfterMinor: 1_046_000,
         descriptionRaw: "COMPRA EN TIENDA",
         ...without,
         categoryId: "other_spending",

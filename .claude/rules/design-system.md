@@ -388,7 +388,7 @@ As Phase 6.7a builds `v8-01` at `/`, for the account and period in the URL:
   - **Movido**, its ring the share of what went out to the user's own: "El 55% de lo que salió: a tu inversión y a tus tarjetas. Además volvieron $2,8M."; "Ver a dónde se movió".
   - Each link opens Movimientos on the period with its kind's filter. A kind without movements says so ("No hubo gasto real en este periodo.") over an empty ring.
 - Before any movement counts, the page keeps its empty state (§14), or the way to a statement that doesn't reconcile.
-- "Tu cuenta" (6.7b), the day-by-day chart (6.7c) and "Dónde se fue más" (6.7d) come next; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
+- Beside the glance, "Tu cuenta" (6.7b, account card above). The day-by-day chart (6.7c) and "Dónde se fue más" (6.7d) come next; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
 
 ### Kind total tile
 
@@ -408,6 +408,7 @@ The totals are the account's for the period: neither the search nor the filter c
 - `--surface-panel`, `--radius-lg`, padding 22, `--shadow-panel`.
 - Left: label "Saldo al 30 de septiembre", balance (Amount XL), account name with the number masked to its last 4 digits ("Cuenta de ahorros · Bancolombia ••••8821"), two small boxes with the bank's own figures ("Saldo promedio", "Intereses pagados"; `--surface`, `--radius-sm`), then the status pill.
 - Right: statement object illustration, about 112×160px.
+- **As Phase 6.7b builds it** (`AccountCard`, on the summary): "Tu cuenta" (Section title) with "Comparamos cada saldo con el de tu banco.", beside the glance from `lg` and under it on phones, the illustration 96px wide from `sm`. The balance is the one printed after the period's last movement that has one, exact with its cents ("Saldo al 30 de septiembre", "$7.818.518,82"); files without balances show none. The boxes are those of the quarterly statement the period shows, a million or more compact and less exact ("$5,1M", "$18,82"), and a month calls them its quarter's ("Saldo promedio del trimestre", "Intereses del trimestre"); a figure the statement didn't print has no box. The pill says what checks the balances: "Saldo verificado" with "312 movimientos cuadran", or "Encadenado con abr–jun 2026 · 312 cuadran" when it chains on to the quarter before; "No cuadra por $810" with "Revisa el archivo" when a statement of the period doesn't reconcile (only "No cuadra" when its closing balance adds up), followed by the link action "Ver dónde no cuadra"; and "Sin saldo para verificar" with "Archivo de movimientos" otherwise.
 
 ### Status pill
 
