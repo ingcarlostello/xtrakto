@@ -1,3 +1,4 @@
+import { FilterChips } from "@/components/filter-chips/FilterChips";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { accountLabel } from "@/utils/account-label.helpers";
 import { filterOptions } from "../kind-view.helpers";
@@ -10,7 +11,6 @@ import {
 } from "../transaction-list.helpers";
 import { TRANSACTIONS_COPY as COPY } from "../transaction.constants";
 import type { AccountTransactions, DetailLinks } from "../transaction.types";
-import { KindFilters } from "./KindFilters";
 import { ListFooter } from "./ListFooter";
 import { MovementDays } from "./MovementDays";
 import { NoMatches } from "./NoMatches";
@@ -68,7 +68,11 @@ export function TransactionList({
         </CardDescription>
       </CardHeader>
       <SearchField link={link} />
-      <KindFilters options={filterOptions(link, transactions.pendingReview)} />
+      <FilterChips
+        label={COPY.kinds.filtersLabel}
+        options={filterOptions(link, transactions.pendingReview)}
+        className="pt-3"
+      />
       <ListBody transactions={transactions} link={link} />
     </Card>
   );
