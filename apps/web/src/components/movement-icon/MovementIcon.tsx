@@ -4,8 +4,8 @@ import {
   CATEGORY_ICONS,
   TONE_CLASSES,
   UNKNOWN_CATEGORY_ICON,
-} from "../category-icons.constants";
-import type { MovementTone } from "../transaction.types";
+} from "./category-icons.constants";
+import type { MovementTone } from "./movement-icon.types";
 
 /**
  * The icon of a movement's category, which a guess keeps too, in its tone's

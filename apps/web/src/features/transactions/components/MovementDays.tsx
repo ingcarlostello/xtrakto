@@ -3,7 +3,7 @@ import { CircleAlert, Tag } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
-import { TONE_CLASSES } from "../category-icons.constants";
+import { TONE_CLASSES } from "@/components/movement-icon/category-icons.constants";
 import { movementTone } from "../kind-view.helpers";
 import {
   amountText,
@@ -25,7 +25,7 @@ import type {
   TransactionDay,
   TransactionsHref,
 } from "../transaction.types";
-import { MovementIcon } from "./MovementIcon";
+import { MovementIcon } from "@/components/movement-icon/MovementIcon";
 
 // The bank's text exactly as printed: its case, its cuts and its double
 // spaces (design-system.md §4), wrapping only where it has a space.

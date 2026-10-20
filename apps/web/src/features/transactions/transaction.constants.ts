@@ -131,11 +131,6 @@ export const TRANSACTIONS_COPY = {
   },
   // The period selector (docs/ui/v8-03), without "Año" until Phase 10.2.
   period: {
-    quarter: "Trimestre",
-    months: "Mes del trimestre",
-    verified: "Verificado",
-    unverified: "Sin verificar",
-    unreconciled: "No cuadra",
     from: "Del",
     to: "al",
     ofYear: "de",

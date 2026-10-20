@@ -3,11 +3,12 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { UploadStatementLink } from "@/components/empty-state/UploadStatementLink";
 import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PeriodControls } from "@/components/period-controls/PeriodControls";
 import { KindTiles } from "@/features/transactions/components/KindTiles";
 import { MovementDetailColumn } from "@/features/transactions/components/MovementDetailColumn";
-import { PeriodControls } from "@/features/transactions/components/PeriodControls";
 import { TransactionList } from "@/features/transactions/components/TransactionList";
 import { UnreconciledNotice } from "@/features/transactions/components/Unreconciled";
+import { listHrefOf } from "@/features/transactions/period-selector.helpers";
 import { totalText } from "@/features/transactions/transaction-list.helpers";
 import { TRANSACTIONS_COPY as COPY } from "@/features/transactions/transaction.constants";
 import { transactionsSearchSchema } from "@/features/transactions/transaction.schemas";
@@ -57,7 +58,10 @@ export default async function TransactionsPage({
         subtitle={totalText(transactions.total, transactions.search)}
       />
       <KindLegend />
-      <PeriodControls view={transactions} />
+      <PeriodControls
+        choices={transactions}
+        hrefOf={listHrefOf(transactions)}
+      />
       {transactions.unreconciled.map((statement) => (
         <UnreconciledNotice key={statement.id} statement={statement} />
       ))}

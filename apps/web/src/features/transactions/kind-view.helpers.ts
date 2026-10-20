@@ -8,6 +8,7 @@ import {
   type MovementTotal,
 } from "@xtrakto/core";
 import type { MovementSelection, TransactionListItem } from "@xtrakto/db";
+import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
   type MovementFilter,
@@ -15,7 +16,7 @@ import {
 } from "@/utils/transactions-url.helpers";
 import type { ListLink } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type { FilterOption, KindTile, MovementTone } from "./transaction.types";
+import type { FilterOption, KindTile } from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.kinds;
 
