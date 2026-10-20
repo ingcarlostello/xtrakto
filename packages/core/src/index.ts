@@ -133,6 +133,14 @@ export {
 } from "./hashing/transaction-fingerprint.helpers";
 export { prepareStatement } from "./statements/prepared-statement.helpers";
 export { normalizeHolderName } from "./statements/holder-name.helpers";
+export { findRecurringPayments } from "./recurring/recurring.helpers";
+export type {
+  AmountTrend,
+  RecurringMonth,
+  RecurringMovement,
+  RecurringPayment,
+  RecurringPayments,
+} from "./recurring/recurring.types";
 export { kindTotalsOf } from "./summary/kind-totals.helpers";
 export { summarizeMovements } from "./summary/summary.helpers";
 export type {

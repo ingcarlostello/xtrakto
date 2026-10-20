@@ -26,3 +26,25 @@ export const channelOf = (description: string): Channel | null => {
     ? null
     : { id: found.channel.id, labelEs: found.channel.labelEs };
 };
+
+/** Who a movement's text names, after the words of its channel. */
+export type TextPayee = {
+  /** Folded: "PAGO PSE Empresa de Energía" names EMPRESA DE ENERGIA. */
+  readonly words: readonly string[];
+  /** How many words of the text the channel took before them. */
+  readonly channelWords: number;
+};
+
+/**
+ * The words after the channel's in a movement's text, which name who was
+ * paid; every word when the text names no channel, and none when the
+ * channel says it all ("TRANSFERENCIAS A NEQUI").
+ */
+export const payeeOf = (description: string): TextPayee => {
+  const folded = foldDescription(description);
+  const words =
+    COMPILED_CHANNELS.map(({ matches }) => matches(folded)).find(
+      (rest) => rest !== undefined,
+    ) ?? folded.words;
+  return { words, channelWords: folded.words.length - words.length };
+};

@@ -190,7 +190,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3g Corrections
 - [x] 6.3h Your own accounts and undo
 - [x] 6.4 Summary computations
-- [ ] 6.5 Recurring payments
+- [x] 6.5 Recurring payments
+- [ ] 6.5b Recurring payments page _(design v8)_
 - [ ] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
 - [ ] 6.8 Categories page _(design v8)_
@@ -1254,7 +1255,21 @@ It came out at about 270 lines, with the reads of an account's figures that the 
 
 **Done when:** tests cover fixed and variable payments and false positives.
 
+It came out at about 330 lines. The label is who was paid as the bank writes it, after its channel's words ("Financiera Andes S"); plain-language titles such as `v8-04`'s "Energía" come with 8.6.
+
 **Commit:** `feat(core): recurring payment detection`
+
+#### 6.5b Recurring payments page _(added with design v8)_
+
+Added by the human on 2026-10-19: no phase built the screen of `docs/ui/v8-04`, and `/recurring` kept its empty state from 4.6.
+
+**Tasks**
+
+- "Pagos fijos" (`docs/ui/v8-04`) from the payments 6.5 finds: the list ordered by amount, each with its months as bars, its days, channels and how its amount moves; "Pagas al mes", "Al año" and the payment that rose; and "También se repiten, pero no son gasto". The calendar of the next month and "Ya no aparecen" are decided when the phase starts.
+
+**Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
+
+**Commit:** `feat(web): recurring payments page`
 
 #### 6.6 Insights ("Para revisar")
 
