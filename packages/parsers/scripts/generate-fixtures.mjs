@@ -249,7 +249,8 @@ const fixtures = {
   }),
   "quarterly-year-rollover": quarterlyStatement({
     period: { from: "2026-12-31", to: "2027-03-31" },
-    opening: 120_000_000,
+    // Enough for three months of fixed payments.
+    opening: 1_000_000_000,
     movements: ROLLOVER_MOVEMENTS,
   }),
   "quarterly-repeated-header": quarterlyStatement({

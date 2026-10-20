@@ -63,7 +63,7 @@ describe("findRecurringPayments", () => {
         months: [7, 8, 9].map((value) => ({
           month: month(value),
           amountMinor: -185_100_000,
-          count: 2,
+          payments: [-154_000_000, -31_100_000],
         })),
         typicalAmountMinor: -185_100_000,
         days: { first: 1, last: 4 },

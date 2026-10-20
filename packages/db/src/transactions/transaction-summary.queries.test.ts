@@ -97,7 +97,12 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
         [
           UNCHECKED,
           preparedExport([
-            { date: "2026-10-05", amount: -9_000 },
+            {
+              date: "2026-10-05",
+              amount: -9_000,
+              description: "TRANSFERENCIAS A NEQUI",
+              phone: "3001234567",
+            },
             { date: "2026-10-02", amount: -3_000 },
           ]),
         ],
@@ -118,23 +123,30 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
     const movements = await inContext((ctx) =>
       listSummaryMovements(ctx, { accountId, period: THIRD_QUARTER }),
     );
+    const without = { referenceHash: null, referenceLast4: null };
 
     expect(movements).toEqual([
       {
         date: "2026-07-05",
         amountMinor: 1_000_000,
+        descriptionRaw: SALARY,
+        ...without,
         categoryId: "income_transfer",
         categoryRuleId: "interbank_in",
       },
       {
         date: "2026-07-15",
         amountMinor: -4_000,
+        descriptionRaw: "IMPTO GOBIERNO 4X1000",
+        ...without,
         categoryId: "taxes_and_fees",
         categoryRuleId: "gmf_tax",
       },
       {
         date: "2026-08-20",
         amountMinor: -50_000,
+        descriptionRaw: "COMPRA EN TIENDA",
+        ...without,
         categoryId: "other_spending",
         categoryRuleId: "unknown_merchant",
       },
@@ -149,6 +161,12 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
     expect(movements.map(({ amountMinor }) => amountMinor)).toEqual([
       -3_000, -9_000,
     ]);
+    // A Nequi send names its number by its HMAC and last 4 digits only.
+    expect(movements[1]).toMatchObject({
+      descriptionRaw: "TRANSFERENCIAS A NEQUI",
+      referenceLast4: "4567",
+    });
+    expect(movements[1]?.referenceHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("reads nothing of another user's account", async () => {

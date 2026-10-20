@@ -48,6 +48,10 @@ export const formatQuarter = ({ year, quarter }: CalendarQuarter): string => {
 export const formatMonthName = ({ year, month }: CalendarMonth): string =>
   capitalized(formatDate(new TZDate(year, month - 1, 1, "UTC"), "MMMM"));
 
+/** A month's short name, as under a chart's bar: `"sep"`. */
+export const formatShortMonth = ({ year, month }: CalendarMonth): string =>
+  formatDate(new TZDate(year, month - 1, 1, "UTC"), "MMM");
+
 /** A day in running text, without its year: `"1 de noviembre"`. */
 export const formatDayInWords = (date: LocalDate): string =>
   formatDate(toDate(date), "d 'de' MMMM");

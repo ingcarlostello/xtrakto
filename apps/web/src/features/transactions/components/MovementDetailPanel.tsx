@@ -4,7 +4,7 @@ import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
 import { Button, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn.utils";
-import { TONE_CLASSES } from "../category-icons.constants";
+import { TONE_CLASSES } from "@/components/movement-icon/category-icons.constants";
 import {
   DETAIL_CLOSE_ATTRIBUTE,
   movementLinkId,
@@ -17,7 +17,7 @@ import type {
   TransactionsHref,
 } from "../transaction.types";
 import { CorrectionForm } from "./CorrectionForm";
-import { MovementIcon } from "./MovementIcon";
+import { MovementIcon } from "@/components/movement-icon/MovementIcon";
 import { OwnRules } from "./OwnRules";
 import { MovementSheet } from "./MovementSheet";
 

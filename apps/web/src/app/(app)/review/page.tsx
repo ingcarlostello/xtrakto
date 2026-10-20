@@ -12,7 +12,6 @@ import { StakesPanel } from "@/features/review/components/StakesPanel";
 import { reviewStatus } from "@/features/review/review-display.helpers";
 import { REVIEW_COPY as COPY } from "@/features/review/review.constants";
 import { reviewGroupById, scopeText } from "@/features/review/review.helpers";
-import { reviewSearchSchema } from "@/features/review/review.schemas";
 import { getReview } from "@/features/review/review.service";
 import type {
   GroupMovements,
@@ -20,6 +19,7 @@ import type {
   ReviewGroup,
 } from "@/features/review/review.types";
 import { requireSignedIn } from "@/lib/auth";
+import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 
 export const metadata: Metadata = { title: COPY.pageTitle };
 
@@ -98,7 +98,9 @@ export default async function ReviewPage({
   searchParams,
 }: PageProps<"/review">) {
   const clerkUserId = await requireSignedIn();
-  const { account, period } = reviewSearchSchema.parse(await searchParams);
+  const { account, period } = accountPeriodSearchSchema.parse(
+    await searchParams,
+  );
   const review = await getReview(clerkUserId, {
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),

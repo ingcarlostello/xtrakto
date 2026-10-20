@@ -24,13 +24,13 @@ import {
   type UserContext,
   withUserContext,
 } from "@xtrakto/db";
-import { getDb } from "@/lib/db";
-import { periodDays } from "@/utils/transactions-url.helpers";
 import {
-  meetsPeriod,
   quarterChoices,
   selectPeriod,
-} from "./period-selector.helpers";
+} from "@/components/period-controls/period-choices.helpers";
+import { getDb } from "@/lib/db";
+import { periodDays } from "@/utils/transactions-url.helpers";
+import { meetsPeriod } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { rulesOfMovement } from "./own-rules.helpers";
 import { movementSearchOf } from "./transaction-list.helpers";

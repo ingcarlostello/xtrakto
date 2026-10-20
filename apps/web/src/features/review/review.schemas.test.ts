@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  answerNumbersSchema,
-  answerReviewSchema,
-  reviewSearchSchema,
-} from "./review.schemas";
+import { answerNumbersSchema, answerReviewSchema } from "./review.schemas";
 
 const ACCOUNT_ID = "3f8a1c2e-1234-4abc-9def-0123456789ab";
 const ANSWER = {
@@ -73,19 +69,5 @@ describe("answerNumbersSchema", () => {
     expect(
       answerNumbersSchema.safeParse({ ...NUMBERS, ...change }).success,
     ).toBe(false);
-  });
-});
-
-describe("reviewSearchSchema", () => {
-  it("reads the account and the period, and leaves out what doesn't parse", () => {
-    expect(
-      reviewSearchSchema.parse({ account: ACCOUNT_ID, period: "2026-08" }),
-    ).toEqual({
-      account: ACCOUNT_ID,
-      period: { kind: "month", year: 2026, month: 8 },
-    });
-    expect(
-      reviewSearchSchema.parse({ account: "8901", period: ["2026-q3"] }),
-    ).toEqual({ account: undefined, period: undefined });
   });
 });

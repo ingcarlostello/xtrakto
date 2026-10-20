@@ -5,6 +5,7 @@ import {
   formatMonthName,
   formatMonthRange,
   formatQuarter,
+  formatShortMonth,
   formatWeekdayInWords,
 } from "./date-display.helpers";
 import { localDateSchema, periodSchema } from "./date.schemas";
@@ -35,6 +36,16 @@ describe("formatQuarter", () => {
     [9, "Septiembre"],
   ])("names month %i %s", (month, expected) => {
     expect(formatMonthName({ year: 2026, month })).toBe(expected);
+  });
+});
+
+describe("formatShortMonth", () => {
+  it.each([
+    [7, "jul"],
+    [9, "sep"],
+    [12, "dic"],
+  ])("writes month %i short, as under a bar: %s", (month, expected) => {
+    expect(formatShortMonth({ year: 2026, month })).toBe(expected);
   });
 });
 

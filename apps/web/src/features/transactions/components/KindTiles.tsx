@@ -1,7 +1,10 @@
 import type { KindTotals } from "@xtrakto/core";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn.utils";
-import { KIND_ICONS, TONE_CLASSES } from "../category-icons.constants";
+import {
+  KIND_ICONS,
+  TONE_CLASSES,
+} from "@/components/movement-icon/category-icons.constants";
 import { kindTiles } from "../kind-view.helpers";
 import { TRANSACTIONS_COPY } from "../transaction.constants";
 import type { KindTile } from "../transaction.types";

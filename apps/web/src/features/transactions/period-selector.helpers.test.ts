@@ -1,23 +1,19 @@
 import { amountMinorSchema, periodSchema } from "@xtrakto/core";
-import type { AccountRow, UnreconciledStatement } from "@xtrakto/db";
+import type { AccountRow } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
+import {
+  monthOptions,
+  quarterOptions,
+} from "@/components/period-controls/period-options.helpers";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import {
-  accountOptions,
+  listHrefOf,
   listLinkOf,
-  monthOptions,
   meetsPeriod,
   periodText,
-  quarterChoices,
-  quarterOptions,
-  selectPeriod,
 } from "./period-selector.helpers";
-import type { AccountTransactions, QuarterChoice } from "./transaction.types";
+import type { AccountTransactions } from "./transaction.types";
 
-const QUARTERS: QuarterChoice[] = [
-  { year: 2026, quarter: 3, status: "verified" },
-  { year: 2026, quarter: 2, status: "unverified" },
-];
 const ACCOUNT: AccountRow = {
   id: "a1",
   bankId: "bancolombia",
@@ -35,7 +31,7 @@ const view = (
 ): AccountTransactions => ({
   accounts,
   account: ACCOUNT,
-  quarters: QUARTERS,
+  quarters: [{ year: 2026, quarter: 3, status: "verified" }],
   unreconciled: [],
   period,
   total: 0,
@@ -50,58 +46,7 @@ const view = (
   currentYear: "2026",
 });
 
-describe("selectPeriod", () => {
-  it("shows the period asked when its quarter has movements", () => {
-    expect(selectPeriod(AUGUST, QUARTERS)).toEqual(AUGUST);
-  });
-
-  it.each([
-    ["no period", undefined],
-    [
-      "a quarter without movements",
-      { kind: "quarter", year: 2025, quarter: 4 },
-    ],
-    ["a month of such a quarter", { kind: "month", year: 2026, month: 11 }],
-  ] as const)("shows the latest quarter for %s", (_, requested) => {
-    expect(selectPeriod(requested, QUARTERS)).toEqual({
-      kind: "quarter",
-      year: 2026,
-      quarter: 3,
-    });
-  });
-
-  it("shows nothing for an account without quarters", () => {
-    expect(selectPeriod(AUGUST, [])).toBeUndefined();
-  });
-});
-
-describe("quarterChoices", () => {
-  const unreconciled = (from: string, to: string): UnreconciledStatement => ({
-    id: "s1",
-    accountId: "a1",
-    period: periodSchema.parse({ from, to }),
-    differenceMinor: null,
-  });
-
-  it("adds the quarter of a statement that doesn't reconcile, marking it before anything else", () => {
-    expect(
-      quarterChoices(
-        [
-          { year: 2026, quarter: 3, verified: false },
-          { year: 2026, quarter: 1, verified: true },
-        ],
-        [
-          unreconciled("2026-06-30", "2026-09-30"),
-          unreconciled("2026-03-31", "2026-06-30"),
-        ],
-      ),
-    ).toEqual([
-      { year: 2026, quarter: 3, status: "unreconciled" },
-      { year: 2026, quarter: 2, status: "unreconciled" },
-      { year: 2026, quarter: 1, status: "verified" },
-    ]);
-  });
-
+describe("meetsPeriod", () => {
   it.each([
     {
       name: "the quarter it covers",
@@ -127,7 +72,7 @@ describe("quarterChoices", () => {
       to: "2026-12-31",
       meets: false,
     },
-  ])("finds whether its days meet $name", ({ from, to, meets }) => {
+  ])("finds whether a statement's days meet $name", ({ from, to, meets }) => {
     const statement = periodSchema.parse({
       from: "2026-06-30",
       to: "2026-09-30",
@@ -151,53 +96,20 @@ describe("periodText", () => {
   });
 });
 
-describe("options", () => {
-  it("lists the quarters with their status, marking the shown one", () => {
-    expect(quarterOptions(view(AUGUST))).toEqual([
-      {
-        key: "2026-q3",
-        label: "Jul – sep 2026",
-        href: { pathname: "/transactions", query: { period: "2026-q3" } },
-        isCurrent: true,
-        badge: { label: "Verificado", variant: "ok" },
-      },
-      {
-        key: "2026-q2",
-        label: "Abr – jun 2026",
-        href: { pathname: "/transactions", query: { period: "2026-q2" } },
-        isCurrent: false,
-        badge: { label: "Sin verificar", variant: "neutral" },
-      },
-    ]);
-  });
-
-  it("lists the quarter's months and the whole quarter", () => {
-    expect(
-      monthOptions(view(AUGUST)).map(({ label, isCurrent }) => [
-        label,
-        isCurrent,
-      ]),
-    ).toEqual([
-      ["Julio", false],
-      ["Agosto", true],
-      ["Septiembre", false],
-      ["Trimestre", false],
-    ]);
-  });
-
+describe("the list's links", () => {
   it("keeps the search and the filter in every period's link", () => {
     const searching = {
       ...view(AUGUST),
       search: "nequi",
       filter: "moved" as const,
     };
+    const hrefOf = listHrefOf(searching);
 
-    expect(quarterOptions(searching)[0]?.href.query).toEqual({
-      period: "2026-q3",
-      q: "nequi",
-      filter: "moved",
+    expect(quarterOptions(searching, hrefOf)[0]?.href).toEqual({
+      pathname: "/transactions",
+      query: { period: "2026-q3", q: "nequi", filter: "moved" },
     });
-    expect(monthOptions(searching)[0]?.href.query).toEqual({
+    expect(monthOptions(searching, hrefOf)[0]?.href.query).toEqual({
       period: "2026-07",
       q: "nequi",
       filter: "moved",
@@ -210,22 +122,5 @@ describe("options", () => {
       accountId: "a1",
       period: AUGUST,
     });
-  });
-
-  it("opens each account on its latest quarter", () => {
-    expect(accountOptions(view(AUGUST, [ACCOUNT, OTHER]))).toEqual([
-      {
-        key: "a1",
-        label: "Cuenta de ahorros · Bancolombia ••••8901",
-        href: { pathname: "/transactions", query: { account: "a1" } },
-        isCurrent: true,
-      },
-      {
-        key: "a2",
-        label: "Cuenta de ahorros · Bancolombia",
-        href: { pathname: "/transactions", query: { account: "a2" } },
-        isCurrent: false,
-      },
-    ]);
   });
 });

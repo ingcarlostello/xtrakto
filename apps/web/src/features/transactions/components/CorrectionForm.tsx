@@ -9,7 +9,7 @@ import { correctMovement } from "../actions/correct-movement.action";
 import {
   CATEGORY_ICONS,
   UNKNOWN_CATEGORY_ICON,
-} from "../category-icons.constants";
+} from "@/components/movement-icon/category-icons.constants";
 import {
   categoryChoices,
   isCategoryId,

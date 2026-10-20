@@ -1,7 +1,6 @@
 import type {
   AmountMinor,
   AppError,
-  CalendarQuarter,
   CategoryId,
   CategoryKind,
   KindTotals,
@@ -10,22 +9,18 @@ import type {
   UserCategoryRule,
 } from "@xtrakto/core";
 import type {
-  AccountRow,
   MovementDetail,
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
+import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
+import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type {
   MovementFilter,
   MovementPeriod,
   reviewHref,
 } from "@/utils/transactions-url.helpers";
 import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
-
-/** A quarter to choose from, with what its movements say about it. */
-export type QuarterChoice = CalendarQuarter & {
-  readonly status: "verified" | "unverified" | "unreconciled";
-};
 
 /** What the URL asks the movements list for. */
 export type TransactionsRequest = {
@@ -41,15 +36,9 @@ export type TransactionsRequest = {
 };
 
 /** An account's movements in a period, as the list reads them. */
-export type AccountTransactions = {
-  /** The accounts with movements, the one with the latest first. */
-  readonly accounts: readonly AccountRow[];
-  readonly account: AccountRow;
-  /** Its quarters to choose from, the latest first. */
-  readonly quarters: readonly QuarterChoice[];
+export type AccountTransactions = PeriodChoices & {
   /** Its statements that don't reconcile on the period's days. */
   readonly unreconciled: readonly UnreconciledStatement[];
-  readonly period: MovementPeriod;
   /** What the list looks for, as typed. */
   readonly search?: string;
   readonly filter?: MovementFilter;
@@ -213,25 +202,6 @@ export type MovementDetailView = {
   /** Where its guess is answered, while it waits. */
   readonly reviewHref?: ReturnType<typeof reviewHref>;
 };
-
-/** An option of the period selector or the account switch. */
-export type PeriodOption = {
-  readonly key: string;
-  readonly label: string;
-  readonly href: TransactionsHref;
-  readonly isCurrent: boolean;
-  /** A quarter's status: "Verificado" or "Sin verificar". */
-  readonly badge?: {
-    readonly label: string;
-    readonly variant: "ok" | "neutral" | "attention";
-  };
-};
-
-/**
- * The colors a movement shows: its kind's, or neutral while it waits for
- * review, has no category or counts nowhere.
- */
-export type MovementTone = "income" | "spending" | "moved" | "neutral";
 
 /** A kind's tile on Movimientos (docs/ui/v8-03). */
 export type KindTile = {

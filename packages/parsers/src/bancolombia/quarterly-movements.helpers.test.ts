@@ -130,15 +130,15 @@ describe("readQuarterlyMovements", () => {
       rollover,
     );
 
-    expect(transactions.map(({ date }) => date)).toEqual([
+    const dates = transactions.map(({ date }) => date);
+
+    expect(dates.slice(0, 3)).toEqual([
       "2026-12-31",
       "2027-01-01",
       "2027-01-02",
-      "2027-01-10",
-      "2027-02-14",
-      "2027-02-28",
-      "2027-03-31",
     ]);
+    expect(dates.at(-1)).toBe("2027-03-31");
+    expect(dates).toHaveLength(38);
   });
 
   it("skips the blocks each new page repeats", () => {

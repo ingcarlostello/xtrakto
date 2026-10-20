@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
-import type { PeriodOption } from "../transaction.types";
+import type { PeriodOption } from "./period-controls.types";
 
 function LinkMenuOption({ option }: { option: PeriodOption }) {
   return (
