@@ -74,7 +74,10 @@ export {
   type TransactionPage,
 } from "./transactions/transaction.queries";
 export { listCategoryTotals } from "./transactions/transaction-totals.queries";
-export { listSummaryMovements } from "./transactions/transaction-summary.queries";
+export {
+  listSummaryMovements,
+  type PeriodMovement,
+} from "./transactions/transaction-summary.queries";
 export {
   findMovementDetail,
   type MovementDetail,

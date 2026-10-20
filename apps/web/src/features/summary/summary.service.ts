@@ -4,6 +4,7 @@ import {
   findUserId,
   listBankFigures,
   listSummaryMovements,
+  listUnreconciledStatements,
   withUserContext,
 } from "@xtrakto/db";
 import type { PeriodRequest } from "@/components/period-controls/period-controls.types";
@@ -15,9 +16,11 @@ import type { AccountSummary } from "./summary.types";
 /**
  * The signed-in user's summary, in the account and period the URL asks, or
  * the latest: what its movements that count add up to
- * (`summarizeMovements`), and the bank's own figures from its quarterly
- * statements there. `null` until a movement counts; reading never creates
- * the user's row. The Clerk id must come from the session.
+ * (`summarizeMovements`) and the balance after the last that printed one,
+ * the bank's own figures from its quarterly statements there, and those of
+ * its statements that don't reconcile. `null` until a movement counts;
+ * reading never creates the user's row. The Clerk id must come from the
+ * session.
  */
 export const getSummary = async (
   clerkUserId: string,
@@ -33,10 +36,17 @@ export const getSummary = async (
       accountId: located.account.id,
       period: periodDays(located.period),
     };
+    const movements = await listSummaryMovements(ctx, scope);
+    const last = movements.findLast((m) => m.balanceAfterMinor !== null);
     return {
       ...located,
-      summary: summarizeMovements(await listSummaryMovements(ctx, scope)),
+      summary: summarizeMovements(movements),
+      balance:
+        last && last.balanceAfterMinor !== null
+          ? { date: last.date, amountMinor: last.balanceAfterMinor }
+          : null,
       bankFigures: await listBankFigures(ctx, scope),
+      unreconciled: await listUnreconciledStatements(ctx, scope),
     };
   });
 };

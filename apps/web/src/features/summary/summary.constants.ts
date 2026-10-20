@@ -41,6 +41,33 @@ export const SUMMARY_COPY = {
     cameBack: "Volvieron",
     none: "No moviste plata entre tus cuentas, tu inversión ni tus tarjetas.",
   },
+  // "Tu cuenta": its balance, the bank's own figures, and its status.
+  account: {
+    title: "Tu cuenta",
+    subtitle: "Comparamos cada saldo con el de tu banco.",
+    // "Saldo al 30 de septiembre".
+    balanceOn: "Saldo al",
+    averageBalance: {
+      quarter: "Saldo promedio",
+      month: "Saldo promedio del trimestre",
+    },
+    interest: {
+      quarter: "Intereses pagados",
+      month: "Intereses del trimestre",
+    },
+    verified: "Saldo verificado",
+    // "312 movimientos cuadran", "Encadenado con abr–jun 2026 · 312 cuadran".
+    movements: { one: "movimiento", other: "movimientos" },
+    reconcile: { one: "cuadra", other: "cuadran" },
+    chainedTo: "Encadenado con",
+    // "No cuadra por $810".
+    doesNotReconcile: "No cuadra",
+    by: "por",
+    checkFile: "Revisa el archivo",
+    breaks: "Ver dónde no cuadra",
+    noBalance: "Sin saldo para verificar",
+    movementsFile: "Archivo de movimientos",
+  },
   // "El 85%".
   the: "El",
   and: "y",

@@ -21,6 +21,8 @@ const THIRD_QUARTER_FIGURES = {
   period: { from: "2026-06-30", to: "2026-09-30" },
   averageBalanceMinor: 513_425_900,
   interestMinor: 1_882,
+  movementCount: 1,
+  chainedTo: null,
 };
 
 describe.skipIf(!testDatabase)("the bank's own figures", () => {
@@ -98,6 +100,48 @@ describe.skipIf(!testDatabase)("the bank's own figures", () => {
     ["a quarter whose statement doesn't reconcile", "2026-10-01", "2026-12-31"],
   ])("reads none for %s", async (_, from, to) => {
     expect(await figuresOf(from, to)).toEqual([]);
+  });
+
+  it("counts a statement's movements and finds the one it chains on to", async () => {
+    const figures = await withUserContext(app.db, userId, async (ctx) => {
+      const other = await resolveIdentifiedAccount(ctx, {
+        bankId: "bancolombia",
+        accountType: "savings",
+        last4: "1234",
+        currency: "COP",
+      });
+      // The quarter before closes on the balance the next one opens with.
+      for (const statement of [
+        preparedQuarterly([{ date: "2026-05-10", amount: -30_000 }], {
+          from: "2026-03-31",
+          to: "2026-06-30",
+          openingMinor: 130_000,
+        }),
+        preparedQuarterly([
+          { date: "2026-07-05", amount: -1_000 },
+          { date: "2026-08-20", amount: -50_000 },
+        ]),
+      ])
+        await saveStatement(ctx, {
+          accountId: other,
+          balance: VERIFIED,
+          statement: await statement,
+        });
+      return listBankFigures(ctx, {
+        accountId: other,
+        period: period("2026-07-01", "2026-09-30"),
+      });
+    });
+
+    expect(figures).toEqual([
+      {
+        period: { from: "2026-06-30", to: "2026-09-30" },
+        averageBalanceMinor: null,
+        interestMinor: null,
+        movementCount: 2,
+        chainedTo: { from: "2026-03-31", to: "2026-06-30" },
+      },
+    ]);
   });
 
   it("reads none of another user's account", async () => {

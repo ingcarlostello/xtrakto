@@ -195,7 +195,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.5c Recurring payments: what to expect _(design v8)_
 - [x] 6.6 Insights ("Para revisar")
 - [x] 6.7a Summary at a glance
-- [ ] 6.7b Your account card
+- [x] 6.7b Your account card
 - [ ] 6.7c Balance and real spending, day by day
 - [ ] 6.7d Where it went and what to review
 - [ ] 6.7e Interest by month in Movimientos
