@@ -5,9 +5,9 @@ import {
   CURRENCY,
   formatCompactAmount,
   isAmountMinor,
+  type KindTotals,
 } from "@xtrakto/core";
 import { countText, formatCount, wordFor } from "@/utils/count-text.utils";
-import type { KindTotals } from "@/utils/kind-totals.helpers";
 import { pendingOf } from "./review-display.helpers";
 import { REVIEW_ANSWERS, REVIEW_COPY as COPY } from "./review.constants";
 import { reviewGroupById } from "./review.helpers";

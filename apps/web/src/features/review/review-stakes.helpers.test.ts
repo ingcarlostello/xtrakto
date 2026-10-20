@@ -1,10 +1,10 @@
 import {
   amountMinorSchema,
   type CategoryKind,
+  type KindTotals,
   sumAmounts,
 } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
-import type { KindTotals } from "@/utils/kind-totals.helpers";
 import { stakesView } from "./review-stakes.helpers";
 import type { KindShare, ReviewGroup, ReviewGroupId } from "./review.types";
 

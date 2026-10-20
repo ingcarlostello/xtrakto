@@ -4,12 +4,12 @@ import type {
   CategorizationRuleId,
   CategoryId,
   CategoryKind,
+  KindTotals,
   Result,
   UserCategoryRule,
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
 import type { LucideIcon } from "lucide-react";
-import type { KindTotals } from "@/utils/kind-totals.helpers";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import type { REVIEW_ANSWERS, REVIEW_GROUPS } from "./review.constants";
 

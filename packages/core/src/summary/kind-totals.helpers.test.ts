@@ -1,7 +1,8 @@
-import { amountMinorSchema, type CategoryId } from "@xtrakto/core";
-import type { CategoryTotals } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
+import type { CategoryId } from "../categories/category.types";
+import { amountMinorSchema } from "../money/money.schemas";
 import { kindTotalsOf } from "./kind-totals.helpers";
+import type { CategoryTotals } from "./summary.types";
 
 const amount = (value: number) => amountMinorSchema.parse(value);
 

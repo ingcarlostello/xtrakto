@@ -51,6 +51,10 @@ export {
   type UnreconciledStatement,
 } from "./statements/statement-breaks.queries";
 export { saveStatement } from "./statements/statement.queries";
+export {
+  type BankFigures,
+  listBankFigures,
+} from "./statements/statement-figures.queries";
 export type {
   BalanceCheck,
   SavedStatement,
@@ -69,10 +73,8 @@ export {
   type TransactionListItem,
   type TransactionPage,
 } from "./transactions/transaction.queries";
-export {
-  type CategoryTotals,
-  listCategoryTotals,
-} from "./transactions/transaction-totals.queries";
+export { listCategoryTotals } from "./transactions/transaction-totals.queries";
+export { listSummaryMovements } from "./transactions/transaction-summary.queries";
 export {
   findMovementDetail,
   type MovementDetail,

@@ -1,11 +1,12 @@
 import {
   amountMinorSchema,
   type CategoryId,
+  type KindTotals,
   localDateSchema,
+  type MovementTotal,
 } from "@xtrakto/core";
 import type { TransactionListItem } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
-import type { KindTotal, KindTotals } from "@/utils/kind-totals.helpers";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import {
   filterOptions,
@@ -16,7 +17,7 @@ import {
 
 const amount = (value: number) => amountMinorSchema.parse(value);
 
-const total = (amountMinor: number, count: number): KindTotal => ({
+const total = (amountMinor: number, count: number): MovementTotal => ({
   amountMinor: amount(amountMinor),
   count,
 });

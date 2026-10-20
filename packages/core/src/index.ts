@@ -133,3 +133,15 @@ export {
 } from "./hashing/transaction-fingerprint.helpers";
 export { prepareStatement } from "./statements/prepared-statement.helpers";
 export { normalizeHolderName } from "./statements/holder-name.helpers";
+export { kindTotalsOf } from "./summary/kind-totals.helpers";
+export { summarizeMovements } from "./summary/summary.helpers";
+export type {
+  CategoryMoved,
+  CategoryTotal,
+  CategoryTotals,
+  DayTotals,
+  KindTotals,
+  MovementTotal,
+  PeriodSummary,
+  SummaryMovement,
+} from "./summary/summary.types";

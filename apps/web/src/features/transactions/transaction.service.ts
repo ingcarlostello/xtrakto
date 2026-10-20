@@ -2,6 +2,7 @@ import "server-only";
 import {
   DEFAULT_TIME_ZONE,
   descriptionRuleFor,
+  kindTotalsOf,
   localDateFromInstant,
   type Period,
 } from "@xtrakto/core";
@@ -24,7 +25,6 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
-import { kindTotalsOf } from "@/utils/kind-totals.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import {
   meetsPeriod,
