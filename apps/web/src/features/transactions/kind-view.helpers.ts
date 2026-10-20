@@ -8,6 +8,7 @@ import {
   type MovementTotal,
 } from "@xtrakto/core";
 import type { MovementSelection, TransactionListItem } from "@xtrakto/db";
+import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
 import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/utils/transactions-url.helpers";
 import type { ListLink } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type { FilterOption, KindTile } from "./transaction.types";
+import type { KindTile } from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.kinds;
 
@@ -100,8 +101,8 @@ export const selectionOf = (filter?: MovementFilter): MovementSelection => {
 export const filterOptions = (
   link: ListLink,
   pendingReview: number,
-): readonly FilterOption[] => {
-  const option = (label: string, filter?: MovementFilter): FilterOption => ({
+): readonly FilterChip[] => {
+  const option = (label: string, filter?: MovementFilter): FilterChip => ({
     label,
     href: transactionsHref({ ...link, filter }),
     isCurrent: link.filter === filter,

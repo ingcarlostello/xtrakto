@@ -1,11 +1,5 @@
 import "server-only";
-import {
-  type CalendarMonth,
-  findRecurringPayments,
-  type LocalDate,
-  monthPeriod,
-  type Period,
-} from "@xtrakto/core";
+import { findRecurringPayments, monthPeriod, type Period } from "@xtrakto/core";
 import {
   findUserId,
   listMovementAccounts,
@@ -22,19 +16,18 @@ import {
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
-import { monthBefore, paidIn } from "./recurring.helpers";
+import {
+  calendarMonthOf,
+  monthBefore,
+  splitByMonth,
+} from "./recurring.helpers";
 import type { AccountRecurring, RecurringRequest } from "./recurring.types";
 
 // Payments are looked for in the year that ends with the period.
 const HISTORY_MONTHS = 12;
 
-const monthOf = (date: LocalDate): CalendarMonth => ({
-  year: Number(date.slice(0, 4)),
-  month: Number(date.slice(5, 7)),
-});
-
 const historyOf = ({ to }: Period): Period => ({
-  from: monthPeriod(monthBefore(monthOf(to), HISTORY_MONTHS - 1)).from,
+  from: monthPeriod(monthBefore(calendarMonthOf(to), HISTORY_MONTHS - 1)).from,
   to,
 });
 
@@ -60,9 +53,10 @@ const locate = async (
 /**
  * The signed-in user's payments that repeat, in the account and period the
  * URL asks, or the latest: those `findRecurringPayments` finds in the year
- * that ends with the period and that were paid in its last month with
- * movements. `null` until a movement counts; reading never creates the
- * user's row. The Clerk id must come from the session.
+ * that ends with the period, split by the period's last month with
+ * movements into those it expects and the fixed ones that stopped. `null`
+ * until a movement counts; reading never creates the user's row. The Clerk
+ * id must come from the session.
  */
 export const getRecurringPayments = async (
   clerkUserId: string,
@@ -80,11 +74,17 @@ export const getRecurringPayments = async (
       period: historyOf(days),
     });
     const last = movements.findLast(({ date }) => date >= days.from);
-    const month = last && monthOf(last.date);
+    if (last === undefined)
+      return {
+        ...located,
+        month: undefined,
+        payments: { spending: [], moved: [] },
+        stopped: [],
+      };
     return {
       ...located,
-      month,
-      payments: paidIn(findRecurringPayments(movements), month),
+      month: calendarMonthOf(last.date),
+      ...splitByMonth(findRecurringPayments(movements), last.date),
     };
   });
 };

@@ -192,7 +192,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.4 Summary computations
 - [x] 6.5 Recurring payments
 - [x] 6.5b Recurring payments page _(design v8)_
-- [ ] 6.5c Recurring payments: what to expect _(design v8)_
+- [x] 6.5c Recurring payments: what to expect _(design v8)_
 - [ ] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
 - [ ] 6.8 Categories page _(design v8)_
@@ -1277,15 +1277,19 @@ It came out at about 600 lines, besides moving about 390 to share the period con
 
 #### 6.5c Recurring payments: what to expect _(added with design v8)_
 
+Decided with the human when it started (2026-10-20): the calendar shows today's month, as v8 draws it, while the page's month is this one or the one before (this section said the next month's); and "Pendiente" waits for this month's movements, so the page never says that a payment didn't come in a month the user hasn't uploaded. A month whose movements don't reach its last day still expects the payments of the month before, so one due later in it doesn't look stopped.
+
 **Tasks**
 
 - The tiles of `docs/ui/v8-04`: "Pagas al mes", "Al año" and the payment that rose most.
 - "Ya no aparecen": the payments that stopped before the period's last month.
-- The next month's calendar, with each payment's day or range of days, today, and "Pendiente" for a payment of this month that hasn't appeared yet.
+- This month's calendar, with each payment's day or range of days, today, and "Pendiente" for a payment of this month that hasn't appeared yet.
 
 **Done when:** the figures and the pending payments are tested against a fixed today, and the page works at phone width and with the keyboard.
 
-**Commit:** `feat(web): what to expect from recurring payments`
+Estimated at about 480 lines, it came out at about 700 and lands in commits of one pull request (decided with the human): the tiles and the payments that stopped, then the calendar; besides the design rules, the filter chips that Movimientos and Pagos fijos now share, and the months of a quarter that didn't fit at 360px.
+
+**Commits:** `docs(rules): what to expect from recurring payments`, `refactor(web): share the filter chips`, `fix(web): fit a quarter's months at 360px`, `feat(web): recurring payments' tiles and those that stopped`, then `feat(web): what to expect from recurring payments`
 
 #### 6.6 Insights ("Para revisar")
 

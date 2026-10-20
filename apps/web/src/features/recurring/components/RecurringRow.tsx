@@ -29,7 +29,8 @@ function Cadence({ row }: { row: RecurringRowView }) {
   );
 }
 
-// Who was paid, how the bank wrote it, and its installments.
+// Who was paid, how the bank wrote it, its installments, and whether it
+// came in the page's month or when it was last paid.
 function Names({ row }: { row: RecurringRowView }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -43,6 +44,7 @@ function Names({ row }: { row: RecurringRowView }) {
       {row.installmentsText && (
         <p className="text-meta text-ink-muted">{row.installmentsText}</p>
       )}
+      {row.note && <p className="text-meta text-ink-muted">{row.note}</p>}
     </div>
   );
 }

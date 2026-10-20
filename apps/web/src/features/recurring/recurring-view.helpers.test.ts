@@ -8,12 +8,18 @@ import { describe, expect, it } from "vitest";
 import {
   barMonths,
   foundText,
+  listFilters,
   listSubtitle,
   monthBars,
   monthTotal,
+  noneText,
   pageSubtitle,
+  recurringHrefOf,
+  recurringTiles,
   rowView,
+  viewOf,
 } from "./recurring-view.helpers";
+import type { AccountRecurring } from "./recurring.types";
 
 const amount = (value: number) => amountMinorSchema.parse(value);
 const month = (value: number, year = 2026): CalendarMonth => ({
@@ -114,6 +120,13 @@ describe("the page's texts", () => {
       amount: "−$2.033.000",
     });
   });
+
+  it("says the payments that stopped don't appear in the page's month", () => {
+    expect(listSubtitle(SEPTEMBER, "stopped")).toBe(
+      "Se repetían cada mes, pero no aparecen en septiembre. Las barras muestran julio, agosto y septiembre.",
+    );
+    expect(noneText(SEPTEMBER)).toBe("No hay pagos fijos en septiembre.");
+  });
 });
 
 describe("monthBars", () => {
@@ -192,6 +205,158 @@ describe("rowView", () => {
       hasSeveralChannels: true,
       trend: { label: "Monto variable", variant: "neutral" },
       amount: "$48.000 a $2.090.000",
+    });
+  });
+
+  it("says a payment still expected hasn't come in the page's month, with its latest amount", () => {
+    const row = rowView(LOAN, month(10));
+
+    expect(row).toMatchObject({
+      note: "Aún no aparece en octubre.",
+      amount: "−$1.851.000",
+    });
+    expect(row.installmentsText).toBeUndefined();
+  });
+
+  it("says when a payment that stopped was last paid", () => {
+    expect(rowView(ENERGY, month(11), "stopped")).toMatchObject({
+      note: "Último pago el 3 de septiembre.",
+      amount: "−$182.000",
+    });
+  });
+});
+
+describe("recurringTiles", () => {
+  const roseLabel = (spending: readonly RecurringPayment[]) =>
+    recurringTiles(spending).find(({ kind }) => kind === "rose")?.label;
+
+  it("adds up each fixed payment's latest month, a month and a year, and shows the one that rose", () => {
+    expect(recurringTiles([LOAN, ENERGY])).toEqual([
+      {
+        kind: "monthly",
+        label: "Pagas al mes",
+        amount: "$2,0M",
+        caption: "Sale de tu cuenta aunque no hagas nada.",
+      },
+      {
+        kind: "yearly",
+        label: "Al año",
+        amount: "$24,4M",
+        caption: "Lo que suman estos 2 pagos en 12 meses.",
+      },
+      {
+        kind: "rose",
+        categoryId: "utilities",
+        label: "Electrificadora de subió 12%",
+        amount: "+$17.000",
+        caption:
+          "De $165.000 en agosto a $182.000 en septiembre. Revisa tu consumo o la tarifa.",
+      },
+    ]);
+  });
+
+  it("speaks of one payment, and shows no rise when none rose", () => {
+    expect(
+      recurringTiles([LOAN]).map(({ kind, caption }) => ({ kind, caption })),
+    ).toEqual([
+      { kind: "monthly", caption: "Sale de tu cuenta aunque no hagas nada." },
+      { kind: "yearly", caption: "Lo que suma este pago en 12 meses." },
+    ]);
+  });
+
+  it("shows nothing without fixed payments", () => {
+    expect(recurringTiles([])).toEqual([]);
+  });
+
+  it("shows the payment that rose the most, then the one that rose the most money", () => {
+    const water: RecurringPayment = {
+      ...ENERGY,
+      label: "Acueducto Municipa",
+      trend: { kind: "rose", percent: 20 },
+    };
+    const gas: RecurringPayment = {
+      ...ENERGY,
+      label: "GAS NATURAL CIUDAD",
+      months: [paid(8, [-16_500_000]), paid(9, [-18_400_000])],
+    };
+
+    expect(roseLabel([ENERGY, water])).toBe("Acueducto Municipa subió 20%");
+    expect(roseLabel([ENERGY, gas])).toBe("GAS NATURAL CIUDAD subió 12%");
+  });
+});
+
+describe("the list's chips", () => {
+  const ACCOUNT = {
+    id: "0d3c8f4e-6a1b-4c2d-9e8f-7a6b5c4d3e2f",
+    bankId: "bancolombia",
+    accountType: "savings",
+    last4: "8901",
+  } as const;
+  const THIRD_QUARTER = { kind: "quarter", year: 2026, quarter: 3 } as const;
+  const recurring = (
+    changes: Partial<AccountRecurring> = {},
+  ): AccountRecurring => ({
+    accounts: [ACCOUNT],
+    account: ACCOUNT,
+    quarters: [],
+    period: THIRD_QUARTER,
+    month: SEPTEMBER,
+    payments: { spending: [LOAN, ENERGY], moved: [CARD] },
+    stopped: [SEND],
+    ...changes,
+  });
+
+  it("shows the payments that stopped only when the URL asks and some did", () => {
+    expect(viewOf("stopped", [SEND])).toBe("stopped");
+    expect(viewOf("stopped", [])).toBe("active");
+    expect(viewOf(undefined, [SEND])).toBe("active");
+  });
+
+  it("offers the payments expected and those that stopped, as links, the shown one current", () => {
+    expect(listFilters(recurring(), "stopped")).toEqual([
+      {
+        label: "Activos · 2",
+        href: { pathname: "/recurring", query: { period: "2026-q3" } },
+        isCurrent: false,
+      },
+      {
+        label: "Ya no aparecen · 1",
+        href: {
+          pathname: "/recurring",
+          query: { period: "2026-q3", filter: "stopped" },
+        },
+        isCurrent: true,
+      },
+    ]);
+  });
+
+  it("keeps the account in the chips' links only with several", () => {
+    const other = { ...ACCOUNT, id: "5b9e2a71-3c4d-4e5f-8a9b-0c1d2e3f4a5b" };
+
+    expect(
+      listFilters(recurring({ accounts: [ACCOUNT, other] }), "active")[0],
+    ).toEqual({
+      label: "Activos · 2",
+      href: {
+        pathname: "/recurring",
+        query: { account: ACCOUNT.id, period: "2026-q3" },
+      },
+      isCurrent: true,
+    });
+  });
+
+  it("offers no chips when nothing stopped", () => {
+    expect(listFilters(recurring({ stopped: [] }), "active")).toEqual([]);
+  });
+
+  it("keeps the payments that stopped in the links to another period", () => {
+    expect(recurringHrefOf("stopped")({ period: THIRD_QUARTER })).toEqual({
+      pathname: "/recurring",
+      query: { period: "2026-q3", filter: "stopped" },
+    });
+    expect(recurringHrefOf("active")({ period: THIRD_QUARTER })).toEqual({
+      pathname: "/recurring",
+      query: { period: "2026-q3" },
     });
   });
 });

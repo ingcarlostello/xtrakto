@@ -18,7 +18,9 @@ import {
 } from "./period-options.helpers";
 
 // The quarter's months and the whole quarter, as links that keep the
-// page's filters in the URL (design-system.md §9, months).
+// page's filters in the URL (design-system.md §9, months). On phones they
+// share the width with little padding, so "Noviembre" and "Diciembre" fit
+// at 360px.
 function MonthLinks({ options }: { options: readonly PeriodOption[] }) {
   return (
     <nav
@@ -31,7 +33,7 @@ function MonthLinks({ options }: { options: readonly PeriodOption[] }) {
           href={option.href}
           aria-current={option.isCurrent ? "page" : undefined}
           className={cn(
-            "flex min-h-10 flex-1 items-center justify-center rounded-full px-2.5 text-sm whitespace-nowrap sm:flex-none sm:px-4",
+            "flex min-h-10 flex-1 items-center justify-center rounded-full px-1.5 text-sm whitespace-nowrap sm:flex-none sm:px-4",
             option.isCurrent
               ? "bg-primary-soft font-bold text-primary-strong"
               : "font-semibold text-ink-muted hover:text-ink",

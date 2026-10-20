@@ -1,3 +1,4 @@
+import type { LocalDate } from "@xtrakto/core";
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { PAGE_COPY } from "@/components/empty-state/empty-states.constants";
@@ -5,13 +6,23 @@ import { UploadStatementLink } from "@/components/empty-state/UploadStatementLin
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/components/period-controls/PeriodControls";
 import { HowWeFindThem } from "@/features/recurring/components/HowWeFindThem";
+import { PaymentsCalendar } from "@/features/recurring/components/PaymentsCalendar";
 import { RecurringList } from "@/features/recurring/components/RecurringList";
-import { pageSubtitle } from "@/features/recurring/recurring-view.helpers";
+import { RecurringTiles } from "@/features/recurring/components/RecurringTiles";
+import { todayInBogota } from "@/features/recurring/recurring-calendar.service";
+import {
+  pageSubtitle,
+  recurringHrefOf,
+  viewOf,
+} from "@/features/recurring/recurring-view.helpers";
 import { RECURRING_COPY } from "@/features/recurring/recurring.constants";
+import { recurringSearchSchema } from "@/features/recurring/recurring.schemas";
 import { getRecurringPayments } from "@/features/recurring/recurring.service";
+import type {
+  AccountRecurring,
+  RecurringView,
+} from "@/features/recurring/recurring.types";
 import { requireSignedIn } from "@/lib/auth";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
-import { recurringHref } from "@/utils/transactions-url.helpers";
 
 const COPY = PAGE_COPY.recurring;
 
@@ -31,14 +42,54 @@ function NoMovements() {
   );
 }
 
+// The list, or why there's none, beside this month's calendar and how we
+// found them.
+function RecurringColumns({
+  recurring,
+  view,
+  today,
+}: {
+  recurring: AccountRecurring;
+  view: RecurringView;
+  today: LocalDate;
+}) {
+  const { month, payments, stopped } = recurring;
+  const hasPayments =
+    payments.spending.length + payments.moved.length + stopped.length > 0;
+  return (
+    <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      {month !== undefined && hasPayments ? (
+        <RecurringList recurring={recurring} month={month} view={view} />
+      ) : (
+        <EmptyState
+          title={RECURRING_COPY.noneTitle}
+          description={RECURRING_COPY.noneDescription}
+          action={<UploadStatementLink />}
+        />
+      )}
+      <div className="flex min-w-0 flex-col gap-5.5">
+        {month !== undefined && (
+          <PaymentsCalendar
+            spending={payments.spending}
+            month={month}
+            today={today}
+          />
+        )}
+        <HowWeFindThem />
+      </div>
+    </div>
+  );
+}
+
 // docs/ui/v8-04: an account's payments that repeat, in the last month with
-// movements of a quarter or one of its months, beside how we found them.
-// The account and the period live in the URL.
+// movements of a quarter or one of its months: what they take, the list of
+// those it expects or of those that stopped, this month's calendar, and how
+// we found them. The account, the period and the list live in the URL.
 export default async function RecurringPage({
   searchParams,
 }: PageProps<"/recurring">) {
   const clerkUserId = await requireSignedIn();
-  const { account, period } = accountPeriodSearchSchema.parse(
+  const { account, period, filter } = recurringSearchSchema.parse(
     await searchParams,
   );
   const recurring = await getRecurringPayments(clerkUserId, {
@@ -46,24 +97,20 @@ export default async function RecurringPage({
     ...(period === undefined ? {} : { period }),
   });
   if (!recurring) return <NoMovements />;
-  const { month, payments } = recurring;
-  const hasPayments = payments.spending.length > 0 || payments.moved.length > 0;
+  const view = viewOf(filter, recurring.stopped);
   return (
     <>
-      <PageHeader title={COPY.title} subtitle={pageSubtitle(payments)} />
-      <PeriodControls choices={recurring} hrefOf={recurringHref} />
-      <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        {month !== undefined && hasPayments ? (
-          <RecurringList payments={payments} month={month} />
-        ) : (
-          <EmptyState
-            title={RECURRING_COPY.noneTitle}
-            description={RECURRING_COPY.noneDescription}
-            action={<UploadStatementLink />}
-          />
-        )}
-        <HowWeFindThem />
-      </div>
+      <PageHeader
+        title={COPY.title}
+        subtitle={pageSubtitle(recurring.payments)}
+      />
+      <PeriodControls choices={recurring} hrefOf={recurringHrefOf(view)} />
+      <RecurringTiles spending={recurring.payments.spending} />
+      <RecurringColumns
+        recurring={recurring}
+        view={view}
+        today={todayInBogota()}
+      />
     </>
   );
 }

@@ -7,6 +7,7 @@ import {
   formatQuarter,
   formatShortMonth,
   formatWeekdayInWords,
+  monthWeeks,
 } from "./date-display.helpers";
 import { localDateSchema, periodSchema } from "./date.schemas";
 
@@ -46,6 +47,34 @@ describe("formatShortMonth", () => {
     [12, "dic"],
   ])("writes month %i short, as under a bar: %s", (month, expected) => {
     expect(formatShortMonth({ year: 2026, month })).toBe(expected);
+  });
+});
+
+describe("monthWeeks", () => {
+  it("lays a month out by week, Monday first, empty around its days", () => {
+    expect(monthWeeks({ year: 2026, month: 10 })).toEqual([
+      [null, null, null, 1, 2, 3, 4],
+      [5, 6, 7, 8, 9, 10, 11],
+      [12, 13, 14, 15, 16, 17, 18],
+      [19, 20, 21, 22, 23, 24, 25],
+      [26, 27, 28, 29, 30, 31, null],
+    ]);
+  });
+
+  it("fills whole weeks when a month starts on a Monday and ends on a Sunday", () => {
+    const weeks = monthWeeks({ year: 2027, month: 2 });
+
+    expect(weeks).toHaveLength(4);
+    expect(weeks[0]).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(weeks.at(-1)).toEqual([22, 23, 24, 25, 26, 27, 28]);
+  });
+
+  it("takes six weeks for a long month that starts late in the week", () => {
+    const weeks = monthWeeks({ year: 2026, month: 8 });
+
+    expect(weeks).toHaveLength(6);
+    expect(weeks[0]).toEqual([null, null, null, null, null, 1, 2]);
+    expect(weeks.at(-1)).toEqual([31, null, null, null, null, null, null]);
   });
 });
 

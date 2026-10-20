@@ -30,6 +30,11 @@ export const MOVEMENT_FILTERS = [
 
 export type MovementFilter = (typeof MOVEMENT_FILTERS)[number];
 
+/** What Pagos fijos lists instead of its payments: those that stopped. */
+export const RECURRING_FILTERS = ["stopped"] as const;
+
+export type RecurringFilter = (typeof RECURRING_FILTERS)[number];
+
 /** What the movements list shows: a quarter, or one of its months. */
 export type MovementPeriod =
   | ({ readonly kind: "quarter" } & CalendarQuarter)
@@ -141,15 +146,20 @@ export const reviewHref = ({
   },
 });
 
-/** The payments that repeat, in an account and period when given (6.5b). */
+/**
+ * The payments that repeat, in an account and period when given (6.5b),
+ * or those that stopped (6.5c).
+ */
 export const recurringHref = ({
   accountId,
   period,
+  filter,
 }: {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
   readonly period?: MovementPeriod;
+  readonly filter?: RecurringFilter;
 }) => ({
   pathname: "/recurring" as const,
   query: {
@@ -159,5 +169,6 @@ export const recurringHref = ({
     ...(period === undefined
       ? {}
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+    ...(filter === undefined ? {} : { [TRANSACTIONS_PARAMS.filter]: filter }),
   },
 });

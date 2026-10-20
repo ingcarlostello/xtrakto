@@ -5,14 +5,14 @@ import {
   type RecurringPayment,
 } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
-import { monthBefore, paidIn } from "./recurring.helpers";
+import { monthBefore, splitByMonth } from "./recurring.helpers";
 
 const amount = (value: number) => amountMinorSchema.parse(value);
+const date = (value: string) => localDateSchema.parse(value);
 const month = (value: number, year = 2026): CalendarMonth => ({
   year,
   month: value,
 });
-const SEPTEMBER = month(9);
 
 // A payment of each of its months.
 const paidOn = (months: readonly number[]): RecurringPayment => ({
@@ -28,7 +28,7 @@ const paidOn = (months: readonly number[]): RecurringPayment => ({
   })),
   typicalAmountMinor: amount(-11_000_000),
   days: { first: 10, last: 10 },
-  lastDate: localDateSchema.parse("2026-09-10"),
+  lastDate: date(`2026-${String(months.at(-1)).padStart(2, "0")}-10`),
   trend: { kind: "stable" },
 });
 
@@ -42,20 +42,40 @@ describe("monthBefore", () => {
   });
 });
 
-describe("paidIn", () => {
-  const paid = paidOn([7, 8, 9]);
-  const stopped = paidOn([6, 7, 8]);
+describe("splitByMonth", () => {
+  const september = paidOn([7, 8, 9]);
+  const august = paidOn([6, 7, 8]);
+  const july = paidOn([5, 6, 7]);
 
-  it("keeps the payments paid in the page's month", () => {
+  it("in a whole month, expects the payments paid in it and stops the fixed ones that weren't", () => {
     expect(
-      paidIn({ spending: [paid, stopped], moved: [stopped, paid] }, SEPTEMBER),
-    ).toEqual({ spending: [paid], moved: [paid] });
+      splitByMonth(
+        { spending: [september, august], moved: [august, september] },
+        date("2026-09-30"),
+      ),
+    ).toEqual({
+      payments: { spending: [september], moved: [september] },
+      stopped: [august],
+    });
   });
 
-  it("keeps none without a month", () => {
-    expect(paidIn({ spending: [paid], moved: [paid] }, undefined)).toEqual({
-      spending: [],
-      moved: [],
+  it("still expects last month's payments while the month's movements go on", () => {
+    expect(
+      splitByMonth(
+        { spending: [september, august, july], moved: [august, july] },
+        date("2026-09-12"),
+      ),
+    ).toEqual({
+      payments: { spending: [september, august], moved: [august] },
+      stopped: [july],
     });
+  });
+
+  it("finds last month's across a new year", () => {
+    const december = paidOn([10, 11, 12]);
+
+    expect(
+      splitByMonth({ spending: [december], moved: [] }, date("2027-01-05")),
+    ).toEqual({ payments: { spending: [december], moved: [] }, stopped: [] });
   });
 });

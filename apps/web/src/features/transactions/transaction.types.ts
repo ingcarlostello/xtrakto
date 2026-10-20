@@ -212,10 +212,3 @@ export type KindTile = {
   /** `"41 movimientos"`, or `"57 salieron · 8 volvieron"`. */
   readonly detail: string;
 };
-
-/** A filter chip: what it shows and its link; the current one is marked. */
-export type FilterOption = {
-  readonly label: string;
-  readonly href: TransactionsHref;
-  readonly isCurrent: boolean;
-};
