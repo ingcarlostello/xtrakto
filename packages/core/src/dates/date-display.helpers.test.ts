@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDayInWords,
   formatDayRange,
+  formatDaysInWords,
   formatMonthName,
   formatMonthRange,
   formatQuarter,
@@ -20,6 +21,31 @@ describe("formatDayInWords", () => {
     ["2026-09-30", "30 de septiembre"],
   ])("writes %s as %s", (date, expected) => {
     expect(formatDayInWords(localDateSchema.parse(date))).toBe(expected);
+  });
+});
+
+describe("formatDaysInWords", () => {
+  it.each([
+    {
+      days: "one day",
+      from: "2026-07-10",
+      to: "2026-07-10",
+      text: "el 10 de julio",
+    },
+    {
+      days: "days of one month",
+      from: "2026-07-10",
+      to: "2026-07-18",
+      text: "del 10 al 18 de julio",
+    },
+    {
+      days: "days across two months",
+      from: "2026-07-28",
+      to: "2026-08-03",
+      text: "del 28 de julio al 3 de agosto",
+    },
+  ])("writes $days", ({ from, to, text }) => {
+    expect(formatDaysInWords(period(from, to))).toBe(text);
   });
 });
 

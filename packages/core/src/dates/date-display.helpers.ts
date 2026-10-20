@@ -90,6 +90,18 @@ export const formatDayInWords = (date: LocalDate): string =>
   formatDate(toDate(date), "d 'de' MMMM");
 
 /**
+ * Some days in running text, without their year: `"el 10 de julio"`,
+ * `"del 10 al 18 de julio"`, `"del 28 de julio al 3 de agosto"`.
+ */
+export const formatDaysInWords = ({ from, to }: Period): string => {
+  if (from === to) return `el ${formatDayInWords(to)}`;
+  const start = isSameMonth(toDate(from), toDate(to))
+    ? formatDate(toDate(from), "d")
+    : formatDayInWords(from);
+  return `del ${start} al ${formatDayInWords(to)}`;
+};
+
+/**
  * A day with its weekday, as a heading: `"Miércoles 30 de septiembre"`, or
  * `"Miércoles 31 de diciembre de 2025"` with its year.
  */

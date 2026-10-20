@@ -1,14 +1,14 @@
 import { categoryKind } from "../categories/category.helpers";
-import { NO_DESCRIPTION } from "../categorization/categorization.constants";
-import type { CategorizationRuleId } from "../categorization/categorization.types";
+import {
+  GMF_TAX_RULE_ID,
+  NO_DESCRIPTION,
+} from "../categorization/categorization.constants";
 import { payeeOf } from "../categorization/channel.helpers";
 import { compareLocalDates } from "../dates/date.helpers";
 import { foldText } from "../text/text.utils";
 import { MIN_SHARED_NAME_LENGTH } from "./recurring.constants";
 import type { RecurringMovement } from "./recurring.types";
 
-// The 4x1000 follows what moved that month: it's no bill.
-const GMF_TAX_RULE: CategorizationRuleId = "gmf_tax";
 const NUMBER_MARK = "#";
 
 /** The payments that went to one payee, the oldest first. */
@@ -18,8 +18,9 @@ export type PayeePayments = {
   readonly payments: readonly RecurringMovement[];
 };
 
-// Money out that is real spending or only moves; not the 4x1000, nor cash,
-// which pays no one in particular, nor the bank's 0, which names no one.
+// Money out that is real spending or only moves; not the 4x1000, which
+// follows what moved that month and is no bill, nor cash, which pays no one
+// in particular, nor the bank's 0, which names no one.
 const mayRepeat = ({
   amountMinor,
   categoryId,
@@ -27,7 +28,7 @@ const mayRepeat = ({
   descriptionRaw,
 }: RecurringMovement): boolean => {
   if (amountMinor >= 0 || categoryId === null) return false;
-  if (categoryRuleId === GMF_TAX_RULE || categoryId === "cash_withdrawal")
+  if (categoryRuleId === GMF_TAX_RULE_ID || categoryId === "cash_withdrawal")
     return false;
   const kind = categoryKind(categoryId);
   return (

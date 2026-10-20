@@ -136,6 +136,7 @@ export {
 export { prepareStatement } from "./statements/prepared-statement.helpers";
 export { normalizeHolderName } from "./statements/holder-name.helpers";
 export { findRecurringPayments } from "./recurring/recurring.helpers";
+export { recurringPaymentTitle } from "./recurring/recurring-title.helpers";
 export type {
   AmountTrend,
   RecurringMonth,
@@ -143,6 +144,25 @@ export type {
   RecurringPayment,
   RecurringPayments,
 } from "./recurring/recurring.types";
+export {
+  cashInsight,
+  gatewaysInsight,
+  gmfTaxInsight,
+  newRecurringInsights,
+  risenRecurringInsights,
+  savingsYieldInsight,
+} from "./insights/insights.helpers";
+export { insightText } from "./insights/insight-text.helpers";
+export type {
+  GmfTaxInsight,
+  Insight,
+  InsightText,
+  NewRecurringInsight,
+  NoDetailInsight,
+  RecurringRoseInsight,
+  SavingsYieldInsight,
+  StatementFigures,
+} from "./insights/insights.types";
 export { kindTotalsOf } from "./summary/kind-totals.helpers";
 export { summarizeMovements } from "./summary/summary.helpers";
 export type {

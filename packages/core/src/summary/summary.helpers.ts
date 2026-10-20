@@ -1,6 +1,6 @@
 import { categoriesOfKind } from "../categories/category.helpers";
 import type { CategoryId, CategoryKind } from "../categories/category.types";
-import type { CategorizationRuleId } from "../categorization/categorization.types";
+import { GMF_TAX_RULE_ID } from "../categorization/categorization.constants";
 import { compareLocalDates } from "../dates/date.helpers";
 import { sumAmounts } from "../money/money.helpers";
 import { kindTotalsOf, totalOf } from "./kind-totals.helpers";
@@ -14,11 +14,8 @@ import type {
   SummaryMovement,
 } from "./summary.types";
 
-// The 4x1000 shares "Costos del banco" with the bank's fees, so the table's
-// rule that matched it tells it apart, whatever category it has now.
-const GMF_TAX_RULE: CategorizationRuleId = "gmf_tax";
-
-const totalOfMovements = (
+/** Some movements' amounts added up, and how many they are. */
+export const totalOfMovements = (
   movements: readonly SummaryMovement[],
 ): MovementTotal => ({
   amountMinor: sumAmounts(movements.map(({ amountMinor }) => amountMinor)),
@@ -112,7 +109,7 @@ export const summarizeMovements = (
     days: daysOf(movements),
     interest: ofCategory("interest"),
     gmfTax: totalOfMovements(
-      movements.filter((m) => m.categoryRuleId === GMF_TAX_RULE),
+      movements.filter((m) => m.categoryRuleId === GMF_TAX_RULE_ID),
     ),
     cash: ofCategory("cash_withdrawal"),
     cardPayments: ofCategory("credit_card_payment"),

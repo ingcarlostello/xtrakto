@@ -193,7 +193,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.5 Recurring payments
 - [x] 6.5b Recurring payments page _(design v8)_
 - [x] 6.5c Recurring payments: what to expect _(design v8)_
-- [ ] 6.6 Insights ("Para revisar")
+- [x] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
 - [ ] 6.8 Categories page _(design v8)_
 
@@ -1293,13 +1293,14 @@ Estimated at about 480 lines, it came out at about 700 and lands in commits of o
 
 #### 6.6 Insights ("Para revisar")
 
+Decided with the human when it started (2026-10-20): the card payments' insight, which invites the user to upload the card's statement, waits for Stage 12 (12.5), when Xtrakto can read one, so the copy stays true today.
+
 **Tasks:** typed generators with Spanish templates, numbers computed in code:
 
 - 4x1000 charged (amount and dates), with the suggestion to check whether the account is marked as exempt.
-- Savings yield: interest earned vs average balance.
+- Savings yield: interest earned vs average balance, from the bank's own figures, as an effective annual rate.
 - Money without detail: cash withdrawals, and payments through gateways that hide the store ("6 pagos sin tienda identificada", `docs/ui/v8-05`).
-- Credit card payments without a card statement, with an invitation to upload it.
-- New recurring payments or increased amounts (needs at least two periods).
+- New recurring payments or increased amounts (needs at least two periods): a payment is new when its third month in a row falls in the period and the account has movements in the month before its first.
 
 **Done when:** each generator is tested and returns nothing when data is insufficient.
 
@@ -1462,7 +1463,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 - **12.2 Parser:** with reconciliation (previous balance + purchases + interest + fees − payments = new balance).
 - **12.3 Account and card reconciliation:** match payments from the savings account with the payments in the card statement, without double counting.
 - **12.4 Usury rate:** a monthly Inngest cron reads the official publication (source confirmed at the gate), stores the rate per month with its source, and compares it with the card's rates.
-- **12.5 Card insights:** interest paid, fees, insurance, and a minimum-payment simulation (deterministic math; the LLM only explains it).
+- **12.5 Card insights:** interest paid, fees, insurance, and a minimum-payment simulation (deterministic math; the LLM only explains it); and, moved from 6.6, the savings account's card payments without a card statement, with an invitation to upload it.
 
 ### Stage 13 — "Pregúntale a tu extracto": chat agent _(outline)_
 
