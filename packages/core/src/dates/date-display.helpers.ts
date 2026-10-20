@@ -1,5 +1,13 @@
 import { TZDate } from "@date-fns/tz";
-import { addDays, format, isSameMonth, isSameYear, min } from "date-fns";
+import {
+  addDays,
+  format,
+  getDaysInMonth,
+  getISODay,
+  isSameMonth,
+  isSameYear,
+  min,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import type {
   CalendarMonth,
@@ -51,6 +59,31 @@ export const formatMonthName = ({ year, month }: CalendarMonth): string =>
 /** A month's short name, as under a chart's bar: `"sep"`. */
 export const formatShortMonth = ({ year, month }: CalendarMonth): string =>
   formatDate(new TZDate(year, month - 1, 1, "UTC"), "MMM");
+
+const DAYS_A_WEEK = 7;
+
+/**
+ * A month's days by week, Monday first, as a calendar draws them: `null`
+ * before its first day and after its last.
+ */
+export const monthWeeks = ({
+  year,
+  month,
+}: CalendarMonth): readonly (readonly (number | null)[])[] => {
+  const first = new TZDate(year, month - 1, 1, "UTC");
+  const cells = [
+    ...Array.from({ length: getISODay(first) - 1 }, () => null),
+    ...Array.from({ length: getDaysInMonth(first) }, (_, index) => index + 1),
+  ];
+  return Array.from(
+    { length: Math.ceil(cells.length / DAYS_A_WEEK) },
+    (_, week) =>
+      Array.from(
+        { length: DAYS_A_WEEK },
+        (_, day) => cells[week * DAYS_A_WEEK + day] ?? null,
+      ),
+  );
+};
 
 /** A day in running text, without its year: `"1 de noviembre"`. */
 export const formatDayInWords = (date: LocalDate): string =>
