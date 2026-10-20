@@ -1,20 +1,9 @@
-import type { AmountMinor, CategoryId, Period } from "@xtrakto/core";
+import type { CategoryTotals, Period } from "@xtrakto/core";
 import { and, eq, gte, lte, type SQL, sql } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
 import { transactions } from "./transaction.schemas";
-
-/** A category's movements that count in a period: money in and money out. */
-export type CategoryTotals = {
-  /** `null` for the movements no rule knows. */
-  readonly categoryId: CategoryId | null;
-  readonly inMinor: AmountMinor;
-  readonly inCount: number;
-  /** Negative, as the movements' amounts are. */
-  readonly outMinor: AmountMinor;
-  readonly outCount: number;
-};
 
 const sumWhere = (direction: SQL) =>
   sql`coalesce(sum(${transactions.amountMinor}) filter (where ${direction}), 0)::bigint`.mapWith(

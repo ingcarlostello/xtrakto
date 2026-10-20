@@ -77,6 +77,11 @@ export type QuarterOptions = {
   readonly to?: string;
   /** Changes the content, as another download of the same quarter could. */
   readonly openingMinor?: number;
+  /** The bank's own figures its summary prints. */
+  readonly totals?: {
+    readonly averageBalanceMinor?: number;
+    readonly interestMinor?: number;
+  };
 };
 
 /**
@@ -89,6 +94,7 @@ export const preparedQuarterly = (
     from = "2026-06-30",
     to = "2026-09-30",
     openingMinor = 100_000,
+    totals,
   }: QuarterOptions = {},
 ): Promise<CategorizedStatement> => {
   let balance = openingMinor;
@@ -106,6 +112,7 @@ export const preparedQuarterly = (
     periodSource: "statement",
     openingBalanceMinor: openingMinor,
     closingBalanceMinor: balance,
+    ...(totals === undefined ? {} : { totals }),
     transactions,
     warnings: [],
   });

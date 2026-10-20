@@ -4,6 +4,7 @@ import type {
   CalendarQuarter,
   CategoryId,
   CategoryKind,
+  KindTotals,
   LocalDate,
   Result,
   UserCategoryRule,
@@ -14,7 +15,6 @@ import type {
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
-import type { KindTotals } from "@/utils/kind-totals.helpers";
 import type {
   MovementFilter,
   MovementPeriod,

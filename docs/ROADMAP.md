@@ -189,7 +189,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3f Detail panel
 - [x] 6.3g Corrections
 - [x] 6.3h Your own accounts and undo
-- [ ] 6.4 Summary computations
+- [x] 6.4 Summary computations
 - [ ] 6.5 Recurring payments
 - [ ] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
@@ -1227,15 +1227,19 @@ It came out at about 560 lines and lands in commits of one pull request (decided
 
 #### 6.4 Summary computations
 
+Decided with the human on 2026-10-19: the figures of each day instead of each month, since `v8-01` draws the summary day by day ("Tu saldo y tu gasto real, día a día") and each month is a period of its own in the selector.
+
 **Tasks:** pure functions over a period's transactions:
 
-- Income (without the money that came back from the user's own accounts), total outflows, real spending, money that moved (by type, out and back), spending by category and by month, each with its count.
+- Income (without the money that came back from the user's own accounts), total outflows, real spending, money that moved (by type, out and back), spending and income by category, and each day's income, spending and money that moved, each with its count.
 - Interest earned, 4x1000 paid, cash total.
 - Credit card payments without an uploaded card statement.
 - The bank's own figures for the account card: average balance and interest paid, from the quarterly statement.
 - A quarterly statement that doesn't reconcile stays out of every figure until it does (decided with the human, Phase 5.5); on its days, the movements exports' rows count instead, if there are any. Every figure uses Stage 5's predicate for the movements that count.
 
 **Done when:** tests compare against hand-computed results on the fixtures.
+
+It came out at about 270 lines, with the reads of an account's figures that the summary page (6.7) calls.
 
 **Commit:** `feat(core): summary computations`
 
@@ -1270,7 +1274,7 @@ It came out at about 560 lines and lands in commits of one pull request (decided
 
 **Tasks**
 
-- Following design v8 (`docs/ui/v8-01`): headline (real spending vs total outflows), KPIs, real vs moved bar, categories, month by month, recurring payments and insights, the review banner, and the account card with the bank's own figures and its status pill.
+- Following design v8 (`docs/ui/v8-01`): headline (real spending vs total outflows), KPIs, real vs moved bar, categories, the balance and real spending day by day (6.4), recurring payments and insights, the review banner, and the account card with the bank's own figures and its status pill.
 - The KPI tile (stat card with its progress ring, design system §9), moved here from 4.3.
 - Server Components; client components only for interactive charts.
 - In the transactions list, group the daily interest rows into one line per month.

@@ -4,6 +4,7 @@ import {
   type AppError,
   type CategoryId,
   err,
+  kindTotalsOf,
   ok,
   type Result,
 } from "@xtrakto/core";
@@ -21,7 +22,6 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
-import { kindTotalsOf } from "@/utils/kind-totals.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import { REVIEW_ANSWERS } from "./review.constants";
 import {

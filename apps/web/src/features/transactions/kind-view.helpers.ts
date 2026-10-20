@@ -4,10 +4,11 @@ import {
   categoryKind,
   CURRENCY,
   formatSignedCompactAmount,
+  type KindTotals,
+  type MovementTotal,
 } from "@xtrakto/core";
 import type { MovementSelection, TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
-import type { KindTotal, KindTotals } from "@/utils/kind-totals.helpers";
 import {
   type MovementFilter,
   transactionsHref,
@@ -31,7 +32,7 @@ const KIND_OF_FILTER = {
   moved: "internal",
 } as const satisfies Record<Exclude<MovementFilter, "review">, CategoryKind>;
 
-const signed = (total: KindTotal) =>
+const signed = (total: MovementTotal) =>
   formatSignedCompactAmount(total.amountMinor, CURRENCY.COP);
 
 // Money that moved shows each direction it went: "−$29,8M · +$2,8M".
