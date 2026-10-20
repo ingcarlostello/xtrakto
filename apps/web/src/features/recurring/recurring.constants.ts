@@ -1,0 +1,49 @@
+// "Pagos fijos" (docs/ui/v8-04): the payments that repeat each month, and
+// how we found them.
+export const RECURRING_COPY = {
+  title: "Pagos fijos",
+  subtitle: "Lo que se repite cada mes.",
+  found: "Encontramos",
+  and: "y",
+  fixed: { one: "gasto fijo", other: "gastos fijos" },
+  repeating: {
+    one: "pago que se repite pero no es gasto",
+    other: "pagos que se repiten pero no son gasto",
+  },
+  listTitle: "Tus pagos fijos",
+  sorted: "Ordenados por monto.",
+  barsShow: "Las barras muestran",
+  totalIn: "Total en",
+  movedTitle: "También se repiten, pero no son gasto",
+  movedSubtitle:
+    "Plata que pasa a tu tarjeta o a tu ahorro. Sigue siendo tuya.",
+  howTitle: "Cómo los encontramos",
+  howText:
+    "Un pago es fijo si aparece al menos 3 meses seguidos, en fechas cercanas y por un monto parecido, aunque el banco lo escriba distinto o lo pagues por otro canal (PSE, transferencia o QR).",
+  noneTitle: "No hay pagos fijos en este periodo",
+  noneDescription:
+    "Un pago es fijo cuando aparece al menos 3 meses seguidos. Con los extractos de más meses podemos encontrar los tuyos.",
+  // "Mensual · día 5", "Mensual · entre el 1 y el 4".
+  monthly: "Mensual",
+  onDay: "día",
+  between: "entre el",
+  andThe: "y el",
+  // "También: “PAGO PSE Electrificadora de S”."
+  also: "También:",
+  // "2 cuotas: $1.540.000 y $311.000."
+  installments: { one: "cuota", other: "cuotas" },
+  payments: { one: "pago", other: "pagos" },
+  trends: {
+    stable: "Estable",
+    rose: "Subió",
+    varies_little: "Varía poco",
+    variable: "Monto variable",
+  },
+  severalChannels: "Varios canales",
+  // "$48.000 a $2.090.000".
+  rangeTo: "a",
+  channel: "Canal:",
+  // What the bars say to a screen reader: "Julio $162.300, …".
+  barsLabel: "Lo pagado cada mes",
+  unpaid: "sin pago",
+} as const;

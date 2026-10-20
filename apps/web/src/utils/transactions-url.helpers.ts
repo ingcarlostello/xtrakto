@@ -140,3 +140,24 @@ export const reviewHref = ({
     [TRANSACTIONS_PARAMS.period]: periodParam(period),
   },
 });
+
+/** The payments that repeat, in an account and period when given (6.5b). */
+export const recurringHref = ({
+  accountId,
+  period,
+}: {
+  /** Left out when the user has a single account. */
+  readonly accountId?: string;
+  /** Left out to open on the account's latest quarter. */
+  readonly period?: MovementPeriod;
+}) => ({
+  pathname: "/recurring" as const,
+  query: {
+    ...(accountId === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.account]: accountId }),
+    ...(period === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+  },
+});

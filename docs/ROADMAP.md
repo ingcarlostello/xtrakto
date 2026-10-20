@@ -191,7 +191,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.3h Your own accounts and undo
 - [x] 6.4 Summary computations
 - [x] 6.5 Recurring payments
-- [ ] 6.5b Recurring payments page _(design v8)_
+- [x] 6.5b Recurring payments page _(design v8)_
+- [ ] 6.5c Recurring payments: what to expect _(design v8)_
 - [ ] 6.6 Insights ("Para revisar")
 - [ ] 6.7 Summary page
 - [ ] 6.8 Categories page _(design v8)_
@@ -1261,15 +1262,30 @@ It came out at about 330 lines. The label is who was paid as the bank writes it,
 
 #### 6.5b Recurring payments page _(added with design v8)_
 
-Added by the human on 2026-10-19: no phase built the screen of `docs/ui/v8-04`, and `/recurring` kept its empty state from 4.6.
+Added by the human on 2026-10-19: no phase built the screen of `docs/ui/v8-04`, and `/recurring` kept its empty state from 4.6. Split in two when it started (about 900 changed lines estimated), with the human's approval: the list here, and what depends on today's date in 6.5c.
 
 **Tasks**
 
-- "Pagos fijos" (`docs/ui/v8-04`) from the payments 6.5 finds: the list ordered by amount, each with its months as bars, its days, channels and how its amount moves; "Pagas al mes", "Al año" and the payment that rose; and "También se repiten, pero no son gasto". The calendar of the next month and "Ya no aparecen" are decided when the phase starts.
+- "Pagos fijos" (`docs/ui/v8-04`) for the account and period in the URL, with the period controls of Movimientos, which both pages now share: the payments 6.5 finds that were paid in the period's last month with movements, ordered by amount, each with its months as bars, its days, channels, installments and how its amount moves, and that month's total; "También se repiten, pero no son gasto"; and "Cómo los encontramos". Marking a payment as fixed by hand ("¿Falta alguno?") is in no phase.
+- The seed's January to March 2027 statement gains invented fixed payments, so the page shows them.
 
 **Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
 
-**Commit:** `feat(web): recurring payments page`
+It came out at about 600 lines, besides moving about 390 to share the period controls, the category's icon and the URL's account and period with Movimientos and the review. It lands in commits of one pull request (decided with the human): the design rules, the shared pieces, the payments of a period, and the page.
+
+**Commits:** `docs(rules): recurring payments page`, `refactor(web): share the period controls and the category icon`, `feat(web): recurring payments of an account's period`, then `feat(web): recurring payments page`
+
+#### 6.5c Recurring payments: what to expect _(added with design v8)_
+
+**Tasks**
+
+- The tiles of `docs/ui/v8-04`: "Pagas al mes", "Al año" and the payment that rose most.
+- "Ya no aparecen": the payments that stopped before the period's last month.
+- The next month's calendar, with each payment's day or range of days, today, and "Pendiente" for a payment of this month that hasn't appeared yet.
+
+**Done when:** the figures and the pending payments are tested against a fixed today, and the page works at phone width and with the keyboard.
+
+**Commit:** `feat(web): what to expect from recurring payments`
 
 #### 6.6 Insights ("Para revisar")
 
