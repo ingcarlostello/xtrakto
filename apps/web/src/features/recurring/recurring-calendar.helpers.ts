@@ -8,7 +8,7 @@ import {
   type RecurringPayment,
   recurringPaymentTitle,
 } from "@xtrakto/core";
-import { channelWords } from "@/utils/channel-text.utils";
+import { channelWords } from "@/utils/channel-text.helpers";
 import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
 import { latestAmountOf, monthWord } from "./recurring-view.helpers";

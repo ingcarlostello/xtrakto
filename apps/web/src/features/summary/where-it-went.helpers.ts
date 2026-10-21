@@ -1,9 +1,7 @@
 import {
   type CategoryId,
   type CategoryTotal,
-  CHANNELS,
   cashInsight,
-  channelOf,
   gatewaysInsight,
   gmfTaxInsight,
   type InsightText,
@@ -14,12 +12,13 @@ import {
   type RecurringPayment,
 } from "@xtrakto/core";
 import type { PeriodMovement } from "@xtrakto/db";
-import { channelWords } from "@/utils/channel-text.utils";
+import { channelWords, usedChannels } from "@/utils/channel-text.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { boxAmount } from "@/utils/money-text.utils";
 import { periodDays } from "@/utils/transactions-url.helpers";
-import { labelOf, percentOf } from "./glance.helpers";
+import { categoryLabel } from "@/utils/category-label.helpers";
+import { percentOf } from "@/utils/percent.utils";
 import { SUMMARY_COPY } from "./summary.constants";
 import type { AccountSummary, SpendingTile } from "./summary.types";
 
@@ -80,16 +79,11 @@ const paymentsText = (
   { categoryId, count }: CategoryTotal,
   movements: readonly PeriodMovement[],
 ): string => {
-  const used = new Map<string, number>();
-  for (const movement of movements) {
-    if (movement.categoryId !== categoryId || movement.amountMinor >= 0)
-      continue;
-    const channel = channelOf(movement.descriptionRaw);
-    if (channel) used.set(channel.id, (used.get(channel.id) ?? 0) + 1);
-  }
-  const channels = CHANNELS.filter(({ id }) => used.has(id))
-    .sort((a, b) => (used.get(b.id) ?? 0) - (used.get(a.id) ?? 0))
-    .map(({ id }) => id);
+  const channels = usedChannels(
+    movements
+      .filter((m) => m.categoryId === categoryId && m.amountMinor < 0)
+      .map(({ descriptionRaw }) => descriptionRaw),
+  );
   const by =
     channels.length > 0 ? ` ${COPY.by} ${joined(channelWords(channels))}` : "";
   return `${countText(count, COPY.payments)}${by}.`;
@@ -119,7 +113,7 @@ const categoryTile = (
   const fact = noDetail
     ? `${noDetail.title}. ${noDetail.note}`
     : (fixedText(fixed) ?? paymentsText(row, movements));
-  const label = labelOf(row.categoryId);
+  const label = categoryLabel(row.categoryId);
   return {
     categoryId: row.categoryId,
     title: noDetail?.needsAttention ? `${label} · ${COPY.check}` : label,
@@ -144,7 +138,7 @@ const bankCostsTile = ({
   const { title, note } = insightText(gmfTax);
   return {
     categoryId: BANK_COSTS,
-    title: `${labelOf(BANK_COSTS)} · ${COPY.check}`,
+    title: `${categoryLabel(BANK_COSTS)} · ${COPY.check}`,
     amount: boxAmount(row.amountMinor),
     note: `${title} ${note.charAt(0).toLowerCase()}${note.slice(1)}`,
     needsAttention: true,
