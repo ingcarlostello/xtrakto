@@ -129,9 +129,10 @@ const periodKinds = async (
 
 /**
  * The signed-in user's movements that count, newest first, in the account
- * and period the URL asks, or the latest, matching its search when there's
- * one, in as many lines as the URL asks, each month's daily interest in one
- * line, and the detail of the movement it asks, when it's the account's.
+ * and period the URL asks, or the latest, matching its search, filter or
+ * category when there's one, in as many lines as the URL asks, each month's
+ * daily interest in one line, and the detail of the movement it asks, when
+ * it's the account's.
  * `null` until a movement counts or a statement doesn't reconcile; reading
  * never creates the user's row. The Clerk id must come from the session.
  */
@@ -146,7 +147,9 @@ export const getAccountTransactions = async (
   return withUserContext(db, userId, async (ctx) => {
     const located = await locate(ctx, request);
     if (!located) return null;
-    const { search, filter } = request;
+    const { search, category } = request;
+    // A category's movements are of one kind: no filter goes with them.
+    const filter = category === undefined ? request.filter : undefined;
     const shownPeriod = {
       accountId: located.account.id,
       period: periodDays(located.period),
@@ -154,7 +157,7 @@ export const getAccountTransactions = async (
     const shown = {
       ...shownPeriod,
       ...(search === undefined ? {} : { search: movementSearchOf(search) }),
-      ...selectionOf(filter),
+      ...selectionOf(filter, category),
     };
     // Every movement of the period: a month's interest line adds up all of
     // its abonos, and each day's balance comes from all of its movements.
@@ -165,6 +168,7 @@ export const getAccountTransactions = async (
       list: movementList(items, request.shown),
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
+      ...(category === undefined ? {} : { category }),
       ...(await periodKinds(ctx, shownPeriod)),
       detail: await detailOf(ctx, located.account.id, request.movementId),
       currentYear,

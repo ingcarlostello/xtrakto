@@ -1,14 +1,11 @@
-import {
-  type CategoryMoved,
-  formatMonthName,
-  type PeriodSummary,
-} from "@xtrakto/core";
+import type { CategoryMoved, PeriodSummary } from "@xtrakto/core";
 import type { PeriodLink } from "@/components/period-controls/period-controls.types";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
 import { percentOf } from "@/utils/percent.utils";
+import { periodWords } from "@/utils/period-words.helpers";
 import {
   type MovementFilter,
   type MovementPeriod,
@@ -23,15 +20,6 @@ import type { GlanceTile } from "./summary.types";
 
 // A note names the categories that weigh most, up to four (v8-01).
 const NAMED_CATEGORIES = 4;
-
-// "Julio a septiembre de 2026", "Agosto de 2026".
-const periodWords = (period: MovementPeriod): string => {
-  if (period.kind === "month")
-    return `${formatMonthName(period)} ${COPY.of} ${period.year}`;
-  const first = { year: period.year, month: period.quarter * 3 - 2 };
-  const last = { year: period.year, month: period.quarter * 3 };
-  return `${formatMonthName(first)} ${COPY.to} ${formatMonthName(last).toLowerCase()} ${COPY.of} ${period.year}`;
-};
 
 /** "Tu trimestre de un vistazo", "Tu mes de un vistazo". */
 export const glanceTitle = ({ kind }: MovementPeriod): string =>

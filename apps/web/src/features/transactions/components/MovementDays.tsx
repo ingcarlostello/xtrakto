@@ -4,6 +4,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn.utils";
 import { TONE_CLASSES } from "@/components/movement-icon/category-icons.constants";
+import {
+  BANK_TEXT,
+  ROW_LINK,
+} from "@/components/movement-row/movement-row.constants";
 import { movementTone } from "../kind-view.helpers";
 import {
   amountText,
@@ -28,15 +32,6 @@ import type {
   TransactionsHref,
 } from "../transaction.types";
 import { MovementIcon } from "@/components/movement-icon/MovementIcon";
-
-// The bank's text exactly as printed: its case, its cuts and its double
-// spaces (design-system.md §4), wrapping only where it has a space.
-const BANK_TEXT = "tracking-[0.02em] break-words whitespace-pre-wrap";
-
-// The link to a movement's detail covers its whole row, and so does its
-// focus ring.
-const ROW_LINK =
-  "after:absolute after:inset-0 after:rounded-md hover:underline focus-visible:outline-none focus-visible:after:outline-[3px] focus-visible:after:outline-offset-[3px] focus-visible:after:outline-primary focus-visible:after:outline-solid";
 
 type RowLink = {
   readonly id: string;

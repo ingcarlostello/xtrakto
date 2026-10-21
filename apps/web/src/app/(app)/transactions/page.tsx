@@ -40,13 +40,14 @@ export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
   const clerkUserId = await requireSignedIn();
-  const { account, period, q, filter, show, movement } =
+  const { account, period, q, filter, category, show, movement } =
     transactionsSearchSchema.parse(await searchParams);
   const transactions = await getAccountTransactions(clerkUserId, {
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),
     ...(q === undefined ? {} : { search: q }),
     ...(filter === undefined ? {} : { filter }),
+    ...(category === undefined ? {} : { category }),
     shown: show,
     ...(movement === undefined ? {} : { movementId: movement }),
   });

@@ -200,7 +200,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.7d Where it went and what to review
 - [x] 6.7e Interest by month in Movimientos
 - [x] 6.8a Categories page _(design v8)_
-- [ ] 6.8b A category's detail _(design v8)_
+- [x] 6.8b A category's detail _(design v8)_
 - [ ] 6.8c A category's weeks and places _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
@@ -1400,6 +1400,8 @@ It came out at about 540 lines, in commits of one pull request: the design rules
 
 #### 6.8b A category's detail
 
+Decided when it started (2026-10-21): only categories of real spending have a detail, as `v8-05` draws a chevron on their rows alone; "Por mes" is for a quarter, as this section says; and its newest movements open their detail in Movimientos, among the category's (decided with the human).
+
 **Tasks**
 
 - `docs/ui/v8-06`'s top half: the way back to Categorías, the category's name and kind, and its tiles (the period's total with its count and share, the average movement and the largest, and each month of a quarter); its latest movements, with "Ver los N movimientos" in Movimientos filtered by the category (`?category=`, a new filter); and "Ajustes de esta categoría": what it counts as and the user's rules for it.
@@ -1407,7 +1409,9 @@ It came out at about 540 lines, in commits of one pull request: the design rules
 
 **Done when:** the detail renders from seeded data, the filter keeps the list's counts right, and both work at phone width and with the keyboard.
 
-**Commit:** `feat(web): a category's detail`
+Estimated at about 750 to 850 lines, it came out at about 765 and lands in commits of one pull request (decided with the human): the design rules, the movements of a category in Movimientos, the pieces the detail shares (a period in words, how a row of movements reads), the detail's figures, and the page.
+
+**Commits:** `docs(rules): a category's detail`, `feat(web): movements of a category`, `refactor(web): share a period's words and how a movement's row reads`, `feat(web): a category's figures`, then `feat(web): a category's detail`
 
 #### 6.8c A category's weeks and places
 

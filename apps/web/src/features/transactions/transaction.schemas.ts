@@ -1,9 +1,11 @@
+import type { CategoryId } from "@xtrakto/core";
 import { z } from "zod";
 import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 import {
   MOVEMENT_FILTERS,
   TRANSACTIONS_PARAMS,
 } from "@/utils/transactions-url.helpers";
+import { isCategoryId } from "./correction.helpers";
 import {
   MAX_MOVEMENTS_SHOWN,
   MAX_SEARCH_LENGTH,
@@ -37,6 +39,10 @@ export const transactionsSearchSchema = accountPeriodSearchSchema.extend({
     .catch(undefined),
   [TRANSACTIONS_PARAMS.filter]: z
     .enum(MOVEMENT_FILTERS)
+    .optional()
+    .catch(undefined),
+  [TRANSACTIONS_PARAMS.category]: z
+    .custom<CategoryId>(isCategoryId)
     .optional()
     .catch(undefined),
   [TRANSACTIONS_PARAMS.shown]: shownCountSchema,

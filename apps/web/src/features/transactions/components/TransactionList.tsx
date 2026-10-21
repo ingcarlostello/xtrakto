@@ -5,6 +5,7 @@ import { filterOptions } from "../kind-view.helpers";
 import { listLinkOf, periodText } from "../period-selector.helpers";
 import {
   detailLinks,
+  emptyListText,
   type ListLink,
   nextStep,
   shownText,
@@ -19,16 +20,15 @@ import { SearchField } from "./SearchField";
 type ListBodyProps = { transactions: AccountTransactions; link: ListLink };
 
 // The days, each movement opening its detail, or why there are none:
-// nothing matches, nothing of the filter's kind, or the period is empty. The
-// footer counts the movements its lines hold, and adds lines.
+// nothing matches, nothing of the filter's kind or the category, or the
+// period is empty. The footer counts the movements its lines hold, and adds
+// lines.
 function ListBody({ transactions, link }: ListBodyProps) {
   const { total, list, currentYear, detail } = transactions;
   if (list.shownLines === 0) {
     if (link.search !== undefined) return <NoMatches link={link} />;
     return (
-      <p className="py-6 text-body text-ink-muted">
-        {link.filter === undefined ? COPY.emptyPeriod : COPY.kinds.emptyFilter}
-      </p>
+      <p className="py-6 text-body text-ink-muted">{emptyListText(link)}</p>
     );
   }
   const links: DetailLinks = detailLinks(link, {

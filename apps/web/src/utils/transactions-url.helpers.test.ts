@@ -1,6 +1,7 @@
 import { periodSchema } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
 import {
+  categoryHref,
   type MovementPeriod,
   parsePeriodParam,
   periodDays,
@@ -93,6 +94,15 @@ describe("transactionsHref", () => {
     });
   });
 
+  it("names a category's movements", () => {
+    expect(
+      transactionsHref({ period: QUARTER, category: "restaurants" }),
+    ).toEqual({
+      pathname: "/transactions",
+      query: { period: "2026-q3", category: "restaurants" },
+    });
+  });
+
   it("opens another account on its latest quarter", () => {
     expect(transactionsHref({ accountId: "a2" })).toEqual({
       pathname: "/transactions",
@@ -113,6 +123,25 @@ describe("reviewHref", () => {
     expect(reviewHref({ accountId: "a1", period: QUARTER })).toEqual({
       pathname: "/review",
       query: { account: "a1", period: "2026-q3" },
+    });
+  });
+});
+
+describe("categoryHref", () => {
+  it("links to a category's detail in an account's period, or the latest", () => {
+    expect(
+      categoryHref({
+        categoryId: "restaurants",
+        accountId: "a1",
+        period: AUGUST,
+      }),
+    ).toEqual({
+      pathname: "/categories/restaurants",
+      query: { account: "a1", period: "2026-08" },
+    });
+    expect(categoryHref({ categoryId: "cash_withdrawal" })).toEqual({
+      pathname: "/categories/cash_withdrawal",
+      query: {},
     });
   });
 });

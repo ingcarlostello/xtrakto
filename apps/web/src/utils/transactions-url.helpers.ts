@@ -1,6 +1,7 @@
 import {
   type CalendarMonth,
   type CalendarQuarter,
+  type CategoryId,
   monthPeriod,
   type Period,
   quarterOfMonth,
@@ -9,13 +10,15 @@ import {
 
 // The movements list keeps its filters and the movement it details in the
 // URL, so a reload keeps them and a link shares them:
-// `/transactions?account=…&period=2026-q3&q=nequi&filter=moved&show=60&movement=…`.
+// `/transactions?account=…&period=2026-q3&q=nequi&filter=moved&show=60&movement=…`,
+// or a category's movements instead of a filter's: `&category=restaurants`.
 
 export const TRANSACTIONS_PARAMS = {
   account: "account",
   period: "period",
   search: "q",
   filter: "filter",
+  category: "category",
   shown: "show",
   movement: "movement",
 } as const;
@@ -100,6 +103,8 @@ type TransactionsLink = {
   readonly search?: string;
   /** Which movements it shows, kept across periods too. */
   readonly filter?: MovementFilter;
+  /** A category's movements, instead of a filter's (6.8b). */
+  readonly category?: CategoryId;
   readonly shown?: number;
   /** The movement whose detail opens beside the list. */
   readonly movementId?: string;
@@ -111,6 +116,7 @@ export const transactionsHref = ({
   period,
   search,
   filter,
+  category,
   shown,
   movementId,
 }: TransactionsLink) => ({
@@ -124,6 +130,9 @@ export const transactionsHref = ({
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
     ...(search === undefined ? {} : { [TRANSACTIONS_PARAMS.search]: search }),
     ...(filter === undefined ? {} : { [TRANSACTIONS_PARAMS.filter]: filter }),
+    ...(category === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.category]: category }),
     ...(shown === undefined ? {} : { [TRANSACTIONS_PARAMS.shown]: shown }),
     ...(movementId === undefined
       ? {}
@@ -173,16 +182,15 @@ export const recurringHref = ({
   },
 });
 
-/** The categories of an account's period, when given (6.8a). */
-export const categoriesHref = ({
-  accountId,
-  period,
-}: {
+type CategoriesLink = {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
   readonly period?: MovementPeriod;
-}) => ({
+};
+
+/** The categories of an account's period, when given (6.8a). */
+export const categoriesHref = ({ accountId, period }: CategoriesLink) => ({
   pathname: "/categories" as const,
   query: {
     ...(accountId === undefined
@@ -192,6 +200,15 @@ export const categoriesHref = ({
       ? {}
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
   },
+});
+
+/** A category's detail in an account's period, when given (6.8b). */
+export const categoryHref = ({
+  categoryId,
+  ...link
+}: CategoriesLink & { readonly categoryId: CategoryId }) => ({
+  pathname: `/categories/${categoryId}` as const,
+  query: categoriesHref(link).query,
 });
 
 /** The summary of an account's period, when given (6.7a). */

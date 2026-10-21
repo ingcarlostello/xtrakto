@@ -10,8 +10,6 @@ export const SUMMARY_COPY = {
     month: "Tu mes de un vistazo",
   },
   // "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto."
-  to: "a",
-  of: "de",
   wentOut: "Salieron",
   notAllSpending: "pero no todo fue gasto",
   nothingOut: "No salió plata de tu cuenta.",

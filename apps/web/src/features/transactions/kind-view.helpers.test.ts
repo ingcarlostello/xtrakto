@@ -121,6 +121,15 @@ describe("selectionOf", () => {
     });
     expect(selectionOf("spending").categoryIds).toContain("other_spending");
   });
+
+  it("keeps a category's movements, whatever the filter says", () => {
+    expect(selectionOf(undefined, "restaurants")).toEqual({
+      categoryIds: ["restaurants"],
+    });
+    expect(selectionOf("review", "restaurants")).toEqual({
+      categoryIds: ["restaurants"],
+    });
+  });
 });
 
 describe("filterOptions", () => {
@@ -155,5 +164,32 @@ describe("filterOptions", () => {
     ).toEqual(["Todo"]);
     expect(options[0]?.href.query).toEqual({ period: "2026-q3" });
     expect(options[4]?.label).toBe("Por revisar · 0");
+  });
+
+  it("shows the category the list shows as the current one, and every other leaves it", () => {
+    const options = filterOptions(
+      { period: QUARTER, search: "rappi", category: "restaurants" },
+      3,
+    );
+
+    expect(options.map(({ label, isCurrent }) => [label, isCurrent])).toEqual([
+      ["Todo", false],
+      ["Ingresos", false],
+      ["Gasto real", false],
+      ["Movido", false],
+      ["Por revisar · 3", false],
+      ["Restaurantes y domicilios", true],
+    ]);
+    expect(options[0]?.href.query).toEqual({ period: "2026-q3", q: "rappi" });
+    expect(options[2]?.href.query).toEqual({
+      period: "2026-q3",
+      q: "rappi",
+      filter: "spending",
+    });
+    expect(options[5]?.href.query).toEqual({
+      period: "2026-q3",
+      q: "rappi",
+      category: "restaurants",
+    });
   });
 });

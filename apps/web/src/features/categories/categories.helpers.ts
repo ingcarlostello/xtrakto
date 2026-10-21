@@ -52,14 +52,19 @@ export const spendingSubtitle = (
   return `${compactSize(kinds.spending.amountMinor)} ${when}, ${COPY.spending.largestFirst}`;
 };
 
+/** A category's share of the real spending: "19%", or "menos del 1%". */
+export const shareText = (amount: number, spending: number): string => {
+  const percent = percentOf(amount, spending);
+  return percent === 0 ? `${COPY.spending.lessThan} 1%` : `${percent}%`;
+};
+
 // "19% de tu gasto real · 3 movimientos · PSE": its share, how many, and
 // the channels its money went out through, the most used first.
 const spendingNote = (
   { categoryId, amountMinor, count }: CategoryTotal,
   { summary, movements }: Pick<AccountCategories, "summary" | "movements">,
 ): string => {
-  const percent = percentOf(amountMinor, summary.kinds.spending.amountMinor);
-  const share = percent === 0 ? `${COPY.spending.lessThan} 1%` : `${percent}%`;
+  const share = shareText(amountMinor, summary.kinds.spending.amountMinor);
   const channels = usedChannels(
     movements
       .filter((m) => m.categoryId === categoryId && m.amountMinor < 0)

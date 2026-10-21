@@ -112,4 +112,26 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     expect(total).toBe(33);
     expect(list).toMatchObject({ shownLines: 5, lineCount: 30 });
   });
+
+  it("shows a category's movements, leaving any filter out, and the period's totals", async () => {
+    const transactions = await getAccountTransactions(clerkUserId, {
+      period: THIRD_QUARTER,
+      filter: "income",
+      category: "cash_withdrawal",
+      shown: 30,
+    });
+
+    // The ATM in July and the corresponsal in September.
+    expect(transactions).toMatchObject({
+      total: 2,
+      category: "cash_withdrawal",
+      kindTotals: { spending: { amountMinor: -147_100_000, count: 14 } },
+    });
+    expect(transactions?.filter).toBeUndefined();
+    expect(
+      transactions?.list.days.flatMap(({ lines }) =>
+        lines.map((line) => line.kind === "movement" && line.item.date),
+      ),
+    ).toEqual(["2026-09-02", "2026-07-20"]);
+  });
 });

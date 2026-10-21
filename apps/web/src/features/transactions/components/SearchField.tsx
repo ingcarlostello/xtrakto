@@ -12,7 +12,7 @@ import { SearchInput } from "./SearchInput";
 const COPY = TRANSACTIONS_COPY.search;
 
 // The filters the search keeps: the account, when there are several, the
-// period, and the kind shown.
+// period, and the kind or the category shown.
 function KeptFilters({ link }: { link: ListLink }) {
   return (
     <>
@@ -33,6 +33,13 @@ function KeptFilters({ link }: { link: ListLink }) {
           type="hidden"
           name={TRANSACTIONS_PARAMS.filter}
           value={link.filter}
+        />
+      )}
+      {link.category && (
+        <input
+          type="hidden"
+          name={TRANSACTIONS_PARAMS.category}
+          value={link.category}
         />
       )}
     </>

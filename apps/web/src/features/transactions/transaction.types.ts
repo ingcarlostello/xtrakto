@@ -30,6 +30,8 @@ export type TransactionsRequest = {
   readonly search?: string;
   /** Which of them to show: a kind, or those to review. */
   readonly filter?: MovementFilter;
+  /** Or a category's, which leaves the filter out (6.8b). */
+  readonly category?: CategoryId;
   readonly shown: number;
   /** The movement whose detail opens beside the list. */
   readonly movementId?: string;
@@ -42,6 +44,8 @@ export type AccountTransactions = PeriodChoices & {
   /** What the list looks for, as typed. */
   readonly search?: string;
   readonly filter?: MovementFilter;
+  /** The category whose movements the list shows, instead of a filter's. */
+  readonly category?: CategoryId;
   /** The period's movements that count, by kind, whatever the list shows. */
   readonly kindTotals: KindTotals;
   /** How many of the period's movements wait for review. */
