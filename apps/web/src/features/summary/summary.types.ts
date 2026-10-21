@@ -11,6 +11,10 @@ import type {
   PeriodMovement,
   UnreconciledStatement,
 } from "@xtrakto/db";
+import type {
+  ChartEvent,
+  ChartTick,
+} from "@/components/line-chart/line-chart.types";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import type {
@@ -92,19 +96,6 @@ export type SpendingTile = {
 };
 
 /** A label on a chart's axis, and where it goes on the plot, from 0 to 100. */
-export type ChartTick = { readonly label: string; readonly at: number };
-
-/** The day the chart points out, on the balance line. */
-export type ChartEvent = {
-  /** Where its balance falls, from the plot's left and from its top. */
-  readonly x: number;
-  readonly y: number;
-  /** "4 de agosto: entraron $31,5M". */
-  readonly title: string;
-  /** "Ese mismo día $22,0M pasaron a tu inversión. No fue gasto." */
-  readonly detail: string;
-};
-
 /** "Tu saldo y tu gasto real, día a día" (docs/ui/v8-01), as its card draws it. */
 export type DayByDayChartView = {
   /** "Tu gasto real, día a día" without balances. */
