@@ -50,7 +50,9 @@ const summaryWith = (changes: Partial<AccountSummary>): AccountSummary => ({
   account: ACCOUNT,
   quarters: [],
   period: { kind: "quarter", year: 2026, quarter: 3 },
+  movements: [],
   summary: EMPTY_SUMMARY,
+  fixedPayments: [],
   balance: {
     date: localDateSchema.parse("2026-09-30"),
     amountMinor: amount(648_231_000),

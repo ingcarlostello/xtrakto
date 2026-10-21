@@ -40,6 +40,7 @@ const FOURTH_QUARTER: MovementPeriod = {
   year: 2026,
   quarter: 4,
 };
+const NEXT_MARCH: MovementPeriod = { kind: "month", year: 2027, month: 3 };
 
 const total = (amountMinor: number, count: number) => ({ amountMinor, count });
 const NOTHING = total(0, 0);
@@ -124,13 +125,29 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
   // The figures of the period the URL asks.
   const summaryOf = async (
     names: readonly string[],
-    period = THIRD_QUARTER,
+    period: MovementPeriod = THIRD_QUARTER,
   ) => {
     const { clerkUserId, accountId } = await userWith(names);
     const result = await getSummary(clerkUserId, { accountId, period });
     if (!result) throw new Error("No summary.");
-    const { summary, balance, balances, bankFigures, unreconciled } = result;
-    return { summary, balance, balances, bankFigures, unreconciled };
+    const {
+      movements,
+      summary,
+      fixedPayments,
+      balance,
+      balances,
+      bankFigures,
+      unreconciled,
+    } = result;
+    return {
+      movements,
+      summary,
+      fixedPayments,
+      balance,
+      balances,
+      bankFigures,
+      unreconciled,
+    };
   };
 
   it("adds up a quarterly statement's quarter", async () => {
@@ -217,6 +234,38 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     expect(balances?.days.map(({ date }) => date)).toEqual(
       summary.days.map(({ date }) => date),
     );
+  });
+
+  it("reads the period's movements out of the year that ends with it", async () => {
+    const { movements, summary } = await summaryOf([
+      "quarterly-previous",
+      "quarterly-basic",
+    ]);
+
+    // quarterly-basic's alone, not April to June's.
+    expect(movements).toHaveLength(33);
+    expect(movements[0]?.date).toBe("2026-07-01");
+    expect(summary.kinds).toEqual(BASIC_KINDS);
+  });
+
+  it("finds the fixed payments in the year that ends with the period", async () => {
+    // March alone repeats nothing: January and February find them.
+    const { movements, fixedPayments } = await summaryOf(
+      ["quarterly-year-rollover"],
+      NEXT_MARCH,
+    );
+
+    // Its first movement, on March 2nd.
+    expect(movements[0]?.date).toBe("2027-03-02");
+    expect(fixedPayments.map(({ label }) => label)).toEqual([
+      "Financiera Andes S",
+      "EMPRESA DE ENERGIA",
+      "HOGAR CONECTADO SA",
+      "GIMNASIO FIT",
+      "Acueducto Municipa",
+      "Telefonia Movil",
+      "GAS NATURAL CIUDAD",
+    ]);
   });
 
   it("leaves out a statement that doesn't reconcile on another quarter's days", async () => {

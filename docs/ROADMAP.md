@@ -197,7 +197,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.7a Summary at a glance
 - [x] 6.7b Your account card
 - [x] 6.7c Balance and real spending, day by day
-- [ ] 6.7d Where it went and what to review
+- [x] 6.7d Where it went and what to review
 - [ ] 6.7e Interest by month in Movimientos
 - [ ] 6.8 Categories page _(design v8)_
 
@@ -1352,6 +1352,8 @@ Estimated at about 450 to 550 lines, it came out at about 490 and lands in commi
 
 #### 6.7d Where it went and what to review
 
+Decided with the human when it started (2026-10-20): the tiles are the three categories that weigh most and "Costos del banco · revisar" when the bank charged the 4x1000, small as it may be, as `v8-01` draws them; without the 4x1000, the four that weigh most.
+
 **Tasks**
 
 - "Dónde se fue más" (`v8-01`): the categories that weigh most in real spending, each with what it means, notes from 6.6's insights and the recurring payments ("Dos cuotas, a inicios de mes."), and the attention tile for what needs a look ("Costos del banco · revisar").
@@ -1359,7 +1361,9 @@ Estimated at about 450 to 550 lines, it came out at about 490 and lands in commi
 
 **Done when:** the tiles' figures and notes are tested, at phone width and with the keyboard.
 
-**Commit:** `feat(web): where it went and what to review`
+Estimated at about 400 to 500 lines, it came out at about 300 added and 90 deleted, and lands in commits of one pull request (decided with the human): the design rules, the pieces Pagos fijos now shares with the summary (core's words, the channels in running text, the year of history), and the tiles.
+
+**Commits:** `docs(rules): where it went and what to review`, `refactor(web): share Pagos fijos's words and pieces with the summary`, then `feat(web): where it went and what to review`
 
 #### 6.7e Interest by month in Movimientos
 
