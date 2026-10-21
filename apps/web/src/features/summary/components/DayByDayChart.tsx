@@ -1,16 +1,11 @@
+import { CHART_LINE } from "@/components/line-chart/line-chart.constants";
+import { LineChartPlot } from "@/components/line-chart/LineChartPlot";
 import { Card } from "@/components/ui/card";
 import { dayByDayChart } from "../day-by-day-chart.helpers";
 import { SUMMARY_COPY } from "../summary.constants";
-import type {
-  AccountSummary,
-  ChartEvent,
-  ChartTick,
-  DayByDayChartView,
-} from "../summary.types";
+import type { AccountSummary, DayByDayChartView } from "../summary.types";
 
 const COPY = SUMMARY_COPY.chart;
-// Lines keep their width and dashes however the plot stretches.
-const LINE = { vectorEffect: "non-scaling-stroke", fill: "none" } as const;
 
 // Each line's swatch, 18 by 3px: solid blue, dashed orange.
 function Legend({ hasBalance }: { hasBalance: boolean }) {
@@ -54,63 +49,6 @@ function ChartHeader({ chart }: { chart: DayByDayChartView }) {
   );
 }
 
-// The amounts on the left, each centered on its gridline: evenly spaced,
-// as the gridlines are.
-function AmountLabels({ ticks }: { ticks: readonly ChartTick[] }) {
-  return (
-    <div
-      aria-hidden
-      className="flex h-48 flex-col justify-between text-meta text-ink-muted"
-    >
-      {ticks.map(({ label }) => (
-        <span
-          key={label}
-          className="flex h-0 items-center justify-end tabular-nums"
-        >
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// The days under the plot, each moved back as far into itself as its day
-// is into the plot: the first starts at the left edge, the last ends at
-// the right one.
-function DayLabels({ ticks }: { ticks: readonly ChartTick[] }) {
-  return (
-    <div aria-hidden className="relative mt-2 h-5 text-meta text-ink-muted">
-      {ticks.map(({ label, at }) => (
-        <span
-          key={label}
-          className="absolute top-0 whitespace-nowrap"
-          style={{ left: `${at}%`, translate: `-${at}% 0` }}
-        >
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// The gridlines, the bottom one the axis.
-function Gridlines({ ticks }: { ticks: readonly ChartTick[] }) {
-  return ticks.map((tick, index) => (
-    <line
-      key={tick.label}
-      x1="0"
-      x2="100"
-      y1={tick.at}
-      y2={tick.at}
-      strokeWidth="1"
-      className={
-        index === ticks.length - 1 ? "stroke-chart-axis" : "stroke-chart-grid"
-      }
-      {...LINE}
-    />
-  ));
-}
-
 // The balance's line, over its area fading from 22% to nothing.
 function BalanceLine({ line, area }: { line: string; area: string }) {
   return (
@@ -133,87 +71,9 @@ function BalanceLine({ line, area }: { line: string; area: string }) {
         strokeWidth="2.6"
         strokeLinejoin="round"
         className="stroke-moved"
-        {...LINE}
+        {...CHART_LINE}
       />
     </>
-  );
-}
-
-// The plot stretched to its box, with the guide down from the day that
-// stands out.
-function Lines({ chart }: { chart: DayByDayChartView }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className="absolute inset-0 size-full overflow-visible"
-    >
-      <Gridlines ticks={chart.yTicks} />
-      {chart.balance && <BalanceLine {...chart.balance} />}
-      <polyline
-        points={chart.spending}
-        strokeWidth="2.4"
-        strokeDasharray="7 6"
-        className="stroke-spending"
-        {...LINE}
-      />
-      {chart.event && (
-        <line
-          x1={chart.event.x}
-          x2={chart.event.x}
-          y1={chart.event.y}
-          y2="100"
-          strokeWidth="1"
-          strokeDasharray="3 3"
-          className="stroke-primary"
-          {...LINE}
-        />
-      )}
-    </svg>
-  );
-}
-
-// What happened that day: beside its point from `sm`, on the side with
-// more room, and under the chart on phones, where it isn't positioned and
-// its offset does nothing.
-function EventNote({ event }: { event: ChartEvent }) {
-  return (
-    <div
-      className="mt-3 rounded-sm bg-surface px-4 py-3 shadow-pop sm:absolute sm:top-0 sm:mt-0 sm:w-[min(18rem,calc(50%-1rem))]"
-      style={
-        event.x < 50
-          ? { left: `calc(${event.x}% + 1rem)` }
-          : { right: `calc(${100 - event.x}% + 1rem)` }
-      }
-    >
-      <p className="text-sm font-bold">{event.title}</p>
-      <p className="text-caption text-ink-muted">{event.detail}</p>
-    </div>
-  );
-}
-
-// The amounts beside the plot, the days under it. The plot is one image
-// whose name says what it shows; the day's note stays outside it, read.
-function Plot({ chart }: { chart: DayByDayChartView }) {
-  return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-      <AmountLabels ticks={chart.yTicks} />
-      <div className="relative">
-        <div role="img" aria-label={chart.label} className="relative h-48">
-          <Lines chart={chart} />
-          {chart.event && (
-            <span
-              aria-hidden
-              className="absolute size-3.5 -translate-1/2 rounded-full border-3 border-primary bg-surface"
-              style={{ left: `${chart.event.x}%`, top: `${chart.event.y}%` }}
-            />
-          )}
-        </div>
-        <DayLabels ticks={chart.xTicks} />
-        {chart.event && <EventNote event={chart.event} />}
-      </div>
-    </div>
   );
 }
 
@@ -235,7 +95,21 @@ export function DayByDayChart({ summary }: { summary: AccountSummary }) {
       {/* As tall as "Dónde se fue más" beside it, as v8 draws it. */}
       <Card variant="card" className="flex-1 gap-5">
         <ChartHeader chart={chart} />
-        <Plot chart={chart} />
+        <LineChartPlot
+          yTicks={chart.yTicks}
+          xTicks={chart.xTicks}
+          label={chart.label}
+          event={chart.event}
+        >
+          {chart.balance && <BalanceLine {...chart.balance} />}
+          <polyline
+            points={chart.spending}
+            strokeWidth="2.4"
+            strokeDasharray="7 6"
+            className="stroke-spending"
+            {...CHART_LINE}
+          />
+        </LineChartPlot>
       </Card>
     </section>
   );

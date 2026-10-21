@@ -1,6 +1,6 @@
 import { categoryKind } from "../categories/category.helpers";
 import type { CategoryId } from "../categories/category.types";
-import { channelOf, payeeOf } from "../categorization/channel.helpers";
+import { channelOf } from "../categorization/channel.helpers";
 import type { CalendarMonth, LocalDate } from "../dates/date.types";
 import { sumAmounts } from "../money/money.helpers";
 import type { AmountMinor } from "../money/money.types";
@@ -12,6 +12,7 @@ import {
 } from "./recurring.constants";
 import {
   isNumberPayee,
+  payeeLabelOf,
   type PayeePayments,
   paymentsByPayee,
 } from "./recurring-payee.helpers";
@@ -149,14 +150,6 @@ const trendOf = (
     : { kind: "variable" };
 };
 
-// Who was paid as the bank wrote it, without its channel's words.
-const labelOf = (descriptionRaw: string): string =>
-  descriptionRaw
-    .trim()
-    .split(/\s+/)
-    .slice(payeeOf(descriptionRaw).channelWords)
-    .join(" ");
-
 // What a payment's months say of it, paid to `payee` and of `categoryId`.
 const paymentOf = (
   { payee, categoryId }: { payee: string; categoryId: CategoryId },
@@ -170,7 +163,7 @@ const paymentOf = (
   const isNumber = isNumberPayee(payee);
   const latestFirst = [...paid].reverse();
   return {
-    label: isNumber ? last.descriptionRaw : labelOf(last.descriptionRaw),
+    label: isNumber ? last.descriptionRaw : payeeLabelOf(last.descriptionRaw),
     referenceLast4: isNumber ? last.referenceLast4 : null,
     bankTexts: [...new Set(latestFirst.map((p) => p.descriptionRaw))],
     categoryId,

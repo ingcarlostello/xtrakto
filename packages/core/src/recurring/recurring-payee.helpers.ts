@@ -11,9 +11,15 @@ import type { RecurringMovement } from "./recurring.types";
 
 const NUMBER_MARK = "#";
 
+/** Some movements that went to one payee, the oldest first. */
+export type PayeeMovements<T extends RecurringMovement> = {
+  /** A name, or a number marked as one (`isNumberPayee`). */
+  readonly payee: string;
+  readonly movements: readonly T[];
+};
+
 /** The payments that went to one payee, the oldest first. */
 export type PayeePayments = {
-  /** A name, or a number marked as one (`isNumberPayee`). */
   readonly payee: string;
   readonly payments: readonly RecurringMovement[];
 };
@@ -37,7 +43,7 @@ const mayRepeat = ({
   );
 };
 
-// Who a payment went to: the words after its channel's, or the number it
+// Who a movement went to: the words after its channel's, or the number it
 // went to when they name no one, as a Nequi send's.
 const payeeKeyOf = ({
   descriptionRaw,
@@ -51,6 +57,14 @@ const payeeKeyOf = ({
 /** Whether a payee is the number paid rather than a name. */
 export const isNumberPayee = (payee: string): boolean =>
   payee.startsWith(NUMBER_MARK);
+
+/** Who was paid as the bank wrote it, without its channel's words. */
+export const payeeLabelOf = (descriptionRaw: string): string =>
+  descriptionRaw
+    .trim()
+    .split(/\s+/)
+    .slice(payeeOf(descriptionRaw).channelWords)
+    .join(" ");
 
 // The bank cuts a name in different places, after a channel's longer words
 // or before an accented letter, so a name joins the longest one it starts.
@@ -71,24 +85,36 @@ const mergeCutNames = (
   return merged;
 };
 
-/** The payments that may repeat, by who they went to. */
-export const paymentsByPayee = (
-  movements: readonly RecurringMovement[],
-): PayeePayments[] => {
-  const paid = movements.filter(mayRepeat).flatMap((movement) => {
+/**
+ * Movements by who they went to, however the bank cut the name, each
+ * group the oldest first. Those that name no one, by words or by number,
+ * are left out.
+ */
+export const movementsByPayee = <T extends RecurringMovement>(
+  movements: readonly T[],
+): PayeeMovements<T>[] => {
+  const paid = movements.flatMap((movement) => {
     const key = payeeKeyOf(movement);
     return key === undefined ? [] : [{ movement, key }];
   });
   const merged = mergeCutNames(paid.map(({ key }) => key));
-  const groups = new Map<string, RecurringMovement[]>();
+  const groups = new Map<string, T[]>();
   for (const { movement, key } of paid) {
     const payee = merged.get(key) ?? key;
     const group = groups.get(payee);
     if (group === undefined) groups.set(payee, [movement]);
     else group.push(movement);
   }
-  return [...groups].map(([payee, payments]) => ({
+  return [...groups].map(([payee, group]) => ({
     payee,
-    payments: payments.sort((a, b) => compareLocalDates(a.date, b.date)),
+    movements: group.sort((a, b) => compareLocalDates(a.date, b.date)),
   }));
 };
+
+/** The payments that may repeat, by who they went to. */
+export const paymentsByPayee = (
+  movements: readonly RecurringMovement[],
+): PayeePayments[] =>
+  movementsByPayee(movements.filter(mayRepeat)).map(
+    ({ payee, movements: payments }) => ({ payee, payments }),
+  );

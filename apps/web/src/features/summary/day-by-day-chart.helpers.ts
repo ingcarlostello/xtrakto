@@ -1,17 +1,30 @@
 import {
   addDaysTo,
-  amountMinorSchema,
-  CURRENCY,
   type DailyBalances,
   type DayTotals,
   daysBetween,
-  formatCompactAmount,
   formatDayInWords,
   formatShortDay,
   type LocalDate,
   monthPeriod,
   type Period,
 } from "@xtrakto/core";
+import {
+  amountTicks,
+  areaOf,
+  chartMoney as money,
+  coordinate,
+  lineOf,
+  plotOf,
+  scaleOf,
+  yTicksOf,
+} from "@/components/line-chart/line-chart.helpers";
+import type {
+  ChartEvent,
+  ChartPlot,
+  ChartScale,
+  ChartTick,
+} from "@/components/line-chart/line-chart.types";
 import { compactSize } from "@/utils/money-text.utils";
 import {
   type MovementPeriod,
@@ -19,42 +32,12 @@ import {
 } from "@/utils/transactions-url.helpers";
 import { movedPlaces } from "./glance.helpers";
 import { SUMMARY_COPY } from "./summary.constants";
-import type {
-  AccountSummary,
-  ChartEvent,
-  ChartTick,
-  DayByDayChartView,
-} from "./summary.types";
+import type { AccountSummary, DayByDayChartView } from "./summary.types";
 
 const COPY = SUMMARY_COPY.chart;
-// The plot's box in the SVG: 100 by 100, its top at 0.
-const PLOT = 100;
-// The amounts on the left split the scale in three steps at most: "$0" to
-// "$30M".
-const Y_STEPS = 3;
-// Round steps: 1, 2, 2,5 and 5 times a power of ten, from $10, so each
-// label is whole pesos.
-const ROUND_STEPS = [1, 2, 2.5, 5, 10] as const;
-const MIN_STEP_MINOR = 1_000;
 // A day stands out when what came in is a tenth of the scale or more, so
 // a day of interest never does.
 const EVENT_SHARE = 0.1;
-
-type Scale = { readonly bottom: number; readonly top: number };
-
-// Where a day and an amount fall on the plot: the opening at the left and
-// the period's last day at the right; the scale's top at the top.
-type Plot = {
-  readonly x: (day: number) => number;
-  readonly y: (amount: number) => number;
-};
-
-// Some money as the chart writes it, with its sign: "$13,8M".
-const money = (amount: number): string =>
-  formatCompactAmount(amountMinorSchema.parse(amount), CURRENCY.COP);
-
-// A number of the SVG, to two decimals.
-const coordinate = (value: number): number => Math.round(value * 100) / 100;
 
 // Each day the chart draws, the period's opening first: the day before its
 // first, whose closing balance a quarterly statement opens with.
@@ -94,45 +77,6 @@ const balanceEachDay = (
   });
 };
 
-// The round step that splits a range in three at most: $10M for $24,4M.
-const roundStep = (range: number): number => {
-  const rough = Math.max(range / Y_STEPS, MIN_STEP_MINOR);
-  const power = 10 ** Math.floor(Math.log10(rough));
-  return (ROUND_STEPS.find((round) => round * power >= rough) ?? 10) * power;
-};
-
-// "$30M", "$20M", "$10M", "$0": round amounts from the top, past the
-// lines' highest and lowest, and 0 always.
-const amountTicks = (amounts: readonly number[]): number[] => {
-  const highest = Math.max(0, ...amounts);
-  const lowest = Math.min(0, ...amounts);
-  const step = roundStep(highest - lowest);
-  const bottom = Math.floor(lowest / step) * step;
-  const top = Math.max(Math.ceil(highest / step) * step, bottom + step);
-  return Array.from(
-    { length: (top - bottom) / step + 1 },
-    (_, index) => top - index * step,
-  );
-};
-
-const plotOf = (days: number, { bottom, top }: Scale): Plot => ({
-  x: (day) => (day / days) * PLOT,
-  y: (amount) => ((top - amount) / (top - bottom)) * PLOT,
-});
-
-// "0,45.12 1.09,45.12 …".
-const lineOf = (amounts: readonly number[], plot: Plot): string =>
-  amounts
-    .map(
-      (amount, day) =>
-        `${coordinate(plot.x(day))},${coordinate(plot.y(amount))}`,
-    )
-    .join(" ");
-
-// The line closed along the plot's bottom, for the area under it.
-const areaOf = (amounts: readonly number[], plot: Plot): string =>
-  `0,${PLOT} ${lineOf(amounts, plot)} ${coordinate(plot.x(amounts.length - 1))},${PLOT}`;
-
 // "30 jun", "31 jul", "31 ago", "30 sep": a quarter's opening and its
 // months' last days; a month's opening, its 10th, its 20th and its last.
 const dayTicks = (period: MovementPeriod, { from, to }: Period) => {
@@ -153,7 +97,11 @@ const dayTicks = (period: MovementPeriod, { from, to }: Period) => {
 const eventOf = (
   { summary, period }: AccountSummary,
   balance: readonly number[],
-  { plot, opening, scale }: { plot: Plot; opening: LocalDate; scale: Scale },
+  {
+    plot,
+    opening,
+    scale,
+  }: { plot: ChartPlot; opening: LocalDate; scale: ChartScale },
 ): ChartEvent | undefined => {
   const peak = summary.days.reduce<DayTotals | undefined>(
     (best, day) =>
@@ -216,7 +164,7 @@ export const dayByDayChart = (
   const balance = summary.balances && balanceEachDay(dates, summary.balances);
   if (!balance && (spending.at(-1) ?? 0) <= 0) return null;
   const amounts = amountTicks([...spending, ...(balance ?? [])]);
-  const scale = { top: amounts[0] ?? 0, bottom: amounts.at(-1) ?? 0 };
+  const scale = scaleOf(amounts);
   const plot = plotOf(daysBetween(opening, days.to), scale);
   const event = balance && eventOf(summary, balance, { plot, opening, scale });
   return {
@@ -227,10 +175,7 @@ export const dayByDayChart = (
         }
       : { note: COPY.noBalance }),
     spending: lineOf(spending, plot),
-    yTicks: amounts.map((amount): ChartTick => ({
-      label: money(amount).replace(",0M", "M"),
-      at: coordinate(plot.y(amount)),
-    })),
+    yTicks: yTicksOf(amounts, plot),
     xTicks: dayTicks(summary.period, days).map((date): ChartTick => ({
       label: formatShortDay(date),
       at: coordinate(plot.x(daysBetween(opening, date))),

@@ -201,7 +201,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.7e Interest by month in Movimientos
 - [x] 6.8a Categories page _(design v8)_
 - [x] 6.8b A category's detail _(design v8)_
-- [ ] 6.8c A category's weeks and places _(design v8)_
+- [x] 6.8c A category's weeks and places _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
 
@@ -1415,6 +1415,8 @@ Estimated at about 750 to 850 lines, it came out at about 765 and lands in commi
 
 #### 6.8c A category's weeks and places
 
+Decided when it started (2026-10-21): the weeks are seven days from the period's first, as v8 draws them ("Semana del 5 de agosto" in a quarter that starts on 1 July), drawn through the account's last day with movements; the week that stands out says what a normal week took ("Una semana normal es de $210 mil.", decided with the human); and a place joins the names the bank cut, as Pagos fijos joins payees, so names that start differently stay apart.
+
 **Tasks**
 
 - `docs/ui/v8-06`'s "Semana a semana": what the category took each week of the period, with the week that stands out explained in plain language.
@@ -1422,7 +1424,9 @@ Estimated at about 750 to 850 lines, it came out at about 765 and lands in commi
 
 **Done when:** the chart's figures and the grouping are tested, and both read at phone width and without a mouse.
 
-**Commit:** `feat(web): a category's weeks and places`
+Estimated at about 500 to 600 new lines and 150 moved, it came out at about 560 net (784 added and 222 deleted, about 190 of them moved to share the chart with the summary), in commits of one pull request (decided with the human): the design rules, the shared line chart, payees grouped for any movements, places in core, the weeks and places as figures, and the page.
+
+**Commits:** `docs(rules): a category's weeks and places`, `refactor(web): share the line chart`, `refactor(core): group any movements by payee`, `feat(core): where a category's money went`, `feat(web): a category's weeks and places, as figures`, then `feat(web): a category's weeks and places`
 
 ---
 

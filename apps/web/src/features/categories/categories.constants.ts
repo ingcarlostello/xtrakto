@@ -50,6 +50,36 @@ export const CATEGORIES_COPY = {
     all: { before: "Ver los", after: "movimientos" },
     one: "Ver en Movimientos",
   },
+  // "Semana a semana" (docs/ui/v8-06): what the category took each week.
+  weeks: {
+    title: "Semana a semana",
+    guide: "Cada punto es lo que gastaste en esa semana. Si sube, algo cambió.",
+    legend: "Gasto por semana",
+    // "Semana del 5 de agosto: $410.000".
+    weekOf: "Semana del",
+    // "9 movimientos. Una semana normal es de $210 mil."
+    normalWeek: "Una semana normal es de",
+    // "La mayoría de las semanas no tuvo gasto en «Efectivo»."
+    mostWeeks: "La mayoría de las semanas no tuvo gasto en",
+    // "Gasto en «Efectivo» por semana, del 1 de julio al 29 de septiembre.
+    // La semana con más fue la del 15 de julio: $300.000."
+    spentIn: "Gasto en",
+    perWeek: "por semana, del",
+    to: "al",
+    mostIn: "La semana con más fue la del",
+  },
+  // "Dónde más" (docs/ui/v8-06): where its money went, however the bank
+  // wrote each place.
+  places: {
+    title: "Dónde más",
+    subtitle: "Juntamos las formas en que el banco escribe el mismo lugar.",
+    // "22 movimientos · COMPRA EN APP DOMICILIOS · también PAGO QR APP DOMICIL".
+    also: "también",
+    more: "más",
+    // "Y 3 lugares más: $45 mil."
+    andMore: "Y",
+    rest: { one: "lugar más", other: "lugares más" },
+  },
   settings: {
     title: "Ajustes de esta categoría",
     countsAs: "Cuenta como gasto real",
@@ -91,6 +121,12 @@ export const LATEST_MOVEMENTS = 4;
 
 /** How many of the user's rules "Ajustes de esta categoría" names. */
 export const NAMED_RULES = 3;
+
+/** How many places "Dónde más" lists, the most money first. */
+export const PLACES_SHOWN = 5;
+
+/** How many other ways the bank wrote a place its note names. */
+export const OTHER_TEXTS = 2;
 
 /** Where money that only moved went, by its category. */
 export const MOVED_LABELS: Partial<Record<CategoryId, string>> = {

@@ -148,6 +148,8 @@ export type {
   RecurringPayment,
   RecurringPayments,
 } from "./recurring/recurring.types";
+export { placesOf } from "./places/places.helpers";
+export type { Place } from "./places/places.types";
 export {
   cashInsight,
   gatewaysInsight,
