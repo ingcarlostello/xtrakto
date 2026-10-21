@@ -205,7 +205,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 7 — First deployment (private beta)**
 
-- [ ] 7.1 [HUMAN] Domain xtrakto.site on Vercel
+- [x] 7.1 [HUMAN] Domain xtrakto.site on Vercel
 - [ ] 7.2 [HUMAN] Production services
 - [ ] 7.3 Error monitoring with Sentry
 - [ ] 7.4 Product analytics with PostHog
@@ -1434,6 +1434,8 @@ Estimated at about 500 to 600 new lines and 150 moved, it came out at about 560 
 
 #### 7.1 [HUMAN] Domain xtrakto.site on Vercel
 
+Its work came with 16.0d (ADR 0022): the Vercel project, the domain with its DNS, and `docs/deployment.md`. Checked when it closed (2026-10-21): until 7.2, the app xtrakto.site serves is the waitlist-only deployment, built from `main`; the whole app goes on with 7.2.
+
 **Human:** create the Vercel project with `apps/web` as the root directory, add `xtrakto.site` and create the DNS records at Hostinger as Vercel indicates.
 
 **Tasks:** `docs/deployment.md` with the steps followed.
@@ -1444,11 +1446,11 @@ Estimated at about 500 to 600 new lines and 150 moved, it came out at about 560 
 
 #### 7.2 [HUMAN] Production services
 
-**Human:** production database, Clerk production instance (it needs the domain) with "Allow users to delete their account" off (User & authentication → User model; `/settings` deletes the data first), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered.
+**Human:** production database, Clerk production instance (it needs the domain) with "Allow users to delete their account" off (User & authentication → User model; `/settings` deletes the data first), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered, and the owner's password reset in Neon (pending since 16.0d) before its connection string becomes the job's secret.
 
 **Tasks**
 
-- Run migrations against production from a CI job on `main`, with the owner connection string stored as a GitHub secret.
+- Run migrations against production from a CI job on `main`, with the owner connection string stored as a GitHub secret. Its first run applies those after `0010`, which wait for it (7.1).
 - An environment checklist in `docs/deployment.md`.
 
 **Done when:** a test account can upload a synthetic XLSX in production and see its summary.
