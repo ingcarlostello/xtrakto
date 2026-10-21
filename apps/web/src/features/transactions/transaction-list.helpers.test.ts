@@ -11,6 +11,7 @@ import {
   dayHeading,
   descriptionView,
   detailLinks,
+  emptyListText,
   groupByDay,
   interestNote,
   interestTitle,
@@ -256,6 +257,19 @@ describe("amounts and counts", () => {
     expect(totalText(total, { search: "nequi" })).toBe(expected);
   });
 
+  it.each([
+    [1, "1 movimiento de «Efectivo»."],
+    [31, "31 movimientos de «Efectivo»."],
+  ])("counts %i movements of a category as %s", (total, expected) => {
+    expect(totalText(total, { category: "cash_withdrawal" })).toBe(expected);
+  });
+
+  it("counts the matches of a search among a category's", () => {
+    expect(
+      totalText(2, { search: "cajero", category: "cash_withdrawal" }),
+    ).toBe("2 movimientos coinciden con “cajero”.");
+  });
+
   it("says how many daily abonos show grouped by month", () => {
     expect(totalText(312, { groupedInterest: 90 })).toBe(
       "312 movimientos del banco. Los 90 abonos diarios de intereses se ven agrupados por mes.",
@@ -267,6 +281,21 @@ describe("amounts and counts", () => {
 
   it("says how many show", () => {
     expect(shownText(30, 1_234)).toBe("Mostrando 30 de 1.234");
+  });
+});
+
+describe("emptyListText", () => {
+  const AUGUST = { kind: "month", year: 2026, month: 8 } as const;
+
+  it.each([
+    [{}, "No hay movimientos en este periodo."],
+    [{ filter: "income" }, "No hay movimientos de este tipo en el periodo."],
+    [
+      { category: "restaurants" },
+      "No hay movimientos de esta categoría en el periodo.",
+    ],
+  ] as const)("says why a list with %o shows nothing", (shown, expected) => {
+    expect(emptyListText({ period: AUGUST, ...shown })).toBe(expected);
   });
 });
 

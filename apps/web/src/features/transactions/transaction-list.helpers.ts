@@ -14,6 +14,7 @@ import {
   sumAmounts,
 } from "@xtrakto/core";
 import type { MovementSearch, TransactionListItem } from "@xtrakto/db";
+import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
   type MovementFilter,
@@ -211,22 +212,32 @@ export const movementTags = (
 export const amountText = (amount: AmountMinor): string =>
   formatSignedAmount(amount, CURRENCY_SHOWN);
 
+type TotalOptions = {
+  search?: string;
+  category?: CategoryId;
+  groupedInterest?: number;
+};
+
+// "312 movimientos del banco.", how many match a search, or how many a
+// category has.
+const countSaid = (total: number, { search, category }: TotalOptions) => {
+  if (search !== undefined)
+    return `${countText(total, COPY.search.matches)} ${COPY.search.with} “${search}”.`;
+  if (category !== undefined)
+    return `${countText(total, COPY.movements)} ${COPY.ofCategory} «${categoryLabel(category)}».`;
+  return `${countText(total, COPY.movements)} ${COPY.ofTheBank}`;
+};
+
 /**
- * `"312 movimientos del banco."`, or how many match a search; then, when the
- * list groups the daily interest, `"Los 90 abonos diarios de intereses se
- * ven agrupados por mes."`.
+ * `"312 movimientos del banco."`, or how many match a search or a category
+ * has; then, when the list groups the daily interest, `"Los 90 abonos
+ * diarios de intereses se ven agrupados por mes."`.
  */
 export const totalText = (
   total: number,
-  {
-    search,
-    groupedInterest = 0,
-  }: { search?: string; groupedInterest?: number } = {},
+  { groupedInterest = 0, ...shown }: TotalOptions = {},
 ): string => {
-  const count =
-    search === undefined
-      ? `${countText(total, COPY.movements)} ${COPY.ofTheBank}`
-      : `${countText(total, COPY.search.matches)} ${COPY.search.with} “${search}”.`;
+  const count = countSaid(total, shown);
   return groupedInterest === 0
     ? count
     : `${count} ${COPY.interest.groupedBefore} ${formatCount(groupedInterest)} ${COPY.interest.groupedAfter}`;
@@ -236,12 +247,26 @@ export const totalText = (
 export const listSubtitle = ({
   total,
   search,
+  category,
   list,
-}: Pick<AccountTransactions, "total" | "search" | "list">): string =>
+}: Pick<
+  AccountTransactions,
+  "total" | "search" | "category" | "list"
+>): string =>
   totalText(total, {
     ...(search === undefined ? {} : { search }),
+    ...(category === undefined ? {} : { category }),
     groupedInterest: list.groupedInterest,
   });
+
+/**
+ * Why the list shows no movement: none of the category or the kind it shows
+ * (6.8b, 6.2b), or none in the period.
+ */
+export const emptyListText = ({ filter, category }: ListLink): string => {
+  if (category !== undefined) return COPY.kinds.emptyCategory;
+  return filter === undefined ? COPY.emptyPeriod : COPY.kinds.emptyFilter;
+};
 
 /** What a search looks for: its text, and the amount it is when it reads as one. */
 export const movementSearchOf = (text: string): MovementSearch => {
@@ -260,6 +285,8 @@ export type ListLink = {
   readonly period: MovementPeriod;
   readonly search?: string;
   readonly filter?: MovementFilter;
+  /** A category's movements, instead of a filter's (6.8b). */
+  readonly category?: CategoryId;
 };
 
 /**

@@ -1,5 +1,6 @@
 import {
   categoriesOfKind,
+  type CategoryId,
   type CategoryKind,
   categoryKind,
   CURRENCY,
@@ -10,6 +11,7 @@ import {
 import type { MovementSelection, TransactionListItem } from "@xtrakto/db";
 import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
 import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
+import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
   type MovementFilter,
@@ -90,22 +92,34 @@ export const movementTone = (
   return kind === undefined ? "neutral" : TONE_OF_KIND[kind];
 };
 
-/** Which movements a filter keeps: a kind's categories, or those to review. */
-export const selectionOf = (filter?: MovementFilter): MovementSelection => {
+/**
+ * Which movements the list keeps: a category's (6.8b), a kind's categories,
+ * or those to review.
+ */
+export const selectionOf = (
+  filter?: MovementFilter,
+  category?: CategoryId,
+): MovementSelection => {
+  if (category !== undefined) return { categoryIds: [category] };
   if (filter === undefined) return {};
   if (filter === "review") return { isPendingReview: true };
   return { categoryIds: categoriesOfKind(KIND_OF_FILTER[filter]) };
 };
 
-/** "Todo / Ingresos / Gasto real / Movido / Por revisar · 24", as links. */
+/**
+ * "Todo / Ingresos / Gasto real / Movido / Por revisar · 24", as links, and
+ * the category the list shows instead, when it shows one (6.8b), as the
+ * current one: any other leaves the category.
+ */
 export const filterOptions = (
   link: ListLink,
   pendingReview: number,
 ): readonly FilterChip[] => {
+  const { category, ...kept } = link;
   const option = (label: string, filter?: MovementFilter): FilterChip => ({
     label,
-    href: transactionsHref({ ...link, filter }),
-    isCurrent: link.filter === filter,
+    href: transactionsHref({ ...kept, filter }),
+    isCurrent: category === undefined && kept.filter === filter,
   });
   return [
     option(COPY.all),
@@ -113,5 +127,14 @@ export const filterOptions = (
     option(COPY.spending, "spending"),
     option(COPY.moved, "moved"),
     option(`${COPY.review} · ${formatCount(pendingReview)}`, "review"),
+    ...(category === undefined
+      ? []
+      : [
+          {
+            label: categoryLabel(category),
+            href: transactionsHref(link),
+            isCurrent: true,
+          },
+        ]),
   ];
 };

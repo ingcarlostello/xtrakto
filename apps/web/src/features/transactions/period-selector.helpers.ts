@@ -25,21 +25,27 @@ export const listLinkOf = ({
   period,
   search,
   filter,
+  category,
 }: AccountTransactions): ListLink => ({
   ...(accounts.length > 1 ? { accountId: account.id } : {}),
   period,
   ...(search === undefined ? {} : { search }),
   ...(filter === undefined ? {} : { filter }),
+  ...(category === undefined ? {} : { category }),
 });
 
-/** The list's links to another account or period, which keep its search and filter. */
+/**
+ * The list's links to another account or period, which keep its search and
+ * its filter or category.
+ */
 export const listHrefOf =
   ({
     search,
     filter,
-  }: Pick<AccountTransactions, "search" | "filter">): HrefOf =>
+    category,
+  }: Pick<AccountTransactions, "search" | "filter" | "category">): HrefOf =>
   (link) =>
-    transactionsHref({ ...link, search, filter });
+    transactionsHref({ ...link, search, filter, category });
 
 /** `"Del 1 de julio al 30 de septiembre de 2026"`. */
 export const periodText = (period: MovementPeriod): string => {

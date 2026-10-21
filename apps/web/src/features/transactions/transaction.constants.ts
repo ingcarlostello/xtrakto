@@ -54,6 +54,8 @@ export const TRANSACTIONS_COPY = {
   subtitle: "Cada línea de tu extracto, tal como la escribe el banco.",
   movements: { one: "movimiento", other: "movimientos" },
   ofTheBank: "del banco.",
+  // "31 movimientos de «Restaurantes y domicilios»."
+  ofCategory: "de",
   emptyTitle: "Aún no hay movimientos",
   emptyDescription:
     "Cuando subas un extracto, cada movimiento aparece aquí, día por día, con el texto del banco.",
@@ -83,6 +85,7 @@ export const TRANSACTIONS_COPY = {
     out: { one: "salió", other: "salieron" },
     back: { one: "volvió", other: "volvieron" },
     emptyFilter: "No hay movimientos de este tipo en el periodo.",
+    emptyCategory: "No hay movimientos de esta categoría en el periodo.",
   },
   // The tags under each movement, with their names for screen readers.
   tags: {

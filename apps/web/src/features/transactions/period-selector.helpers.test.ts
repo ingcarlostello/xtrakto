@@ -122,6 +122,18 @@ describe("the list's links", () => {
     });
   });
 
+  it("keeps the category in every period's link, and in the list's own", () => {
+    const ofCategory = { ...view(AUGUST), category: "restaurants" as const };
+
+    expect(
+      quarterOptions(ofCategory, listHrefOf(ofCategory))[0]?.href.query,
+    ).toEqual({ period: "2026-q3", category: "restaurants" });
+    expect(listLinkOf(ofCategory)).toEqual({
+      period: AUGUST,
+      category: "restaurants",
+    });
+  });
+
   it("keeps the account in links only when there are several", () => {
     expect(listLinkOf(view(AUGUST))).toEqual({ period: AUGUST });
     expect(listLinkOf(view(AUGUST, [ACCOUNT, OTHER]))).toEqual({

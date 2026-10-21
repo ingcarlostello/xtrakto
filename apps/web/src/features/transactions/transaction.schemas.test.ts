@@ -60,6 +60,15 @@ describe("transactionsSearchSchema", () => {
     expect(filterOf("internal")).toBeUndefined();
   });
 
+  it("reads a category of the table, and nothing else, as the movements to show", () => {
+    const categoryOf = (category: unknown) =>
+      transactionsSearchSchema.parse({ category }).category;
+
+    expect(categoryOf("restaurants")).toBe("restaurants");
+    expect(categoryOf("Restaurantes")).toBeUndefined();
+    expect(categoryOf(["restaurants", "groceries"])).toBeUndefined();
+  });
+
   it("reads the movement whose detail opens", () => {
     expect(transactionsSearchSchema.parse({ movement: ACCOUNT }).movement).toBe(
       ACCOUNT,
