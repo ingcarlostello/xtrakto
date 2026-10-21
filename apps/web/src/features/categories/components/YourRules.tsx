@@ -1,5 +1,6 @@
 import type { UserCategoryRule } from "@xtrakto/core";
 import { ChevronRight, Tag } from "lucide-react";
+import { BANK_TEXT } from "@/components/movement-row/movement-row.constants";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { ruleRows } from "../categories.helpers";
 import { CATEGORIES_COPY } from "../categories.constants";
@@ -18,9 +19,7 @@ function Rule({ row }: { row: RuleRow }) {
         <Tag strokeWidth={1.7} className="size-5" />
       </span>
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="text-meta tracking-[0.02em] break-words whitespace-pre-wrap text-ink-muted">
-          {row.text}
-        </p>
+        <p className={`text-meta text-ink-muted ${BANK_TEXT}`}>{row.text}</p>
         <p className="flex items-center gap-1 text-caption font-bold">
           <ChevronRight
             aria-hidden
