@@ -10,7 +10,8 @@ import {
   dayBalanceText,
   dayHeading,
   descriptionView,
-  groupByDay,
+  interestNote,
+  interestTitle,
   movementTags,
 } from "../transaction-list.helpers";
 import {
@@ -20,6 +21,7 @@ import {
 } from "../transaction.constants";
 import type {
   DetailLinks,
+  InterestLine,
   MovementMark,
   MovementTags,
   TransactionDay,
@@ -170,6 +172,37 @@ function TransactionItem({ item, isCounted, mark, links }: ItemProps) {
   );
 }
 
+// A month's daily interest in one line (design-system.md §9): its title, the
+// bank's text as printed, how many abonos it holds, and what they added up
+// to, in income's colors. It opens no detail: it is no single movement.
+function InterestItem({ line }: { line: InterestLine }) {
+  return (
+    <li
+      {...{ [MOVEMENT_ROW_ATTRIBUTE]: "" }}
+      className="relative grid scroll-mt-6 grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-divider py-3.5"
+    >
+      <MovementIcon categoryId="interest" tone="income" />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="text-body font-bold">{interestTitle(line.date)}</p>
+        <p className={`text-meta text-ink-muted ${BANK_TEXT}`}>
+          {line.descriptionRaw}
+        </p>
+        <p className="pt-1 text-caption text-ink-secondary">
+          {interestNote(line.count)}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "text-right font-display text-base leading-[1.3] font-medium tabular-nums sm:min-w-32",
+          TONE_CLASSES.income.amount,
+        )}
+      >
+        {amountText(line.amountMinor)}
+      </p>
+    </li>
+  );
+}
+
 type DayGroupProps = {
   day: TransactionDay;
   currentYear: string;
@@ -200,27 +233,29 @@ function DayGroup({
         )}
       </div>
       <ul>
-        {day.items.map((item) => (
-          <TransactionItem
-            key={item.id}
-            item={item}
-            isCounted={isCounted}
-            mark={marks?.get(item.id)}
-            links={links}
-          />
-        ))}
+        {day.lines.map((line) =>
+          line.kind === "interest" ? (
+            <InterestItem key={`interest-${line.date}`} line={line} />
+          ) : (
+            <TransactionItem
+              key={line.item.id}
+              item={line.item}
+              isCounted={isCounted}
+              mark={marks?.get(line.item.id)}
+              links={links}
+            />
+          ),
+        )}
       </ul>
     </div>
   );
 }
 
 type MovementDaysProps = Omit<DayGroupProps, "day"> & {
-  items: readonly TransactionListItem[];
+  days: readonly TransactionDay[];
 };
 
-/** Movements by day, newest first, each day with its balance when printed. */
-export function MovementDays({ items, ...rest }: MovementDaysProps) {
-  return groupByDay(items).map((day) => (
-    <DayGroup key={day.date} day={day} {...rest} />
-  ));
+/** Lines by day, newest first, each day with its balance when printed. */
+export function MovementDays({ days, ...rest }: MovementDaysProps) {
+  return days.map((day) => <DayGroup key={day.date} day={day} {...rest} />);
 }

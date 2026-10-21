@@ -19,10 +19,11 @@ import { SearchField } from "./SearchField";
 type ListBodyProps = { transactions: AccountTransactions; link: ListLink };
 
 // The days, each movement opening its detail, or why there are none:
-// nothing matches, nothing of the filter's kind, or the period is empty.
+// nothing matches, nothing of the filter's kind, or the period is empty. The
+// footer counts the movements its lines hold, and adds lines.
 function ListBody({ transactions, link }: ListBodyProps) {
-  const { total, items, currentYear, detail } = transactions;
-  if (items.length === 0) {
+  const { total, list, currentYear, detail } = transactions;
+  if (list.shownLines === 0) {
     if (link.search !== undefined) return <NoMatches link={link} />;
     return (
       <p className="py-6 text-body text-ink-muted">
@@ -31,16 +32,16 @@ function ListBody({ transactions, link }: ListBodyProps) {
     );
   }
   const links: DetailLinks = detailLinks(link, {
-    shown: items.length,
+    shown: list.shownLines,
     ...(detail === null ? {} : { openId: detail.movement.id }),
   });
   return (
     <>
-      <MovementDays items={items} currentYear={currentYear} links={links} />
+      <MovementDays days={list.days} currentYear={currentYear} links={links} />
       <ListFooter
-        shown={items.length}
-        status={shownText(items.length, total)}
-        next={nextStep(items.length, total, link)}
+        shown={list.shownLines}
+        status={shownText(list.shownMovements, total)}
+        next={nextStep(list.shownLines, list.lineCount, link)}
       />
     </>
   );

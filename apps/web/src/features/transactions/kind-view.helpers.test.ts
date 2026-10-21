@@ -87,6 +87,7 @@ describe("movementTone", () => {
     amountMinor: amount(-90_000),
     balanceAfterMinor: null,
     categoryId,
+    categoryRuleId: null,
     isPendingReview,
   });
 

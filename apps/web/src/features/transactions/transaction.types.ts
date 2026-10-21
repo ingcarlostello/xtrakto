@@ -48,19 +48,48 @@ export type AccountTransactions = PeriodChoices & {
   readonly pendingReview: number;
   /** Every movement of the account in the period that counts and matches. */
   readonly total: number;
-  /** The newest of them, as many as the list shows. */
-  readonly items: readonly TransactionListItem[];
+  /** What the list shows of them. */
+  readonly list: MovementList;
   /** The movement the URL details, when it's one of the account's that count. */
   readonly detail: OpenMovement | null;
   /** This year in Bogotá, which day headings leave out. */
   readonly currentYear: string;
 };
 
-/** A day of the list: its movements and, when printed, its closing balance. */
+/** A month's daily interest in one line of the list (design-system.md §9). */
+export type InterestLine = {
+  readonly kind: "interest";
+  /** Its newest abono's, where the line goes. */
+  readonly date: LocalDate;
+  /** "ABONO INTERESES AHORROS", as the bank printed it. */
+  readonly descriptionRaw: string;
+  readonly amountMinor: AmountMinor;
+  /** How many abonos it holds: two or more. */
+  readonly count: number;
+};
+
+/** A line of the movements list: a movement, or a month's daily interest. */
+export type MovementLine =
+  | { readonly kind: "movement"; readonly item: TransactionListItem }
+  | InterestLine;
+
+/** A day of the list: its lines and, when printed, its closing balance. */
 export type TransactionDay = {
   readonly date: LocalDate;
   readonly balanceMinor: AmountMinor | null;
-  readonly items: readonly TransactionListItem[];
+  readonly lines: readonly MovementLine[];
+};
+
+/** The newest lines of a period's movements, as many as the list shows. */
+export type MovementList = {
+  readonly days: readonly TransactionDay[];
+  /** How many lines show, and how many movements they hold. */
+  readonly shownLines: number;
+  readonly shownMovements: number;
+  /** Every line of the period, shown or not. */
+  readonly lineCount: number;
+  /** The movements the months' interest lines hold, all of them added up. */
+  readonly groupedInterest: number;
 };
 
 /** Why a row stands out: where a statement's balance breaks. */

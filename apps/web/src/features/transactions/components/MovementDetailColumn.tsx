@@ -29,9 +29,9 @@ export function MovementDetailColumn({
 }: {
   transactions: AccountTransactions;
 }) {
-  const { detail, account, items } = transactions;
+  const { detail, account, list } = transactions;
   const { close } = detailLinks(listLinkOf(transactions), {
-    shown: items.length,
+    shown: list.shownLines,
   });
   return (
     <div className="lg:sticky lg:top-6">

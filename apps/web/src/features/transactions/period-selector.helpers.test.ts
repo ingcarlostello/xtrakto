@@ -35,7 +35,13 @@ const view = (
   unreconciled: [],
   period,
   total: 0,
-  items: [],
+  list: {
+    days: [],
+    shownLines: 0,
+    shownMovements: 0,
+    lineCount: 0,
+    groupedInterest: 0,
+  },
   detail: null,
   kindTotals: {
     income: NOTHING,

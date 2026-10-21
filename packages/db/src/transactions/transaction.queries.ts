@@ -1,6 +1,7 @@
 import type {
   AmountMinor,
   CalendarQuarter,
+  CategorizationRuleId,
   CategoryId,
   LocalDate,
   Period,
@@ -32,6 +33,11 @@ export type TransactionListItem = {
   readonly balanceAfterMinor: AmountMinor | null;
   /** As a rule gave it; `null` when no rule knows the movement. */
   readonly categoryId: CategoryId | null;
+  /**
+   * The table's rule that matched it, kept when the user decides (ADR 0025):
+   * the list groups the daily interest's by month.
+   */
+  readonly categoryRuleId: CategorizationRuleId | null;
   /** The category is a best guess the quick review asks about. */
   readonly isPendingReview: boolean;
 };
@@ -44,6 +50,7 @@ export const LIST_ITEM_COLUMNS = {
   amountMinor: transactions.amountMinor,
   balanceAfterMinor: transactions.balanceAfterMinor,
   categoryId: transactions.categoryId,
+  categoryRuleId: transactions.categoryRuleId,
   isPendingReview: transactions.isPendingReview,
 };
 
@@ -52,7 +59,8 @@ export type TransactionFilter = MovementSelection & {
   /** Inclusive on both ends. */
   readonly period?: Period;
   readonly search?: MovementSearch;
-  readonly limit: number;
+  /** Without one, every movement from `offset` on. */
+  readonly limit?: number;
   readonly offset: number;
 };
 
@@ -64,14 +72,14 @@ export type TransactionPage = {
 /**
  * An account's movements that count (`countedMovement`), newest first and,
  * within a day, the bank's last one first, so a day's first row carries its
- * closing balance. Reads one row past the page to know whether another
- * page follows.
+ * closing balance. With a limit, reads one row past the page to know
+ * whether another page follows.
  */
 export const listTransactions = async (
   { tx, userId }: UserContext,
   { accountId, period, search, limit, offset, ...selection }: TransactionFilter,
 ): Promise<TransactionPage> => {
-  const rows = await tx
+  const query = tx
     .select(LIST_ITEM_COLUMNS)
     .from(transactions)
     .innerJoin(statements, eq(statements.id, transactions.statementId))
@@ -91,8 +99,10 @@ export const listTransactions = async (
       desc(transactions.position),
       desc(transactions.id),
     )
-    .limit(limit + 1)
-    .offset(offset);
+    .$dynamic();
+  if (limit === undefined)
+    return { items: await query.offset(offset), hasMore: false };
+  const rows = await query.limit(limit + 1).offset(offset);
   return { items: rows.slice(0, limit), hasMore: rows.length > limit };
 };
 

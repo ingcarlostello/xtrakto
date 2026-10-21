@@ -17,6 +17,7 @@ export { CATEGORIZATION_RULES } from "./categorization/categorization-rules.cons
 export {
   MONEY_DIRECTION,
   NO_DESCRIPTION,
+  SAVINGS_INTEREST_RULE_ID,
 } from "./categorization/categorization.constants";
 export {
   categorizeByRules,
