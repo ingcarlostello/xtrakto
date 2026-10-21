@@ -443,6 +443,7 @@ On the quick review it counts the quarter's groups and their movements, answered
 - `--surface-card`, `--radius-md`, padding 16, gap 8.
 - Icon chip 44px `--surface-muted`; title (Manrope 700 14px); Amount L; note (12px muted).
 - **Attention variant:** `#FFF6EF` background, white icon chip, 9px orange dot on the chip, and an explicit verb in the title or note ("Revisa si tu cuenta es exenta").
+- One component (`InsightTile`, `components/insight-tile/`) draws it on the summary (6.7d) and on Categorías (6.8a), with its category's icon in the chip.
 - **As Phase 6.7d builds it** ("Dónde se fue más", `WhereItWent`, on the summary): "Dónde se fue más" (Section title) with "Lo que más pesa en tu gasto real.", then the tiles two by two at every width, 16px apart. Each is a `tile` card with its category's icon in the chip, the category as its title (`h3`), what it took (Amount L, ink; a million or more compact and less exact, as the account card's boxes write it) and its note (Meta `--text-muted`). They are the three categories that weigh most in real spending, the largest first, then "Costos del banco · revisar" on the attention surface when the bank charged the 4x1000; without the 4x1000, the four that weigh most. A category's note says its share ("46% de tu gasto real.", "Menos del 1% de tu gasto real.") and what we know of it: what its bank text doesn't say, in its insight's words ("3 retiros de efectivo. No sabemos en qué se usó."; a gateway's payments, on the attention surface as "Pasarelas de pago · revisar"), its fixed payments paid in the period and their days ("1 cuota, entre el 2 y el 3 de cada mes.", "2 pagos fijos, entre el 5 y el 12 de cada mes."), or how many payments it took and their channels, the most used first ("5 pagos por Nequi, QR y transferencia."). The bank's costs speak with the 4x1000's insight: "Te cobraron 4x1000 del 10 al 18 de julio, en 9 cobros. Revisa si tu cuenta es exenta." No tiles without real spending; nothing in them takes the focus.
 
 ### Transaction row ("Tu extracto, traducido")
@@ -596,6 +597,17 @@ As Phases 6.5b and 6.5c build `v8-04` (`RecurringTiles`, `RecurringList`, `Recur
 - **Empty:** before any movement counts, the page's empty state; a period without fixed payments, "No hay pagos fijos en este periodo" with "Ir a Subir".
 - The titles in plain words ("Energía", "Pendiente: gas") and their own icons come with 8.6; v8's legend names the payment due today ("Hoy · gimnasio"), which the calendar's name already says.
 
+### Categories ("Categorías")
+
+As Phase 6.8a builds `v8-05` at `/categories`, for the account and period in the URL:
+
+- **The top:** "Categorías" with "En qué se fue tu gasto real y a dónde se movió lo demás.", the color legend and the period controls of the other pages. Before any movement counts, the page's empty state ("Aún no hay categorías", with "Ir a Subir").
+- **The row:** "Tu gasto real por categoría" in the main column (§7), and in the side one, under it on phones, "Movido no es gasto", the gateways' insight tile and "Tus reglas".
+- **"Tu gasto real por categoría"** (`card`): its title over "$24,4M en el trimestre, de mayor a menor." ("en agosto" for a month; "No hubo gasto real en este periodo." without any). One row per category of real spending, the largest first, each with a `--divider` line above it: the category's 44px chip, neutral (`--surface-muted`, ink icon); its name (Body 700) and what it took on the right (Outfit 500 16px; a million or more compact and less exact, as the account card's boxes write it); an 8px bar on `--ring-track`, filled from `--spending` at 60% to `--spending` as far as its share of the largest category, a sliver at least; and, in Meta `--text-muted`, "19% de tu gasto real · 3 movimientos · PSE": its share ("menos del 1%" for a sliver), its count and the channels its money went out through, the most used first. The rows open nothing until the category's detail exists (6.8b).
+- **"Movido no es gasto"** (`card`): "Salieron $29,8M y volvieron $2,8M. Todo sigue siendo tuyo." (only what happened, or "No moviste plata entre tus cuentas, tu inversión ni tus tarjetas."), then one row per place money only went, the most first: the 44px chip in the moved tone, "A tu inversión", "A tus cuentas" or "Pago de tarjetas", the amount with its sign in moved's text color ("−$22,0M"), and a `--moved` bar against the most; then "Volvió de tus cuentas" with "+$2,8M" and "Plata tuya que regresó: no es ingreso." in Meta, without a bar.
+- **Payments through gateways:** when some went out, the insight tile (above) on the attention surface, in its insight's words: "6 pagos sin tienda identificada", "$600.000" and the way to name them in Movimientos.
+- **"Tus reglas"** (`card`): "Lo que respondiste en la revisión o corregiste en Movimientos, aplicado a todos tus extractos.", then each of the user's rules, the bank's texts in alphabetical order and then the numbers: the 44px neutral chip with `tag`, the text as folded ("TRANSF A ANA LUCIA MAR") or the number ("ref ••• 1270") in Meta `--text-muted`, and, after a `chevron-right`, what it says in Caption 700: "Si sale: Entre tus cuentas · movido", "Si entra: Consignaciones · ingreso", a number's without a direction. Without rules, "Aún no tienes reglas. Las crean tus respuestas en la revisión y tus correcciones en Movimientos." v8's "Ver y editar tus reglas" waits for a page that edits them (decided with the human).
+
 ### Coverage timeline
 
 The months the user has, on the upload screen, the upload result and the profile: one rounded segment per month (8px tall, 6px apart) with the month below (Meta), and a legend:
@@ -703,6 +715,7 @@ The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box,
 - Items: icon 22px above a 14px label, min-width 86px, padding 10px 14px, `--radius-md`.
 - Active item: `--primary-soft-2` background, `--primary` text and icon, weight 700, `aria-current="page"`.
 - Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil. Each one appears when its screen exists. An item stands for the pages under it, and Resumen for the quick review too, as `v8-02` shows.
+- On phones (`NavDock`, since Phase 6.8a brought the fifth item): the bar sits 8px from each side, padding 6, and its items share its width, 2px apart, each label 11px with tight letter-spacing, so five fit at 360px (320px too). From `sm` it is the floating pill above.
 
 ---
 
