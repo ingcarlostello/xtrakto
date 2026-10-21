@@ -1,0 +1,48 @@
+name: Production migrations
+
+# Applies the pending migrations to production's database (Neon's `main`) as
+# the owner role, on every push to `main` and on demand. Vercel deploys the
+# same push meanwhile, so migrations must stay backward compatible (system
+# design §9). With nothing pending, drizzle-kit applies nothing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One run at a time, and never cancelled halfway: a later push waits.
+concurrency:
+  group: production-migrations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from `packageManager` in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The owner's direct (not pooled) URL with sslmode=verify-full, stored
+      # as a repository secret (docs/deployment.md). Without it, drizzle-kit
+      # would fail with a less helpful message.
+      - name: Apply migrations
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+        run: |
+          if [ -z "$DATABASE_MIGRATION_URL" ]; then
+            echo "::error::The DATABASE_MIGRATION_URL secret is not set"
+            exit 1
+          fi
+          pnpm db:migrate
