@@ -54,12 +54,15 @@ export {
   formatMonthName,
   formatMonthRange,
   formatQuarter,
+  formatShortDay,
   formatShortMonth,
   formatWeekdayInWords,
   monthWeeks,
 } from "./dates/date-display.helpers";
 export {
+  addDaysTo,
   compareLocalDates,
+  daysBetween,
   inferDayMonthDate,
   isLocalDate,
   isWithinPeriod,
@@ -164,11 +167,14 @@ export type {
   StatementFigures,
 } from "./insights/insights.types";
 export { kindTotalsOf } from "./summary/kind-totals.helpers";
-export { summarizeMovements } from "./summary/summary.helpers";
+export { dailyBalances, summarizeMovements } from "./summary/summary.helpers";
 export type {
+  BalanceMovement,
   CategoryMoved,
   CategoryTotal,
   CategoryTotals,
+  DailyBalances,
+  DayBalance,
   DayTotals,
   KindTotals,
   MovementTotal,

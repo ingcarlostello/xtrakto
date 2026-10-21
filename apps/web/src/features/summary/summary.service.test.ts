@@ -178,6 +178,13 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
         spending: total(-2_000_000, 1),
         moved: { out: total(-35_000_000, 1), back: NOTHING },
       },
+      movedByCategory: [
+        {
+          categoryId: "credit_card_payment",
+          out: total(-35_000_000, 1),
+          back: NOTHING,
+        },
+      ],
     });
     // The bank's own: its average balance, and the savings interest alone.
     expect(bankFigures).toEqual([
@@ -285,6 +292,7 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
         spending: total(-8_425_050, 1),
         moved: { out: NOTHING, back: NOTHING },
       },
+      movedByCategory: [],
     });
     expect(bankFigures).toEqual([]);
   });

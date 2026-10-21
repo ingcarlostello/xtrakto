@@ -85,6 +85,10 @@ export const monthWeeks = ({
   );
 };
 
+/** A day on a chart's axis: `"31 jul"`. */
+export const formatShortDay = (date: LocalDate): string =>
+  formatDate(toDate(date), "d MMM");
+
 /** A day in running text, without its year: `"1 de noviembre"`. */
 export const formatDayInWords = (date: LocalDate): string =>
   formatDate(toDate(date), "d 'de' MMMM");
