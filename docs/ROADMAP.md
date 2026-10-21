@@ -198,7 +198,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.7b Your account card
 - [x] 6.7c Balance and real spending, day by day
 - [x] 6.7d Where it went and what to review
-- [ ] 6.7e Interest by month in Movimientos
+- [x] 6.7e Interest by month in Movimientos
 - [ ] 6.8 Categories page _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
@@ -1367,13 +1367,17 @@ Estimated at about 400 to 500 lines, it came out at about 300 added and 90 delet
 
 #### 6.7e Interest by month in Movimientos
 
+Decided with the human when it started (2026-10-20): the footer counts the movements its lines hold ("Mostrando 59 de 312"), so it reaches the subtitle's count, while "Mostrar 30 más" adds lines.
+
 **Tasks**
 
 - In the transactions list, group the daily interest rows into one line per month ("Intereses de septiembre", "30 abonos diarios, agrupados en una línea").
 
 **Done when:** the list, its counts and its pages read right with the grouped rows.
 
-**Commit:** `feat(web): interest by month in the movements list`
+It came out at about 150 lines, in two commits of one pull request: the design rules, and the list.
+
+**Commits:** `docs(rules): interest by month in the movements list`, then `feat(web): interest by month in the movements list`
 
 #### 6.8 Categories page _(added with design v8)_
 

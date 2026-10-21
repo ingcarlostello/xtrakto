@@ -27,6 +27,7 @@ const movement = (position: number, change: number, balance: number) => ({
   amountMinor: amount(change),
   balanceAfterMinor: amount(balance),
   categoryId: null,
+  categoryRuleId: null,
   isPendingReview: false,
 });
 

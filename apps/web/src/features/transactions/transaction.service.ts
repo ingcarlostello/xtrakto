@@ -33,7 +33,7 @@ import { periodDays } from "@/utils/transactions-url.helpers";
 import { meetsPeriod } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { rulesOfMovement } from "./own-rules.helpers";
-import { movementSearchOf } from "./transaction-list.helpers";
+import { movementList, movementSearchOf } from "./transaction-list.helpers";
 import { DEFAULT_CATEGORY_OF_KIND } from "./transaction.constants";
 import type {
   AccountTransactions,
@@ -130,7 +130,8 @@ const periodKinds = async (
 /**
  * The signed-in user's movements that count, newest first, in the account
  * and period the URL asks, or the latest, matching its search when there's
- * one, and the detail of the movement it asks, when it's the account's.
+ * one, in as many lines as the URL asks, each month's daily interest in one
+ * line, and the detail of the movement it asks, when it's the account's.
  * `null` until a movement counts or a statement doesn't reconcile; reading
  * never creates the user's row. The Clerk id must come from the session.
  */
@@ -155,16 +156,13 @@ export const getAccountTransactions = async (
       ...(search === undefined ? {} : { search: movementSearchOf(search) }),
       ...selectionOf(filter),
     };
-    const total = await countCountedMovements(ctx, shown);
-    const { items } = await listTransactions(ctx, {
-      ...shown,
-      limit: request.shown,
-      offset: 0,
-    });
+    // Every movement of the period: a month's interest line adds up all of
+    // its abonos, and each day's balance comes from all of its movements.
+    const { items } = await listTransactions(ctx, { ...shown, offset: 0 });
     return {
       ...located,
-      total,
-      items,
+      total: items.length,
+      list: movementList(items, request.shown),
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
       ...(await periodKinds(ctx, shownPeriod)),

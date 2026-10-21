@@ -108,6 +108,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
       "amountMinor",
       "balanceAfterMinor",
       "categoryId",
+      "categoryRuleId",
       "date",
       "descriptionRaw",
       "id",
@@ -146,6 +147,15 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
     expect(
       pages.flatMap((page) => page.items.map((t) => t.amountMinor)),
     ).toEqual([-5, -4, -3, -2, -1]);
+  });
+
+  it("lists every movement from its offset without a limit", async () => {
+    const every = await withUserContext(app.db, userId, (ctx) =>
+      listTransactions(ctx, { accountId: accountIds[0] ?? "", offset: 1 }),
+    );
+
+    expect(every.hasMore).toBe(false);
+    expect(every.items.map((t) => t.amountMinor)).toEqual([-4, -3, -2, -1]);
   });
 });
 

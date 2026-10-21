@@ -9,7 +9,7 @@ import { MovementDetailColumn } from "@/features/transactions/components/Movemen
 import { TransactionList } from "@/features/transactions/components/TransactionList";
 import { UnreconciledNotice } from "@/features/transactions/components/Unreconciled";
 import { listHrefOf } from "@/features/transactions/period-selector.helpers";
-import { totalText } from "@/features/transactions/transaction-list.helpers";
+import { listSubtitle } from "@/features/transactions/transaction-list.helpers";
 import { TRANSACTIONS_COPY as COPY } from "@/features/transactions/transaction.constants";
 import { transactionsSearchSchema } from "@/features/transactions/transaction.schemas";
 import { getAccountTransactions } from "@/features/transactions/transaction.service";
@@ -53,10 +53,7 @@ export default async function TransactionsPage({
   if (!transactions) return <NoTransactions />;
   return (
     <>
-      <PageHeader
-        title={COPY.title}
-        subtitle={totalText(transactions.total, transactions.search)}
-      />
+      <PageHeader title={COPY.title} subtitle={listSubtitle(transactions)} />
       <KindLegend />
       <PeriodControls
         choices={transactions}

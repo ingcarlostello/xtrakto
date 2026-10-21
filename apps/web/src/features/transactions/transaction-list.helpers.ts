@@ -5,10 +5,13 @@ import {
   channelOf,
   CURRENCY,
   formatAmount,
+  formatMonthName,
   formatSignedAmount,
   formatWeekdayInWords,
   type LocalDate,
   parseTypedAmount,
+  SAVINGS_INTEREST_RULE_ID,
+  sumAmounts,
 } from "@xtrakto/core";
 import type { MovementSearch, TransactionListItem } from "@xtrakto/db";
 import { countText, formatCount } from "@/utils/count-text.utils";
@@ -24,8 +27,11 @@ import {
   TRANSACTIONS_COPY as COPY,
 } from "./transaction.constants";
 import type {
+  AccountTransactions,
   DescriptionView,
   DetailLinks,
+  MovementLine,
+  MovementList,
   MovementTags,
   NextStep,
   TransactionDay,
@@ -37,33 +43,131 @@ const CURRENCY_SHOWN = CURRENCY.COP;
 type OpenDay = {
   date: LocalDate;
   balanceMinor: AmountMinor | null;
-  items: TransactionListItem[];
+  lines: MovementLine[];
 };
 
-/**
- * The list's movements by day, in their order. A day's balance is the first
- * one printed among its movements, its last one in the bank's order: only a
- * statement with balances prints them.
- */
-export const groupByDay = (
+// The balance each day closed with: the first one printed among its
+// movements, its last one in the bank's order. Only a statement with
+// balances prints them.
+const closingBalances = (
   items: readonly TransactionListItem[],
-): readonly TransactionDay[] => {
+): ReadonlyMap<LocalDate, AmountMinor> => {
+  const balances = new Map<LocalDate, AmountMinor>();
+  for (const { date, balanceAfterMinor } of items)
+    if (balanceAfterMinor !== null && !balances.has(date))
+      balances.set(date, balanceAfterMinor);
+  return balances;
+};
+
+const dateOf = (line: MovementLine): LocalDate =>
+  line.kind === "movement" ? line.item.date : line.date;
+
+// Lines by day, in their order, each day with the balance it closed with.
+const daysOf = (
+  lines: readonly MovementLine[],
+  balances: ReadonlyMap<LocalDate, AmountMinor>,
+): TransactionDay[] => {
   const days: OpenDay[] = [];
-  for (const item of items) {
+  for (const line of lines) {
     const day = days.at(-1);
-    if (day?.date === item.date) {
-      day.items.push(item);
-      day.balanceMinor ??= item.balanceAfterMinor;
-    } else {
+    if (day?.date === dateOf(line)) day.lines.push(line);
+    else
       days.push({
-        date: item.date,
-        balanceMinor: item.balanceAfterMinor,
-        items: [item],
+        date: dateOf(line),
+        balanceMinor: balances.get(dateOf(line)) ?? null,
+        lines: [line],
       });
-    }
   }
   return days;
 };
+
+/** Movements by day, each one a line, in their order, as a statement printed them. */
+export const groupByDay = (
+  items: readonly TransactionListItem[],
+): readonly TransactionDay[] =>
+  daysOf(
+    items.map((item) => ({ kind: "movement", item })),
+    closingBalances(items),
+  );
+
+const isDailyInterest = ({
+  categoryRuleId,
+  categoryId,
+}: TransactionListItem): boolean =>
+  categoryRuleId === SAVINGS_INTEREST_RULE_ID && categoryId === "interest";
+
+// Each month's daily interest, in the list's order: "2026-09" → its abonos.
+const interestByMonth = (items: readonly TransactionListItem[]) => {
+  const months = new Map<string, TransactionListItem[]>();
+  for (const item of items.filter(isDailyInterest)) {
+    const month = item.date.slice(0, 7);
+    months.set(month, [...(months.get(month) ?? []), item]);
+  }
+  return months;
+};
+
+/**
+ * The list's lines, in its order: each movement, but a month's daily
+ * interest in one line, where its newest abono goes, when it has two or
+ * more (design-system.md §10).
+ */
+export const movementLines = (
+  items: readonly TransactionListItem[],
+): MovementLine[] => {
+  const months = interestByMonth(items);
+  return items.flatMap((item): MovementLine[] => {
+    const abonos = isDailyInterest(item)
+      ? months.get(item.date.slice(0, 7))
+      : undefined;
+    if (abonos === undefined || abonos.length < 2)
+      return [{ kind: "movement", item }];
+    if (abonos[0] !== item) return [];
+    return [
+      {
+        kind: "interest",
+        date: item.date,
+        descriptionRaw: item.descriptionRaw,
+        amountMinor: sumAmounts(abonos.map(({ amountMinor }) => amountMinor)),
+        count: abonos.length,
+      },
+    ];
+  });
+};
+
+// How many movements a line holds.
+const movementsIn = (line: MovementLine): number =>
+  line.kind === "interest" ? line.count : 1;
+
+/**
+ * The newest `shown` lines of a period's movements, by day, each day with
+ * the balance it closed with among all of them, and what they add up to.
+ */
+export const movementList = (
+  items: readonly TransactionListItem[],
+  shown: number,
+): MovementList => {
+  const lines = movementLines(items);
+  const shownLines = lines.slice(0, shown);
+  const grouped = lines.filter(({ kind }) => kind === "interest");
+  return {
+    days: daysOf(shownLines, closingBalances(items)),
+    shownLines: shownLines.length,
+    shownMovements: shownLines.reduce((sum, l) => sum + movementsIn(l), 0),
+    lineCount: lines.length,
+    groupedInterest: grouped.reduce((sum, l) => sum + movementsIn(l), 0),
+  };
+};
+
+/** `"Intereses de septiembre"`. */
+export const interestTitle = (date: LocalDate): string =>
+  `${COPY.interest.title} ${formatMonthName({
+    year: Number(date.slice(0, 4)),
+    month: Number(date.slice(5, 7)),
+  }).toLowerCase()}`;
+
+/** `"30 abonos diarios, agrupados en una línea."`. */
+export const interestNote = (count: number): string =>
+  `${countText(count, COPY.interest.abonos)}, ${COPY.interest.inOneLine}`;
 
 /** `"Miércoles 30 de septiembre"`, with its year when it isn't this one. */
 export const dayHeading = (date: LocalDate, currentYear: string): string =>
@@ -107,11 +211,37 @@ export const movementTags = (
 export const amountText = (amount: AmountMinor): string =>
   formatSignedAmount(amount, CURRENCY_SHOWN);
 
-/** `"312 movimientos del banco."`, or how many match a search. */
-export const totalText = (total: number, search?: string): string =>
-  search === undefined
-    ? `${countText(total, COPY.movements)} ${COPY.ofTheBank}`
-    : `${countText(total, COPY.search.matches)} ${COPY.search.with} “${search}”.`;
+/**
+ * `"312 movimientos del banco."`, or how many match a search; then, when the
+ * list groups the daily interest, `"Los 90 abonos diarios de intereses se
+ * ven agrupados por mes."`.
+ */
+export const totalText = (
+  total: number,
+  {
+    search,
+    groupedInterest = 0,
+  }: { search?: string; groupedInterest?: number } = {},
+): string => {
+  const count =
+    search === undefined
+      ? `${countText(total, COPY.movements)} ${COPY.ofTheBank}`
+      : `${countText(total, COPY.search.matches)} ${COPY.search.with} “${search}”.`;
+  return groupedInterest === 0
+    ? count
+    : `${count} ${COPY.interest.groupedBefore} ${formatCount(groupedInterest)} ${COPY.interest.groupedAfter}`;
+};
+
+/** The page's subtitle: how many movements there are or match, and the grouped abonos. */
+export const listSubtitle = ({
+  total,
+  search,
+  list,
+}: Pick<AccountTransactions, "total" | "search" | "list">): string =>
+  totalText(total, {
+    ...(search === undefined ? {} : { search }),
+    groupedInterest: list.groupedInterest,
+  });
 
 /** What a search looks for: its text, and the amount it is when it reads as one. */
 export const movementSearchOf = (text: string): MovementSearch => {

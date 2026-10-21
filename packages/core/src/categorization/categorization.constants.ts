@@ -14,3 +14,10 @@ export const NO_DESCRIPTION = "0";
  * bank's fees: it tells the tax apart, whatever category it has now.
  */
 export const GMF_TAX_RULE_ID: CategorizationRuleId = "gmf_tax";
+
+/**
+ * The table's rule for the savings' daily interest ("ABONO INTERESES
+ * AHORROS"), whose rows the movements list groups by month.
+ */
+export const SAVINGS_INTEREST_RULE_ID: CategorizationRuleId =
+  "savings_interest";

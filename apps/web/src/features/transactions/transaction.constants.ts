@@ -61,6 +61,16 @@ export const TRANSACTIONS_COPY = {
   emptyPeriod: "No hay movimientos en este periodo.",
   dayBalance: "Saldo del día",
   noDescription: "Sin descripción del banco",
+  // A month's daily interest in one line: "Intereses de septiembre" with
+  // "30 abonos diarios, agrupados en una línea.", and the page's subtitle,
+  // "Los 90 abonos diarios de intereses se ven agrupados por mes."
+  interest: {
+    title: "Intereses de",
+    abonos: { one: "abono diario", other: "abonos diarios" },
+    inOneLine: "agrupados en una línea.",
+    groupedBefore: "Los",
+    groupedAfter: "abonos diarios de intereses se ven agrupados por mes.",
+  },
   // The kinds (docs/ui/v8-03): the tiles, the filters and an empty filter.
   kinds: {
     income: "Ingresos",

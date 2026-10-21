@@ -9,6 +9,7 @@ import {
   breaksTitle,
   FIRST_BREAK_ANCHOR,
 } from "../balance-breaks.helpers";
+import { groupByDay } from "../transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "../transaction.constants";
 import { MovementDays } from "./MovementDays";
 
@@ -69,8 +70,9 @@ export function StatementBreaksView({ breaks, currentYear }: ViewProps) {
           </h2>
           <CardDescription>{COPY.listDetail}</CardDescription>
         </CardHeader>
+        {/* Every row it printed, its daily interest too, to find where it breaks. */}
         <MovementDays
-          items={breaks.movements}
+          days={groupByDay(breaks.movements)}
           currentYear={currentYear}
           isCounted={false}
           marks={breakMarks(breaks)}

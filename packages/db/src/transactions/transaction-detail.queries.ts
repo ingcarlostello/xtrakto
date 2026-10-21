@@ -1,9 +1,4 @@
-import type {
-  CategorizationRuleId,
-  CategorySource,
-  Period,
-  ReferenceKind,
-} from "@xtrakto/core";
+import type { CategorySource, Period, ReferenceKind } from "@xtrakto/core";
 import { and, eq } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
 import { statements } from "../statements/statement.schemas";
@@ -28,8 +23,6 @@ export type MovementDetail = TransactionListItem & {
   /** The last 4 digits of the number it went to or came from, when it had one. */
   readonly referenceLast4: string | null;
   readonly categorySource: CategorySource | null;
-  /** The table's rule that matched it, kept when the user decides (ADR 0025). */
-  readonly categoryRuleId: CategorizationRuleId | null;
   readonly statement: { readonly formatId: string; readonly period: Period };
 };
 
@@ -52,7 +45,6 @@ export const findMovementDetail = async (
       referenceKind: transactions.referenceKind,
       referenceLast4: transactions.referenceLast4,
       categorySource: transactions.categorySource,
-      categoryRuleId: transactions.categoryRuleId,
       formatId: statements.formatId,
       from: statements.periodFrom,
       to: statements.periodTo,
