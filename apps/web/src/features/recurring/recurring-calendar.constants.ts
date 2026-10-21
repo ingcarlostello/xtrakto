@@ -1,5 +1,3 @@
-import type { ChannelId } from "@xtrakto/core";
-
 // This month's calendar on "Pagos fijos" (docs/ui/v8-04): when each fixed
 // payment goes out, and what hasn't appeared yet.
 export const RECURRING_CALENDAR_COPY = {
@@ -23,16 +21,4 @@ export const RECURRING_CALENDAR_COPY = {
   by: "por",
   or: "o",
   nothingPending: "Nada pendiente hasta hoy.",
-  // Each channel as running text writes it.
-  channels: {
-    pse: "PSE",
-    bre_b_key: "llave Bre-B",
-    qr: "QR",
-    nequi: "Nequi",
-    atm: "cajero",
-    debit_card: "débito",
-    virtual_branch: "sucursal virtual",
-    transfer: "transferencia",
-    banking_agent: "corresponsal",
-  } satisfies Record<ChannelId, string>,
 } as const;

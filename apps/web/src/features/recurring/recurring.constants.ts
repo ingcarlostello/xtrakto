@@ -10,8 +10,8 @@ export const RECURRING_COPY = {
     one: "pago que se repite pero no es gasto",
     other: "pagos que se repiten pero no son gasto",
   },
-  // The tiles above the list: what the fixed payments take, and the one
-  // that rose the most.
+  // The tiles above the list: what the fixed payments take; the one that
+  // rose the most speaks with its insight's words (core).
   tiles: {
     label: "Lo que pagas",
     monthly: "Pagas al mes",
@@ -21,12 +21,6 @@ export const RECURRING_COPY = {
     yearlyOne: "Lo que suma este pago en 12 meses.",
     yearlyOther: "Lo que suman estos",
     yearlyOtherEnd: "pagos en 12 meses.",
-    // "Energía subió 12%", "De $162.300 en julio a $182.000 en septiembre."
-    rose: "subió",
-    from: "De",
-    in: "en",
-    to: "a",
-    check: "Revisa tu consumo o la tarifa.",
   },
   listTitle: "Tus pagos fijos",
   sorted: "Ordenados por monto.",
