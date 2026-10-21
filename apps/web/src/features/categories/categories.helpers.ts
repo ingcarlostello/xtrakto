@@ -35,8 +35,8 @@ import type {
 const capitalized = (text: string): string =>
   `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
-// A bar's length against the largest, never less than a sliver to see.
-const barOf = (amount: number, largest: number): number =>
+/** A bar's length against the largest, never less than a sliver to see. */
+export const barOf = (amount: number, largest: number): number =>
   Math.max(1, percentOf(amount, largest));
 
 /** "$24,4M en el trimestre, de mayor a menor.", or that nothing was spent. */

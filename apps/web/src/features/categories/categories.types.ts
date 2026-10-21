@@ -1,10 +1,17 @@
 import type {
+  AmountMinor,
   CategoryId,
+  LocalDate,
   PeriodSummary,
   UserCategoryRule,
 } from "@xtrakto/core";
 import type { PeriodMovement, TransactionListItem } from "@xtrakto/db";
 import type { InsightTileProps } from "@/components/insight-tile/InsightTile";
+import type {
+  ChartEvent,
+  ChartPoint,
+  ChartTick,
+} from "@/components/line-chart/line-chart.types";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { transactionsHref } from "@/utils/transactions-url.helpers";
 
@@ -128,6 +135,52 @@ export type LatestFooter = {
   readonly status: string;
   readonly label: string;
   readonly href: ReturnType<typeof transactionsHref>;
+};
+
+/** A week of a category's period: seven days from its first, the last one shorter. */
+export type CategoryWeek = {
+  readonly from: LocalDate;
+  readonly to: LocalDate;
+  /** What the category took in it, without its sign. */
+  readonly amountMinor: AmountMinor;
+  readonly count: number;
+};
+
+/** "Semana a semana" (docs/ui/v8-06), as its card draws it. */
+export type WeeklyChartView = {
+  /** The line through each week, and the area under it, on a 100 × 100 plot. */
+  readonly line: string;
+  readonly area: string;
+  /** Each week's dot. */
+  readonly points: readonly ChartPoint[];
+  /** "$400 mil" down to "$0", evenly spaced. */
+  readonly yTicks: readonly ChartTick[];
+  /** "1 jul", "1 ago", "1 sep" and "30 sep"; a month's weeks. */
+  readonly xTicks: readonly ChartTick[];
+  /** The week that stands out, when one does. */
+  readonly event?: ChartEvent;
+  /** What the chart says, for screen readers. */
+  readonly label: string;
+};
+
+/** A place of "Dónde más": who was paid, and what it took. */
+export type PlaceRow = {
+  readonly key: string;
+  /** "APP DOMICILIOS", "Nequi ••• 1270". */
+  readonly title: string;
+  /** "$1,5M", "$186.000". */
+  readonly amount: string;
+  /** Its bar, as a share of the place that took the most, in percent. */
+  readonly barPercent: number;
+  /** "22 movimientos · COMPRA EN APP DOMICILIOS · también PAGO QR APP DOMICIL". */
+  readonly note: string;
+};
+
+/** "Dónde más" (docs/ui/v8-06): the places the category's money went, the most first. */
+export type PlacesView = {
+  readonly rows: readonly PlaceRow[];
+  /** "Y 3 lugares más: $45 mil.", when not every place shows. */
+  readonly more?: string;
 };
 
 /** "Ajustes de esta categoría": what it counts as and the user's rules for it. */

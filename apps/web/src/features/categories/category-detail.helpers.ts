@@ -56,8 +56,8 @@ export const detailSubtitle = (period: MovementPeriod): string =>
 
 type Movements = Pick<CategoryDetail, "categoryId" | "movements">;
 
-// The category's movements in the period, the oldest first.
-const ofCategory = ({ categoryId, movements }: Movements) =>
+/** The category's movements in the period, the oldest first. */
+export const categoryMovements = ({ categoryId, movements }: Movements) =>
   movements.filter((movement) => movement.categoryId === categoryId);
 
 const totalOf = (movements: readonly PeriodMovement[]): AmountMinor =>
@@ -130,7 +130,7 @@ export const monthBoxes = (
 ): readonly MonthBox[] => {
   const { period, movements } = detail;
   if (period.kind === "month") return [];
-  const mine = ofCategory(detail);
+  const mine = categoryMovements(detail);
   const months = monthsOf(period)
     .filter(({ key }) => movements.some(({ date }) => date.startsWith(key)))
     .map(({ month, key }) => {
@@ -161,7 +161,7 @@ export const categoryTiles = (
     "period" | "summary" | "categoryId" | "movements"
   >,
 ): CategoryTiles | undefined => {
-  const mine = ofCategory(detail);
+  const mine = categoryMovements(detail);
   if (mine.length === 0) return undefined;
   return {
     total: totalFigure(detail, mine),
@@ -172,7 +172,7 @@ export const categoryTiles = (
 
 /** "Los más recientes primero.", or that the category took nothing. */
 export const latestSubtitle = (detail: Movements): string =>
-  ofCategory(detail).length === 0
+  categoryMovements(detail).length === 0
     ? `${COPY.detail.noneIn} «${categoryLabel(detail.categoryId)}» ${COPY.detail.inPeriod}`
     : COPY.latest.subtitle;
 
@@ -217,7 +217,7 @@ export const latestRows = (
 export const latestFooter = (
   detail: Links & Pick<CategoryDetail, "latest" | "movements">,
 ): LatestFooter | undefined => {
-  const total = ofCategory(detail).length;
+  const total = categoryMovements(detail).length;
   if (total === 0) return undefined;
   const { shown, all } = COPY.latest;
   return {
