@@ -1,4 +1,4 @@
-import type { CalendarQuarter } from "@xtrakto/core";
+import type { CalendarQuarter, CategoryId } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 
@@ -33,7 +33,12 @@ export type PeriodLink = {
 
 /** A link of a page with period controls, which keeps its own filters. */
 export type PeriodHref = {
-  readonly pathname: "/" | "/transactions" | "/recurring" | "/categories";
+  readonly pathname:
+    | "/"
+    | "/transactions"
+    | "/recurring"
+    | "/categories"
+    | `/categories/${CategoryId}`;
   readonly query: Readonly<Record<string, string | number>>;
 };
 
