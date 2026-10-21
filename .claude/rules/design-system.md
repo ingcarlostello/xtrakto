@@ -389,7 +389,7 @@ As Phase 6.7a builds `v8-01` at `/`, for the account and period in the URL:
   - **Movido**, its ring the share of what went out to the user's own: "El 55% de lo que salió: a tu inversión y a tus tarjetas. Además volvieron $2,8M."; "Ver a dónde se movió".
   - Each link opens Movimientos on the period with its kind's filter. A kind without movements says so ("No hubo gasto real en este periodo.") over an empty ring.
 - Before any movement counts, the page keeps its empty state (§14), or the way to a statement that doesn't reconcile.
-- Beside the glance, "Tu cuenta" (6.7b, account card above); under the glance, in its two thirds, the day-by-day chart (6.7c, chart card above), after "Tu cuenta" on phones. "Dónde se fue más" (6.7d) comes next, beside the chart; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
+- Beside the glance, "Tu cuenta" (6.7b, account card above); under the glance, in its two thirds, the day-by-day chart (6.7c, chart card above), after "Tu cuenta" on phones; and beside the chart, "Dónde se fue más" (6.7d, insight tile above), after the chart on phones. From `lg` the chart's card is as tall as "Dónde se fue más", as v8 draws it. "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
 
 ### Kind total tile
 
@@ -443,6 +443,7 @@ On the quick review it counts the quarter's groups and their movements, answered
 - `--surface-card`, `--radius-md`, padding 16, gap 8.
 - Icon chip 44px `--surface-muted`; title (Manrope 700 14px); Amount L; note (12px muted).
 - **Attention variant:** `#FFF6EF` background, white icon chip, 9px orange dot on the chip, and an explicit verb in the title or note ("Revisa si tu cuenta es exenta").
+- **As Phase 6.7d builds it** ("Dónde se fue más", `WhereItWent`, on the summary): "Dónde se fue más" (Section title) with "Lo que más pesa en tu gasto real.", then the tiles two by two at every width, 16px apart. Each is a `tile` card with its category's icon in the chip, the category as its title (`h3`), what it took (Amount L, ink; a million or more compact and less exact, as the account card's boxes write it) and its note (Meta `--text-muted`). They are the three categories that weigh most in real spending, the largest first, then "Costos del banco · revisar" on the attention surface when the bank charged the 4x1000; without the 4x1000, the four that weigh most. A category's note says its share ("46% de tu gasto real.", "Menos del 1% de tu gasto real.") and what we know of it: what its bank text doesn't say, in its insight's words ("3 retiros de efectivo. No sabemos en qué se usó."; a gateway's payments, on the attention surface as "Pasarelas de pago · revisar"), its fixed payments paid in the period and their days ("1 cuota, entre el 2 y el 3 de cada mes.", "2 pagos fijos, entre el 5 y el 12 de cada mes."), or how many payments it took and their channels, the most used first ("5 pagos por Nequi, QR y transferencia."). The bank's costs speak with the 4x1000's insight: "Te cobraron 4x1000 del 10 al 18 de julio, en 9 cobros. Revisa si tu cuenta es exenta." No tiles without real spending; nothing in them takes the focus.
 
 ### Transaction row ("Tu extracto, traducido")
 

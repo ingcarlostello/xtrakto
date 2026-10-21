@@ -1,24 +1,12 @@
 import "server-only";
-import { findRecurringPayments, monthPeriod, type Period } from "@xtrakto/core";
+import { findRecurringPayments } from "@xtrakto/core";
 import { findUserId, listSummaryMovements, withUserContext } from "@xtrakto/db";
 import type { PeriodRequest } from "@/components/period-controls/period-controls.types";
 import { locateAccountPeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
-import {
-  calendarMonthOf,
-  monthBefore,
-  splitByMonth,
-} from "./recurring.helpers";
+import { calendarMonthOf, historyOf, splitByMonth } from "./recurring.helpers";
 import type { AccountRecurring } from "./recurring.types";
-
-// Payments are looked for in the year that ends with the period.
-const HISTORY_MONTHS = 12;
-
-const historyOf = ({ to }: Period): Period => ({
-  from: monthPeriod(monthBefore(calendarMonthOf(to), HISTORY_MONTHS - 1)).from,
-  to,
-});
 
 /**
  * The signed-in user's payments that repeat, in the account and period the

@@ -228,8 +228,12 @@ export function DayByDayChart({ summary }: { summary: AccountSummary }) {
   const chart = dayByDayChart(summary);
   if (!chart) return null;
   return (
-    <section aria-labelledby="day-by-day">
-      <Card variant="card" className="gap-5">
+    <section
+      aria-labelledby="day-by-day"
+      className="flex flex-col lg:self-stretch"
+    >
+      {/* As tall as "Dónde se fue más" beside it, as v8 draws it. */}
+      <Card variant="card" className="flex-1 gap-5">
         <ChartHeader chart={chart} />
         <Plot chart={chart} />
       </Card>

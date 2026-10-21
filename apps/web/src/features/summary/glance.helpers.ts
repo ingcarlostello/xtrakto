@@ -7,6 +7,7 @@ import {
 } from "@xtrakto/core";
 import type { PeriodLink } from "@/components/period-controls/period-controls.types";
 import { countText } from "@/utils/count-text.utils";
+import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
 import {
   type MovementFilter,
@@ -24,18 +25,13 @@ const PERCENT = 100;
 // A note names the categories that weigh most, up to four (v8-01).
 const NAMED_CATEGORIES = 4;
 
-// What part of a whole some money is, in whole percent; 0 of nothing.
-const percentOf = (part: number, whole: number): number =>
+/** What part of a whole some money is, in whole percent; 0 of nothing. */
+export const percentOf = (part: number, whole: number): number =>
   whole === 0 ? 0 : Math.round((Math.abs(part) * PERCENT) / Math.abs(whole));
 
-const labelOf = (categoryId: CategoryId): string =>
+/** A category's name: "Pagos a personas". */
+export const labelOf = (categoryId: CategoryId): string =>
   CATEGORIES.find(({ id }) => id === categoryId)?.labelEs ?? categoryId;
-
-// "a, b y c".
-const joined = (items: readonly string[]): string =>
-  items.length < 2
-    ? items.join("")
-    : `${items.slice(0, -1).join(", ")} ${COPY.and} ${items.at(-1)}`;
 
 // "Julio a septiembre de 2026", "Agosto de 2026".
 const periodWords = (period: MovementPeriod): string => {

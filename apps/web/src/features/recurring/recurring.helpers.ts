@@ -2,6 +2,7 @@ import {
   type CalendarMonth,
   type LocalDate,
   monthPeriod,
+  type Period,
   type RecurringMonth,
   type RecurringPayment,
   type RecurringPayments,
@@ -9,6 +10,8 @@ import {
 import type { PagePayments } from "./recurring.types";
 
 const MONTHS_A_YEAR = 12;
+// Payments are looked for in the year that ends with the period.
+const HISTORY_MONTHS = 12;
 
 export const isSameMonth = (a: CalendarMonth, b: CalendarMonth): boolean =>
   a.year === b.year && a.month === b.month;
@@ -29,6 +32,12 @@ export const monthBefore = (
 export const calendarMonthOf = (date: LocalDate): CalendarMonth => ({
   year: Number(date.slice(0, 4)),
   month: Number(date.slice(5, 7)),
+});
+
+/** The year that ends with a period, where its payments that repeat are found. */
+export const historyOf = ({ to }: Period): Period => ({
+  from: monthPeriod(monthBefore(calendarMonthOf(to), HISTORY_MONTHS - 1)).from,
+  to,
 });
 
 /** What a payment added up to in a month, when it was paid in it. */

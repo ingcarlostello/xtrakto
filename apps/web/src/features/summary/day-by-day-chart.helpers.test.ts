@@ -42,12 +42,15 @@ const summaryOf = (
     balanceAfterMinor:
       balance === null ? null : amountMinorSchema.parse(balance),
   }));
+  // The chart reads none of the movements' texts or fixed payments.
   return {
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
     period,
+    movements: [],
     summary: summarizeMovements(movements),
+    fixedPayments: [],
     balance: null,
     balances: dailyBalances(movements),
     bankFigures: [],

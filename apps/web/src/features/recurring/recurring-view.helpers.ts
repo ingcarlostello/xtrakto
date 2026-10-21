@@ -10,15 +10,19 @@ import {
   formatMonthName,
   formatShortMonth,
   formatSignedAmount,
+  insightText,
   isAmountMinor,
   type RecurringPayment,
   type RecurringPayments,
+  recurringPaymentTitle,
+  risenRecurringInsights,
   sumAmounts,
 } from "@xtrakto/core";
 import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
 import type { HrefOf } from "@/components/period-controls/period-controls.types";
 import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
+import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
 import {
   type RecurringFilter,
@@ -34,7 +38,6 @@ import type {
   RecurringView,
 } from "./recurring.types";
 
-const DOTS = "•••";
 const MONTHS_A_YEAR = 12;
 
 const CHANNEL_LABELS: ReadonlyMap<string, string> = new Map(
@@ -45,30 +48,11 @@ const CHANNEL_LABELS: ReadonlyMap<string, string> = new Map(
 export const monthWord = (month: CalendarMonth): string =>
   formatMonthName(month).toLowerCase();
 
-/** `"julio, agosto y septiembre"`, or with another word: `"transferencia o PSE"`. */
-export const joined = (
-  items: readonly string[],
-  conjunction: string = COPY.and,
-): string =>
-  items.length < 2
-    ? items.join("")
-    : `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
-
 // What some money adds up to, without its direction: "$1.540.000".
 const withoutSign = (amount: AmountMinor): string => {
   const size = Math.abs(amount);
   return formatAmount(isAmountMinor(size) ? size : amount, CURRENCY.COP);
 };
-
-/** Who was paid, or the number paid by its channel: "Nequi ••• 1270". */
-export const paymentTitle = ({
-  label,
-  referenceLast4,
-  channels,
-}: RecurringPayment): string =>
-  referenceLast4 === null
-    ? label
-    : `${CHANNEL_LABELS.get(channels[0] ?? "") ?? label} ${DOTS} ${referenceLast4}`;
 
 /** "Encontramos 7 gastos fijos y 2 pagos que se repiten pero no son gasto." */
 export const foundText = ({
@@ -219,7 +203,7 @@ export const rowView = (
   return {
     key: `${payment.label}-${payment.referenceLast4 ?? ""}-${payment.categoryId}`,
     categoryId: payment.categoryId,
-    title: paymentTitle(payment),
+    title: recurringPaymentTitle(payment),
     bankText,
     ...(others.length > 0
       ? {
@@ -246,29 +230,20 @@ const yearlyCaption = (count: number): string =>
     ? COPY.tiles.yearlyOne
     : `${COPY.tiles.yearlyOther} ${formatCount(count)} ${COPY.tiles.yearlyOtherEnd}`;
 
-// The payment that rose the most, by its percent, then by its money: from
-// its first month to its last, as its trend measures it.
+// The payment that rose the most (`risenRecurringInsights`), in its
+// insight's words, with the rise of its last month.
 const roseTile = (
   spending: readonly RecurringPayment[],
 ): RecurringTile | undefined => {
-  const [most] = spending
-    .flatMap((payment) => {
-      const [first] = payment.months;
-      const last = payment.months.at(-1);
-      if (payment.trend.kind !== "rose" || !first || !last) return [];
-      const rise = Math.abs(last.amountMinor) - Math.abs(first.amountMinor);
-      return [{ payment, percent: payment.trend.percent, first, last, rise }];
-    })
-    .sort((a, b) => b.percent - a.percent || b.rise - a.rise);
+  const [most] = risenRecurringInsights(spending);
   if (most === undefined) return undefined;
-  const { payment, percent, first, last, rise } = most;
-  const { tiles } = COPY;
+  const { title, note } = insightText(most);
   return {
     kind: "rose",
-    categoryId: payment.categoryId,
-    label: `${paymentTitle(payment)} ${tiles.rose} ${percent}%`,
-    amount: formatSignedAmount(amountMinorSchema.parse(rise), CURRENCY.COP),
-    caption: `${tiles.from} ${withoutSign(first.amountMinor)} ${tiles.in} ${monthWord(first.month)} ${tiles.to} ${withoutSign(last.amountMinor)} ${tiles.in} ${monthWord(last.month)}. ${tiles.check}`,
+    categoryId: most.payment.categoryId,
+    label: title,
+    amount: formatSignedAmount(most.riseMinor, CURRENCY.COP),
+    caption: note,
   };
 };
 

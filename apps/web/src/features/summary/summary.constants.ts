@@ -96,9 +96,29 @@ export const SUMMARY_COPY = {
     // "Tu gasto real llegó a $1,5M el 7 de agosto."
     spendingReached: "Tu gasto real llegó a",
   },
+  // "Dónde se fue más": the categories that weigh most in real spending,
+  // and what needs a look.
+  where: {
+    title: "Dónde se fue más",
+    subtitle: "Lo que más pesa en tu gasto real.",
+    // "Costos del banco · revisar".
+    check: "revisar",
+    // "19% de tu gasto real.", "Menos del 1% de tu gasto real."
+    ofSpending: "de tu gasto real.",
+    lessThan: "Menos del",
+    // "1 cuota, entre el 1 y el 4 de cada mes.", "2 pagos fijos, el día 5 de cada mes."
+    installments: { one: "cuota", other: "cuotas" },
+    fixed: { one: "pago fijo", other: "pagos fijos" },
+    onDay: "el día",
+    between: "entre el",
+    andThe: "y el",
+    eachMonth: "de cada mes",
+    // "58 pagos por Nequi, QR y transferencia."
+    payments: { one: "pago", other: "pagos" },
+    by: "por",
+  },
   // "El 85%".
   the: "El",
-  and: "y",
   // Income of a kind without a noun of its own.
   anyIncome: { one: "ingreso", other: "ingresos" },
 } as const;

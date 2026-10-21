@@ -12,6 +12,7 @@ import { PendingReviewBanner } from "@/features/review/components/PendingReviewB
 import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
 import { GlanceSection } from "@/features/summary/components/GlanceSection";
+import { WhereItWent } from "@/features/summary/components/WhereItWent";
 import { SUMMARY_COPY } from "@/features/summary/summary.constants";
 import { getSummary } from "@/features/summary/summary.service";
 import { UnreconciledEmpty } from "@/features/transactions/components/Unreconciled";
@@ -57,9 +58,10 @@ async function NoSummary({ clerkUserId }: { clerkUserId: string }) {
 }
 
 // docs/ui/v8-01: an account's quarter, or one of its months, at a glance
-// beside the account's card and over its balance and real spending day by
-// day, under the color legend and the period controls, with the review
-// banner while groups wait. The account and the period live in the URL.
+// beside the account's card, over its balance and real spending day by day
+// beside where it went, under the color legend and the period controls,
+// with the review banner while groups wait. The account and the period live
+// in the URL.
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
   const clerkUserId = await requireSignedIn();
   const { account, period } = accountPeriodSearchSchema.parse(
@@ -93,6 +95,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         <GlanceSection summary={summary} />
         <AccountCard summary={summary} />
         <DayByDayChart summary={summary} />
+        <WhereItWent summary={summary} />
       </div>
     </>
   );

@@ -1,10 +1,16 @@
 import type {
   AmountMinor,
+  CategoryId,
   DailyBalances,
   LocalDate,
   PeriodSummary,
+  RecurringPayment,
 } from "@xtrakto/core";
-import type { BankFigures, UnreconciledStatement } from "@xtrakto/db";
+import type {
+  BankFigures,
+  PeriodMovement,
+  UnreconciledStatement,
+} from "@xtrakto/db";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import type {
@@ -14,7 +20,11 @@ import type {
 
 /** An account's summary for a period: its movements' figures, and the bank's. */
 export type AccountSummary = PeriodChoices & {
+  /** Its movements that count, the oldest first. */
+  readonly movements: readonly PeriodMovement[];
   readonly summary: PeriodSummary;
+  /** The fixed payments of real spending found in the year that ends with it. */
+  readonly fixedPayments: readonly RecurringPayment[];
   /** After the period's last movement that printed one; none without. */
   readonly balance: {
     readonly date: LocalDate;
@@ -66,6 +76,19 @@ export type AccountCardView = {
   };
   /** Where a statement that doesn't reconcile breaks. */
   readonly breaksHref?: ReturnType<typeof breaksHref>;
+};
+
+/** A tile of "Dónde se fue más" (docs/ui/v8-01, design-system.md §9 insight tile). */
+export type SpendingTile = {
+  readonly categoryId: CategoryId;
+  /** "Créditos", or "Costos del banco · revisar" when it needs a look. */
+  readonly title: string;
+  /** "$4,6M", "$19.760". */
+  readonly amount: string;
+  /** "19% de tu gasto real. 1 cuota, entre el 1 y el 4 de cada mes." */
+  readonly note: string;
+  /** On the attention surface, with a verb in its note. */
+  readonly needsAttention: boolean;
 };
 
 /** A label on a chart's axis, and where it goes on the plot, from 0 to 100. */

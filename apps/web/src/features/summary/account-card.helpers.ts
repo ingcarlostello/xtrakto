@@ -1,31 +1,18 @@
 import {
-  type AmountMinor,
   CURRENCY,
   formatAmount,
   formatDayInWords,
   formatMonthRange,
-  isAmountMinor,
 } from "@xtrakto/core";
 import type { BankFigures } from "@xtrakto/db";
 import { accountLabel } from "@/utils/account-label.helpers";
 import { countText, formatCount, wordFor } from "@/utils/count-text.utils";
-import { compactSize } from "@/utils/money-text.utils";
+import { boxAmount, exactSize } from "@/utils/money-text.utils";
 import { breaksHref } from "@/utils/transactions-url.helpers";
 import { SUMMARY_COPY } from "./summary.constants";
 import type { AccountCardView, AccountSummary } from "./summary.types";
 
 const COPY = SUMMARY_COPY.account;
-// A box writes a million or more compact, "$10,4M", and less exact, "$1.320".
-const COMPACT_FROM_MINOR = 100_000_000;
-
-// Some money without its direction, to the peso: "$810".
-const exact = (amount: AmountMinor): string => {
-  const size = Math.abs(amount);
-  return formatAmount(isAmountMinor(size) ? size : amount, CURRENCY.COP);
-};
-
-const boxAmount = (amount: AmountMinor): string =>
-  Math.abs(amount) >= COMPACT_FROM_MINOR ? compactSize(amount) : exact(amount);
 
 // The bank's own figures of the statement the period shows; a month's are
 // its quarter's, and say so.
@@ -77,7 +64,7 @@ const statusOf = ({
       title:
         broken.differenceMinor === null || broken.differenceMinor === 0
           ? COPY.doesNotReconcile
-          : `${COPY.doesNotReconcile} ${COPY.by} ${exact(broken.differenceMinor)}`,
+          : `${COPY.doesNotReconcile} ${COPY.by} ${exactSize(broken.differenceMinor)}`,
       detail: COPY.checkFile,
     };
   const verified = bankFigures.at(-1);
