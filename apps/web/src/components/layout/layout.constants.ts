@@ -1,5 +1,6 @@
 import {
   Calendar,
+  ChartPie,
   LayoutGrid,
   List,
   type LucideIcon,
@@ -32,11 +33,12 @@ type NavItem = {
   alsoActiveOn?: readonly Route[];
 };
 
-// Only the routes that exist; Categorías and Pregúntale arrive with their
-// stages, and the settings live in the avatar's menu.
+// Only the routes that exist; Pregúntale arrives with its stage, and the
+// settings live in the avatar's menu.
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Resumen", icon: LayoutGrid, alsoActiveOn: ["/review"] },
   { href: "/transactions", label: "Movimientos", icon: List },
   { href: "/recurring", label: "Pagos fijos", icon: Calendar },
+  { href: "/categories", label: "Categorías", icon: ChartPie },
   { href: "/upload", label: "Subir", icon: Upload },
 ];

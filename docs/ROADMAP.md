@@ -199,7 +199,9 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.7c Balance and real spending, day by day
 - [x] 6.7d Where it went and what to review
 - [x] 6.7e Interest by month in Movimientos
-- [ ] 6.8 Categories page _(design v8)_
+- [x] 6.8a Categories page _(design v8)_
+- [ ] 6.8b A category's detail _(design v8)_
+- [ ] 6.8c A category's weeks and places _(design v8)_
 
 **Stage 7 — First deployment (private beta)**
 
@@ -1381,15 +1383,42 @@ It came out at about 150 lines, in two commits of one pull request: the design r
 
 #### 6.8 Categories page _(added with design v8)_
 
+Split in three when it started (about 1,300 to 1,500 changed lines estimated), with the human's approval (2026-10-20): the page here, a category's detail in 6.8b, and its weeks and places in 6.8c. Decided with the human: v8's "Ver y editar tus reglas", "Ver reglas" and "Mover movimientos a otra categoría" wait for a phase that edits rules or moves movements, so the copy stays true today; a rule is still undone from a movement's detail in Movimientos.
+
+#### 6.8a Categories page
+
 **Tasks**
 
 - `docs/ui/v8-05`: real spending by category, largest first, each with its share and count; "Movido no es gasto", with money out (to the investment, the accounts, the cards) and money back; payments through gateways without a store, with a prompt to name them; the user's rules from the quick review.
-- `docs/ui/v8-06`: a category's detail, grouping the different ways the bank writes the same place ("Dónde más").
 - Categorías joins the dock.
 
 **Done when:** the page renders from seeded data, works at phone width and is navigable with the keyboard.
 
-**Commit:** `feat(web): categories page`
+It came out at about 540 lines, in commits of one pull request: the design rules, the pieces the summary now shares (the insight tile, the channels a category took, a share in percent, a category's name), and the page.
+
+**Commits:** `docs(rules): categories page`, `refactor(web): share the insight tile and a category's words`, then `feat(web): categories page`
+
+#### 6.8b A category's detail
+
+**Tasks**
+
+- `docs/ui/v8-06`'s top half: the way back to Categorías, the category's name and kind, and its tiles (the period's total with its count and share, the average movement and the largest, and each month of a quarter); its latest movements, with "Ver los N movimientos" in Movimientos filtered by the category (`?category=`, a new filter); and "Ajustes de esta categoría": what it counts as and the user's rules for it.
+- The page's rows open their category's detail.
+
+**Done when:** the detail renders from seeded data, the filter keeps the list's counts right, and both work at phone width and with the keyboard.
+
+**Commit:** `feat(web): a category's detail`
+
+#### 6.8c A category's weeks and places
+
+**Tasks**
+
+- `docs/ui/v8-06`'s "Semana a semana": what the category took each week of the period, with the week that stands out explained in plain language.
+- "Dónde más": the category's places, grouping the different ways the bank writes the same one ("COMPRA EN APP DOMICILIOS" and "PAGO QR APP DOMICIL").
+
+**Done when:** the chart's figures and the grouping are tested, and both read at phone width and without a mouse.
+
+**Commit:** `feat(web): a category's weeks and places`
 
 ---
 
