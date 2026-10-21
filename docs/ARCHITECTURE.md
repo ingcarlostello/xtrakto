@@ -14,7 +14,7 @@ Xtrakto reads Colombian bank statements and explains where the money went: real 
 - Parse every movement and verify the balances to the cent.
 - Separate real spending, money that only moved (in either direction), and income.
 - Categorize movements, ask the user by group about those that can't be classified alone, and let the user correct them.
-- Show a summary: categories, month by month, recurring payments, fees and insights.
+- Show a summary: categories, the balance and real spending day by day, recurring payments, fees and insights.
 - Explain cryptic lines in plain Spanish (Stage 8).
 - Answer questions about the user's own data (Stage 13).
 - Delete or export all of a user's data on request.

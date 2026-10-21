@@ -68,6 +68,34 @@ export const SUMMARY_COPY = {
     noBalance: "Sin saldo para verificar",
     movementsFile: "Archivo de movimientos",
   },
+  // "Tu saldo y tu gasto real, día a día": both lines, and the day that
+  // stands out.
+  chart: {
+    title: "Tu saldo y tu gasto real, día a día",
+    spendingTitle: "Tu gasto real, día a día",
+    guide: "Si la línea naranja sube rápido, estás gastando rápido.",
+    noBalance: "Tus archivos de movimientos no traen saldo.",
+    balance: "Saldo de la cuenta",
+    spending: "Gasto real acumulado",
+    // "4 de agosto: entraron $31,5M".
+    cameIn: "entraron",
+    // "Ese mismo día $22,0M pasaron a tu inversión. No fue gasto."
+    sameDay: "Ese mismo día",
+    movedTo: "pasaron",
+    notSpending: "No fue gasto.",
+    mostIncome: {
+      quarter: "Fue el día con más ingresos del trimestre.",
+      month: "Fue el día con más ingresos del mes.",
+    },
+    // "Tu saldo pasó de $13,8M el 30 de junio a $6,5M el 30 de septiembre,
+    // y tu gasto real llegó a $24,4M."
+    balanceFrom: "Tu saldo pasó de",
+    on: "el",
+    to: "a",
+    andSpending: "y tu gasto real llegó a",
+    // "Tu gasto real llegó a $1,5M el 7 de agosto."
+    spendingReached: "Tu gasto real llegó a",
+  },
   // "El 85%".
   the: "El",
   and: "y",

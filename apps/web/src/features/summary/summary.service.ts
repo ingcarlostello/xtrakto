@@ -1,5 +1,5 @@
 import "server-only";
-import { summarizeMovements } from "@xtrakto/core";
+import { dailyBalances, summarizeMovements } from "@xtrakto/core";
 import {
   findUserId,
   listBankFigures,
@@ -16,11 +16,11 @@ import type { AccountSummary } from "./summary.types";
 /**
  * The signed-in user's summary, in the account and period the URL asks, or
  * the latest: what its movements that count add up to
- * (`summarizeMovements`) and the balance after the last that printed one,
- * the bank's own figures from its quarterly statements there, and those of
- * its statements that don't reconcile. `null` until a movement counts;
- * reading never creates the user's row. The Clerk id must come from the
- * session.
+ * (`summarizeMovements`), the balance after the last that printed one and
+ * day by day, the bank's own figures from its quarterly statements there,
+ * and those of its statements that don't reconcile. `null` until a movement
+ * counts; reading never creates the user's row. The Clerk id must come from
+ * the session.
  */
 export const getSummary = async (
   clerkUserId: string,
@@ -45,6 +45,7 @@ export const getSummary = async (
         last && last.balanceAfterMinor !== null
           ? { date: last.date, amountMinor: last.balanceAfterMinor }
           : null,
+      balances: dailyBalances(movements),
       bankFigures: await listBankFigures(ctx, scope),
       unreconciled: await listUnreconciledStatements(ctx, scope),
     };
