@@ -33,7 +33,7 @@ export type PeriodLink = {
 
 /** A link of a page with period controls, which keeps its own filters. */
 export type PeriodHref = {
-  readonly pathname: "/" | "/transactions" | "/recurring";
+  readonly pathname: "/" | "/transactions" | "/recurring" | "/categories";
   readonly query: Readonly<Record<string, string | number>>;
 };
 

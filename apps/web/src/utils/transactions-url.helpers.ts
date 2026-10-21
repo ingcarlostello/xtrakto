@@ -173,6 +173,27 @@ export const recurringHref = ({
   },
 });
 
+/** The categories of an account's period, when given (6.8a). */
+export const categoriesHref = ({
+  accountId,
+  period,
+}: {
+  /** Left out when the user has a single account. */
+  readonly accountId?: string;
+  /** Left out to open on the account's latest quarter. */
+  readonly period?: MovementPeriod;
+}) => ({
+  pathname: "/categories" as const,
+  query: {
+    ...(accountId === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.account]: accountId }),
+    ...(period === undefined
+      ? {}
+      : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+  },
+});
+
 /** The summary of an account's period, when given (6.7a). */
 export const summaryHref = ({
   accountId,

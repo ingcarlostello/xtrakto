@@ -18,4 +18,11 @@ export const PAGE_COPY = {
     emptyDescription:
       "Con extractos de 3 meses seguidos encontramos tus cuotas, servicios y suscripciones.",
   },
+  categories: {
+    title: "Categorías",
+    subtitle: "En qué se fue tu gasto real y a dónde se movió lo demás.",
+    emptyTitle: "Aún no hay categorías",
+    emptyDescription:
+      "Cuando subas un extracto, separamos tu gasto real por categoría y te mostramos a dónde se movió lo demás.",
+  },
 } as const;

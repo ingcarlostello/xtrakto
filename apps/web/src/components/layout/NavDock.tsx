@@ -8,11 +8,12 @@ export function NavDock() {
   return (
     <nav
       aria-label={HEADER_COPY.navigation}
-      className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 sm:sticky sm:inset-x-auto sm:bottom-4 sm:mx-auto sm:mb-4 sm:w-fit"
+      className="fixed inset-x-2 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 sm:sticky sm:inset-x-auto sm:bottom-4 sm:mx-auto sm:mb-4 sm:w-fit"
     >
-      <ul className="flex justify-around gap-1 rounded-xl bg-surface/94 p-2 shadow-float">
+      {/* On phones the items share the bar's width: five fit at 360px. */}
+      <ul className="flex justify-between gap-0.5 rounded-xl bg-surface/94 p-1.5 shadow-float sm:justify-around sm:gap-1 sm:p-2">
         {NAV_ITEMS.map(({ href, label, icon: Icon, alsoActiveOn }) => (
-          <li key={href}>
+          <li key={href} className="min-w-0 flex-1 sm:flex-none">
             <NavLink
               href={href}
               alsoActiveOn={alsoActiveOn}

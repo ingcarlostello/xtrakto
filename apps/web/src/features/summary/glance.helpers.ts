@@ -1,14 +1,14 @@
 import {
-  CATEGORIES,
-  type CategoryId,
   type CategoryMoved,
   formatMonthName,
   type PeriodSummary,
 } from "@xtrakto/core";
 import type { PeriodLink } from "@/components/period-controls/period-controls.types";
+import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
+import { percentOf } from "@/utils/percent.utils";
 import {
   type MovementFilter,
   type MovementPeriod,
@@ -21,17 +21,8 @@ import {
 } from "./summary.constants";
 import type { GlanceTile } from "./summary.types";
 
-const PERCENT = 100;
 // A note names the categories that weigh most, up to four (v8-01).
 const NAMED_CATEGORIES = 4;
-
-/** What part of a whole some money is, in whole percent; 0 of nothing. */
-export const percentOf = (part: number, whole: number): number =>
-  whole === 0 ? 0 : Math.round((Math.abs(part) * PERCENT) / Math.abs(whole));
-
-/** A category's name: "Pagos a personas". */
-export const labelOf = (categoryId: CategoryId): string =>
-  CATEGORIES.find(({ id }) => id === categoryId)?.labelEs ?? categoryId;
 
 // "Julio a septiembre de 2026", "Agosto de 2026".
 const periodWords = (period: MovementPeriod): string => {
@@ -81,7 +72,7 @@ const spendingNote = ({
   if (kinds.spending.count === 0) return COPY.spending.none;
   const [first = "", ...others] = spendingByCategory
     .slice(0, NAMED_CATEGORIES)
-    .map(({ categoryId }) => labelOf(categoryId));
+    .map(({ categoryId }) => categoryLabel(categoryId));
   const names = joined([first, ...others.map((name) => name.toLowerCase())]);
   const percent = percentOf(kinds.spending.amountMinor, outflows.amountMinor);
   return `${COPY.the} ${percent}% ${COPY.spending.ofOut} ${names}.`;
@@ -94,7 +85,7 @@ export const movedPlaces = (moved: readonly CategoryMoved[]): string =>
       .filter(({ out }) => out.count > 0)
       .map(
         ({ categoryId }) =>
-          MOVED_TO[categoryId] ?? labelOf(categoryId).toLowerCase(),
+          MOVED_TO[categoryId] ?? categoryLabel(categoryId).toLowerCase(),
       ),
   );
 
