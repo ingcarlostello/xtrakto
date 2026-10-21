@@ -189,6 +189,7 @@ Both come from Google Fonts, as variable files kept in `apps/web/src/fonts/` (La
 | Percentage        | No decimals                  | `42%`                       |
 | Dates in text     | Day and month in words       | `4 de agosto`               |
 | Dates on axes     | Short                        | `31 jul`                    |
+| Amounts on axes   | Compact, round without `,0`  | `$30M`, `$2,5M`, `$500 mil` |
 
 Use compact amounts in cards and exact amounts in lists and detail views. `formatCompactAmount` and `formatSignedCompactAmount` (core) write them: whole thousands ("$392 mil"), millions with one decimal ("$51,3M"), and amounts under $1.000 exact ("$870").
 
@@ -388,7 +389,7 @@ As Phase 6.7a builds `v8-01` at `/`, for the account and period in the URL:
   - **Movido**, its ring the share of what went out to the user's own: "El 55% de lo que salió: a tu inversión y a tus tarjetas. Además volvieron $2,8M."; "Ver a dónde se movió".
   - Each link opens Movimientos on the period with its kind's filter. A kind without movements says so ("No hubo gasto real en este periodo.") over an empty ring.
 - Before any movement counts, the page keeps its empty state (§14), or the way to a statement that doesn't reconcile.
-- Beside the glance, "Tu cuenta" (6.7b, account card above). The day-by-day chart (6.7c) and "Dónde se fue más" (6.7d) come next; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
+- Beside the glance, "Tu cuenta" (6.7b, account card above); under the glance, in its two thirds, the day-by-day chart (6.7c, chart card above), after "Tu cuenta" on phones. "Dónde se fue más" (6.7d) comes next, beside the chart; "Tu extracto, traducido" and "Pregúntale a tu extracto" wait for 8.6 and 13.
 
 ### Kind total tile
 
@@ -435,6 +436,7 @@ On the quick review it counts the quarter's groups and their movements, answered
 - Lines: balance `#4C8DF6` 2.6px solid with an area fill from 22% to 0% opacity; cumulative real spending `#EA6B2D` 2.4px dashed `7 6`.
 - Grid `--chart-grid`, baseline `--chart-axis`; Y labels on the left (Meta style, right-aligned); 4 X labels.
 - Highlighted event: white circle r=7 with a 3px `--primary` stroke, dashed vertical guide, and a tooltip (`--surface`, `--radius-sm`, `--shadow-pop`) explaining the event in plain language.
+- **As Phase 6.7c builds it** (`DayByDayChart`, on the summary): "Tu saldo y tu gasto real, día a día" (Section title) and its guide inside the card, the legend beside them from `sm` and under them on phones. The plot is 192px tall, an SVG stretched to its width whose lines keep their width and dashes (`non-scaling-stroke`); the amounts on the left, the days under it, the circle and the note are HTML over it, so they never stretch. It draws each day from the period's opening (the day before its first, "30 jun") through its last day with movements, on an axis that runs to the period's last day: the balance each day, the same over a day without movements, when every movement printed it; and the real spending so far, from $0. The amounts are round, three steps at most ("$30M", "$20M", "$10M", "$0"; steps of 1, 2, 2,5 and 5 times a power of ten, from $10); the days are a quarter's opening and its months' last days ("30 jun", "31 jul", "31 ago", "30 sep"), or a month's opening, 10th, 20th and last day. The event is the day the most income came in, when it is a tenth of the scale or more: "4 de agosto: entraron $31,5M" over "Ese mismo día $22,0M pasaron a tu inversión. No fue gasto.", or "Fue el día con más ingresos del trimestre." when nothing moved that day. Its note sits beside the circle from `sm`, on the side with more room, and under the plot on phones. The plot is one image whose name says the conclusion ("Tu saldo pasó de $13,8M el 30 de junio a $6,5M el 30 de septiembre, y tu gasto real llegó a $24,4M."); the note stays outside it. Without balances (movements exports only) it is "Tu gasto real, día a día", with "Tus archivos de movimientos no traen saldo." under the guide, the spending's line alone and no event; without spending either, there is no card.
 
 ### Insight tile
 
