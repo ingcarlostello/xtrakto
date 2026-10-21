@@ -4,7 +4,7 @@ Xtrakto reads Colombian bank statements and explains where the money went. It se
 
 ## Status
 
-Early development: the domain core, the spreadsheet parsers (verified against real Bancolombia exports), the database and the web app's foundations (stages 1 to 4) are done. Signing in, deleting an account with all its data and the app's empty screens work; uploading a statement comes next (Stage 5). Nothing is deployed yet. Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
+Early development: stages 0 to 6 are done. The spreadsheet parsers are verified against real Bancolombia exports, and the app reads a statement in the browser, saves its movements, categorizes them, asks about the ones it can't classify alone, and shows the summary, the movements, the recurring payments and the categories. Stage 7, the private beta, is in progress; until it ends, [xtrakto.site](https://xtrakto.site) serves only the waitlist ([deployment](docs/deployment.md)). Progress and the plan for each stage are in the [roadmap](docs/ROADMAP.md).
 
 ## Stack
 
@@ -19,7 +19,7 @@ Early development: the domain core, the spreadsheet parsers (verified against re
 - Clerk for sign-in, in Spanish ([ADR 0004](docs/adr/0004-clerk-for-authentication.md))
 - Inngest for background jobs, with its Dev Server in Docker Compose locally ([ADR 0005](docs/adr/0005-inngest-for-background-work.md))
 - Remotion 4 for the promo video, rendered locally ([ADR 0020](docs/adr/0020-promo-video-rendered-with-remotion.md))
-- Planned: Vercel (see the [system design](docs/ARCHITECTURE.md))
+- Vercel, serving only the waitlist on xtrakto.site until the private beta ([ADR 0022](docs/adr/0022-waitlist-only-deployment.md), [deployment](docs/deployment.md))
 
 ## Monorepo layout
 

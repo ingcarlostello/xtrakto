@@ -35,9 +35,9 @@ Set up once, from a laptop, as Neon's owner role (`neondb_owner`):
    `DATABASE_MIGRATION_URL='…' pnpm db:migrate`
 3. Build `DATABASE_URL` for Vercel from the application role, the password and the host with `-pooler` after the endpoint id.
 4. Check as the application role: it can add to `waitlist_entries` and gets `permission denied` (42501) reading it.
-5. Reset the owner's password in Neon afterwards: it was handled outside the console.
+5. Reset the owner's password in Neon afterwards: it was handled outside the console. Still to do (2026-10-21): Phase 7.2 resets it before its URL becomes the migrations job's secret.
 
-New migrations go the same way until Phase 7.2's CI job runs them on every merge to `main`. They must stay backward compatible, since Vercel deploys while they run (system design §9).
+Production has the migrations up to `0010`, the ones the waitlist needs (applied on 2026-10-15). The later ones wait for Phase 7.2's CI job, which applies every pending migration on each merge to `main`, starting with its first run; none goes by hand before it. They must stay backward compatible, since Vercel deploys while they run (system design §9).
 
 ## DNS at Hostinger
 
@@ -49,6 +49,21 @@ As Vercel's domain check asks (`GET /v6/domains/{domain}/config`):
 | `www` | CNAME | `7c941226ed1b8896.vercel-dns-017.com.` | `xtrakto.site.`            |
 
 The SPF, DKIM and DMARC records Hostinger created stay as they are. Vercel issues the HTTPS certificate once the records resolve.
+
+## Checking it
+
+Last checked on 2026-10-21 (Phase 7.1):
+
+- `https://xtrakto.site` and any other path answer 307 to `/waitlist`, which answers 200; `https://www.xtrakto.site` answers 308 to the apex.
+- The certificate is Let's Encrypt's, which Vercel renews by itself, and every response carries `Strict-Transport-Security`.
+- Vercel's domain check says `misconfigured: false`, and both domains are `verified` in the project.
+- Every merge to `main` deployed to production; there is no preview deployment.
+
+The Vercel MCP answers 403 or 404 for this project, reads included, so these checks go through the CLI after `vercel login`, with the team's id as `teamId`:
+
+- `vercel api "/v6/domains/xtrakto.site/config?teamId=…"`
+- `vercel api "/v9/projects/xtrakto/domains?teamId=…"`
+- `vercel api "/v6/deployments?teamId=…&projectId=…&target=production&limit=5"`
 
 ## The waitlist's data
 
