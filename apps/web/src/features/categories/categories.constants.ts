@@ -15,6 +15,52 @@ export const CATEGORIES_COPY = {
     lessThan: "menos del",
     movements: { one: "movimiento", other: "movimientos" },
     label: "Gasto real por categoría",
+    // Each row opens its category's detail (6.8b).
+    touch: "Toca una para ver sus movimientos.",
+  },
+  // A category's detail (docs/ui/v8-06): "Gasto real · julio a septiembre
+  // de 2026", its tiles and what it counts as.
+  detail: {
+    back: "Categorías",
+    kind: "Gasto real",
+    tilesLabel: "Lo que se fue en esta categoría",
+    totalQuarter: "Total del trimestre",
+    // "Total de agosto".
+    totalOf: "Total de",
+    average: "Promedio por movimiento",
+    // "El más alto: $186.000, el 12 de agosto."
+    largest: "El más alto:",
+    on: "el",
+    onlyOne: "Un solo movimiento, el",
+    byMonth: "Por mes",
+    mostMonth: "el mes con más",
+    // "No hubo gasto en «Efectivo» en este periodo."
+    noneIn: "No hubo gasto en",
+    inPeriod: "en este periodo.",
+  },
+  // Its newest movements, each opening its detail in Movimientos.
+  latest: {
+    title: "Movimientos de esta categoría",
+    subtitle: "Los más recientes primero.",
+    noDescription: "Sin descripción del banco",
+    channel: "Canal:",
+    pendingReview: "Por revisar",
+    // "Mostrando 4 de 31" and "Ver los 31 movimientos".
+    shown: { before: "Mostrando", of: "de" },
+    all: { before: "Ver los", after: "movimientos" },
+    one: "Ver en Movimientos",
+  },
+  settings: {
+    title: "Ajustes de esta categoría",
+    countsAs: "Cuenta como gasto real",
+    // "Efectivo siempre suma a tu gasto real."
+    alwaysAdds: "siempre suma a tu gasto real.",
+    rules: { one: "regla tuya", other: "reglas tuyas" },
+    noRules: "Sin reglas tuyas",
+    noRulesNote:
+      "Las crean tus respuestas en la revisión y tus correcciones en Movimientos.",
+    // "TRANSF A ANA LUCIA MAR, RETIRO CAJERO CENTRO y 2 más".
+    more: "más",
   },
   moved: {
     title: "Movido no es gasto",
@@ -39,6 +85,12 @@ export const CATEGORIES_COPY = {
     in: "Si entra:",
   },
 } as const;
+
+/** How many of its newest movements a category's detail lists (docs/ui/v8-06). */
+export const LATEST_MOVEMENTS = 4;
+
+/** How many of the user's rules "Ajustes de esta categoría" names. */
+export const NAMED_RULES = 3;
 
 /** Where money that only moved went, by its category. */
 export const MOVED_LABELS: Partial<Record<CategoryId, string>> = {
