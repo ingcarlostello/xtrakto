@@ -196,7 +196,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 6.6 Insights ("Para revisar")
 - [x] 6.7a Summary at a glance
 - [x] 6.7b Your account card
-- [ ] 6.7c Balance and real spending, day by day
+- [x] 6.7c Balance and real spending, day by day
 - [ ] 6.7d Where it went and what to review
 - [ ] 6.7e Interest by month in Movimientos
 - [ ] 6.8 Categories page _(design v8)_
@@ -1338,13 +1338,17 @@ Following design v8 (`docs/ui/v8-01`), with Server Components and client compone
 
 #### 6.7c Balance and real spending, day by day
 
+Decided with the human when it started (2026-10-20): the day pointed out is the one the most income came in, as `v8-01` draws it, when it stands out on the scale; and a period whose files print no balances (movements exports only) gets the real spending's line alone, saying so.
+
 **Tasks**
 
 - The chart card of `v8-01` from 6.4's days: the balance as a line with its area, the cumulative real spending dashed, their legend, the reading guide, axes with printed values, and one highlighted event explained in plain language; a text alternative that states the conclusion.
 
 **Done when:** the chart's figures are tested, and it reads at phone width and without a mouse.
 
-**Commit:** `feat(web): balance and real spending day by day`
+Estimated at about 450 to 550 lines, it came out at about 490 and lands in commits of one pull request (decided with the human): the design rules, the balance day by day in core, and the chart.
+
+**Commits:** `docs(rules): balance and real spending day by day`, `feat(core): balance day by day`, then `feat(web): balance and real spending day by day`
 
 #### 6.7d Where it went and what to review
 

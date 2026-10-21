@@ -53,6 +53,30 @@ export type CategoryMoved = {
 export type DayTotals = {
   readonly date: LocalDate;
   readonly kinds: KindTotals;
+  /** Where that day's money moved: "pasaron a tu inversión". */
+  readonly movedByCategory: readonly CategoryMoved[];
+};
+
+/** A movement as a period's balance day by day reads it. */
+export type BalanceMovement = {
+  readonly date: LocalDate;
+  readonly amountMinor: AmountMinor;
+  /** The balance its statement printed after it; a movements export prints none. */
+  readonly balanceAfterMinor: AmountMinor | null;
+};
+
+/** The balance after a day's last movement. */
+export type DayBalance = {
+  readonly date: LocalDate;
+  readonly closingMinor: AmountMinor;
+};
+
+/** A period's balance day by day, as its statement printed it. */
+export type DailyBalances = {
+  /** Before the period's first movement. */
+  readonly openingMinor: AmountMinor;
+  /** The days with movements, the oldest first. */
+  readonly days: readonly DayBalance[];
 };
 
 /** What a period's movements that count add up to, for its summary. */

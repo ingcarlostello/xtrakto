@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
 import { DEFAULT_TIME_ZONE } from "./date.constants";
 import {
+  addDaysTo,
   compareLocalDates,
   daysBetween,
   inferDayMonthDate,
@@ -97,6 +98,22 @@ describe("daysBetween", () => {
     { span: "the same day", from: "2026/07/01", to: "2026/07/01", days: 0 },
   ])("counts $span", ({ from, to, days }) => {
     expect(daysBetween(date(from), date(to))).toBe(days);
+  });
+});
+
+describe("addDaysTo", () => {
+  it.each([
+    {
+      span: "the day before a quarter",
+      from: "2026/07/01",
+      days: -1,
+      to: "2026-06-30",
+    },
+    { span: "into a new year", from: "2026/12/31", days: 1, to: "2027-01-01" },
+    { span: "onto a leap day", from: "2028/02/28", days: 1, to: "2028-02-29" },
+    { span: "within a month", from: "2026/08/01", days: 19, to: "2026-08-20" },
+  ])("moves $span", ({ from, days, to }) => {
+    expect(addDaysTo(date(from), days)).toBe(to);
   });
 });
 

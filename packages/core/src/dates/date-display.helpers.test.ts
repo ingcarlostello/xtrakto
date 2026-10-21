@@ -6,6 +6,7 @@ import {
   formatMonthName,
   formatMonthRange,
   formatQuarter,
+  formatShortDay,
   formatShortMonth,
   formatWeekdayInWords,
   monthWeeks,
@@ -73,6 +74,16 @@ describe("formatShortMonth", () => {
     [12, "dic"],
   ])("writes month %i short, as under a bar: %s", (month, expected) => {
     expect(formatShortMonth({ year: 2026, month })).toBe(expected);
+  });
+});
+
+describe("formatShortDay", () => {
+  it.each([
+    ["2026-06-30", "30 jun"],
+    ["2026-09-30", "30 sep"],
+    ["2026-12-01", "1 dic"],
+  ])("writes %s on a chart's axis as %s", (date, expected) => {
+    expect(formatShortDay(localDateSchema.parse(date))).toBe(expected);
   });
 });
 

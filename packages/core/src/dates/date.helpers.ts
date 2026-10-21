@@ -1,5 +1,6 @@
 import { TZDate, tz } from "@date-fns/tz";
 import {
+  addDays,
   addMonths,
   differenceInCalendarDays,
   format,
@@ -66,6 +67,10 @@ export const localDateFromInstant = (
 ): LocalDate =>
   // This format always yields "YYYY-MM-DD".
   format(instant, LOCAL_DATE_FORMAT, { in: tz(timeZone) }) as LocalDate;
+
+/** The date some days after another, or before it: 2026-06-30 for -1 from 2026-07-01. */
+export const addDaysTo = (date: LocalDate, days: number): LocalDate =>
+  localDateFromInstant(addDays(utcMidnight(date), days), "UTC");
 
 /**
  * The calendar month an instant falls in, in a time zone: from its first

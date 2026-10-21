@@ -1,4 +1,9 @@
-import type { AmountMinor, LocalDate, PeriodSummary } from "@xtrakto/core";
+import type {
+  AmountMinor,
+  DailyBalances,
+  LocalDate,
+  PeriodSummary,
+} from "@xtrakto/core";
 import type { BankFigures, UnreconciledStatement } from "@xtrakto/db";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
@@ -15,6 +20,8 @@ export type AccountSummary = PeriodChoices & {
     readonly date: LocalDate;
     readonly amountMinor: AmountMinor;
   } | null;
+  /** Day by day, when every movement printed its balance. */
+  readonly balances: DailyBalances | null;
   /** Of the quarterly statements whose days meet the period. */
   readonly bankFigures: readonly BankFigures[];
   /** Its statements on the period's days that don't reconcile. */
@@ -59,4 +66,36 @@ export type AccountCardView = {
   };
   /** Where a statement that doesn't reconcile breaks. */
   readonly breaksHref?: ReturnType<typeof breaksHref>;
+};
+
+/** A label on a chart's axis, and where it goes on the plot, from 0 to 100. */
+export type ChartTick = { readonly label: string; readonly at: number };
+
+/** The day the chart points out, on the balance line. */
+export type ChartEvent = {
+  /** Where its balance falls, from the plot's left and from its top. */
+  readonly x: number;
+  readonly y: number;
+  /** "4 de agosto: entraron $31,5M". */
+  readonly title: string;
+  /** "Ese mismo día $22,0M pasaron a tu inversión. No fue gasto." */
+  readonly detail: string;
+};
+
+/** "Tu saldo y tu gasto real, día a día" (docs/ui/v8-01), as its card draws it. */
+export type DayByDayChartView = {
+  /** "Tu gasto real, día a día" without balances. */
+  readonly title: string;
+  /** Without balances: "Tus archivos de movimientos no traen saldo." */
+  readonly note?: string;
+  /** The lines as SVG points on a 100 × 100 plot, its top at 0. */
+  readonly balance?: { readonly line: string; readonly area: string };
+  readonly spending: string;
+  /** "$30M" down to "$0", evenly spaced. */
+  readonly yTicks: readonly ChartTick[];
+  /** "30 jun", "31 jul", "31 ago" and "30 sep". */
+  readonly xTicks: readonly ChartTick[];
+  readonly event?: ChartEvent;
+  /** What the chart says, for screen readers. */
+  readonly label: string;
 };

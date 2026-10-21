@@ -3,7 +3,7 @@ import type { CategoryId } from "../categories/category.types";
 import type { CategorizationRuleId } from "../categorization/categorization.types";
 import { localDateSchema } from "../dates/date.schemas";
 import { amountMinorSchema } from "../money/money.schemas";
-import { summarizeMovements } from "./summary.helpers";
+import { dailyBalances, summarizeMovements } from "./summary.helpers";
 import type { SummaryMovement } from "./summary.types";
 
 const movement = (
@@ -110,15 +110,29 @@ describe("summarizeMovements", () => {
       "2026-09-01",
       "2026-09-04",
     ]);
-    expect(summary.days[0]?.kinds).toEqual({
-      income: total(289, 1),
-      spending: total(-2_000_000, 1),
-      moved: { out: NOTHING, back: NOTHING },
+    expect(summary.days[0]).toEqual({
+      date: "2026-07-01",
+      kinds: {
+        income: total(289, 1),
+        spending: total(-2_000_000, 1),
+        moved: { out: NOTHING, back: NOTHING },
+      },
+      movedByCategory: [],
     });
-    expect(summary.days[8]?.kinds).toEqual({
-      income: total(320_000_000, 1),
-      spending: NOTHING,
-      moved: { out: total(-100_000_000, 1), back: NOTHING },
+    expect(summary.days[8]).toEqual({
+      date: "2026-08-10",
+      kinds: {
+        income: total(320_000_000, 1),
+        spending: NOTHING,
+        moved: { out: total(-100_000_000, 1), back: NOTHING },
+      },
+      movedByCategory: [
+        {
+          categoryId: "investment",
+          out: total(-100_000_000, 1),
+          back: NOTHING,
+        },
+      ],
     });
   });
 
@@ -160,5 +174,51 @@ describe("summarizeMovements", () => {
       cash: NOTHING,
       cardPayments: NOTHING,
     });
+  });
+});
+
+describe("dailyBalances", () => {
+  const printed = (
+    date: string,
+    amountMinor: number,
+    balance: number | null,
+  ) => ({
+    date: localDateSchema.parse(date),
+    amountMinor: amountMinorSchema.parse(amountMinor),
+    balanceAfterMinor:
+      balance === null ? null : amountMinorSchema.parse(balance),
+  });
+
+  it("finds the balance before the first movement and after each day's last", () => {
+    expect(
+      dailyBalances([
+        printed("2026-07-01", -200_000, 800_000),
+        printed("2026-07-01", 50_000, 850_000),
+        printed("2026-07-03", -100_000, 750_000),
+      ]),
+    ).toEqual({
+      openingMinor: 1_000_000,
+      days: [
+        { date: "2026-07-01", closingMinor: 850_000 },
+        { date: "2026-07-03", closingMinor: 750_000 },
+      ],
+    });
+  });
+
+  it("finds none without movements", () => {
+    expect(dailyBalances([])).toBeNull();
+  });
+
+  it.each([
+    { which: "the first", movements: [printed("2026-07-01", -200_000, null)] },
+    {
+      which: "a later one",
+      movements: [
+        printed("2026-07-01", -200_000, 800_000),
+        printed("2026-07-02", -100_000, null),
+      ],
+    },
+  ])("finds none when $which printed no balance", ({ movements }) => {
+    expect(dailyBalances(movements)).toBeNull();
   });
 });

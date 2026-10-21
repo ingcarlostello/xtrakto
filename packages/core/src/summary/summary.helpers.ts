@@ -2,12 +2,16 @@ import { categoriesOfKind } from "../categories/category.helpers";
 import type { CategoryId, CategoryKind } from "../categories/category.types";
 import { GMF_TAX_RULE_ID } from "../categorization/categorization.constants";
 import { compareLocalDates } from "../dates/date.helpers";
-import { sumAmounts } from "../money/money.helpers";
+import type { LocalDate } from "../dates/date.types";
+import { isAmountMinor, sumAmounts } from "../money/money.helpers";
+import type { AmountMinor } from "../money/money.types";
 import { kindTotalsOf, totalOf } from "./kind-totals.helpers";
 import type {
+  BalanceMovement,
   CategoryMoved,
   CategoryTotal,
   CategoryTotals,
+  DailyBalances,
   DayTotals,
   MovementTotal,
   PeriodSummary,
@@ -83,10 +87,14 @@ const movedByCategory = (rows: readonly CategoryTotals[]): CategoryMoved[] =>
 const daysOf = (movements: readonly SummaryMovement[]): DayTotals[] =>
   [...groupBy(movements, ({ date }) => date)]
     .sort(([a], [b]) => compareLocalDates(a, b))
-    .map(([date, group]) => ({
-      date,
-      kinds: kindTotalsOf(categoryTotalsOf(group)),
-    }));
+    .map(([date, group]) => {
+      const rows = categoryTotalsOf(group);
+      return {
+        date,
+        kinds: kindTotalsOf(rows),
+        movedByCategory: movedByCategory(rows),
+      };
+    });
 
 /**
  * What a period's movements that count add up to: what went out, each
@@ -113,5 +121,30 @@ export const summarizeMovements = (
     ),
     cash: ofCategory("cash_withdrawal"),
     cardPayments: ofCategory("credit_card_payment"),
+  };
+};
+
+/**
+ * A period's balance day by day: before its first movement, and after each
+ * day's last, as its statement printed them. The movements come the oldest
+ * first, in the bank's order within a day, as `listSummaryMovements` reads
+ * them. `null` without movements, or when one printed no balance, as a
+ * movements export's don't: a day's balance can't be known then.
+ */
+export const dailyBalances = (
+  movements: readonly BalanceMovement[],
+): DailyBalances | null => {
+  const [first] = movements;
+  if (first === undefined || first.balanceAfterMinor === null) return null;
+  const opening = first.balanceAfterMinor - first.amountMinor;
+  if (!isAmountMinor(opening)) return null;
+  const closing = new Map<LocalDate, AmountMinor>();
+  for (const { date, balanceAfterMinor } of movements) {
+    if (balanceAfterMinor === null) return null;
+    closing.set(date, balanceAfterMinor);
+  }
+  return {
+    openingMinor: opening,
+    days: [...closing].map(([date, closingMinor]) => ({ date, closingMinor })),
   };
 };

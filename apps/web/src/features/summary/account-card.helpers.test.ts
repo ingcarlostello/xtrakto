@@ -55,6 +55,7 @@ const summaryWith = (changes: Partial<AccountSummary>): AccountSummary => ({
     date: localDateSchema.parse("2026-09-30"),
     amountMinor: amount(648_231_000),
   },
+  balances: null,
   bankFigures: [FIGURES],
   unreconciled: [],
   ...changes,

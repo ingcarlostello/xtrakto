@@ -1,6 +1,7 @@
 import {
   CATEGORIES,
   type CategoryId,
+  type CategoryMoved,
   formatMonthName,
   type PeriodSummary,
 } from "@xtrakto/core";
@@ -90,6 +91,17 @@ const spendingNote = ({
   return `${COPY.the} ${percent}% ${COPY.spending.ofOut} ${names}.`;
 };
 
+/** Where some money went to the user's own: "a tu inversión y a tus tarjetas". */
+export const movedPlaces = (moved: readonly CategoryMoved[]): string =>
+  joined(
+    moved
+      .filter(({ out }) => out.count > 0)
+      .map(
+        ({ categoryId }) =>
+          MOVED_TO[categoryId] ?? labelOf(categoryId).toLowerCase(),
+      ),
+  );
+
 // "El 55% de lo que salió: a tu inversión y a tus tarjetas. Además volvieron $2,8M."
 const movedNote = ({
   outflows,
@@ -101,18 +113,12 @@ const movedNote = ({
     return back.count === 0
       ? COPY.moved.none
       : `${COPY.moved.cameBack} ${compactSize(back.amountMinor)}.`;
-  const places = movedByCategory
-    .filter((moved) => moved.out.count > 0)
-    .map(
-      ({ categoryId }) =>
-        MOVED_TO[categoryId] ?? labelOf(categoryId).toLowerCase(),
-    );
   const also =
     back.count > 0
       ? ` ${COPY.moved.also} ${compactSize(back.amountMinor)}.`
       : "";
   const percent = percentOf(out.amountMinor, outflows.amountMinor);
-  return `${COPY.the} ${percent}% ${COPY.moved.ofOut} ${joined(places)}.${also}`;
+  return `${COPY.the} ${percent}% ${COPY.moved.ofOut} ${movedPlaces(movedByCategory)}.${also}`;
 };
 
 const actionOf = (label: string, link: PeriodLink, filter: MovementFilter) => ({
