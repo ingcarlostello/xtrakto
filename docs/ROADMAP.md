@@ -1446,6 +1446,8 @@ Its work came with 16.0d (ADR 0022): the Vercel project, the domain with its DNS
 
 #### 7.2 [HUMAN] Production services
 
+Decided with the human when it started (2026-10-21): sign-up by invitation only, a visitor without a session at `/` goes to sign-in while the waitlist stays at `/waitlist`, and Google sign-in through the app's own OAuth client (ADR 0027). Its consent screen stays in "Testing" until 7.5's privacy page lets Google publish it.
+
 **Human:** production database, Clerk production instance (it needs the domain) with "Allow users to delete their account" off (User & authentication → User model; `/settings` deletes the data first), Inngest connected to Vercel, environment variables in Vercel, Clerk webhook endpoint registered, and the owner's password reset in Neon (pending since 16.0d) before its connection string becomes the job's secret.
 
 **Tasks**
@@ -1490,6 +1492,7 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 
 - `docs/data-flow.md` with a Mermaid diagram: what happens in the browser, what reaches the server, what is stored and for how long, and what each third party receives (Clerk, Inngest, Sentry, PostHog; LLM providers from Stage 8).
 - A privacy page in Spanish summarizing it, with deletion instructions. Note: a legal review under Colombian data protection law (Ley 1581 de 2012) is required before the public launch.
+- Its link in Google's OAuth consent screen (Google Cloud project `xtrakto`), which then can be published, so any invited person signs in with Google, not only its test users (7.2).
 
 **Commit:** `docs: data flow and privacy page`
 

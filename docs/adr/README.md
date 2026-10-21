@@ -44,3 +44,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0024](0024-kind-comes-from-the-category.md)                      | A movement's kind comes from its category                                              | Accepted |
 | [0025](0025-user-rules-come-first-and-keep-the-rules-guess.md)    | The user's rules come first and keep the rule's guess                                  | Accepted |
 | [0026](0026-nequi-numbers-and-reference-rules-by-direction.md)    | Nequi numbers wait for review, and a reference rule holds the ways its category allows | Accepted |
+| [0027](0027-private-beta-by-invitation.md)                        | A private beta by invitation                                                           | Accepted |
