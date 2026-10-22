@@ -10,6 +10,7 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | Database        | Neon project `xtrakto`, branch `main`, database `neondb`, AWS us-east-1                                          |
 | Auth            | Clerk application "Xtrakto", its production instance on xtrakto.site                                             |
 | Background jobs | Inngest Cloud's production environment, through its Vercel integration                                           |
+| Errors          | Sentry, organization `carlos-a4`, project `xtrakto` (ADR 0028)                                                   |
 | Domain          | xtrakto.site, registered and with its DNS at Hostinger; www.xtrakto.site redirects to it (308)                   |
 | Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; the domain has no MX records for hola@       |
 
@@ -28,6 +29,8 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | `CLERK_WEBHOOK_SIGNING_SECRET`      | The signing secret of the webhook endpoint (below), `whsec_…`                                                                                                                                 | Sensitive |
 | `INNGEST_SIGNING_KEY`               | Set by Inngest's Vercel integration                                                                                                                                                           | —         |
 | `INNGEST_EVENT_KEY`                 | Set by Inngest's Vercel integration                                                                                                                                                           | —         |
+| `NEXT_PUBLIC_SENTRY_DSN`            | Sentry, project `xtrakto`, Client Keys (DSN). Public by design; inlined at build time                                                                                                         | Plain     |
+| `SENTRY_AUTH_TOKEN`                 | A Sentry organization token, for the build to upload source maps. Without it, the build uploads none                                                                                          | Sensitive |
 | `WAITLIST_ONLY`                     | Absent. `1` turns production back to the waitlist alone (ADR 0022)                                                                                                                            | Plain     |
 
 `INNGEST_DEV` never goes on Vercel: dev mode skips Inngest's signature check, and `env.ts` refuses it there.
@@ -47,6 +50,15 @@ Secrets go from one dashboard to the other by hand, or from a 0600 file through 
 ## Inngest
 
 Inngest's Vercel integration, on the project `xtrakto`: it sets both keys and syncs the app after each production deployment, at `https://xtrakto.site/api/inngest`. The custom domain, not the deployment's own URL, which Vercel's deployment protection keeps private.
+
+## Sentry
+
+Errors from the browser and the server, and one request in ten traced, go to the project `xtrakto` of the organization `carlos-a4` (Next.js, `@sentry/nextjs` 11). What may reach it is an allowlist (ADR 0028):
+
+- **In the app:** `dataCollection` turns off every category Sentry 11 collects by default (`lib/sentry.ts`), and the hooks keep only what has a reason to go (`utils/sentry-scrub.helpers.ts`): no request body, cookies, query string or header but the browser's, no user, no frame's variables, no breadcrumbs of the console or of clicks; emails, amounts and long numbers in text are masked. No Session Replay.
+- **In Sentry's project** (Settings, Projects, xtrakto, Security & Privacy): the data scrubber and its default scrubbers on, "Prevent Storing of IP Addresses" on, and the advanced rule `[Remove] [Anything] from [$user.geo.**]`, since Sentry derives the person's city from the IP even when it doesn't store it.
+- **Source maps:** the build uploads them only with `SENTRY_AUTH_TOKEN`, which only Vercel's builds have (`apps/web/turbo.json` lets it through Turbo's strict environment), and deletes them before the deployment serves them.
+- **Off elsewhere:** without `NEXT_PUBLIC_SENTRY_DSN`, locally and in CI, Sentry doesn't start. To check it locally, build and start in production mode with the DSN in the shell, never in `.env.local`, and `NEXT_PUBLIC_VERCEL_ENV=local-check` at build and `SENTRY_ENVIRONMENT=local-check` at start, so its events stay apart from production's.
 
 ## Database
 

@@ -20,6 +20,7 @@ const WEBHOOK_SECRET = fakeKey("whsec", base64("secretWebhookKey0123456789"));
 const SIGNING_KEY = ["signkey", "prod", "secretSigningKey0123456789"].join("-");
 const EVENT_KEY = "secret-event-key-0123456789";
 const DEV_SERVER = "http://127.0.0.1:8288";
+const SENTRY_DSN = "https://publickey@o1.ingest.us.sentry.io/2";
 const REQUIRED = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
@@ -209,6 +210,32 @@ describe("parseServerEnv", () => {
     expect(message).toContain("DATABASE_URL");
     expect(message).not.toContain("secret");
   });
+
+  it.each([undefined, ""])(
+    "leaves Sentry off without a DSN (%j), as locally and in CI",
+    (dsn) => {
+      expect(
+        parseServerEnv({ ...VALID, NEXT_PUBLIC_SENTRY_DSN: dsn })
+          .NEXT_PUBLIC_SENTRY_DSN,
+      ).toBeUndefined();
+    },
+  );
+
+  it("accepts Sentry's DSN", () => {
+    expect(
+      parseServerEnv({ ...VALID, NEXT_PUBLIC_SENTRY_DSN: SENTRY_DSN })
+        .NEXT_PUBLIC_SENTRY_DSN,
+    ).toBe(SENTRY_DSN);
+  });
+
+  it.each(["not a url", SENTRY_DSN.replace("https:", "http:")])(
+    "refuses the DSN %j, which would turn error monitoring off unnoticed",
+    (dsn) => {
+      expect(failureOf({ ...VALID, NEXT_PUBLIC_SENTRY_DSN: dsn })).toContain(
+        "NEXT_PUBLIC_SENTRY_DSN",
+      );
+    },
+  );
 });
 
 describe("parseWaitlistEnv", () => {

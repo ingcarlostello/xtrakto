@@ -2,6 +2,9 @@
   "$schema": "https://turborepo.dev/schema.json",
   "extends": ["//"],
   "tasks": {
+    "build": {
+      "passThroughEnv": ["SENTRY_AUTH_TOKEN", "VERCEL_GIT_COMMIT_SHA"]
+    },
     "test": {
       "dependsOn": ["transit", "@xtrakto/db#test"],
       "cache": false,

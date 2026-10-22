@@ -61,6 +61,10 @@ const serverEnvShape = z.object({
     z.string().regex(/^signkey-/, "must start with signkey-"),
   ),
   INNGEST_EVENT_KEY: optional(z.string()),
+  // Where Sentry's events go (lib/sentry.ts, which reads it, inlined, in the
+  // browser too). Unset locally and in CI, where Sentry stays off; a malformed
+  // one stops the server rather than turning error monitoring off unnoticed.
+  NEXT_PUBLIC_SENTRY_DSN: optional(z.url({ protocol: /^https$/ })),
   // Set by Next.js: production for `next build`, `next start` and Vercel.
   NODE_ENV: z.string().optional(),
   // Set by Vercel on every deployment, previews included.
