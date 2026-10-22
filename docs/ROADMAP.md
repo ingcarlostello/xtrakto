@@ -207,7 +207,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 7.1 [HUMAN] Domain xtrakto.site on Vercel
 - [x] 7.2 [HUMAN] Production services
-- [ ] 7.3 Error monitoring with Sentry
+- [x] 7.3 Error monitoring with Sentry
 - [ ] 7.4 Product analytics with PostHog
 - [ ] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
@@ -1466,6 +1466,8 @@ Pending from Phase 4.5: a browser test of the account deletion flow, with a dedi
 **Commit:** `test(web): end-to-end tests with Playwright`
 
 #### 7.3 Error monitoring with Sentry
+
+Decided with the human when it started (2026-10-22): the browser too, not only the server; one request in ten traced; and the forced error from a temporary route, deleted before the commit. Sentry 11 collects everything by default, so the scrubber is an allowlist (ADR 0028).
 
 **Tasks**
 

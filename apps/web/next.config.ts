@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 // Next.js reads `.env*` files only from apps/web, but the repository keeps one
@@ -26,4 +27,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry's build step uploads the source maps that make a production error's
+// stack readable, then deletes them, so they're never served. Only Vercel's
+// builds have the token (docs/deployment.md); without it, locally and in CI,
+// none are generated.
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+export default withSentryConfig(nextConfig, {
+  org: "carlos-a4",
+  project: "xtrakto",
+  authToken: sentryAuthToken,
+  sourcemaps: { disable: !sentryAuthToken },
+  // Nothing about the build goes to Sentry beyond the source maps.
+  telemetry: false,
+});
