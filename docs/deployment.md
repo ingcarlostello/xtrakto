@@ -94,9 +94,12 @@ Back to the waitlist alone: `WAITLIST_ONLY=1` and deploy again. The other variab
 
 ## Checking it
 
-Last checked on 2026-10-21 (Phase 7.1):
+Last checked on 2026-10-22 (Phase 7.2):
 
-- `https://xtrakto.site` and any other path answer 307 to `/waitlist`, which answers 200; `https://www.xtrakto.site` answers 308 to the apex.
+- `https://xtrakto.site` and every page of the app answer 307 to `/sign-in` without a session; `/sign-in` and `/waitlist` answer 200; `https://www.xtrakto.site` answers 308 to the apex; `/api/inngest` answers 401 to a request Inngest didn't sign.
+- Clerk's domain status is complete (DNS, SSL for `clerk.` and `accounts.`, mail), and Inngest's app `xtrakto` is synced at `https://xtrakto.site/api/inngest` with its three functions.
+- The "Production migrations" workflow ran on the merge of 7.2 and production holds every migration.
+- An invited account uploaded the synthetic `quarterly-basic.xlsx`: its job ended with 33 new movements and "Saldo verificado", and the summary showed July to September 2026.
 - The certificate is Let's Encrypt's, which Vercel renews by itself, and every response carries `Strict-Transport-Security`.
 - Vercel's domain check says `misconfigured: false`, and both domains are `verified` in the project.
 - Every merge to `main` deployed to production; there is no preview deployment.

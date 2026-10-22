@@ -206,7 +206,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 7 — First deployment (private beta)**
 
 - [x] 7.1 [HUMAN] Domain xtrakto.site on Vercel
-- [ ] 7.2 [HUMAN] Production services
+- [x] 7.2 [HUMAN] Production services
 - [ ] 7.3 Error monitoring with Sentry
 - [ ] 7.4 Product analytics with PostHog
 - [ ] 7.5 Data flow document and privacy page
