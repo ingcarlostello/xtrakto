@@ -3,12 +3,31 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { POSTHOG_KEY } from "@/lib/analytics";
+import { PRIVACY_ROUTE } from "@/lib/auth-routes";
 import { ANALYTICS_CONSENT } from "@/utils/analytics-consent.helpers";
 import { ANALYTICS_COPY } from "../analytics.constants";
 import { useAnalyticsConsent } from "../hooks/use-analytics-consent";
 
 const COPY = ANALYTICS_COPY.notice;
 const TITLE_ID = "analytics-consent-title";
+const LINK_CLASS = "font-bold text-primary underline-offset-4 hover:underline";
+
+// What is counted, where to change the answer, and the privacy page.
+function NoticeText() {
+  return (
+    <p className="text-caption text-ink-secondary">
+      {COPY.description} {COPY.changeLater}{" "}
+      <Link href="/settings" className={LINK_CLASS}>
+        {COPY.settings}
+      </Link>
+      . {COPY.privacyLead}{" "}
+      <Link href={PRIVACY_ROUTE} className={LINK_CLASS}>
+        {COPY.privacy}
+      </Link>
+      .
+    </p>
+  );
+}
 
 /**
  * Asks once, in this browser, whether we may measure how the app is used
@@ -32,16 +51,7 @@ export function ConsentNotice() {
       <h2 id={TITLE_ID} className="font-heading text-section font-semibold">
         {COPY.title}
       </h2>
-      <p className="text-caption text-ink-secondary">
-        {COPY.description} {COPY.changeLater}{" "}
-        <Link
-          href="/settings"
-          className="font-bold text-primary underline-offset-4 hover:underline"
-        >
-          {COPY.settings}
-        </Link>
-        .
-      </p>
+      <NoticeText />
       <div className="flex flex-wrap gap-3">
         <Button variant="secondary" size="sm" onClick={() => answer(true)}>
           {COPY.accept}

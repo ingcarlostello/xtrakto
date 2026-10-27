@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { POSTHOG_KEY } from "@/lib/analytics";
+import { PRIVACY_ROUTE } from "@/lib/auth-routes";
 import { ANALYTICS_CONSENT } from "@/utils/analytics-consent.helpers";
 import { ANALYTICS_COPY } from "../analytics.constants";
 import { useAnalyticsConsent } from "../hooks/use-analytics-consent";
@@ -22,7 +24,15 @@ export function AnalyticsSetting() {
     <Card variant="card">
       <CardHeader>
         <h2 className="font-heading text-body font-bold">{COPY.title}</h2>
-        <CardDescription>{COPY.description}</CardDescription>
+        <CardDescription>
+          {COPY.description}{" "}
+          <Link
+            href={PRIVACY_ROUTE}
+            className="font-bold text-primary underline-offset-4 hover:underline"
+          >
+            {COPY.privacy}
+          </Link>
+        </CardDescription>
       </CardHeader>
       <label className="flex items-center gap-3 self-start text-sm font-bold">
         {COPY.label}

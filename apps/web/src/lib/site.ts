@@ -4,6 +4,9 @@
 /** The production address, for metadata, robots.txt and the sitemap. */
 export const SITE_URL = "https://xtrakto.site";
 
+/** Where people ask about their data, or for it to be deleted. */
+export const CONTACT_EMAIL = "hola@xtrakto.site";
+
 /**
  * Whether this deployment serves only the waitlist (16.0d, ADR 0022): the
  * proxy sends every other path to it, without Clerk, and the server needs

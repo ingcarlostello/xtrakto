@@ -22,12 +22,17 @@ export const WAITLIST_ROUTES = {
   joined: "/waitlist/joined",
 } as const;
 
+// How Xtrakto treats personal data (7.5), for anyone: Google's consent screen
+// links it, and a waitlist-only deployment serves it beside the waitlist.
+export const PRIVACY_ROUTE = "/privacy";
+
 const PUBLIC_PATH_PREFIXES = [
   AUTH_ROUTES.signIn,
   AUTH_ROUTES.signUp,
   CLERK_WEBHOOK_ROUTE,
   INNGEST_ROUTE,
   WAITLIST_ROUTES.join,
+  PRIVACY_ROUTE,
 ];
 
 const isUnder = (pathname: string, prefix: string): boolean =>
@@ -41,6 +46,6 @@ const isUnder = (pathname: string, prefix: string): boolean =>
 export const isPublicPath = (pathname: string): boolean =>
   PUBLIC_PATH_PREFIXES.some((prefix) => isUnder(pathname, prefix));
 
-/** The waitlist's pages: all a waitlist-only deployment serves (16.0d). */
-export const isWaitlistPath = (pathname: string): boolean =>
-  isUnder(pathname, WAITLIST_ROUTES.join);
+/** All a waitlist-only deployment serves (16.0d): the waitlist's pages and the privacy page. */
+export const isWaitlistOnlyPath = (pathname: string): boolean =>
+  isUnder(pathname, WAITLIST_ROUTES.join) || isUnder(pathname, PRIVACY_ROUTE);

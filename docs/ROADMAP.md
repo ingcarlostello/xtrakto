@@ -210,7 +210,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.3 Error monitoring with Sentry
 - [x] 7.4a Consent and PostHog, through an allowlist
 - [x] 7.4b Upload and correction events
-- [ ] 7.5 Data flow document and privacy page
+- [x] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
 - [ ] 7.7 Profile _(design v8)_
 - [ ] 7.8 Sample data to explore _(design v8)_
@@ -1505,6 +1505,8 @@ Split in two when it started (about 550 changed lines estimated), with the human
 **Commit:** `feat(web): privacy-preserving product analytics`
 
 #### 7.5 Data flow document and privacy page
+
+Decided with the human when it started (2026-10-27): the controller the page names is Carlos Tello, a natural person in Bogotá, with hola@xtrakto.site, which forwards to the owner's mailbox (the domain had no mail records, so the waitlist's address bounced); the page is `/privacy`, public, linked from the waitlist's footer, the analytics notice and "Medición de uso".
 
 **Tasks**
 
