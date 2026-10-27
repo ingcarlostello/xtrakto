@@ -5,6 +5,16 @@ export const SETTINGS_COPY = {
   subtitle: "Tus datos y tu cuenta.",
 } as const;
 
+/** How the export of every movement is named, before its date (7.6). */
+export const MY_DATA_CSV_NAME = "xtrakto-mis-datos";
+
+export const DOWNLOAD_DATA_COPY = {
+  title: "Descargar tus datos",
+  description:
+    "Todos tus movimientos guardados, también los que no cuentan en tu resumen, en un archivo CSV que abres con Excel.",
+  trigger: "Descargar mis datos (CSV)",
+} as const;
+
 export const DELETE_ACCOUNT_COPY = {
   title: "Eliminar tu cuenta y tus datos",
   description:

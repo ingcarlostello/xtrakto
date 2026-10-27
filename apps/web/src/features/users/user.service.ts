@@ -1,8 +1,35 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
-import { deleteAllUserData, findUserId, withUserContext } from "@xtrakto/db";
+import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
+import {
+  deleteAllUserData,
+  findUserId,
+  listExportMovements,
+  withUserContext,
+} from "@xtrakto/db";
 import { getDb } from "@/lib/db";
+import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
+import { MY_DATA_CSV_NAME } from "./user.constants";
+
+/**
+ * Every movement a Clerk user has, as a CSV (7.6): those that count nowhere
+ * too, each saying whether it counts in the summary, named by today's date
+ * in Bogotá. A user who never uploaded has no row, and gets the header
+ * alone. The Clerk id must come from the session.
+ */
+export const getMyDataCsv = async (clerkUserId: string): Promise<CsvFile> => {
+  const db = getDb();
+  const userId = await findUserId(db, clerkUserId);
+  const movements = userId
+    ? await withUserContext(db, userId, (ctx) => listExportMovements(ctx))
+    : [];
+  const today = localDateFromInstant(new Date(), DEFAULT_TIME_ZONE);
+  return {
+    fileName: `${MY_DATA_CSV_NAME}-${today}.csv`,
+    content: movementsCsv(movements, { withCounts: true }),
+  };
+};
 
 /**
  * Deletes every row of a Clerk user's data: their user and, with it, their

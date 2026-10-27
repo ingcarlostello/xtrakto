@@ -14,6 +14,7 @@ import {
   findUserId,
   listAccounts,
   listCategoryTotals,
+  listExportMovements,
   listMovementAccounts,
   listMovementQuarters,
   listTransactions,
@@ -29,12 +30,16 @@ import {
   selectPeriod,
 } from "@/components/period-controls/period-choices.helpers";
 import { getDb } from "@/lib/db";
+import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import { meetsPeriod } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { rulesOfMovement } from "./own-rules.helpers";
 import { movementList, movementSearchOf } from "./transaction-list.helpers";
-import { DEFAULT_CATEGORY_OF_KIND } from "./transaction.constants";
+import {
+  DEFAULT_CATEGORY_OF_KIND,
+  MOVEMENTS_CSV_NAME,
+} from "./transaction.constants";
 import type {
   AccountTransactions,
   OpenMovement,
@@ -44,6 +49,9 @@ import type {
 /** This year in Bogotá, which day headings leave out. */
 export const currentYearInBogota = (): string =>
   localDateFromInstant(new Date(), DEFAULT_TIME_ZONE).slice(0, 4);
+
+// What the list shows, without how many lines or which detail.
+type ListRequest = Omit<TransactionsRequest, "shown" | "movementId">;
 
 type Located = Pick<
   AccountTransactions,
@@ -70,7 +78,7 @@ const listShownAccounts = async (
 // statements that don't reconcile on the period's days.
 const locate = async (
   ctx: UserContext,
-  request: TransactionsRequest,
+  request: ListRequest,
 ): Promise<Located | undefined> => {
   const allUnreconciled = await listUnreconciledStatements(ctx);
   const accounts = await listShownAccounts(ctx, allUnreconciled);
@@ -114,6 +122,24 @@ const detailOf = async (
   };
 };
 
+// What the list shows of the account's period: its search, and its filter
+// or category. A category's movements are of one kind: no filter goes with
+// them.
+const listedIn = (
+  { account, period }: Located,
+  { search, category, filter }: ListRequest,
+) => {
+  const shownFilter = category === undefined ? filter : undefined;
+  return {
+    filter: shownFilter,
+    shownPeriod: { accountId: account.id, period: periodDays(period) },
+    selection: {
+      ...(search === undefined ? {} : { search: movementSearchOf(search) }),
+      ...selectionOf(shownFilter, category),
+    },
+  };
+};
+
 // The tiles and "Por revisar · 24" add up the whole period, whatever the
 // list shows of it.
 const periodKinds = async (
@@ -148,20 +174,14 @@ export const getAccountTransactions = async (
     const located = await locate(ctx, request);
     if (!located) return null;
     const { search, category } = request;
-    // A category's movements are of one kind: no filter goes with them.
-    const filter = category === undefined ? request.filter : undefined;
-    const shownPeriod = {
-      accountId: located.account.id,
-      period: periodDays(located.period),
-    };
-    const shown = {
-      ...shownPeriod,
-      ...(search === undefined ? {} : { search: movementSearchOf(search) }),
-      ...selectionOf(filter, category),
-    };
+    const { filter, shownPeriod, selection } = listedIn(located, request);
     // Every movement of the period: a month's interest line adds up all of
     // its abonos, and each day's balance comes from all of its movements.
-    const { items } = await listTransactions(ctx, { ...shown, offset: 0 });
+    const { items } = await listTransactions(ctx, {
+      ...shownPeriod,
+      ...selection,
+      offset: 0,
+    });
     return {
       ...located,
       total: items.length,
@@ -172,6 +192,35 @@ export const getAccountTransactions = async (
       ...(await periodKinds(ctx, shownPeriod)),
       detail: await detailOf(ctx, located.account.id, request.movementId),
       currentYear,
+    };
+  });
+};
+
+/**
+ * What the movements list shows, as a CSV (7.6): the account and period the
+ * request asks, or the latest, with its search, filter or category, every
+ * movement on its own line, oldest first. `null` when the list would show
+ * nothing. The Clerk id must come from the session.
+ */
+export const getMovementsCsv = async (
+  clerkUserId: string,
+  request: ListRequest,
+): Promise<CsvFile | null> => {
+  const db = getDb();
+  const userId = await findUserId(db, clerkUserId);
+  if (!userId) return null;
+  return withUserContext(db, userId, async (ctx) => {
+    const located = await locate(ctx, request);
+    if (!located) return null;
+    const { shownPeriod, selection } = listedIn(located, request);
+    const movements = await listExportMovements(ctx, {
+      countedIn: shownPeriod,
+      ...selection,
+    });
+    const { from, to } = shownPeriod.period;
+    return {
+      fileName: `${MOVEMENTS_CSV_NAME}-${from}-a-${to}.csv`,
+      content: movementsCsv(movements, { withCounts: false }),
     };
   });
 };

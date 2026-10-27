@@ -98,9 +98,10 @@ export const PRIVACY_COPY = {
     },
     {
       id: "borrar",
-      title: "Cómo borrar tu cuenta",
+      title: "Cómo descargar o borrar tus datos",
       paragraphs: [
-        "En Configuración, «Eliminar mi cuenta y mis datos» borra tus extractos, tus movimientos, tus cuentas, tus reglas y tu usuario, de una vez. No se puede deshacer.",
+        "En Configuración, «Descargar mis datos (CSV)» te da todos tus movimientos guardados en un archivo que abres con Excel.",
+        "Ahí mismo, «Eliminar mi cuenta y mis datos» borra tus extractos, tus movimientos, tus cuentas, tus reglas y tu usuario, de una vez. No se puede deshacer.",
       ],
     },
     {
