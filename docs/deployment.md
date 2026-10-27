@@ -11,6 +11,7 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | Auth            | Clerk application "Xtrakto", its production instance on xtrakto.site                                             |
 | Background jobs | Inngest Cloud's production environment, through its Vercel integration                                           |
 | Errors          | Sentry, organization `carlos-a4`, project `xtrakto` (ADR 0028)                                                   |
+| Analytics       | PostHog Cloud US, project `xtrakto`, only after the person's consent (ADR 0029)                                  |
 | Domain          | xtrakto.site, registered and with its DNS at Hostinger; www.xtrakto.site redirects to it (308)                   |
 | Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; the domain has no MX records for hola@       |
 
@@ -31,6 +32,7 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | `INNGEST_EVENT_KEY`                 | Set by Inngest's Vercel integration                                                                                                                                                           | —         |
 | `NEXT_PUBLIC_SENTRY_DSN`            | Sentry, project `xtrakto`, Client Keys (DSN). Public by design; inlined at build time                                                                                                         | Plain     |
 | `SENTRY_AUTH_TOKEN`                 | A Sentry organization token, for the build to upload source maps. Without it, the build uploads none                                                                                          | Sensitive |
+| `NEXT_PUBLIC_POSTHOG_KEY`           | PostHog, project `xtrakto`, its project API key (`phc_…`). Public by design; inlined at build time                                                                                            | Plain     |
 | `WAITLIST_ONLY`                     | Absent. `1` turns production back to the waitlist alone (ADR 0022)                                                                                                                            | Plain     |
 
 `INNGEST_DEV` never goes on Vercel: dev mode skips Inngest's signature check, and `env.ts` refuses it there.
@@ -59,6 +61,14 @@ Errors from the browser and the server, and one request in ten traced, go to the
 - **In Sentry's project** (Settings, Projects, xtrakto, Security & Privacy): the data scrubber and its default scrubbers on, "Prevent Storing of IP Addresses" on, and the advanced rule `[Remove] [Anything] from [$user.geo.**]`, since Sentry derives the person's city from the IP even when it doesn't store it.
 - **Source maps:** the build uploads them only with `SENTRY_AUTH_TOKEN`, which only Vercel's builds have (`apps/web/turbo.json` lets it through Turbo's strict environment), and deletes them before the deployment serves them.
 - **Off elsewhere:** without `NEXT_PUBLIC_SENTRY_DSN`, locally and in CI, Sentry doesn't start. To check it locally, build and start in production mode with the DSN in the shell, never in `.env.local`, and `NEXT_PUBLIC_VERCEL_ENV=local-check` at build and `SENTRY_ENVIRONMENT=local-check` at start, so its events stay apart from production's.
+
+## PostHog
+
+Product analytics, from the browser and only after the person says yes in the notice above the dock, or later in `/settings` (ADR 0029):
+
+- **In the app:** `lib/analytics.ts` downloads the SDK the first time an event goes with consent, with everything automatic off (page views, clicks, heatmaps, replay, surveys, flags, remote configuration, external scripts) and nobody identified. `utils/posthog-scrub.helpers.ts` lets only the events of `utils/analytics-events.constants.ts` through, each with its own properties, what PostHog needs to receive it and the browser, system, kind of device and host, and adds `$geoip_disable`. Turning the setting off opts PostHog out, which deletes the id it kept in the browser.
+- **In PostHog's project** (Cloud US, id 691566): "Discard client IP data" on, the GeoIP transformation off (Data pipelines), everything automatic off at the project too (autocapture, replay, console logs, performance, heatmaps, surveys, web vitals, exceptions), the time zone Bogotá's, and events whose `$host` contains `localhost` filtered as test accounts, by default. Set on 2026-10-27 through PostHog's API (`PATCH /api/environments/691566/`) from a signed-in browser.
+- **Off elsewhere:** without `NEXT_PUBLIC_POSTHOG_KEY`, locally and in CI, the notice doesn't show and nothing loads. To check it locally, pass the key in the shell to the build and the start, never in `.env.local`: the events carry `$host` `localhost`, which the project filters out.
 
 ## Database
 

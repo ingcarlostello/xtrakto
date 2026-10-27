@@ -46,3 +46,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0026](0026-nequi-numbers-and-reference-rules-by-direction.md)    | Nequi numbers wait for review, and a reference rule holds the ways its category allows | Accepted |
 | [0027](0027-private-beta-by-invitation.md)                        | A private beta by invitation                                                           | Accepted |
 | [0028](0028-errors-reach-sentry-through-an-allowlist.md)          | Errors reach Sentry through an allowlist                                               | Accepted |
+| [0029](0029-analytics-after-consent-through-an-allowlist.md)      | Product analytics only after consent, from the browser, through an allowlist           | Accepted |

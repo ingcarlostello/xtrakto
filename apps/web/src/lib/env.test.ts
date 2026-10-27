@@ -21,6 +21,8 @@ const SIGNING_KEY = ["signkey", "prod", "secretSigningKey0123456789"].join("-");
 const EVENT_KEY = "secret-event-key-0123456789";
 const DEV_SERVER = "http://127.0.0.1:8288";
 const SENTRY_DSN = "https://publickey@o1.ingest.us.sentry.io/2";
+const POSTHOG_KEY = fakeKey("phc", "projectKey0123456789abcdef");
+const PERSONAL_KEY = fakeKey("phx", "secretPersonalKey0123456789");
 const REQUIRED = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
@@ -236,6 +238,33 @@ describe("parseServerEnv", () => {
       );
     },
   );
+
+  it.each([undefined, ""])(
+    "leaves analytics off without PostHog's key (%j), as locally and in CI",
+    (key) => {
+      expect(
+        parseServerEnv({ ...VALID, NEXT_PUBLIC_POSTHOG_KEY: key })
+          .NEXT_PUBLIC_POSTHOG_KEY,
+      ).toBeUndefined();
+    },
+  );
+
+  it("accepts PostHog's project key", () => {
+    expect(
+      parseServerEnv({ ...VALID, NEXT_PUBLIC_POSTHOG_KEY: POSTHOG_KEY })
+        .NEXT_PUBLIC_POSTHOG_KEY,
+    ).toBe(POSTHOG_KEY);
+  });
+
+  it("refuses a personal API key, a secret, without printing it", () => {
+    const message = failureOf({
+      ...VALID,
+      NEXT_PUBLIC_POSTHOG_KEY: PERSONAL_KEY,
+    });
+
+    expect(message).toContain("NEXT_PUBLIC_POSTHOG_KEY");
+    expect(message).not.toContain("secret");
+  });
 });
 
 describe("parseWaitlistEnv", () => {

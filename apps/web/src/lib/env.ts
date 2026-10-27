@@ -65,6 +65,12 @@ const serverEnvShape = z.object({
   // browser too). Unset locally and in CI, where Sentry stays off; a malformed
   // one stops the server rather than turning error monitoring off unnoticed.
   NEXT_PUBLIC_SENTRY_DSN: optional(z.url({ protocol: /^https$/ })),
+  // PostHog's project key (lib/analytics.ts reads it, inlined, in the
+  // browser). Unset locally and in CI, where analytics stays off. The prefix
+  // catches a personal API key, a secret, pasted in this public variable.
+  NEXT_PUBLIC_POSTHOG_KEY: optional(
+    z.string().regex(/^phc_/, "must start with phc_"),
+  ),
   // Set by Next.js: production for `next build`, `next start` and Vercel.
   NODE_ENV: z.string().optional(),
   // Set by Vercel on every deployment, previews included.
