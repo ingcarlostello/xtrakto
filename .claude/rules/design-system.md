@@ -317,6 +317,7 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Recurring payments                            | `calendar`                         |
 | Privacy                                       | `shield-check`                     |
 | Upload                                        | `upload`                           |
+| Download a CSV                                | `file-down` (`download` is income) |
 | Ask / chat                                    | `message-square`                   |
 | Summary                                       | `layout-grid`                      |
 | Transactions                                  | `list`                             |
@@ -723,6 +724,10 @@ The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box,
 ### Privacy page
 
 v8 doesn't draw it; as Phase 7.5 builds it (`/privacy`, public): the waitlist's frame (its header without the action, and its footer, which links the page beside the contact), and a 760px column: the page title ("Cómo cuidamos tus datos") with one line in Body `--text-secondary` and the date it took effect in Caption `--text-muted`, then one `card` with the sections 32px apart, each an h2 in Outfit 600 18px over its paragraphs and its bulleted list in Body `--text-secondary` (`--text-faint` bullets). The contact address is a link wherever it's named. The analytics notice and "Medición de uso" link it too.
+
+### CSV downloads
+
+As Phase 7.6 builds them (`CsvDownloadButton`, `components/csv-download/`): a Secondary button with `file-down` that asks the server for the file and hands it to the browser. While it waits it reads "Preparando el archivo…", keeps its focus and can't be pressed again; a failure shows below it in Caption 600 `--danger` with `role="alert"`. Movimientos puts "Descargar CSV" after the period controls, as their action (full width on phones); `/settings` has "Descargar tus datos", a card with its line and "Descargar mis datos (CSV)", before the deletion (7.7 joins them in "Privacidad y datos").
 
 ### Chat ("Pregúntale a tu extracto")
 

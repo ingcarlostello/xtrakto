@@ -83,6 +83,11 @@ export {
   type MovementDetail,
 } from "./transactions/transaction-detail.queries";
 export {
+  type ExportFilter,
+  type ExportMovement,
+  listExportMovements,
+} from "./transactions/transaction-export.queries";
+export {
   dismissReview,
   listReviewMovements,
   type ReviewFilter,

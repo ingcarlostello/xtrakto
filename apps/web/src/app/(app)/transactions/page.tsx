@@ -4,6 +4,7 @@ import { UploadStatementLink } from "@/components/empty-state/UploadStatementLin
 import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/components/period-controls/PeriodControls";
+import { DownloadCsvButton } from "@/features/transactions/components/DownloadCsvButton";
 import { KindTiles } from "@/features/transactions/components/KindTiles";
 import { MovementDetailColumn } from "@/features/transactions/components/MovementDetailColumn";
 import { TransactionList } from "@/features/transactions/components/TransactionList";
@@ -40,8 +41,9 @@ export default async function TransactionsPage({
   searchParams,
 }: PageProps<"/transactions">) {
   const clerkUserId = await requireSignedIn();
+  const params = await searchParams;
   const { account, period, q, filter, category, show, movement } =
-    transactionsSearchSchema.parse(await searchParams);
+    transactionsSearchSchema.parse(params);
   const transactions = await getAccountTransactions(clerkUserId, {
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),
@@ -59,6 +61,7 @@ export default async function TransactionsPage({
       <PeriodControls
         choices={transactions}
         hrefOf={listHrefOf(transactions)}
+        action={<DownloadCsvButton searchParams={params} />}
       />
       {transactions.unreconciled.map((statement) => (
         <UnreconciledNotice key={statement.id} statement={statement} />

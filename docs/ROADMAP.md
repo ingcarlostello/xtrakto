@@ -211,7 +211,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.4a Consent and PostHog, through an allowlist
 - [x] 7.4b Upload and correction events
 - [x] 7.5 Data flow document and privacy page
-- [ ] 7.6 Export my data
+- [x] 7.6 Export my data
 - [ ] 7.7 Profile _(design v8)_
 - [ ] 7.8 Sample data to explore _(design v8)_
 
@@ -1517,6 +1517,8 @@ Decided with the human when it started (2026-10-27): the controller the page nam
 **Commit:** `docs: data flow and privacy page`
 
 #### 7.6 Export my data
+
+Decided with the human when it started (2026-10-27): the CSV is for Excel in Spanish (semicolons, a decimal comma, a byte order mark), and "Descargar mis datos" holds every movement saved, also those that count nowhere, saying which count, as the right to know one's data asks; Movimientos's CSV holds what its list shows.
 
 **Tasks:** CSV export of all the user's transactions from settings, next to the "delete my data" action ("Descargar mis datos (CSV)", `docs/ui/v8-11`), and of the selected period from Movimientos ("Descargar CSV", `v8-03`).
 
