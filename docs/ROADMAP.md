@@ -209,7 +209,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.2 [HUMAN] Production services
 - [x] 7.3 Error monitoring with Sentry
 - [x] 7.4a Consent and PostHog, through an allowlist
-- [ ] 7.4b Upload and correction events
+- [x] 7.4b Upload and correction events
 - [ ] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
 - [ ] 7.7 Profile _(design v8)_

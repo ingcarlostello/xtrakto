@@ -90,6 +90,28 @@ describe("scrubCapture", () => {
     for (const leak of LEAKS) expect(sent).not.toContain(leak);
   });
 
+  it("keeps the properties an event declares, and only those", () => {
+    const capture = leakyCapture("statement_uploaded");
+    const uploaded = {
+      ...capture,
+      properties: {
+        ...capture.properties,
+        format_id: "bancolombia-savings-quarterly",
+        movements: "200-499",
+        period: "2026-06-30",
+        scope: "movement",
+      },
+    };
+
+    expect(scrubCapture(uploaded)?.properties).toEqual({
+      ...DELIVERY,
+      format_id: "bancolombia-savings-quarterly",
+      movements: "200-499",
+      $process_person_profile: false,
+      $geoip_disable: true,
+    });
+  });
+
   it.each([
     "$pageview",
     "$pageleave",
