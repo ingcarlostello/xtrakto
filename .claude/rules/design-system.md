@@ -720,6 +720,10 @@ The landing of the human's design, `/waitlist`, max width 1120px:
 
 The consent sits in a `--primary-soft-2` panel (radius 16, padding 16): the box, the consent in Caption `--text-secondary`, and the deletion line in `--text-muted`. Until the box is checked, the full-width primary button is grey (`--chart-axis`, `--text-secondary`, no shadow), focusable, with "Marca la casilla para poder enviar." below it in Caption `--text-muted` as its description. A failure sits on the attention surface with its dot, saying what to do. "Ya estás en la lista" is a centered card with an 80px `--income-soft` circle and its check, then the deletion line below it.
 
+### Privacy page
+
+v8 doesn't draw it; as Phase 7.5 builds it (`/privacy`, public): the waitlist's frame (its header without the action, and its footer, which links the page beside the contact), and a 760px column: the page title ("Cómo cuidamos tus datos") with one line in Body `--text-secondary` and the date it took effect in Caption `--text-muted`, then one `card` with the sections 32px apart, each an h2 in Outfit 600 18px over its paragraphs and its bulleted list in Body `--text-secondary` (`--text-faint` bullets). The contact address is a link wherever it's named. The analytics notice and "Medición de uso" link it too.
+
 ### Chat ("Pregúntale a tu extracto")
 
 - Panel: `--surface-panel`, `--radius-lg`, `--shadow-panel`.
