@@ -12,6 +12,7 @@ import { PendingReviewBanner } from "@/features/review/components/PendingReviewB
 import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
 import { GlanceSection } from "@/features/summary/components/GlanceSection";
+import { SummaryViewed } from "@/features/summary/components/SummaryViewed";
 import { WhereItWent } from "@/features/summary/components/WhereItWent";
 import { SUMMARY_COPY } from "@/features/summary/summary.constants";
 import { getSummary } from "@/features/summary/summary.service";
@@ -97,6 +98,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         <DayByDayChart summary={summary} />
         <WhereItWent summary={summary} />
       </div>
+      <SummaryViewed />
     </>
   );
 }

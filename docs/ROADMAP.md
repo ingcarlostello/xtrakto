@@ -208,7 +208,8 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.1 [HUMAN] Domain xtrakto.site on Vercel
 - [x] 7.2 [HUMAN] Production services
 - [x] 7.3 Error monitoring with Sentry
-- [ ] 7.4 Product analytics with PostHog
+- [x] 7.4a Consent and PostHog, through an allowlist
+- [ ] 7.4b Upload and correction events
 - [ ] 7.5 Data flow document and privacy page
 - [ ] 7.6 Export my data
 - [ ] 7.7 Profile _(design v8)_
@@ -1479,10 +1480,25 @@ Decided with the human when it started (2026-10-22): the browser too, not only t
 
 #### 7.4 Product analytics with PostHog
 
+Split in two when it started (about 550 changed lines estimated), with the human's approval (2026-10-27). Decided with the human: PostHog Cloud US; the consent is asked in a notice above the dock, both answers of the same weight, and kept in the browser; and `category_corrected` counts only the corrections of a movement's detail.
+
+#### 7.4a Consent and PostHog, through an allowlist
+
 **Tasks**
 
-- Explicit events only (`statement_uploaded`, `ingestion_failed`, `summary_viewed`, `category_corrected`) with format ids, row count buckets and error codes. Autocapture and session recording off.
-- Analytics only after the user's consent.
+- PostHog in the browser, downloaded only after the person's consent, with autocapture, session recording and everything else automatic off, nobody identified, and an allowlist in `before_send` (ADR 0029).
+- The consent notice above the dock (v8 doesn't draw it), and "Medición de uso" in `/settings` to change the answer at any time; withdrawing deletes PostHog's id.
+- `summary_viewed`, the first event, to prove the way to PostHog.
+
+**Done when:** nothing loads or goes without consent, events carry no financial or personal data and no URLs with search terms (tested), and a check reaches PostHog with only what the allowlist keeps.
+
+**Commit:** `feat(web): analytics after consent, through an allowlist`
+
+#### 7.4b Upload and correction events
+
+**Tasks**
+
+- Explicit events only (`statement_uploaded`, `ingestion_failed`, `category_corrected`) with format ids, row count buckets and error codes, once each, for the files the page sent.
 
 **Done when:** events carry no financial or personal data, and no URLs with search terms (tested).
 
