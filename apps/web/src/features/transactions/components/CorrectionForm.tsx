@@ -2,9 +2,10 @@
 
 import type { CategoryId, CategoryKind } from "@xtrakto/core";
 import { ChevronDown, CircleAlert } from "lucide-react";
-import { type ReactNode, useActionState } from "react";
+import { type ReactNode, useActionState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 import { correctMovement } from "../actions/correct-movement.action";
 import {
   CATEGORY_ICONS,
@@ -197,6 +198,11 @@ export function CorrectionForm({
   const onSubmit = useSubmitWithoutReset(dispatch);
   const { kind, category, chooseKind, chooseCategory } =
     useCorrectionChoice(view);
+  // Each saved correction tells PostHog whether it was for this movement or
+  // for every one with its text, never which category (ADR 0029).
+  useEffect(() => {
+    if (state?.ok) track("category_corrected", { scope: state.value.scope });
+  }, [state]);
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <input type="hidden" name="account" value={view.accountId} />

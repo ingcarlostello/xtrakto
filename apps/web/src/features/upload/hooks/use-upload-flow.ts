@@ -17,6 +17,7 @@ import type {
   FileToSend,
   UploadAccount,
 } from "../upload.types";
+import { useUploadEvents } from "./use-upload-events";
 import { useUploadQueue } from "./use-upload-queue";
 import { useUploadStatuses } from "./use-upload-statuses";
 
@@ -143,6 +144,7 @@ export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
   };
   const sendAll = () => void sendFiles(files);
   const { restored, statuses } = useSentJobs(sentJobIds(queue.items));
+  useUploadEvents(queue.items, statuses.jobs);
   return {
     restored,
     statuses,
