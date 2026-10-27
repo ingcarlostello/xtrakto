@@ -686,9 +686,16 @@ As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a ne
 
 ### Switch
 
-For "Es mío" and the email notices: `--primary` when on, `--ring-track` when off, always with a visible label.
+For "Es mío", the email notices and "Permitir la medición de uso" in `/settings`: `--primary` when on, `--ring-track` when off, always with a visible label.
 
 As Phase 6.3d builds it (`Switch`, `components/ui/switch.tsx`, on Base UI): a 44 × 26 pill with a 20px white thumb and `--shadow-chip`; off, the track is edged in 1.5px `--text-faint`, as the checkbox (3.7:1 on white, which a control's edge needs). Its visible label sits beside it, Manrope 700 14px, inside a `<label>` that wraps it, and it's named by what it changes ("Es mío: Nequi terminado en 1270"). Its hidden input sends its value with the form when it's on; its hit area reaches 44px.
+
+### Analytics consent
+
+v8 doesn't draw it; as Phase 7.4a builds it (`features/analytics/`, ADR 0029), only where PostHog has a key:
+
+- **The notice** (`ConsentNotice`): once per browser on the app's pages, until answered. Fixed above the dock, so the page doesn't move when it appears after hydrating: 10px above the phone's bottom bar, 8px from each side, and from `sm` 14px above the dock, centered, at most 560px wide. `--surface`, `--radius-lg`, padding 20, `--shadow-panel`; the title in Outfit 600 18px ("¿Nos dejas medir cómo usas Xtrakto?"), the line in Caption `--text-secondary` with "Configuración" as an inline link (`--primary`, 700, underline on hover), then "Sí, acepto" and "No, gracias", small Secondary buttons of the same weight. A region named by its title; once answered it goes, and the focus goes to the page's `main`.
+- **"Medición de uso"** (`AnalyticsSetting`) in `/settings`: a card with its line and the switch "Permitir la medición de uso", disabled until the browser has read the answer.
 
 ### Text field
 
