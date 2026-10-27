@@ -7,7 +7,7 @@ import {
 import {
   AUTH_ROUTES,
   isPublicPath,
-  isWaitlistPath,
+  isWaitlistOnlyPath,
   WAITLIST_ROUTES,
 } from "@/lib/auth-routes";
 import { isWaitlistOnly } from "@/lib/site";
@@ -26,11 +26,11 @@ const clerkProxy = clerkMiddleware(
 );
 
 // A waitlist-only deployment (16.0d, ADR 0022) has no Clerk: every path but
-// the waitlist's goes to it, the app's home and its API included. A server
-// action posted to the waitlist from another page still fails, on its own
-// session check.
+// the waitlist's and the privacy page goes to the waitlist, the app's home
+// and its API included. A server action posted to the waitlist from another
+// page still fails, on its own session check.
 const waitlistOnlyProxy = (request: NextRequest): NextResponse =>
-  isWaitlistPath(request.nextUrl.pathname)
+  isWaitlistOnlyPath(request.nextUrl.pathname)
     ? NextResponse.next()
     : NextResponse.redirect(new URL(WAITLIST_ROUTES.join, request.url));
 

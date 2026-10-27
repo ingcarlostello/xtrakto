@@ -1,8 +1,7 @@
 // The waitlist's copy, from the human's design ("Xtrakto — Landing lista de
 // espera"), in one place (project rules §5).
 
-/** Where people ask for their data to be deleted; the consent names it. */
-export const CONTACT_EMAIL = "hola@xtrakto.site";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 /**
  * The consent people give, and its version, stored with each entry as the
@@ -64,6 +63,7 @@ export const WAITLIST_COPY = {
   footer: {
     copyright: "© 2026 Xtrakto · xtrakto.site",
     contact: `Contacto: ${CONTACT_EMAIL}`,
+    privacy: "Privacidad",
   },
 } as const;
 

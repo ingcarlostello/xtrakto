@@ -13,7 +13,7 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | Errors          | Sentry, organization `carlos-a4`, project `xtrakto` (ADR 0028)                                                   |
 | Analytics       | PostHog Cloud US, project `xtrakto`, only after the person's consent (ADR 0029)                                  |
 | Domain          | xtrakto.site, registered and with its DNS at Hostinger; www.xtrakto.site redirects to it (308)                   |
-| Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; the domain has no MX records for hola@       |
+| Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; Forward Email forwards hola@ to the owner    |
 
 ## Vercel project
 
@@ -105,6 +105,16 @@ For Clerk's production instance, as its domain status lists them:
 | `clk2._domainkey` | CNAME | `dkim2.z56mdoxvt5fg.clerk.services` |
 
 The SPF, DKIM and DMARC records Hostinger created stay as they are. Vercel and Clerk issue their HTTPS certificates once the records resolve.
+
+For hola@xtrakto.site (7.5), through Forward Email's free plan, which reads its rule from DNS, without an account:
+
+| Name | Type | Value                                                                            |
+| ---- | ---- | -------------------------------------------------------------------------------- |
+| `@`  | MX   | `mx1.forwardemail.net` and `mx2.forwardemail.net`, priority 10                   |
+| `@`  | TXT  | `forward-email=hola:<the owner's Gmail>`, public by Forward Email's design       |
+| `@`  | TXT  | SPF: `v=spf1 include:_spf.reach.hostinger.com include:spf.forwardemail.net ~all` |
+
+Replies go out from the owner's Gmail, not as hola@: sending as the domain needs a paid plan.
 
 ## Turning the app on, or back off
 

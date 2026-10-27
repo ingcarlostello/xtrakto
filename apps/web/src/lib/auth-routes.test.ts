@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath, isWaitlistPath } from "./auth-routes";
+import { isPublicPath, isWaitlistOnlyPath } from "./auth-routes";
 
-describe("isWaitlistPath", () => {
-  it.each(["/waitlist", "/waitlist/joined"])(
+describe("isWaitlistOnlyPath", () => {
+  it.each(["/waitlist", "/waitlist/joined", "/privacy"])(
     "serves %s in a waitlist-only deployment",
     (path) => {
-      expect(isWaitlistPath(path)).toBe(true);
+      expect(isWaitlistOnlyPath(path)).toBe(true);
     },
   );
 
@@ -17,8 +17,9 @@ describe("isWaitlistPath", () => {
     "/api/webhooks/clerk",
     "/waitlistx",
     "/waitlist-admin",
+    "/privacyx",
   ])("sends %s to the waitlist in a waitlist-only deployment", (path) => {
-    expect(isWaitlistPath(path)).toBe(false);
+    expect(isWaitlistOnlyPath(path)).toBe(false);
   });
 });
 
@@ -33,6 +34,7 @@ describe("isPublicPath", () => {
     "/api/inngest",
     "/waitlist",
     "/waitlist/joined",
+    "/privacy",
   ])("lets a signed-out visitor open %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -50,6 +52,7 @@ describe("isPublicPath", () => {
     "/api/inngestx",
     "/waitlistx",
     "/waitlist-admin",
+    "/privacy-admin",
   ])("asks for a session on %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });

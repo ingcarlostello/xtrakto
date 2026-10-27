@@ -5,6 +5,8 @@ export const ANALYTICS_COPY = {
       "Contamos qué partes de la app usas para mejorarla, nunca montos, nombres ni descripciones.",
     changeLater: "Puedes cambiarlo cuando quieras en",
     settings: "Configuración",
+    privacyLead: "Lo explicamos en",
+    privacy: "nuestra política de privacidad",
     accept: "Sí, acepto",
     decline: "No, gracias",
   },
@@ -13,5 +15,6 @@ export const ANALYTICS_COPY = {
     description:
       "Si la permites, contamos qué partes de la app usas, sin montos, nombres ni descripciones. No la usamos para publicidad.",
     label: "Permitir la medición de uso",
+    privacy: "Cómo cuidamos tus datos",
   },
 } as const;
