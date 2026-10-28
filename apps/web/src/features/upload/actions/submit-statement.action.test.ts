@@ -5,11 +5,13 @@ import { submitStatement } from "./submit-statement.action";
 const mocks = vi.hoisted(() => ({
   getSignedInClerkUserId: vi.fn(),
   queueStatement: vi.fn(),
+  endExample: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
   getSignedInClerkUserId: mocks.getSignedInClerkUserId,
 }));
+vi.mock("@/lib/example-mode", () => ({ endExample: mocks.endExample }));
 vi.mock("../upload.service", () => ({
   queueStatement: mocks.queueStatement,
 }));
@@ -75,4 +77,20 @@ describe("submitStatement", () => {
       });
     },
   );
+
+  it("leaves the example once a statement is on its way, not before", async () => {
+    mocks.queueStatement.mockResolvedValue({
+      ok: false,
+      error: { code: "LIMIT_REACHED" },
+    });
+    await submitStatement({ content: CONTENT });
+    expect(mocks.endExample).not.toHaveBeenCalled();
+
+    mocks.queueStatement.mockResolvedValue({
+      ok: true,
+      value: { jobId: "job" },
+    });
+    await submitStatement({ content: CONTENT });
+    expect(mocks.endExample).toHaveBeenCalledOnce();
+  });
 });

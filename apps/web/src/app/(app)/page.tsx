@@ -8,6 +8,9 @@ import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/components/period-controls/PeriodControls";
 import { Button } from "@/components/ui/button";
+import { ExampleBanner } from "@/features/example/components/ExampleBanner";
+import { ExploreExampleButton } from "@/features/example/components/ExploreExampleButton";
+import { EXAMPLE_COPY } from "@/features/example/example.constants";
 import { PendingReviewBanner } from "@/features/review/components/PendingReviewBanner";
 import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
@@ -19,7 +22,7 @@ import { getSummary } from "@/features/summary/summary.service";
 import { UnreconciledEmpty } from "@/features/transactions/components/Unreconciled";
 import { findUnreconciledStatement } from "@/features/transactions/transaction.service";
 import { HowItWorks } from "@/features/upload/components/HowItWorks";
-import { requireSignedIn } from "@/lib/auth";
+import { requireViewer } from "@/lib/example-mode";
 import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 import { summaryHref } from "@/utils/transactions-url.helpers";
 
@@ -27,9 +30,9 @@ const COPY = PAGE_COPY.summary;
 
 export const metadata: Metadata = { title: COPY.title };
 
-// Before any movement counts (docs/ui/v8-12): what uploading brings, and
-// the bank's download paths beside it; or the way to a statement that
-// doesn't reconcile, when nothing else counts.
+// Before any movement counts (docs/ui/v8-12): what uploading brings, or the
+// example, and the bank's download paths beside it; or the way to a
+// statement that doesn't reconcile, when nothing else counts.
 async function NoSummary({ clerkUserId }: { clerkUserId: string }) {
   const unreconciled = await findUnreconciledStatement(clerkUserId);
   return (
@@ -46,7 +49,15 @@ async function NoSummary({ clerkUserId }: { clerkUserId: string }) {
             <EmptyState
               title={COPY.emptyTitle}
               description={COPY.emptyDescription}
-              action={<UploadStatementLink />}
+              action={
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <UploadStatementLink />
+                  <ExploreExampleButton
+                    label={EXAMPLE_COPY.open.summary}
+                    variant="secondary"
+                  />
+                </div>
+              }
             />
           )}
         </div>
@@ -62,9 +73,9 @@ async function NoSummary({ clerkUserId }: { clerkUserId: string }) {
 // beside the account's card, over its balance and real spending day by day
 // beside where it went, under the color legend and the period controls,
 // with the review banner while groups wait. The account and the period live
-// in the URL.
+// in the URL; the example's, while the browser explores it (7.8).
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
-  const clerkUserId = await requireSignedIn();
+  const { clerkUserId, isExample } = await requireViewer();
   const { account, period } = accountPeriodSearchSchema.parse(
     await searchParams,
   );
@@ -75,6 +86,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
   if (!summary) return <NoSummary clerkUserId={clerkUserId} />;
   return (
     <>
+      {isExample && <ExampleBanner />}
       <PageHeader title={SUMMARY_COPY.title} />
       <KindLegend />
       <PeriodControls
@@ -98,7 +110,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         <DayByDayChart summary={summary} />
         <WhereItWent summary={summary} />
       </div>
-      <SummaryViewed />
+      {!isExample && <SummaryViewed />}
     </>
   );
 }

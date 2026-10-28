@@ -3,6 +3,8 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { UploadStatementLink } from "@/components/empty-state/UploadStatementLink";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusPill } from "@/components/status-pill/StatusPill";
+import { ExampleBanner } from "@/features/example/components/ExampleBanner";
+import { EXAMPLE_COPY } from "@/features/example/example.constants";
 import { AnsweredGroup } from "@/features/review/components/AnsweredGroup";
 import { NothingToReview } from "@/features/review/components/NothingToReview";
 import { NumbersCard } from "@/features/review/components/NumbersCard";
@@ -18,7 +20,7 @@ import type {
   Review,
   ReviewGroup,
 } from "@/features/review/review.types";
-import { requireSignedIn } from "@/lib/auth";
+import { requireViewer } from "@/lib/example-mode";
 import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 
 export const metadata: Metadata = { title: COPY.pageTitle };
@@ -90,14 +92,38 @@ function ReviewGroups({ review }: { review: Review }) {
   );
 }
 
+// The groups and what's at stake; the example's groups can't be answered.
+function GroupsAndStakes({
+  review,
+  isExample,
+}: {
+  review: Review;
+  isExample: boolean;
+}) {
+  return (
+    <div className="flex w-full flex-wrap items-start gap-5.5">
+      {isExample && (
+        <p className="w-full text-caption font-semibold text-ink-secondary">
+          {EXAMPLE_COPY.readOnly}
+        </p>
+      )}
+      <fieldset disabled={isExample} className="contents">
+        <ReviewGroups review={review} />
+      </fieldset>
+      <StakesPanel review={review} />
+    </div>
+  );
+}
+
 // docs/ui/v8-02: what waits for review in an account's quarter, asked by
 // group, the best guess first, and what was answered, with what's at stake
 // beside it (under it on phones). The account and the quarter live in the
-// URL, as in Movimientos.
+// URL, as in Movimientos. The example's, while the browser explores it
+// (7.8), can be read but not answered.
 export default async function ReviewPage({
   searchParams,
 }: PageProps<"/review">) {
-  const clerkUserId = await requireSignedIn();
+  const { clerkUserId, isExample } = await requireViewer();
   const { account, period } = accountPeriodSearchSchema.parse(
     await searchParams,
   );
@@ -108,6 +134,7 @@ export default async function ReviewPage({
   if (!review) return <NoMovements />;
   return (
     <>
+      {isExample && <ExampleBanner />}
       <div className="flex w-full flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
@@ -125,10 +152,7 @@ export default async function ReviewPage({
       {review.groups.length === 0 ? (
         <NothingToReview account={review.account} period={review.period} />
       ) : (
-        <div className="flex w-full flex-wrap items-start gap-5.5">
-          <ReviewGroups review={review} />
-          <StakesPanel review={review} />
-        </div>
+        <GroupsAndStakes review={review} isExample={isExample} />
       )}
     </>
   );

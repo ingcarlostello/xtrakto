@@ -22,12 +22,15 @@ function NoMovementChosen() {
 
 /**
  * The movements list's side column (docs/ui/v8-03): the detail of the
- * movement the URL asks, which stays in sight as the list scrolls.
+ * movement the URL asks, which stays in sight as the list scrolls. With a
+ * read-only note, as the example has (7.8), nothing in it can be changed.
  */
 export function MovementDetailColumn({
   transactions,
+  readOnlyNote,
 }: {
   transactions: AccountTransactions;
+  readOnlyNote?: string | undefined;
 }) {
   const { detail, account, list } = transactions;
   const { close } = detailLinks(listLinkOf(transactions), {
@@ -42,6 +45,7 @@ export function MovementDetailColumn({
           correction={correctionView(detail, account.id)}
           own={ownRulesView(detail, account.id)}
           closeHref={close}
+          readOnlyNote={readOnlyNote}
         />
       ) : (
         <NoMovementChosen />

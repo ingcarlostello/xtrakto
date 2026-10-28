@@ -11,13 +11,28 @@ import { getCategories } from "@/features/categories/categories.service";
 import { MovedNotSpending } from "@/features/categories/components/MovedNotSpending";
 import { SpendingByCategory } from "@/features/categories/components/SpendingByCategory";
 import { YourRules } from "@/features/categories/components/YourRules";
-import { requireSignedIn } from "@/lib/auth";
+import { ExampleBanner } from "@/features/example/components/ExampleBanner";
+import { requireViewer } from "@/lib/example-mode";
 import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 import { categoriesHref } from "@/utils/transactions-url.helpers";
 
 const COPY = PAGE_COPY.categories;
 
 export const metadata: Metadata = { title: COPY.title };
+
+// Before any movement counts.
+function NoCategories() {
+  return (
+    <>
+      <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
+      <EmptyState
+        title={COPY.emptyTitle}
+        description={COPY.emptyDescription}
+        action={<UploadStatementLink />}
+      />
+    </>
+  );
+}
 
 // docs/ui/v8-05: an account's real spending by category in a quarter or one
 // of its months, beside where the rest only moved, the payments through
@@ -26,7 +41,7 @@ export const metadata: Metadata = { title: COPY.title };
 export default async function CategoriesPage({
   searchParams,
 }: PageProps<"/categories">) {
-  const clerkUserId = await requireSignedIn();
+  const { clerkUserId, isExample } = await requireViewer();
   const { account, period } = accountPeriodSearchSchema.parse(
     await searchParams,
   );
@@ -34,22 +49,12 @@ export default async function CategoriesPage({
     ...(account === undefined ? {} : { accountId: account }),
     ...(period === undefined ? {} : { period }),
   });
-  const header = <PageHeader title={COPY.title} subtitle={COPY.subtitle} />;
-  if (!categories)
-    return (
-      <>
-        {header}
-        <EmptyState
-          title={COPY.emptyTitle}
-          description={COPY.emptyDescription}
-          action={<UploadStatementLink />}
-        />
-      </>
-    );
+  if (!categories) return <NoCategories />;
   const gateways = gatewaysTile(categories.movements);
   return (
     <>
-      {header}
+      {isExample && <ExampleBanner />}
+      <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
       <KindLegend />
       <PeriodControls choices={categories} hrefOf={categoriesHref} />
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
