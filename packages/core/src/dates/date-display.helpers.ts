@@ -133,3 +133,14 @@ export const formatDayRange = ({ from, to }: Period): string => {
   }
   return `${formatDate(start, "d MMM yyyy")} – ${formatDate(end, "d MMM yyyy")}`;
 };
+
+/**
+ * The time of an instant in a time zone, as Colombia writes it: `"8:42 a. m."`,
+ * `"6:05 p. m."`. Intl, since date-fns' Spanish writes "a.m." instead.
+ */
+export const formatTimeOfDay = (instant: Date, timeZone: string): string =>
+  new Intl.DateTimeFormat("es-CO", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  }).format(instant);
