@@ -1,11 +1,12 @@
+import { UserButton } from "@clerk/nextjs";
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { HEADER_COPY } from "./layout.constants";
-import { UserMenu } from "./UserMenu";
 
 // The logo with the tagline on the left; the privacy promise and the avatar
-// on the right. No greeting or notifications yet: chat and alerts come later.
+// on the right, whose menu is Clerk's: the profile is in the dock. No
+// greeting or notifications yet: chat and alerts come later.
 export function AppHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
@@ -26,7 +27,9 @@ export function AppHeader() {
           <ShieldCheck aria-hidden className="size-5" strokeWidth={1.7} />
           {HEADER_COPY.privacy}
         </p>
-        <UserMenu />
+        <UserButton
+          appearance={{ elements: { userButtonAvatarBox: "size-11" } }}
+        />
       </div>
     </header>
   );

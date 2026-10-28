@@ -25,7 +25,7 @@ vi.mock("@clerk/nextjs", () => ({
 let navigate: (to: string) => Promise<void>;
 const useAwaitableNavigation = () => {
   const [isPending, startTransition] = useTransition();
-  const [, setPath] = useState("/settings");
+  const [, setPath] = useState("/profile");
   const waiting = useRef<Array<() => void>>([]);
   useEffect(() => {
     if (isPending) return;

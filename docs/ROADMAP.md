@@ -212,7 +212,9 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.4b Upload and correction events
 - [x] 7.5 Data flow document and privacy page
 - [x] 7.6 Export my data
-- [ ] 7.7 Profile _(design v8)_
+- [x] 7.7a Profile in the dock _(design v8)_
+- [ ] 7.7b Your account, plan and session _(design v8)_
+- [ ] 7.7c How the bank writes you and what's yours _(design v8)_
 - [ ] 7.8 Sample data to explore _(design v8)_
 
 **Stage 8 — LLM layer** _(outline)_
@@ -1528,14 +1530,44 @@ Decided with the human when it started (2026-10-27): the CSV is for Excel in Spa
 
 #### 7.7 Profile _(added with design v8)_
 
+`/settings` becomes "Tu perfil" (`docs/ui/v8-11`): the Xtrakto account ("Administrar inicio de sesión"), how the bank writes the holder's name (6.2), the accounts and references marked as the user's (6.3), plan usage, the privacy facts, "Descargar mis datos (CSV)" (7.6), "Borrar todos mis datos" (4.5, with the white destructive button of design system §9) and the session. Perfil joins the dock, as v8 shows, and the avatar menu's "Configuración" link (Phase 4.6) goes away (decided with the human).
+
+Split in three when it started (about 1,000 changed lines estimated), with the human's approval (2026-10-27): the page and its place in the dock here, the account, the plan and the session in 7.7b, and how the bank writes the holder's name and what is the user's in 7.7c. Decided with the human: on phones the bar keeps Resumen, Movimientos and Subir and puts the rest under "Más" (Pagos fijos, Categorías, Perfil), as v8 draws it without Pregúntale, which joins before "Más" in Stage 13 without moving the others; and the page moves to `/profile`. What v8 draws that a later phase brings stays out, so the copy is true today: "Tus datos" with the coverage timeline (10.2), the email notices (10.4), "Preguntas hoy" (13), and the pages and IP of PDFs (9). No phase brings "Agregar otra forma en que aparece tu nombre" or "Agregar una referencia" (a movement's detail makes a text or a number the user's, 6.3g and 6.3h), nor the "Principal" badge; and the session shows the last sign-in without the browser and system, which Clerk's session would bring along with its IP and city.
+
+#### 7.7a Profile in the dock
+
 **Tasks**
 
-- `/settings` becomes "Tu perfil" (`docs/ui/v8-11`): the Xtrakto account ("Administrar inicio de sesión"), how the bank writes the holder's name (6.2), the accounts and references marked as the user's (6.3), plan usage (statements this month, questions today), the privacy facts, "Descargar mis datos (CSV)" (7.6), "Borrar todos mis datos" (4.5, with the white destructive button of design system §9) and the session.
-- Perfil joins the dock, as v8 shows, and the avatar menu's "Configuración" link (Phase 4.6) goes away (decided with the human). The coverage timeline arrives with 10.2 and the email notices with 10.4.
+- Perfil (`user`) joins the dock; on phones "Más" opens what the bar can't fit, and it looks active while one of its pages is open. The avatar menu keeps only Clerk's own items.
+- The page at `/profile`, with v8-11's two columns: "Privacidad y datos" (three facts true today, "Descargar mis datos (CSV)" and "Borrar todos mis datos" with the white destructive button) and "Medición de uso" (7.4a) in the side column, where v8 draws the email notices. The copy that named "Configuración" names the profile.
 
-**Done when:** every section shows the user's data or its empty state, works at phone width and is navigable with the keyboard.
+**Done when:** the dock fits at 360px and from `sm`, "Más" works with the keyboard, and the page works at phone width.
 
-**Commit:** `feat(web): profile page`
+**Commit:** `feat(web): profile in the dock`
+
+#### 7.7b Your account, plan and session
+
+**Tasks**
+
+- "Tu cuenta en Xtrakto" from Clerk: the initial, the name, the email, how the user signs in ("Entras con Google") and "Administrar inicio de sesión", which opens Clerk's profile.
+- "Tu plan": the statements of the month with their meter and when they renew (5.4b), and the 10 MB limit.
+- "Sesión": the last sign-in, and "Cerrar sesión".
+
+**Done when:** each section reads right for a test account, at phone width and with the keyboard.
+
+**Commit:** `feat(web): your account, plan and session`
+
+#### 7.7c How the bank writes you and what's yours
+
+**Tasks**
+
+- "Cómo te escribe el banco": the holder's name as the statements print it, and the texts that the rules of the holder's name recognized (6.2), whole or cut.
+- "Tus cuentas y lo que es tuyo": the accounts, and the user's rules that make something theirs (Nequi numbers, cards, investments, transfers between their accounts; 6.3), each with an "×" that undoes it as a movement's detail does (6.3h), through an action that takes the rule's id and checks that it's the user's.
+- The page's subtitle becomes v8's.
+
+**Done when:** every section shows the user's data or its empty state, another user's rule can't be undone (tested), and it works at phone width and with the keyboard.
+
+**Commit:** `feat(web): how the bank writes you and what's yours`
 
 #### 7.8 Sample data to explore _(added with design v8)_
 

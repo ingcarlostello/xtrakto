@@ -17,8 +17,8 @@ function NoticeText() {
   return (
     <p className="text-caption text-ink-secondary">
       {COPY.description} {COPY.changeLater}{" "}
-      <Link href="/settings" className={LINK_CLASS}>
-        {COPY.settings}
+      <Link href="/profile" className={LINK_CLASS}>
+        {COPY.profile}
       </Link>
       . {COPY.privacyLead}{" "}
       <Link href={PRIVACY_ROUTE} className={LINK_CLASS}>

@@ -4,7 +4,7 @@ export const ANALYTICS_COPY = {
     description:
       "Contamos qué partes de la app usas para mejorarla, nunca montos, nombres ni descripciones.",
     changeLater: "Puedes cambiarlo cuando quieras en",
-    settings: "Configuración",
+    profile: "tu perfil",
     privacyLead: "Lo explicamos en",
     privacy: "nuestra política de privacidad",
     accept: "Sí, acepto",

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +13,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { useDeleteAccount } from "../hooks/use-delete-account";
 import { DELETE_ACCOUNT_COPY as COPY } from "../user.constants";
 
@@ -57,26 +57,27 @@ function ConfirmDeletion({
   );
 }
 
-export function DeleteAccountSection() {
+/**
+ * "Borrar todos mis datos" (4.5), the white destructive button, which asks
+ * before deleting the account with every row of the user's. `describedBy`
+ * names the line that says what it deletes.
+ */
+export function DeleteAllData({ describedBy }: { describedBy: string }) {
   const { isPending, error, confirm } = useDeleteAccount();
   return (
-    <Card variant="card">
-      <CardHeader>
-        <h2 className="font-heading text-body font-bold">{COPY.title}</h2>
-        <CardDescription>{COPY.description}</CardDescription>
-      </CardHeader>
-      <AlertDialog>
-        <AlertDialogTrigger
-          render={<Button variant="destructive" className="self-start" />}
-        >
-          {COPY.trigger}
-        </AlertDialogTrigger>
-        <ConfirmDeletion
-          isPending={isPending}
-          error={error}
-          onConfirm={confirm}
-        />
-      </AlertDialog>
-    </Card>
+    <AlertDialog>
+      <AlertDialogTrigger
+        aria-describedby={describedBy}
+        render={<Button variant="destructive-secondary" />}
+      >
+        <Trash2 aria-hidden strokeWidth={2.2} />
+        {COPY.trigger}
+      </AlertDialogTrigger>
+      <ConfirmDeletion
+        isPending={isPending}
+        error={error}
+        onConfirm={confirm}
+      />
+    </AlertDialog>
   );
 }

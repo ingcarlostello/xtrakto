@@ -63,7 +63,7 @@ The server receives the minimized content: the rows the parser reads, the accoun
 | `users`: the Clerk id                                                                      | Until the account is deleted                                            |
 | The waitlist: name, normalized email, consent version and time                             | Until the launch notice, or until the person asks (ADR 0021)            |
 
-Every table forces Row-Level Security: a person's rows are readable only in their own context (ADR 0014). Deleting the account (`/settings`, or Clerk's `user.deleted` webhook) deletes the `users` row, and the cascades take everything else with it (ADR 0016).
+Every table forces Row-Level Security: a person's rows are readable only in their own context (ADR 0014). Deleting the account (`/profile`, or Clerk's `user.deleted` webhook) deletes the `users` row, and the cascades take everything else with it (ADR 0016).
 
 ## What each third party receives
 

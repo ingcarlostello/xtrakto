@@ -192,7 +192,7 @@ export const PRIVACY_COPY = {
   },
   deletion: {
     title: "Borras todo cuando quieras",
-    detail: "Desde Configuración, en un paso.",
+    detail: "Desde tu perfil, en un paso.",
   },
 } as const;
 
