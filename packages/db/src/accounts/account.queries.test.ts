@@ -11,6 +11,7 @@ import {
   type AccountKind,
   findAccountHolderName,
   listAccounts,
+  listHolderNames,
   resolveIdentifiedAccount,
   resolveUnidentifiedAccount,
 } from "./account.queries";
@@ -63,6 +64,18 @@ describe.skipIf(!testDatabase)("accounts", () => {
 
   afterAll(async () => {
     await Promise.all([app.pool.end(), owner.pool.end()]);
+  });
+
+  it("lists each holder's name of the user's once, without another user's", async () => {
+    const userId = await newUser();
+    await identified(userId, "1111", "ANA PRUEBA GOMEZ");
+    await identified(userId, "2222", "ANA PRUEBA GOMEZ");
+    await identified(userId, "4444");
+    await identified(await newUser(), "3333", "LUIS OTRO PEREZ");
+
+    expect(await withUserContext(app.db, userId, listHolderNames)).toEqual([
+      "ANA PRUEBA GOMEZ",
+    ]);
   });
 
   it("lists only the user's accounts, oldest first", async () => {

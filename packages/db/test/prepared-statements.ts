@@ -1,4 +1,5 @@
 import {
+  type CategorizationContext,
   type CategorizedStatement,
   categorizeStatement,
   type ParsedStatement,
@@ -13,8 +14,9 @@ export const TEST_HASH_KEY = "test-key-with-at-least-32-characters!";
 // Prepared and categorized, as ingestion saves a statement.
 const readyToSave = async (
   parsed: ParsedStatement,
+  context?: CategorizationContext,
 ): Promise<CategorizedStatement> =>
-  categorizeStatement(await prepareStatement(parsed, TEST_HASH_KEY));
+  categorizeStatement(await prepareStatement(parsed, TEST_HASH_KEY), context);
 
 /** What `reconcile` finds in a movements export, which prints no balances. */
 export const UNCHECKED: BalanceCheck = { verified: false, breakPositions: [] };
@@ -53,9 +55,13 @@ const parsedMovement = (movement: TestMovement, sourceRow: number) => {
   };
 };
 
-/** A movements export, parsed, prepared and categorized as ingestion does it. */
+/**
+ * A movements export, parsed, prepared and categorized as ingestion does it,
+ * with the account's holder name when the context gives one.
+ */
 export const preparedExport = (
   movements: readonly TestMovement[],
+  context?: CategorizationContext,
 ): Promise<CategorizedStatement> => {
   const dates = movements.map((movement) => movement.date).sort();
   const parsed = parsedStatementSchema.parse({
@@ -68,7 +74,7 @@ export const preparedExport = (
     transactions: movements.map(parsedMovement),
     warnings: [],
   });
-  return readyToSave(parsed);
+  return readyToSave(parsed, context);
 };
 
 export type QuarterOptions = {

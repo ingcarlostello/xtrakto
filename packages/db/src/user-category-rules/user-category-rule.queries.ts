@@ -27,7 +27,7 @@ import { userCategoryRules } from "./user-category-rule.schemas";
 type DescriptionRule = Extract<UserCategoryRule, { target: "description" }>;
 type ReferenceRule = Extract<UserCategoryRule, { target: "reference" }>;
 
-type RuleRow = Pick<
+export type RuleRow = Pick<
   typeof userCategoryRules.$inferSelect,
   | "descriptionFolded"
   | "direction"
@@ -36,9 +36,11 @@ type RuleRow = Pick<
   | "categoryId"
 >;
 
-// A stored rule as the categorizer reads it. The CHECKs give every row a
-// text with its direction, or a reference.
-const toUserCategoryRule = (row: RuleRow): UserCategoryRule => {
+/**
+ * A stored rule as the categorizer reads it. The CHECKs give every row a
+ * text with its direction, or a reference.
+ */
+export const toUserCategoryRule = (row: RuleRow): UserCategoryRule => {
   if (row.referenceHash !== null)
     return {
       target: "reference",

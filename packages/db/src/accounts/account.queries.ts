@@ -6,7 +6,7 @@ import {
   ok,
   type Result,
 } from "@xtrakto/core";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { UserContext } from "../user-context/user-context.types";
 import { accounts } from "./account.schemas";
 
@@ -48,6 +48,27 @@ export const findAccountHolderName = async (
     .from(accounts)
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
   return found?.holderName ?? undefined;
+};
+
+/**
+ * The holders' names the context user's accounts keep, as their quarterly
+ * statements printed them (7.7c): each name once, none until one did.
+ */
+export const listHolderNames = async ({
+  tx,
+  userId,
+}: UserContext): Promise<string[]> => {
+  const rows = await tx
+    .selectDistinct({ name: accounts.holderNameNormalized })
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        isNotNull(accounts.holderNameNormalized),
+      ),
+    )
+    .orderBy(asc(accounts.holderNameNormalized));
+  return rows.flatMap(({ name }) => (name === null ? [] : [name]));
 };
 
 /** What any statement says about its account. */
