@@ -1,10 +1,24 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
-import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
+import {
+  APP_ERROR_CODE,
+  type AppError,
+  DEFAULT_TIME_ZONE,
+  err,
+  localDateFromInstant,
+  ok,
+  type Result,
+} from "@xtrakto/core";
 import {
   deleteAllUserData,
+  deleteUserCategoryRule,
+  findUserCategoryRule,
   findUserId,
+  listAccounts,
   listExportMovements,
+  listHolderNames,
+  listOwnNameTexts,
+  listOwnUserCategoryRules,
   withUserContext,
 } from "@xtrakto/db";
 import { getDb } from "@/lib/db";
@@ -12,7 +26,7 @@ import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { lastSignInInWords, signInMethodOf } from "./profile.helpers";
 import { MY_DATA_CSV_NAME } from "./user.constants";
-import type { ProfileAccount } from "./user.types";
+import type { ProfileAccount, YourAccounts } from "./user.types";
 
 /**
  * The signed-in user as Clerk knows them: their name and email, how they
@@ -83,4 +97,51 @@ export const deleteAccountAndData = async (
   await deleteUserData(clerkUserId);
   const clerk = await clerkClient();
   await clerk.users.deleteUser(clerkUserId);
+};
+
+const NOTHING_YOURS: YourAccounts = {
+  holderNames: [],
+  ownNameTexts: [],
+  accounts: [],
+  ownRules: [],
+};
+
+/**
+ * How the bank writes the signed-in user and what is theirs (7.7c): their
+ * holders' names and the texts those were recognized in, their accounts,
+ * and their rules that make something theirs. Someone who never uploaded a
+ * file has none; reading never creates their row.
+ */
+export const getYourAccounts = async (
+  clerkUserId: string,
+): Promise<YourAccounts> => {
+  const db = getDb();
+  const userId = await findUserId(db, clerkUserId);
+  if (!userId) return NOTHING_YOURS;
+  return withUserContext(db, userId, async (ctx) => ({
+    holderNames: await listHolderNames(ctx),
+    ownNameTexts: await listOwnNameTexts(ctx),
+    accounts: await listAccounts(ctx),
+    ownRules: await listOwnUserCategoryRules(ctx),
+  }));
+};
+
+/**
+ * Undoes one of the signed-in user's rules by its id, as a movement's
+ * detail does (6.3h): its movements take what the user's other rules say,
+ * else the table's. Not found for another user's rule, or for none.
+ */
+export const deleteOwnRule = async (
+  clerkUserId: string,
+  ruleId: string,
+): Promise<Result<void, AppError>> => {
+  const db = getDb();
+  const userId = await findUserId(db, clerkUserId);
+  if (!userId) return err({ code: APP_ERROR_CODE.NOT_FOUND });
+  return withUserContext(db, userId, async (ctx) => {
+    const rule = await findUserCategoryRule(ctx, ruleId);
+    if (!rule) return err({ code: APP_ERROR_CODE.NOT_FOUND });
+    await deleteUserCategoryRule(ctx, rule);
+    return ok(undefined);
+  });
 };

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deleteAccountAndData,
+  deleteOwnRule,
   deleteUserData,
   getProfileAccount,
 } from "./user.service";
@@ -12,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   deleteUser: vi.fn(),
   getUser: vi.fn(),
   deleteAllUserData: vi.fn(),
+  deleteUserCategoryRule: vi.fn(),
+  findUserCategoryRule: vi.fn(),
   findUserId: vi.fn(),
   withUserContext: vi.fn(),
 }));
@@ -23,6 +26,8 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 vi.mock("@xtrakto/db", () => ({
   deleteAllUserData: mocks.deleteAllUserData,
+  deleteUserCategoryRule: mocks.deleteUserCategoryRule,
+  findUserCategoryRule: mocks.findUserCategoryRule,
   findUserId: mocks.findUserId,
   withUserContext: mocks.withUserContext,
 }));
@@ -147,5 +152,58 @@ describe("getProfileAccount", () => {
       signsInWith: "email",
       lastSignIn: null,
     });
+  });
+});
+
+describe("deleteOwnRule", () => {
+  const RULE = "5c7e2a10-3b4d-4e6f-8a9b-0c1d2e3f4a5b";
+  const MY_CARD = {
+    target: "description",
+    descriptionFolded: "PAGO PSE NU COMPANIA DE FINA",
+    direction: "out",
+    categoryId: "credit_card_payment",
+  };
+
+  beforeEach(() => {
+    // The context's queries run as they would inside its transaction.
+    mocks.withUserContext.mockImplementation(async (_db, _userId, run) =>
+      run("ctx"),
+    );
+  });
+
+  it("undoes the rule the user's context finds by its id", async () => {
+    mocks.findUserCategoryRule.mockResolvedValue(MY_CARD);
+
+    expect(await deleteOwnRule("user_clerk", RULE)).toEqual({
+      ok: true,
+      value: undefined,
+    });
+    expect(mocks.withUserContext).toHaveBeenCalledWith(
+      "db",
+      USER_ID,
+      expect.any(Function),
+    );
+    expect(mocks.findUserCategoryRule).toHaveBeenCalledWith("ctx", RULE);
+    expect(mocks.deleteUserCategoryRule).toHaveBeenCalledWith("ctx", MY_CARD);
+  });
+
+  it("undoes nothing when the rule isn't the user's", async () => {
+    mocks.findUserCategoryRule.mockResolvedValue(undefined);
+
+    expect(await deleteOwnRule("user_clerk", RULE)).toEqual({
+      ok: false,
+      error: { code: "NOT_FOUND" },
+    });
+    expect(mocks.deleteUserCategoryRule).not.toHaveBeenCalled();
+  });
+
+  it("undoes nothing for someone who never uploaded a file", async () => {
+    mocks.findUserId.mockResolvedValue(undefined);
+
+    expect(await deleteOwnRule("user_clerk", RULE)).toEqual({
+      ok: false,
+      error: { code: "NOT_FOUND" },
+    });
+    expect(mocks.withUserContext).not.toHaveBeenCalled();
   });
 });

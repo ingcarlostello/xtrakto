@@ -214,7 +214,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.6 Export my data
 - [x] 7.7a Profile in the dock _(design v8)_
 - [x] 7.7b Your account, plan and session _(design v8)_
-- [ ] 7.7c How the bank writes you and what's yours _(design v8)_
+- [x] 7.7c How the bank writes you and what's yours _(design v8)_
 - [ ] 7.8 Sample data to explore _(design v8)_
 
 **Stage 8 — LLM layer** _(outline)_

@@ -14,6 +14,7 @@ export {
   findAccountHolderName,
   type IdentifiedAccount,
   listAccounts,
+  listHolderNames,
   resolveIdentifiedAccount,
   resolveUnidentifiedAccount,
 } from "./accounts/account.queries";
@@ -87,6 +88,7 @@ export {
   type ExportMovement,
   listExportMovements,
 } from "./transactions/transaction-export.queries";
+export { listOwnNameTexts } from "./transactions/transaction-own-name.queries";
 export {
   dismissReview,
   listReviewMovements,
@@ -102,6 +104,11 @@ export {
   saveUserCategoryRule,
 } from "./user-category-rules/user-category-rule.queries";
 export { deleteUserCategoryRule } from "./user-category-rules/user-category-rule-undo.queries";
+export {
+  findUserCategoryRule,
+  type IdentifiedUserCategoryRule,
+  listOwnUserCategoryRules,
+} from "./user-category-rules/user-category-rule-own.queries";
 export {
   deleteAllUserData,
   findOrCreateUser,
