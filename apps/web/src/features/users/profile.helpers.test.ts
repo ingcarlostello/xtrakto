@@ -32,10 +32,10 @@ describe("lastSignInInWords", () => {
   const now = new Date("2026-10-28T15:00:00Z");
 
   it.each([
-    ["2026-10-28T13:42:00Z", "hoy, 8:42 a. m."],
+    ["2026-10-28T13:42:00Z", "hoy, 8:42 a.\u00a0m."],
     // 11:30 p. m. of the 27th in Bogotá, though the 28th in UTC.
-    ["2026-10-28T04:30:00Z", "ayer, 11:30 p. m."],
-    ["2026-10-26T13:42:00Z", "26 de octubre, 8:42 a. m."],
+    ["2026-10-28T04:30:00Z", "ayer, 11:30 p.\u00a0m."],
+    ["2026-10-26T13:42:00Z", "26 de octubre, 8:42 a.\u00a0m."],
   ])("writes a sign-in at %s as %j", (signedInAt, words) => {
     expect(lastSignInInWords(new Date(signedInAt), now)).toBe(words);
   });
@@ -46,6 +46,6 @@ describe("lastSignInInWords", () => {
         new Date("2026-10-28T23:00:00Z"),
         new Date("2026-10-29T03:00:00Z"),
       ),
-    ).toBe("hoy, 6:00 p. m.");
+    ).toBe("hoy, 6:00 p.\u00a0m.");
   });
 });

@@ -202,6 +202,8 @@ describe("formatTimeOfDay", () => {
     ["2026-10-28T23:05:00Z", "6:05 p.\u00a0m."],
     // 03:30 UTC is the evening before in Bogotá.
     ["2026-10-29T03:30:00Z", "10:30 p.\u00a0m."],
+    ["2026-10-28T05:05:00Z", "12:05 a.\u00a0m."],
+    ["2026-10-28T17:00:00Z", "12:00 p.\u00a0m."],
   ])("writes %s as %j in Bogotá", (instant, expected) => {
     expect(formatTimeOfDay(new Date(instant), "America/Bogota")).toBe(expected);
   });

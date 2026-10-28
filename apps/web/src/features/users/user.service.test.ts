@@ -128,7 +128,7 @@ describe("getProfileAccount", () => {
       name: "Ana Prueba",
       email: "ana@example.com",
       signsInWith: "google",
-      lastSignIn: "hoy, 8:42 a. m.",
+      lastSignIn: "hoy, 8:42 a.\u00a0m.",
     });
     expect(mocks.getUser).toHaveBeenCalledWith("user_clerk");
   });
