@@ -47,3 +47,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0027](0027-private-beta-by-invitation.md)                        | A private beta by invitation                                                           | Accepted |
 | [0028](0028-errors-reach-sentry-through-an-allowlist.md)          | Errors reach Sentry through an allowlist                                               | Accepted |
 | [0029](0029-analytics-after-consent-through-an-allowlist.md)      | Product analytics only after consent, from the browser, through an allowlist           | Accepted |
+| [0030](0030-a-read-only-example-through-a-user-of-its-own.md)     | A read-only example through a user of its own                                          | Accepted |

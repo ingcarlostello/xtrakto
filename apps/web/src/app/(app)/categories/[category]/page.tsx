@@ -17,7 +17,8 @@ import { CategoryTiles } from "@/features/categories/components/CategoryTiles";
 import { CategoryTitle } from "@/features/categories/components/CategoryTitle";
 import { TopPlaces } from "@/features/categories/components/TopPlaces";
 import { WeeklyChart } from "@/features/categories/components/WeeklyChart";
-import { requireSignedIn } from "@/lib/auth";
+import { ExampleBanner } from "@/features/example/components/ExampleBanner";
+import { requireViewer } from "@/lib/example-mode";
 import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { categoryHref } from "@/utils/transactions-url.helpers";
@@ -56,7 +57,7 @@ export default async function CategoryPage({
   params,
   searchParams,
 }: PageProps<"/categories/[category]">) {
-  const clerkUserId = await requireSignedIn();
+  const { clerkUserId, isExample } = await requireViewer();
   const categoryId = spendingCategoryOf((await params).category);
   if (categoryId === undefined) notFound();
   const { account, period } = accountPeriodSearchSchema.parse(
@@ -69,6 +70,7 @@ export default async function CategoryPage({
   if (!detail) return <NoMovementsYet categoryId={categoryId} />;
   return (
     <>
+      {isExample && <ExampleBanner />}
       <CategoryTitle detail={detail} />
       <PeriodControls
         choices={detail}

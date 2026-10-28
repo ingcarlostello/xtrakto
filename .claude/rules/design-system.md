@@ -322,6 +322,7 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Signs in with Google (profile)                | `globe`                            |
 | Signs in by email (profile)                   | `mail`                             |
 | Sign out ("Cerrar sesión")                    | `log-out`                          |
+| The example ("Estás viendo un ejemplo")       | `eye`                              |
 | Upload                                        | `upload`                           |
 | Download a CSV                                | `file-down` (`download` is income) |
 | Ask / chat                                    | `message-square`                   |
@@ -690,6 +691,14 @@ As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a ne
 - **Step 1:** the Landing headline, the subtitle in Body `--text-secondary` (18px from `sm`), what works today as a list with neutral 44px chips (`--surface` at 80% with `--shadow-chip`, ink icons), and the Primary "Empezar" with "Gratis. Sin conectar tu banco: tú subes el archivo." beside it. Beside them from `lg`, below on phones, an example panel: the neutral badge "Ejemplo", "Julio a septiembre", the three kinds of an invented quarter (each on `--surface` with `--radius-md` and `--shadow-card`: its ring, its label in Manrope 700 14px and its total in its kind's text color, 18px on phones and Amount L from `sm`), then the statement object and the verified status pill. The rings came back with the summary (6.7a).
 - **Step 2:** a card at most 820px wide whose page title is the question. Each file is a radio card (`--surface`, `--radius-md`, `--shadow-card`, padding 20): a 44px chip, `--primary-soft` with a `--primary` icon once chosen and `--surface-muted` with ink before; the title in Body 700, with the `ok` badge "Recomendado" on the quarterly statement; its line in Caption `--text-muted`; and, once chosen, a 2px `--primary` border and a 24px `--primary` circle with a white check. The radios are native, so the arrow keys move the choice, and the focus ring goes around the card. Then "No te pedimos tu nombre…" in Caption `--text-secondary` on `--primary-soft-2` (radius 16, padding 16, `user-round` in `--primary-strong`), and a Secondary "Atrás" and a Primary "Continuar" at each end.
 - **Step 3:** two cards side by side from `lg` (5:4), stacked on phones: the guides (the page title; a subtitle that follows the step 2 choice; one `--surface-muted` panel per file, the chosen one first, with its icon, its name in Body 700 and its numbered steps, 28px `--primary-soft` circles with `--primary-strong` numbers) and "Súbelos aquí" with the drop zone.
+
+### The example ("Datos de ejemplo")
+
+v8 draws only its ways in; as Phase 7.8 builds it (`features/example/`, ADR 0030):
+
+- **Ways in** (`ExploreExampleButton`): on the empty summary, a Secondary "Ver con datos de ejemplo" beside "Ir a Subir", stacked on phones (`v8-12`); on the welcome's last step, under the drop zone and a `--divider` line, "¿No los tienes a mano?" in Body 700, "Mira cómo se ve con un extracto de ejemplo." in Caption `--text-muted` and the link action "Explorar con datos de ejemplo" (`v8-17`). The first time it saves the example's data: meanwhile it reads "Abriendo el ejemplo…" and keeps its focus; a failure shows below it in Caption 600 `--danger` with `role="alert"`.
+- **The banner** (`ExampleBanner`), first on each page that shows the example (Resumen, Movimientos, Pagos fijos, Categorías and a category, the quick review): `--primary-soft-2`, `--radius-lg`, padding 20, a 44px white chip with `eye` in `--primary-strong`, "Estás viendo un ejemplo" in Body 700 with its line in Caption `--text-secondary`, and the Secondary "Volver a mis datos", on the right from `sm` and at full width below.
+- **Read-only:** what would save stays in sight but disabled (a movement's "Es mío", "Deshacer" and corrections, the quick review's answers), under "Es un ejemplo: aquí no se guardan cambios." in Caption 600 `--text-secondary`; "Descargar CSV" isn't offered.
 
 ### Switch
 

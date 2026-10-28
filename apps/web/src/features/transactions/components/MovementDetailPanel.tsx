@@ -106,17 +106,45 @@ function DetailReason({ view }: { view: MovementDetailView }) {
   );
 }
 
+type ChangesProps = {
+  view: MovementDetailView;
+  correction: CorrectionView;
+  own: OwnRulesView;
+  readOnlyNote?: string | undefined;
+};
+
+// Its Nequi number, its rules and its kind and category, which the user can
+// change; with a read-only note above them, disabled.
+function DetailChanges({ view, correction, own, readOnlyNote }: ChangesProps) {
+  return (
+    <>
+      {readOnlyNote && (
+        <p className="text-caption font-semibold text-ink-secondary">
+          {readOnlyNote}
+        </p>
+      )}
+      <fieldset disabled={readOnlyNote !== undefined} className="contents">
+        <OwnRules view={own} />
+        <CorrectionForm view={correction} isGuess={view.isGuess}>
+          <DetailReason view={view} />
+        </CorrectionForm>
+      </fieldset>
+    </>
+  );
+}
+
 /**
  * A movement's detail (docs/ui/v8-03): its real fields, its Nequi number
  * and the user's rules for it, and its kind and category with why, which
- * the user can change. Beside the list from `lg`, a sheet on phones.
+ * the user can change. Beside the list from `lg`, a sheet on phones. With a
+ * read-only note, as the example has (7.8), its controls stay in sight but
+ * disabled, under the note.
  */
 export function MovementDetailPanel({
-  view,
-  correction,
-  own,
   closeHref,
-}: PanelProps & { correction: CorrectionView; own: OwnRulesView }) {
+  ...changes
+}: PanelProps & ChangesProps) {
+  const { view } = changes;
   const rowId = movementLinkId(view.id);
   const titleId = `${rowId}-detail`;
   return (
@@ -139,10 +167,7 @@ export function MovementDetailPanel({
           <RawTextChip text={view.bankText} />
         </div>
         <DetailFacts view={view} />
-        <OwnRules view={own} />
-        <CorrectionForm view={correction} isGuess={view.isGuess}>
-          <DetailReason view={view} />
-        </CorrectionForm>
+        <DetailChanges {...changes} />
       </Card>
     </MovementSheet>
   );

@@ -5,6 +5,7 @@ import { PAGE_COPY } from "@/components/empty-state/empty-states.constants";
 import { UploadStatementLink } from "@/components/empty-state/UploadStatementLink";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/components/period-controls/PeriodControls";
+import { ExampleBanner } from "@/features/example/components/ExampleBanner";
 import { HowWeFindThem } from "@/features/recurring/components/HowWeFindThem";
 import { PaymentsCalendar } from "@/features/recurring/components/PaymentsCalendar";
 import { RecurringList } from "@/features/recurring/components/RecurringList";
@@ -22,7 +23,7 @@ import type {
   AccountRecurring,
   RecurringView,
 } from "@/features/recurring/recurring.types";
-import { requireSignedIn } from "@/lib/auth";
+import { requireViewer } from "@/lib/example-mode";
 
 const COPY = PAGE_COPY.recurring;
 
@@ -88,7 +89,7 @@ function RecurringColumns({
 export default async function RecurringPage({
   searchParams,
 }: PageProps<"/recurring">) {
-  const clerkUserId = await requireSignedIn();
+  const { clerkUserId, isExample } = await requireViewer();
   const { account, period, filter } = recurringSearchSchema.parse(
     await searchParams,
   );
@@ -100,6 +101,7 @@ export default async function RecurringPage({
   const view = viewOf(filter, recurring.stopped);
   return (
     <>
+      {isExample && <ExampleBanner />}
       <PageHeader
         title={COPY.title}
         subtitle={pageSubtitle(recurring.payments)}

@@ -215,7 +215,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.7a Profile in the dock _(design v8)_
 - [x] 7.7b Your account, plan and session _(design v8)_
 - [x] 7.7c How the bank writes you and what's yours _(design v8)_
-- [ ] 7.8 Sample data to explore _(design v8)_
+- [x] 7.8 Sample data to explore _(design v8)_
 
 **Stage 8 — LLM layer** _(outline)_
 
@@ -1570,6 +1570,8 @@ Split in three when it started (about 1,000 changed lines estimated), with the h
 **Commit:** `feat(web): how the bank writes you and what's yours`
 
 #### 7.8 Sample data to explore _(added with design v8)_
+
+Decided with the human when it started (2026-10-28): the example is a user of its own, with invented data, which the data pages read while a cookie says so, and which no action can change (ADR 0030); its data is a quarter written for the demo, July to September 2026, since the seed's fixtures reach into 2027; and it stays one phase, at about 500 changed lines estimated.
 
 **Tasks:** "Explorar con datos de ejemplo" (`docs/ui/v8-17`): a read-only demo loaded with the synthetic fixtures, so someone without statements can see every screen. It also brings back "Ver con datos de ejemplo" in the empty summary (`v8-12`) and in onboarding's last step, left out in Stage 5.
 

@@ -18,7 +18,7 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { findParser } from "@xtrakto/parsers";
-import { balanceCheckOf } from "../src/features/ingestion/balance-check.helpers";
+import { balanceCheckOf } from "../src/utils/balance-check.helpers";
 
 const ROOT = new URL("../../../", import.meta.url);
 const ENV_FILE = new URL(".env.local", ROOT);

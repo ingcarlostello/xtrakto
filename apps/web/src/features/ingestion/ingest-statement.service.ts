@@ -30,7 +30,7 @@ import { findParser } from "@xtrakto/parsers";
 import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
-import { balanceCheckOf } from "./balance-check.helpers";
+import { balanceCheckOf } from "@/utils/balance-check.helpers";
 
 /** The job a `statement/submitted` event names, and its user. */
 export type JobRef = { readonly jobId: string; readonly userId: string };
