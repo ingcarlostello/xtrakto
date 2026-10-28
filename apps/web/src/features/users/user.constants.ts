@@ -2,7 +2,43 @@
 
 export const PROFILE_COPY = {
   title: "Tu perfil",
-  subtitle: "Tus datos y tu privacidad.",
+  subtitle: "Tus datos, tus cuentas y tu privacidad.",
+} as const;
+
+// "Cómo te escribe el banco" (docs/ui/v8-11), without adding another way the
+// name appears: a movement's detail does that (6.3g).
+export const BANK_NAME_COPY = {
+  title: "Cómo te escribe el banco",
+  description:
+    "Lo tomamos de tu extracto. Lo usamos para reconocer transferencias entre tus cuentas.",
+  holder: "Titular",
+  texts: "En tus transferencias aparece así",
+  none: "Lo tomamos de tu extracto trimestral, que trae tu nombre como lo escribe el banco. Cuando lo subas, aparece aquí.",
+} as const;
+
+// "Tus cuentas y lo que es tuyo" (docs/ui/v8-11), without adding a
+// reference: the quick review and a movement's detail do that (6.3).
+export const YOURS_COPY = {
+  title: "Tus cuentas y lo que es tuyo",
+  description: "Así no contamos dos veces la plata que solo cambia de lugar.",
+  identified: "Detectada en tu extracto.",
+  unidentified: "Creada con tu archivo de movimientos.",
+  // "Nequi · ref ••• 1270".
+  number: "Nequi · ref •••",
+  numberLine:
+    "Lo que envías a este número y lo que llega de él cuenta como movido.",
+  // "PAGO PSE NU COMPANIA DE FINA: pago de tarjeta de crédito, movido."
+  moved: "movido",
+  isMine: { number: "Es mío", text: "Es mía" },
+  // "Ya no es mío: Nequi terminado en 1270".
+  notMine: {
+    number: "Ya no es mío: Nequi terminado en",
+    text: "Ya no es mía:",
+  },
+  noAccounts: "Cuando subas tu primer extracto, aquí aparece tu cuenta.",
+  noRules:
+    "Lo que marques como tuyo en la revisión o en Movimientos aparece aquí: tus números de Nequi, tus tarjetas, tu inversión.",
+  failed: "No pudimos quitarlo. Inténtalo de nuevo en unos minutos.",
 } as const;
 
 // "Tu cuenta en Xtrakto" (docs/ui/v8-11): who is signed in, and how.
