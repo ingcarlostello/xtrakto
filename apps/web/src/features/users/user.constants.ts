@@ -5,6 +5,40 @@ export const PROFILE_COPY = {
   subtitle: "Tus datos y tu privacidad.",
 } as const;
 
+// "Tu cuenta en Xtrakto" (docs/ui/v8-11): who is signed in, and how.
+export const ACCOUNT_COPY = {
+  title: "Tu cuenta en Xtrakto",
+  signsIn: {
+    google: "Entras con Google",
+    email: "Entras con tu correo",
+  },
+  manage: "Administrar inicio de sesión",
+} as const;
+
+// "Tu plan" (docs/ui/v8-11): only what works today, without v8's questions
+// (Stage 13) or PDF pages (Stage 9).
+export const PLAN_COPY = {
+  title: "Tu plan",
+  free: "Gratis",
+  files: "Archivos este mes",
+  // "3 de 10".
+  of: "de",
+  // "Se reinicia el 1 de noviembre."
+  resetsOn: "Se reinicia el",
+  // MAX_FILE_SIZE_BYTES, as the upload screen says it.
+  fileSize: "Archivos de hasta 10 MB",
+} as const;
+
+export const SESSION_COPY = {
+  title: "Sesión",
+  // "Último inicio de sesión: hoy, 8:42 a. m."
+  lastSignIn: "Último inicio de sesión:",
+  today: "hoy",
+  yesterday: "ayer",
+  signOut: "Cerrar sesión",
+  signingOut: "Cerrando sesión…",
+} as const;
+
 /** How the export of every movement is named, before its date (7.6). */
 export const MY_DATA_CSV_NAME = "xtrakto-mis-datos";
 

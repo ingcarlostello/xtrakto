@@ -10,7 +10,33 @@ import {
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
+import { lastSignInInWords, signInMethodOf } from "./profile.helpers";
 import { MY_DATA_CSV_NAME } from "./user.constants";
+import type { ProfileAccount } from "./user.types";
+
+/**
+ * The signed-in user as Clerk knows them: their name and email, how they
+ * sign in and when they last did, in words for today in Bogotá. Only what
+ * the profile shows leaves this function. The Clerk id must come from the
+ * session.
+ */
+export const getProfileAccount = async (
+  clerkUserId: string,
+): Promise<ProfileAccount> => {
+  const clerk = await clerkClient();
+  const user = await clerk.users.getUser(clerkUserId);
+  return {
+    name: user.fullName || null,
+    email: user.primaryEmailAddress?.emailAddress ?? null,
+    signsInWith: signInMethodOf(
+      user.externalAccounts.map(({ provider }) => provider),
+    ),
+    lastSignIn:
+      user.lastSignInAt === null
+        ? null
+        : lastSignInInWords(new Date(user.lastSignInAt), new Date()),
+  };
+};
 
 /**
  * Every movement a Clerk user has, as a CSV (7.6): those that count nowhere

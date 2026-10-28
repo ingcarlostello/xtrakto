@@ -1,18 +1,25 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteAccountAndData, deleteUserData } from "./user.service";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  deleteAccountAndData,
+  deleteUserData,
+  getProfileAccount,
+} from "./user.service";
 
 // The database side (cascades, Row-Level Security) is tested in packages/db;
 // here, which steps run and in which order.
 const mocks = vi.hoisted(() => ({
   steps: [] as string[],
   deleteUser: vi.fn(),
+  getUser: vi.fn(),
   deleteAllUserData: vi.fn(),
   findUserId: vi.fn(),
   withUserContext: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
-  clerkClient: async () => ({ users: { deleteUser: mocks.deleteUser } }),
+  clerkClient: async () => ({
+    users: { deleteUser: mocks.deleteUser, getUser: mocks.getUser },
+  }),
 }));
 vi.mock("@xtrakto/db", () => ({
   deleteAllUserData: mocks.deleteAllUserData,
@@ -91,5 +98,54 @@ describe("deleteAccountAndData", () => {
 
     await expect(deleteAccountAndData("user_clerk")).rejects.toThrow();
     expect(mocks.steps).toEqual(["data"]);
+  });
+});
+
+describe("getProfileAccount", () => {
+  // Invented: what Clerk's Backend API returns, among much else.
+  const clerkUser = {
+    fullName: "Ana Prueba",
+    primaryEmailAddress: { emailAddress: "ana@example.com" },
+    externalAccounts: [{ provider: "oauth_google" }],
+    lastSignInAt: Date.UTC(2026, 9, 28, 13, 42),
+  };
+
+  beforeEach(() => {
+    // 10:00 a. m. in Bogotá, the same day.
+    vi.useFakeTimers({
+      now: new Date("2026-10-28T15:00:00Z"),
+      toFake: ["Date"],
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("asks Clerk for the session's user and keeps only what the profile shows", async () => {
+    mocks.getUser.mockResolvedValue(clerkUser);
+
+    expect(await getProfileAccount("user_clerk")).toEqual({
+      name: "Ana Prueba",
+      email: "ana@example.com",
+      signsInWith: "google",
+      lastSignIn: "hoy, 8:42 a. m.",
+    });
+    expect(mocks.getUser).toHaveBeenCalledWith("user_clerk");
+  });
+
+  it("leaves out a name Clerk doesn't have, and a sign-in it never saw", async () => {
+    mocks.getUser.mockResolvedValue({
+      ...clerkUser,
+      fullName: null,
+      externalAccounts: [],
+      lastSignInAt: null,
+    });
+
+    expect(await getProfileAccount("user_clerk")).toEqual({
+      name: null,
+      email: "ana@example.com",
+      signsInWith: "email",
+      lastSignIn: null,
+    });
   });
 });
