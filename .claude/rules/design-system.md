@@ -316,6 +316,9 @@ That is the summary; the other screens keep the header, title row and controls, 
 | A category, and rules from the quick review   | `tag`                              |
 | Recurring payments                            | `calendar`                         |
 | Privacy                                       | `shield-check`                     |
+| Files we don't keep (privacy facts)           | `eye-off`                          |
+| Numbers kept only as a code (privacy facts)   | `lock`                             |
+| More, on the phone's bar ("Más")              | `ellipsis`                         |
 | Upload                                        | `upload`                           |
 | Download a CSV                                | `file-down` (`download` is income) |
 | Ask / chat                                    | `message-square`                   |
@@ -347,14 +350,14 @@ Wordmark block on the left, greeting with the assistant mark in the center, util
 
 ### Buttons
 
-| Variant     | Spec                                                                                                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Primary     | Pill, `--primary` background, white Manrope 700 15px, min-height 50px, padding 0 22px, `--shadow-primary`, icon 18px on the left                                                                        |
-| Secondary   | Pill, `--surface` background, `--text` Manrope 600, `--shadow-chip`                                                                                                                                     |
-| Icon button | 44px circle, `rgba(255,255,255,0.8)`, `--shadow-chip`, icon 19px; always with `aria-label`                                                                                                              |
-| Link action | Manrope 700 14px, `--primary`, no underline; underline on hover                                                                                                                                         |
-| Destructive | Pill, `--surface` background, `--danger` Manrope 700 text and `trash-2` icon, `--shadow-chip` ("Borrar todos mis datos"). The confirmation dialog's confirm button is filled `--danger` with white text |
-| Answer      | Quick review answers: the suggested one as Primary, the others as Secondary, then a caption "Sugerido: la primera"                                                                                      |
+| Variant     | Spec                                                                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Primary     | Pill, `--primary` background, white Manrope 700 15px, min-height 50px, padding 0 22px, `--shadow-primary`, icon 18px on the left                                                                                                                 |
+| Secondary   | Pill, `--surface` background, `--text` Manrope 600, `--shadow-chip`                                                                                                                                                                              |
+| Icon button | 44px circle, `rgba(255,255,255,0.8)`, `--shadow-chip`, icon 19px; always with `aria-label`                                                                                                                                                       |
+| Link action | Manrope 700 14px, `--primary`, no underline; underline on hover                                                                                                                                                                                  |
+| Destructive | Pill, `--surface` background, `--danger` Manrope 700 text and `trash-2` icon, `--shadow-chip` ("Borrar todos mis datos", `destructive-secondary`). The confirmation dialog's confirm button is filled `--danger` with white text (`destructive`) |
+| Answer      | Quick review answers: the suggested one as Primary, the others as Secondary, then a caption "Sugerido: la primera"                                                                                                                               |
 
 ### Period selector
 
@@ -687,7 +690,7 @@ As Phase 5.8 builds `v8-15` to `v8-17`, at `/onboarding`, where Clerk sends a ne
 
 ### Switch
 
-For "Es mío", the email notices and "Permitir la medición de uso" in `/settings`: `--primary` when on, `--ring-track` when off, always with a visible label.
+For "Es mío", the email notices and "Permitir la medición de uso" in the profile: `--primary` when on, `--ring-track` when off, always with a visible label.
 
 As Phase 6.3d builds it (`Switch`, `components/ui/switch.tsx`, on Base UI): a 44 × 26 pill with a 20px white thumb and `--shadow-chip`; off, the track is edged in 1.5px `--text-faint`, as the checkbox (3.7:1 on white, which a control's edge needs). Its visible label sits beside it, Manrope 700 14px, inside a `<label>` that wraps it, and it's named by what it changes ("Es mío: Nequi terminado en 1270"). Its hidden input sends its value with the form when it's on; its hit area reaches 44px.
 
@@ -695,8 +698,8 @@ As Phase 6.3d builds it (`Switch`, `components/ui/switch.tsx`, on Base UI): a 44
 
 v8 doesn't draw it; as Phase 7.4a builds it (`features/analytics/`, ADR 0029), only where PostHog has a key:
 
-- **The notice** (`ConsentNotice`): once per browser on the app's pages, until answered. Fixed above the dock, so the page doesn't move when it appears after hydrating: 10px above the phone's bottom bar, 8px from each side, and from `sm` 14px above the dock, centered, at most 560px wide. `--surface`, `--radius-lg`, padding 20, `--shadow-panel`; the title in Outfit 600 18px ("¿Nos dejas medir cómo usas Xtrakto?"), the line in Caption `--text-secondary` with "Configuración" as an inline link (`--primary`, 700, underline on hover), then "Sí, acepto" and "No, gracias", small Secondary buttons of the same weight. A region named by its title; once answered it goes, and the focus goes to the page's `main`.
-- **"Medición de uso"** (`AnalyticsSetting`) in `/settings`: a card with its line and the switch "Permitir la medición de uso", disabled until the browser has read the answer.
+- **The notice** (`ConsentNotice`): once per browser on the app's pages, until answered. Fixed above the dock, so the page doesn't move when it appears after hydrating: 10px above the phone's bottom bar, 8px from each side, and from `sm` 14px above the dock, centered, at most 560px wide. `--surface`, `--radius-lg`, padding 20, `--shadow-panel`; the title in Outfit 600 18px ("¿Nos dejas medir cómo usas Xtrakto?"), the line in Caption `--text-secondary` with "tu perfil" as an inline link (`--primary`, 700, underline on hover), then "Sí, acepto" and "No, gracias", small Secondary buttons of the same weight. A region named by its title; once answered it goes, and the focus goes to the page's `main`.
+- **"Medición de uso"** (`AnalyticsSetting`) in the profile's side column: a card with its line and the switch "Permitir la medición de uso", disabled until the browser has read the answer.
 
 ### Text field
 
@@ -727,7 +730,16 @@ v8 doesn't draw it; as Phase 7.5 builds it (`/privacy`, public): the waitlist's 
 
 ### CSV downloads
 
-As Phase 7.6 builds them (`CsvDownloadButton`, `components/csv-download/`): a Secondary button with `file-down` that asks the server for the file and hands it to the browser. While it waits it reads "Preparando el archivo…", keeps its focus and can't be pressed again; a failure shows below it in Caption 600 `--danger` with `role="alert"`. Movimientos puts "Descargar CSV" after the period controls, as their action (full width on phones); `/settings` has "Descargar tus datos", a card with its line and "Descargar mis datos (CSV)", before the deletion (7.7 joins them in "Privacidad y datos").
+As Phase 7.6 builds them (`CsvDownloadButton`, `components/csv-download/`): a Secondary button with `file-down` that asks the server for the file and hands it to the browser. While it waits it reads "Preparando el archivo…", keeps its focus and can't be pressed again; a failure shows below it in Caption 600 `--danger` with `role="alert"`. Movimientos puts "Descargar CSV" after the period controls, as their action (full width on phones); the profile's "Privacidad y datos" has "Descargar mis datos (CSV)", before the deletion.
+
+### Profile ("Tu perfil")
+
+`/profile`, as Phase 7.7a builds `v8-11`: the page title ("Tu perfil") with its subtitle, then a main column and a side one (§7), which phones stack. Their cards' titles are Section titles (Manrope 700 18px).
+
+- **"Privacidad y datos"** (`PrivacyAndData`, main column): a `card` with three facts, side by side from `md` and stacked below, each on `--surface-muted` (`--radius-sm`, padding 16) with its 18px icon and title in Manrope 700 14px and one Caption `--text-muted` line: "No guardamos tus archivos" (`eye-off`), "Teléfonos de terceros protegidos" (`lock`) and "Sin datos para publicidad" (`shield-check`), saying only what is true today. Below them "Descargar mis datos (CSV)", the line "Borra movimientos, reglas y tu cuenta. No se puede deshacer." in Caption `--text-muted`, and the destructive "Borrar todos mis datos", which the line describes (`aria-describedby`) and which asks in a dialog before deleting; one row from `lg`, stacked and aligned to the left below.
+- **"Medición de uso"** (side column), where `v8-11` draws the email notices (10.4).
+
+v8 draws more than the MVP brings: the coverage timeline ("Tus datos") comes with 10.2, the email notices with 10.4, "Preguntas hoy" with 13 and the PDF limits with 9.
 
 ### Chat ("Pregúntale a tu extracto")
 
@@ -742,10 +754,11 @@ As Phase 7.6 builds them (`CsvDownloadButton`, `components/csv-download/`): a Se
 
 - Floating pill: `rgba(255,255,255,0.94)`, `--radius-xl`, padding 8, `--shadow-float`.
 - `position: sticky; bottom: 16px`, centered.
-- Items: icon 22px above a 14px label, min-width 86px, padding 10px 14px, `--radius-md`.
+- Items: icon 22px above a 14px label, min-width 86px, padding 10px 14px, `--radius-md`. Between `sm` and `md` they go without the minimum, padding 10px, so six fit at 640px.
 - Active item: `--primary-soft-2` background, `--primary` text and icon, weight 700, `aria-current="page"`.
 - Items: Resumen, Movimientos, Pagos fijos, Categorías, Subir, Pregúntale, Perfil. Each one appears when its screen exists. An item stands for the pages under it, and Resumen for the quick review too, as `v8-02` shows.
 - On phones (`NavDock`, since Phase 6.8a brought the fifth item): the bar sits 8px from each side, padding 6, and its items share its width, 2px apart, each label 11px with tight letter-spacing, so five fit at 360px (320px too). From `sm` it is the floating pill above.
+- **"Más"** (`MoreMenu`, since Phase 7.7a brought the sixth item): the phone's bar shows Resumen, Movimientos and Subir, then "Más" (`ellipsis`), as `v8-11` does; Pregúntale joins before it. "Más" opens a menu above the bar, aligned to its right edge (`--surface`, `--radius-md`, padding 6, `--shadow-pop`): Pagos fijos, Categorías and Perfil, each a 44px row with its 20px icon and its label in Manrope 600 14px, the page open in `--primary-soft-2` with `--primary` 700 and `aria-current="page"`. "Más" looks active while one of them is open. The arrow keys move through the menu, and Escape closes it and gives the focus back to "Más".
 
 ---
 
