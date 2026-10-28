@@ -53,7 +53,7 @@ flowchart LR
         UI -- "file bytes" --> WK -- "minimized content, preview" --> UI
     end
     subgraph Vercel["Vercel · Next.js app (Node runtime)"]
-        RSC["Server Components<br/>summary, transactions, settings"]
+        RSC["Server Components<br/>summary, transactions, profile"]
         SA["Server Actions<br/>submit, status, corrections"]
         RH["Route handlers<br/>/api/inngest, /api/webhooks/clerk"]
         FN["Inngest functions<br/>ingest, categorize, cleanup cron"]
@@ -162,7 +162,7 @@ sequenceDiagram
 
 **Errors:** a database error's message lists its query's parameters, which can hold a statement's content, and Next.js logs whatever an action throws. So the server throws errors that name only what failed (the error's class, a SQLSTATE or system code, a constraint) before any log sees them. In development, Next.js also logs every action with its arguments (a statement's content, a waitlist email): `next.config.ts` turns that off. Errors from the browser and the server, and a tenth of the requests' traces, reach Sentry through an allowlist: Sentry 11 collects everything by default, so `dataCollection` turns each category off, and the SDK's hooks keep an error's class, masked message and stack, the page's path and the runtime, never a request's body, cookies, query or the user ([ADR 0028](adr/0028-errors-reach-sentry-through-an-allowlist.md)).
 
-**Analytics:** the app asks once per browser whether it may measure how it's used, and keeps the answer there, versioned; `/settings` changes it. Only with a yes does the browser download PostHog and send the app's own events: nothing captured automatically, nobody identified, and an allowlist keeps each event's properties and what PostHog needs to receive it, never a URL or the person's city. Withdrawing deletes the id PostHog kept ([ADR 0029](adr/0029-analytics-after-consent-through-an-allowlist.md)).
+**Analytics:** the app asks once per browser whether it may measure how it's used, and keeps the answer there, versioned; the profile (`/profile`) changes it. Only with a yes does the browser download PostHog and send the app's own events: nothing captured automatically, nobody identified, and an allowlist keeps each event's properties and what PostHog needs to receive it, never a URL or the person's city. Withdrawing deletes the id PostHog kept ([ADR 0029](adr/0029-analytics-after-consent-through-an-allowlist.md)).
 
 ---
 

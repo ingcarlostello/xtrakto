@@ -51,7 +51,7 @@ export const PRIVACY_COPY = {
       title: "Medición de uso",
       paragraphs: [
         "Si la aceptas, contamos qué partes de la app usas, por ejemplo que abriste tu resumen o que un archivo no se pudo leer. Lo hacemos con un identificador al azar de tu navegador, sin montos, nombres, textos del banco, direcciones web ni tu ubicación.",
-        "La aceptas o la rechazas en el aviso que ves al entrar, y cambias tu respuesta cuando quieras en Configuración. Si la retiras, borramos ese identificador de tu navegador.",
+        "La aceptas o la rechazas en el aviso que ves al entrar, y cambias tu respuesta cuando quieras en tu perfil. Si la retiras, borramos ese identificador de tu navegador.",
       ],
     },
     {
@@ -100,8 +100,8 @@ export const PRIVACY_COPY = {
       id: "borrar",
       title: "Cómo descargar o borrar tus datos",
       paragraphs: [
-        "En Configuración, «Descargar mis datos (CSV)» te da todos tus movimientos guardados en un archivo que abres con Excel.",
-        "Ahí mismo, «Eliminar mi cuenta y mis datos» borra tus extractos, tus movimientos, tus cuentas, tus reglas y tu usuario, de una vez. No se puede deshacer.",
+        "En tu perfil, «Descargar mis datos (CSV)» te da todos tus movimientos guardados en un archivo que abres con Excel.",
+        "Ahí mismo, «Borrar todos mis datos» borra tus extractos, tus movimientos, tus cuentas, tus reglas y tu usuario, de una vez. No se puede deshacer.",
       ],
     },
     {

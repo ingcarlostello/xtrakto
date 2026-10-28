@@ -23,7 +23,7 @@ export function AnalyticsSetting() {
   return (
     <Card variant="card">
       <CardHeader>
-        <h2 className="font-heading text-body font-bold">{COPY.title}</h2>
+        <h2 className="text-section font-bold">{COPY.title}</h2>
         <CardDescription>
           {COPY.description}{" "}
           <Link

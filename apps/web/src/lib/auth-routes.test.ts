@@ -41,7 +41,7 @@ describe("isPublicPath", () => {
 
   it.each([
     "/",
-    "/settings",
+    "/profile",
     "/transactions",
     "/design-system",
     "/sign-inx",

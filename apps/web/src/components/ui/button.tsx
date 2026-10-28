@@ -16,8 +16,12 @@ const buttonVariants = cva(
           "bg-primary text-body font-bold text-primary-foreground shadow-primary hover:bg-primary-strong",
         secondary:
           "bg-surface text-body font-semibold text-ink shadow-chip hover:bg-surface-muted",
+        // Filled: the confirmation of a deletion.
         destructive:
           "bg-danger text-body font-bold text-white shadow-chip hover:bg-danger/90",
+        // White, as Secondary: what asks for that confirmation.
+        "destructive-secondary":
+          "bg-surface text-body font-bold text-danger shadow-chip hover:bg-surface-muted",
         link: "rounded-none text-sm font-bold text-primary underline-offset-4 hover:underline",
       },
       size: {

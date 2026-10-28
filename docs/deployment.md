@@ -45,7 +45,7 @@ Secrets go from one dashboard to the other by hand, or from a 0600 file through 
 - Sign-up mode "Restricted": only the people invited from Clerk's dashboard (Users, Invitations) create an account (ADR 0027).
 - Paths: home `/`, sign-in `/sign-in`, sign-up `/sign-up`, so invitations and Clerk's emails open the app's own pages.
 - Sign-in by email code or password, and with Google through the app's own OAuth client: the "Web application" client "Xtrakto Clerk production" of the Google Cloud project `xtrakto`, with `https://xtrakto.site` as its origin and `https://clerk.xtrakto.site/v1/oauth_callback` as its redirect URI; only the basic scopes (`openid`, email, profile). Its consent screen (Google Auth Platform: the app "Xtrakto", external users, `https://xtrakto.site/waitlist` as its home page, public and linking the privacy page, `https://xtrakto.site/privacy` as its privacy policy, and xtrakto.site as its authorized domain) is in production since 2026-10-27 (7.5): any Google account may sign in with it, while Clerk still lets only invited people create an account. With basic scopes, one domain and no logo, it needs no verification from Google.
-- "Allow users to delete their account" off (User & authentication, User model): `/settings` deletes the data first (4.5).
+- "Allow users to delete their account" off (User & authentication, User model): `/profile` deletes the data first (4.5).
 - Webhook endpoint `https://xtrakto.site/api/webhooks/clerk` for the event `user.deleted`, which deletes the user's rows (4.5).
 - Its DNS records are below; Clerk checks DNS, SSL and mail before the instance works.
 
@@ -64,7 +64,7 @@ Errors from the browser and the server, and one request in ten traced, go to the
 
 ## PostHog
 
-Product analytics, from the browser and only after the person says yes in the notice above the dock, or later in `/settings` (ADR 0029):
+Product analytics, from the browser and only after the person says yes in the notice above the dock, or later in `/profile` (ADR 0029):
 
 - **In the app:** `lib/analytics.ts` downloads the SDK the first time an event goes with consent, with everything automatic off (page views, clicks, heatmaps, replay, surveys, flags, remote configuration, external scripts) and nobody identified. `utils/posthog-scrub.helpers.ts` lets only the events of `utils/analytics-events.constants.ts` through, each with its own properties, what PostHog needs to receive it and the browser, system, kind of device and host, and adds `$geoip_disable`. Turning the setting off opts PostHog out, which deletes the id it kept in the browser.
 - **In PostHog's project** (Cloud US, id 691566): "Discard client IP data" on, the GeoIP transformation off (Data pipelines), everything automatic off at the project too (autocapture, replay, console logs, performance, heatmaps, surveys, web vitals, exceptions), the time zone Bogotá's, and events whose `$host` contains `localhost` filtered as test accounts, by default. Set on 2026-10-27 through PostHog's API (`PATCH /api/environments/691566/`) from a signed-in browser.
