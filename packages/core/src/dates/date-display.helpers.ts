@@ -1,4 +1,4 @@
-import { TZDate } from "@date-fns/tz";
+import { TZDate, tz } from "@date-fns/tz";
 import {
   addDays,
   format,
@@ -132,4 +132,20 @@ export const formatDayRange = ({ from, to }: Period): string => {
     return `${formatDate(start, "d MMM")} – ${formatDate(end, "d MMM yyyy")}`;
   }
   return `${formatDate(start, "d MMM yyyy")} – ${formatDate(end, "d MMM yyyy")}`;
+};
+
+// Colombia's day periods, with a no-break space so they never split. Not
+// date-fns' Spanish ("a.m."), nor Intl's, whose spaces change with each
+// Node's ICU: CI's Node 22 wrote them unlike a Mac's.
+const DAY_PERIODS = { am: "a.\u00a0m.", pm: "p.\u00a0m." } as const;
+
+/**
+ * The time of an instant in a time zone, as Colombia writes it: `"8:42 a. m."`,
+ * `"12:05 a. m."` past midnight, `"6:05 p. m."`.
+ */
+export const formatTimeOfDay = (instant: Date, timeZone: string): string => {
+  const inZone = { in: tz(timeZone) };
+  const isMorning = Number(format(instant, "H", inZone)) < 12;
+  const period = isMorning ? DAY_PERIODS.am : DAY_PERIODS.pm;
+  return `${format(instant, "h:mm", inZone)} ${period}`;
 };

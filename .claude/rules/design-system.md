@@ -319,6 +319,9 @@ That is the summary; the other screens keep the header, title row and controls, 
 | Files we don't keep (privacy facts)           | `eye-off`                          |
 | Numbers kept only as a code (privacy facts)   | `lock`                             |
 | More, on the phone's bar ("Más")              | `ellipsis`                         |
+| Signs in with Google (profile)                | `globe`                            |
+| Signs in by email (profile)                   | `mail`                             |
+| Sign out ("Cerrar sesión")                    | `log-out`                          |
 | Upload                                        | `upload`                           |
 | Download a CSV                                | `file-down` (`download` is income) |
 | Ask / chat                                    | `message-square`                   |
@@ -734,10 +737,13 @@ As Phase 7.6 builds them (`CsvDownloadButton`, `components/csv-download/`): a Se
 
 ### Profile ("Tu perfil")
 
-`/profile`, as Phase 7.7a builds `v8-11`: the page title ("Tu perfil") with its subtitle, then a main column and a side one (§7), which phones stack. Their cards' titles are Section titles (Manrope 700 18px).
+`/profile`, as Phases 7.7a and 7.7b build `v8-11`: the page title ("Tu perfil") with its subtitle, then a main column and a side one (§7), which phones stack. Their cards' titles are Section titles (Manrope 700 18px).
 
+- **"Tu cuenta en Xtrakto"** (`XtraktoAccount`, main column, first): a `card` with a 64px `--text` circle holding the initial in white Outfit 500 24px (`aria-hidden`), the name in Outfit 500 22px (the email when Clerk has none), the email in Manrope 14px `--text-secondary` (an email that doesn't fit breaks before its "@"), and "Entras con Google" (`globe`) or "Entras con tu correo" (`mail`) in Caption `--text-muted` with its 16px icon. The Secondary "Administrar inicio de sesión", which opens Clerk's profile, sits on the right from `sm` and below on phones.
 - **"Privacidad y datos"** (`PrivacyAndData`, main column): a `card` with three facts, side by side from `md` and stacked below, each on `--surface-muted` (`--radius-sm`, padding 16) with its 18px icon and title in Manrope 700 14px and one Caption `--text-muted` line: "No guardamos tus archivos" (`eye-off`), "Teléfonos de terceros protegidos" (`lock`) and "Sin datos para publicidad" (`shield-check`), saying only what is true today. Below them "Descargar mis datos (CSV)", the line "Borra movimientos, reglas y tu cuenta. No se puede deshacer." in Caption `--text-muted`, and the destructive "Borrar todos mis datos", which the line describes (`aria-describedby`) and which asks in a dialog before deleting; one row from `lg`, stacked and aligned to the left below.
+- **"Tu plan"** (`ProfilePlan`, side column, first): a `panel` with the `info` badge "Gratis" beside its title; "Archivos este mes" in Manrope 700 14px with the count on the right ("3 de 10", `tabular-nums`), an 8px meter (`--ring-track`, filled in `--primary`, `role="meter"` named by that label) and "Se reinicia el 1 de noviembre." in Caption `--text-muted`; then "Archivos de hasta 10 MB" in Manrope 700 14px on `--surface-muted` (`--radius-sm`, padding 16).
 - **"Medición de uso"** (side column), where `v8-11` draws the email notices (10.4).
+- **"Sesión"** (`ProfileSession`, side column, last): "Último inicio de sesión: hoy, 8:42 a. m." in Caption `--text-muted` ("ayer", or the day, in Bogotá), without the browser and system `v8-11` adds, and the Secondary "Cerrar sesión" (`log-out`), which reads "Cerrando sesión…" while Clerk ends the session.
 
 v8 draws more than the MVP brings: the coverage timeline ("Tus datos") comes with 10.2, the email notices with 10.4, "Preguntas hoy" with 13 and the PDF limits with 9.
 
