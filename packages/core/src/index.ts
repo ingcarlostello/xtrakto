@@ -141,6 +141,7 @@ export {
 export { prepareStatement } from "./statements/prepared-statement.helpers";
 export { normalizeHolderName } from "./statements/holder-name.helpers";
 export { findRecurringPayments } from "./recurring/recurring.helpers";
+export { payeeLabelOf } from "./recurring/recurring-payee.helpers";
 export { recurringPaymentTitle } from "./recurring/recurring-title.helpers";
 export type {
   AmountTrend,
