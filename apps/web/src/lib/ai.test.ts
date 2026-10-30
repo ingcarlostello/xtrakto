@@ -1,8 +1,10 @@
+import { tracingChannel } from "node:diagnostics_channel";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { generateStructured } from "./ai";
+import type { AiCallRecord } from "./langfuse";
 
 // DeepSeek's models are replaced by the AI SDK's mock models, one per model
 // id. The SDK itself runs, so its parsing, validation and errors are real.
@@ -10,18 +12,21 @@ const mocks = vi.hoisted(() => ({
   apiKey: undefined as string | undefined,
   createDeepSeek: vi.fn(),
   models: new Map<string, MockLanguageModelV4>(),
+  recordAiCall: vi.fn<(call: AiCallRecord) => Promise<void>>(),
 }));
 
 vi.mock("./env", () => ({
   getServerEnv: () => ({ DEEPSEEK_API_KEY: mocks.apiKey }),
 }));
+vi.mock("./langfuse", () => ({ recordAiCall: mocks.recordAiCall }));
 vi.mock("@ai-sdk/deepseek", () => ({ createDeepSeek: mocks.createDeepSeek }));
 
 const API_KEY = "test-deepseek-key";
 const INPUT = "COMPRA EN SUPERMERCADO VECI";
-const REQUEST = {
+const PROMPT = {
+  name: "check",
+  version: 1,
   instructions: "Clasifica el movimiento.",
-  input: INPUT,
   schema: z.object({
     category: z.enum(["groceries", "restaurants"]),
     confidence: z.number().min(0).max(1),
@@ -81,6 +86,14 @@ const useModels = (flash: MockLanguageModelV4, pro: MockLanguageModelV4) => {
   return { flash, pro };
 };
 
+// lib/ai's only record of the call, as Langfuse would get it.
+const recorded = (): AiCallRecord => {
+  expect(mocks.recordAiCall).toHaveBeenCalledOnce();
+  const record = mocks.recordAiCall.mock.calls[0]?.[0];
+  if (record === undefined) throw new Error("Nothing was recorded.");
+  return record;
+};
+
 beforeEach(() => {
   mocks.apiKey = API_KEY;
   mocks.models.clear();
@@ -88,23 +101,26 @@ beforeEach(() => {
   mocks.createDeepSeek.mockImplementation(
     () => (modelId: string) => mocks.models.get(modelId),
   );
+  mocks.recordAiCall.mockReset();
+  mocks.recordAiCall.mockResolvedValue(undefined);
 });
 
 describe("generateStructured", () => {
   it("makes no call without DeepSeek's key, as in CI", async () => {
     mocks.apiKey = undefined;
 
-    expect(await generateStructured(REQUEST)).toEqual({
+    expect(await generateStructured(PROMPT, INPUT)).toEqual({
       ok: false,
       error: { code: "AI_OFF" },
     });
     expect(mocks.createDeepSeek).not.toHaveBeenCalled();
+    expect(mocks.recordAiCall).not.toHaveBeenCalled();
   });
 
   it("answers with the first model, as the schema reads it", async () => {
     const { pro } = useModels(answering(ANSWER), answering(ANSWER));
 
-    expect(await generateStructured(REQUEST)).toEqual({
+    expect(await generateStructured(PROMPT, INPUT)).toEqual({
       ok: true,
       value: {
         value: { category: "groceries", confidence: 0.9 },
@@ -118,7 +134,7 @@ describe("generateStructured", () => {
   it("asks for JSON, without thinking and with a time limit", async () => {
     const { flash } = useModels(answering(ANSWER), answering(ANSWER));
 
-    await generateStructured(REQUEST);
+    await generateStructured(PROMPT, INPUT);
 
     const [call] = flash.doGenerateCalls;
     expect(call?.responseFormat?.type).toBe("json");
@@ -126,9 +142,30 @@ describe("generateStructured", () => {
     expect(call?.maxOutputTokens).toBe(200);
     expect(call?.abortSignal).toBeInstanceOf(AbortSignal);
     expect(call?.prompt).toEqual([
-      { role: "system", content: REQUEST.instructions },
+      { role: "system", content: PROMPT.instructions },
       { role: "user", content: [{ type: "text", text: INPUT }] },
     ]);
+  });
+
+  it("keeps the SDK's own telemetry off, so no tracing channel hears a call", async () => {
+    useModels(answering(ANSWER), answering(ANSWER));
+    const heard: string[] = [];
+    const listener = {
+      start: () => heard.push("start"),
+      end: () => heard.push("end"),
+      asyncStart: () => heard.push("asyncStart"),
+      asyncEnd: () => heard.push("asyncEnd"),
+      error: () => heard.push("error"),
+    };
+    const channel = tracingChannel("ai:telemetry");
+    channel.subscribe(listener);
+    try {
+      await generateStructured(PROMPT, INPUT);
+    } finally {
+      channel.unsubscribe(listener);
+    }
+
+    expect(heard).toEqual([]);
   });
 
   it.each([
@@ -146,7 +183,7 @@ describe("generateStructured", () => {
   ])("falls back to the second model once after $failure", async (row) => {
     const { flash } = useModels(row.model, answering(ANSWER));
 
-    const result = await generateStructured(REQUEST);
+    const result = await generateStructured(PROMPT, INPUT);
 
     expect(result.ok && result.value.model).toBe("deepseek-v4-pro");
     expect(flash.doGenerateCalls).toHaveLength(1);
@@ -155,7 +192,7 @@ describe("generateStructured", () => {
   it("fails with a code for each model when both fail", async () => {
     useModels(throwing(apiError(402)), answering("Mercado."));
 
-    expect(await generateStructured(REQUEST)).toEqual({
+    expect(await generateStructured(PROMPT, INPUT)).toEqual({
       ok: false,
       error: {
         code: "AI_FAILED",
@@ -170,7 +207,7 @@ describe("generateStructured", () => {
   it("counts an answer cut before any text as one the schema can't read", async () => {
     useModels(cutShort(), cutShort());
 
-    const result = await generateStructured(REQUEST);
+    const result = await generateStructured(PROMPT, INPUT);
 
     expect(!result.ok && result.error).toEqual({
       code: "AI_FAILED",
@@ -184,7 +221,7 @@ describe("generateStructured", () => {
   it("tells a timeout from a network failure", async () => {
     useModels(throwing(timeout()), throwing(new TypeError("fetch failed")));
 
-    const result = await generateStructured(REQUEST);
+    const result = await generateStructured(PROMPT, INPUT);
 
     expect(!result.ok && result.error).toEqual({
       code: "AI_FAILED",
@@ -199,9 +236,73 @@ describe("generateStructured", () => {
     const answer = "VECI es un supermercado de barrio";
     useModels(throwing(apiError(400)), answering(answer));
 
-    const failure = JSON.stringify(await generateStructured(REQUEST));
+    const failure = JSON.stringify(await generateStructured(PROMPT, INPUT));
 
     expect(failure).not.toContain("VECI");
-    expect(failure).not.toContain(REQUEST.instructions);
+    expect(failure).not.toContain(PROMPT.instructions);
+  });
+});
+
+describe("generateStructured's record for Langfuse", () => {
+  it("records each attempt: its model, outcome, times and what it used", async () => {
+    useModels(throwing(apiError(503)), answering(ANSWER));
+
+    await generateStructured(PROMPT, INPUT);
+
+    const { prompt, attempts } = recorded();
+    expect(prompt).toEqual({ name: "check", version: 1 });
+    const [failed, answered] = attempts;
+    expect(failed).toEqual({
+      model: "deepseek-flash",
+      outcome: "PROVIDER_ERROR",
+      status: 503,
+      startedAt: expect.any(Number),
+      endedAt: expect.any(Number),
+    });
+    // 40 tokens in and 12 out at deepseek-v4-pro's peak prices, rounded up.
+    expect(answered).toEqual({
+      model: "deepseek-v4-pro",
+      outcome: "OK",
+      startedAt: expect.any(Number),
+      endedAt: expect.any(Number),
+      usage: { inputTokens: 40, outputTokens: 12, costMicroUsd: 101 },
+    });
+    expect(answered?.endedAt).toBeGreaterThanOrEqual(failed?.startedAt ?? 0);
+  });
+
+  it("counts what an answer the schema rejects used, at deepseek-flash's prices", async () => {
+    useModels(answering("Mercado."), answering(ANSWER));
+
+    await generateStructured(PROMPT, INPUT);
+
+    const [rejected] = recorded().attempts;
+    expect(rejected?.outcome).toBe("INVALID_OUTPUT");
+    expect(rejected?.usage).toEqual({
+      inputTokens: 40,
+      outputTokens: 12,
+      costMicroUsd: 27,
+    });
+  });
+
+  it("records a call that failed twice, once", async () => {
+    useModels(throwing(timeout()), throwing(apiError(500)));
+
+    await generateStructured(PROMPT, INPUT);
+
+    expect(recorded().attempts.map(({ outcome }) => outcome)).toEqual([
+      "TIMEOUT",
+      "PROVIDER_ERROR",
+    ]);
+  });
+
+  it("never hands Langfuse the instructions, the input or the answer", async () => {
+    useModels(answering("VECI es un supermercado"), answering(ANSWER));
+
+    await generateStructured(PROMPT, INPUT);
+
+    const record = JSON.stringify(mocks.recordAiCall.mock.calls);
+    expect(record).not.toContain("VECI");
+    expect(record).not.toContain("groceries");
+    expect(record).not.toContain(PROMPT.instructions);
   });
 });

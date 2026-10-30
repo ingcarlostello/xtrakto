@@ -220,7 +220,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 8 — LLM layer**
 
 - [x] 8.1 [HUMAN] AI module with primary and fallback providers
-- [ ] 8.2 Versioned prompts and Langfuse tracing
+- [x] 8.2 Versioned prompts and Langfuse tracing
 - [ ] 8.3 Usage tracking and limits
 - [ ] 8.4 Evaluation harness and the categorization prompt
 - [ ] 8.5a LLM categories in the database
@@ -1617,25 +1617,29 @@ It came out at about 95 lines of code; `CLAUDE.md` gains its rule in a commit of
 
 #### 8.2 Versioned prompts and Langfuse tracing
 
+Decided when it started (2026-10-30): Langfuse's older REST ingestion closes on 16 November 2026 and its SDK needs OpenTelemetry beside Sentry's, so each call goes to Langfuse's OpenTelemetry endpoint as OTLP's JSON written by hand, with no SDK and no tracer provider (ADR 0032). The price table moves here from 8.3, since Langfuse needs each call's cost.
+
 **Human:** create the Langfuse Cloud project and put its keys in Vercel's production environment.
 
 **Tasks**
 
 - Prompts as versioned files (`prompts/<name>.v<n>.ts`): name, version, instructions and the answer's schema. `lib/ai` takes a prompt, never a loose string.
-- Every call records one generation in Langfuse by hand: its model, tokens, cost, latency, prompt name and version and outcome, never an input or an output; off without its keys, as Sentry. Langfuse gets a tracer provider of its own, since Sentry 11 owns OpenTelemetry's and keeps a tenth of the traces. An ADR, as 0028 and 0029.
+- Every call records a trace in Langfuse by hand, with a generation for each attempt: its model, tokens, cost, times, prompt name and version and outcome, never an input or an output; off without its keys, as Sentry. Each call's cost comes from a price table per model in code, since providers report tokens. An ADR, as 0028 and 0029.
 - The AI SDK's own telemetry stays off on every call, so no span with a prompt reaches Langfuse or Sentry; Sentry's AI integration is also told to record no inputs or outputs, which a call could otherwise turn on (`dataCollection.genAI` is already off).
 - Langfuse Cloud in the US region, as the other services but DeepSeek. `docs/data-flow.md` and system design §4 gain it, with what it keeps: the free plan shows 30 days and deletes nothing.
 
 **Done when:** tests show that only the allowlist reaches Langfuse; a check call shows there with its model, tokens, cost and latency and nothing else.
 
-**Commit:** `feat(web): versioned prompts and LLM tracing`
+It came out at about 250 lines of code; `CLAUDE.md` gains its rule in a commit of its own.
+
+**Commits:** `feat(web): versioned prompts and LLM tracing`, then `docs: LLM telemetry only through its allowlist`
 
 #### 8.3 Usage tracking and limits
 
 **Tasks**
 
 - `llm_usage`: one row per call, with its user, feature, prompt and version, model, tokens, cost in millionths of a dollar (integers, as money) and outcome; forced Row-Level Security on `user_id`.
-- Each call's cost from a price table per model in code, since providers report tokens.
+- Each call's cost from 8.2's price table.
 - Before every call: the user's month under USD 1, and the platform's under its budget (an environment variable), by calendar month in Bogotá as the statements' limit; the platform's total through a `SECURITY DEFINER` function without parameters, as the daily cleanup's (ADR 0014). Over a limit the call doesn't happen, and the caller gets an expected error.
 - At 80% of the platform's budget, one Sentry message a month, which alerts the owner; at 100%, every call stops.
 - "Tu plan" (7.7b) says, only when the user's month ran out, that the movements no rule knows wait for the next month.
