@@ -3,6 +3,7 @@ import type { AmountMinor, LocalDate } from "@xtrakto/core";
 import type { Database } from "../src/client/db-client.types";
 import { accounts } from "../src/accounts/account.schemas";
 import { ingestionJobs } from "../src/ingestion-jobs/ingestion-job.schemas";
+import { llmUsage } from "../src/llm-usage/llm-usage.schemas";
 import { statements } from "../src/statements/statement.schemas";
 import { transactions } from "../src/transactions/transaction.schemas";
 import { userCategoryRules } from "../src/user-category-rules/user-category-rule.schemas";
@@ -94,6 +95,17 @@ export type SeededUser = {
   readonly transactionId: string;
 };
 
+/** What one answered call to a model used. */
+export const LLM_USAGE = {
+  promptName: "check",
+  promptVersion: 1,
+  model: "deepseek-flash",
+  outcome: "OK",
+  inputTokens: 147,
+  outputTokens: 13,
+  costMicroUsd: 60,
+} as const;
+
 /** A user with one row in each table, written as the owner (no RLS). */
 export const seedUser = async (db: Database): Promise<SeededUser> => {
   const userId = toUserId(await insertUser(db));
@@ -111,6 +123,7 @@ export const seedUser = async (db: Database): Promise<SeededUser> => {
     direction: "out",
     categoryId: "investment",
   });
+  await db.insert(llmUsage).values({ userId, ...LLM_USAGE });
   return { userId, accountId, statementId, transactionId: movement.id };
 };
 

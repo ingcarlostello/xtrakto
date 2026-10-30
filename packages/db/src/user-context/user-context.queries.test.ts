@@ -14,6 +14,7 @@ import type { DbClient } from "../client/db-client.types";
 import { ingestionJobs } from "../ingestion-jobs/ingestion-job.schemas";
 import { statements } from "../statements/statement.schemas";
 import { transactions } from "../transactions/transaction.schemas";
+import { llmUsage } from "../llm-usage/llm-usage.schemas";
 import { userCategoryRules } from "../user-category-rules/user-category-rule.schemas";
 import { users } from "../users/user.schemas";
 import { withUserContext } from "./user-context.queries";
@@ -28,6 +29,7 @@ const USER_TABLES = [
   transactions,
   ingestionJobs,
   userCategoryRules,
+  llmUsage,
 ];
 
 describe.skipIf(!testDatabase)("withUserContext", () => {
