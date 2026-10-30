@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AnalyticsSetting } from "@/features/analytics/components/AnalyticsSetting";
+import { hasUsedUpAiMonth } from "@/features/llm-usage/llm-usage.service";
 import { getMonthlyUsage } from "@/features/upload/upload.service";
 import { BankName } from "@/features/users/components/BankName";
 import { PrivacyAndData } from "@/features/users/components/PrivacyAndData";
@@ -21,10 +22,11 @@ export const metadata: Metadata = { title: PROFILE_COPY.title };
 // phones stack.
 export default async function ProfilePage() {
   const clerkUserId = await requireSignedIn();
-  const [account, yours, usage] = await Promise.all([
+  const [account, yours, usage, isAiUsedUp] = await Promise.all([
     getProfileAccount(clerkUserId),
     getYourAccounts(clerkUserId),
     getMonthlyUsage(clerkUserId),
+    hasUsedUpAiMonth(clerkUserId),
   ]);
   return (
     <>
@@ -37,7 +39,7 @@ export default async function ProfilePage() {
           <PrivacyAndData />
         </div>
         <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-5.5">
-          <ProfilePlan {...usage} />
+          <ProfilePlan {...usage} isAiUsedUp={isAiUsedUp} />
           <AnalyticsSetting />
           <ProfileSession lastSignIn={account.lastSignIn} />
         </div>

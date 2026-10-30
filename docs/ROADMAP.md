@@ -221,7 +221,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 8.1 [HUMAN] AI module with primary and fallback providers
 - [x] 8.2 Versioned prompts and Langfuse tracing
-- [ ] 8.3 Usage tracking and limits
+- [x] 8.3 Usage tracking and limits
 - [ ] 8.4 Evaluation harness and the categorization prompt
 - [ ] 8.5a LLM categories in the database
 - [ ] 8.5b Categorize after ingestion
@@ -1636,6 +1636,8 @@ It came out at about 250 lines of code; `CLAUDE.md` gains its rule in a commit o
 
 #### 8.3 Usage tracking and limits
 
+Decided when it started (2026-10-30): the platform's budget is a constant in code, USD 3 a month under the prepaid balance at DeepSeek, instead of an environment variable that Vercel would need anyway; `llm_usage` keeps a row per attempt, since each one has its model and cost, and the prompt's name says the feature; and every call takes a ledger (`AiLedger`) that checks its limits and saves what it used, a user's in `features/llm-usage`, so `lib/ai` depends on no feature and no call skips the limits.
+
 **Tasks**
 
 - `llm_usage`: one row per call, with its user, feature, prompt and version, model, tokens, cost in millionths of a dollar (integers, as money) and outcome; forced Row-Level Security on `user_id`.
@@ -1646,7 +1648,9 @@ It came out at about 250 lines of code; `CLAUDE.md` gains its rule in a commit o
 
 **Done when:** tests cover the user's limit and the platform's budget, the 80% alert, the month's boundary in Bogotá, and that a user's usage neither counts for nor shows to another user.
 
-**Commit:** `feat(web): LLM usage and cost limits`
+It came out at about 245 lines of code; the design rules gain the plan's note in a commit of their own.
+
+**Commits:** `feat(db): LLM usage and the platform's month`, `feat(web): LLM usage and cost limits`, then `docs(rules): your plan when the AI's month ran out`
 
 #### 8.4 Evaluation harness and the categorization prompt
 

@@ -77,7 +77,7 @@ export type AiUsage = {
   readonly costMicroUsd: number;
 };
 
-/** One attempt as Langfuse records it: how and when it ended, and what it used. */
+/** One attempt, as its ledger and Langfuse record it: how and when it ended, and what it used. */
 export type AiAttempt = {
   readonly model: AiModelId;
   readonly outcome: "OK" | AiFailureReason;
@@ -88,9 +88,30 @@ export type AiAttempt = {
   readonly usage?: AiUsage;
 };
 
+/** A call to DeepSeek: its prompt's name and version, and its attempts. */
+export type AiCallRecord = {
+  readonly prompt: Pick<AiPrompt<unknown>, "name" | "version">;
+  readonly attempts: readonly AiAttempt[];
+};
+
+/** A limit that stops a call before it goes out (8.3). */
+export type AiLimit = "USER_MONTH" | "PLATFORM_BUDGET";
+
+/**
+ * Who pays for a call: what stops it before it goes out, and where what it
+ * used is saved after. Every call has one, so none skips the limits (project
+ * rules §14); a user's lives in features/llm-usage.
+ */
+export type AiLedger = {
+  /** The limit the call would pass, if any. */
+  readonly check: () => Promise<AiLimit | undefined>;
+  readonly record: (call: AiCallRecord) => Promise<void>;
+};
+
 export type AiError =
   /** Without DEEPSEEK_API_KEY, as in CI: no call leaves. */
   | { readonly code: "AI_OFF" }
+  | { readonly code: "AI_LIMIT_REACHED"; readonly limit: AiLimit }
   | {
       readonly code: "AI_FAILED";
       readonly failures: readonly AiAttemptFailure[];
@@ -196,23 +217,30 @@ const deepSeekProvider = (): DeepSeek | undefined => {
 
 /**
  * Asks DeepSeek what `prompt` asks about `input`, for an answer its schema
- * passes: the first model, then once the fallback when the first fails,
- * takes too long or answers what the schema rejects. Langfuse records every
- * attempt (lib/langfuse.ts). Every failure comes back as a value, so a caller
- * lets its movements wait (system design §1); none carries content.
+ * passes, unless one of the ledger's limits stops it: the first model, then
+ * once the fallback when the first fails, takes too long or answers what the
+ * schema rejects. The ledger and Langfuse (lib/langfuse.ts) record every
+ * attempt. Every failure comes back as a value, so a caller lets its
+ * movements wait (system design §1); none carries content.
  */
 export const generateStructured = async <T>(
   prompt: AiPrompt<T>,
   input: string,
+  ledger: AiLedger,
 ): Promise<Result<StructuredAnswer<T>, AiError>> => {
   const deepSeek = deepSeekProvider();
   if (deepSeek === undefined) return err({ code: "AI_OFF" });
+  const limit = await ledger.check();
+  if (limit !== undefined) return err({ code: "AI_LIMIT_REACHED", limit });
   const attempts: AiAttempt[] = [];
-  const record = () =>
-    recordAiCall({
+  const record = async () => {
+    const call = {
       prompt: { name: prompt.name, version: prompt.version },
       attempts,
-    });
+    };
+    await ledger.record(call);
+    await recordAiCall(call);
+  };
   for (const model of AI_MODELS) {
     const result = await attempt(deepSeek, model, { prompt, input });
     attempts.push(result.attempt);
