@@ -88,6 +88,8 @@ Set up once, from a laptop, as Neon's owner role (`neondb_owner`):
 
 Since 7.2 the "Production migrations" workflow (`.github/workflows/migrate.yml`) applies the pending migrations on every push to `main`, and on demand (Actions, Production migrations, Run workflow). It connects with the repository secret `DATABASE_MIGRATION_URL`: the owner's direct URL with `sslmode=verify-full`. It runs one at a time and is never cancelled halfway. Migrations must stay backward compatible, since Vercel deploys the same push meanwhile (system design §9).
 
+Since 8.4 the "Evals" workflow (`.github/workflows/evals.yml`) runs the LLM evals on a pull request that changes a prompt, `lib/ai` or an eval's set, and on demand. It calls DeepSeek with the repository secret `DEEPSEEK_API_KEY`, the same key as Vercel's, and fails without it; a run costs about USD 0.04 of the prepaid balance.
+
 ## DNS at Hostinger
 
 For Vercel, as its domain check asks (`GET /v6/domains/{domain}/config`):

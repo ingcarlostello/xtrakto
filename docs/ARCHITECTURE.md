@@ -86,7 +86,7 @@ The original file and the PDF password never leave the browser. Each file is rea
 | `@xtrakto/parsers` | Spreadsheet and PDF extraction, bank parsers, reconciliation, format detection                                                       | Browser (preview) and server (authoritative) |
 | `@xtrakto/db`      | Drizzle schema, migrations, RLS policies, persistence functions                                                                      | Server only                                  |
 | `@xtrakto/models`  | Exported ONNX models with manifests and golden files (Stage 14)                                                                      | Server                                       |
-| `@xtrakto/evals`   | Labeled datasets and evaluation runners for LLM features (Stage 8)                                                                   | CI and local                                 |
+| `@xtrakto/evals`   | Labeled sets, metrics and thresholds of the LLM features' evals; their runners are scripts of `apps/web`, beside the prompts         | CI and local                                 |
 | `ml/`              | Training, evaluation and export of models in Python                                                                                  | Offline only                                 |
 
 ---
@@ -382,6 +382,8 @@ flowchart LR
 ```
 
 Vercel deploys `main` while the migrations job runs, so migrations must stay backward compatible: expand the schema, deploy, then remove what old code used.
+
+A pull request that changes a prompt, `lib/ai` or an eval's set also runs the LLM evals against DeepSeek, with the project's key as a GitHub secret: only the sets' invented texts go, the report holds figures only, and a model under a threshold fails it (8.4).
 
 ---
 

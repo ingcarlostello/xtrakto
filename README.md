@@ -31,6 +31,7 @@ packages/
   core/                Domain types, money and dates (pure TypeScript)
   parsers/             Bank statement parsers and their registry (pure TypeScript)
   db/                  PostgreSQL access with Drizzle: connection, schema, migrations (server only)
+  evals/               LLM eval sets, their metrics and thresholds (pure TypeScript)
   eslint-config/       Shared ESLint presets and project rules
   typescript-config/   Shared tsconfig presets
 docker/                Local PostgreSQL setup for Docker Compose
@@ -101,13 +102,15 @@ CI starts only PostgreSQL: the tests don't need the Dev Server.
 | `pnpm db:studio`    | Opens Drizzle Studio on the database                                                                                   |
 | `pnpm db:seed`      | Loads three synthetic statements for a development user; needs `IDENTIFIER_HASH_KEY`, and a second run inserts nothing |
 
-CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request, with the database from `docker compose up --wait`.
+CI runs `pnpm turbo check-types lint test` and `pnpm format:check` on every pull request, with the database from `docker compose up --wait`. A pull request that changes a prompt, `apps/web/src/lib/ai.ts` or an eval's set also runs the LLM evals, with the repository secret `DEEPSEEK_API_KEY`.
 
 The integration tests of `packages/db` use the `xtrakto_test` database through `TEST_DATABASE_URL` (application role) and `TEST_DATABASE_MIGRATION_URL` (owner), read from `.env.local`. With both set, they need the local database running and fail if it isn't; without them, they are skipped, except in CI, which always runs them. Both must point to a local database whose name ends in `_test`.
 
 The app's database tests, such as the ingestion function's, use the same database. They run after `packages/db`'s, which rebuild it from the migrations, and never rebuild it themselves: run them through `pnpm turbo test`, or alone once the database tests have run, since they stop when a migration is missing.
 
 `pnpm --filter video studio` previews the promo video in Remotion Studio, on http://localhost:3001, and `pnpm --filter video render` writes the landing's MP4 and poster to `apps/web/public/video/` and the 9:16 cut to the git-ignored `apps/video/out/`. Before rendering, download the music, "Calm Corporate Background Music" by JoyInSound from Pixabay, to `apps/video/public/audio/music/calm-corporate-background-music.mp3`: its license forbids sharing the track on its own, so git ignores that folder. The sound effects are synthesized by `pnpm --filter video generate:sfx`. Rendering downloads a headless Chrome the first time; CI never renders.
+
+`pnpm --filter web eval` runs the LLM evals (today the categorization prompt's) over the invented texts of `packages/evals`, against each DeepSeek model alone, with `DEEPSEEK_API_KEY` from `.env.local`. It prints figures only (accuracy, macro-F1, coverage, abstention and the cost), costs about USD 0.04 a run, and fails when a model falls under its thresholds. Only invented texts go to DeepSeek from a development machine.
 
 `pnpm --filter @xtrakto/parsers test:private` checks the parsers against real exports copied into `packages/parsers/fixtures/private/` or its folders, which git ignores. It runs only locally and prints counts and yes/no answers, never the files' content.
 
