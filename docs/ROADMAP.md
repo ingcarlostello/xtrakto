@@ -219,7 +219,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 8 — LLM layer**
 
-- [ ] 8.1 [HUMAN] AI module with primary and fallback providers
+- [x] 8.1 [HUMAN] AI module with primary and fallback providers
 - [ ] 8.2 Versioned prompts and Langfuse tracing
 - [ ] 8.3 Usage tracking and limits
 - [ ] 8.4 Evaluation harness and the categorization prompt
@@ -1611,7 +1611,9 @@ Decided with the human on 2026-10-30 (gate): DeepSeek's own API, where the human
 
 **Done when:** tests cover the fallback (an error, a timeout, an answer the schema rejects) and errors without content; a call with an invented text reaches each model.
 
-**Commit:** `feat(web): AI module with primary and fallback providers`
+It came out at about 95 lines of code; `CLAUDE.md` gains its rule in a commit of its own.
+
+**Commits:** `feat(web): AI module with primary and fallback providers`, then `docs: LLM calls only through lib/ai`
 
 #### 8.2 Versioned prompts and Langfuse tracing
 

@@ -61,7 +61,7 @@ flowchart LR
     end
     PG[("PostgreSQL<br/>forced RLS, pgvector")]
     IC["Inngest Cloud<br/>events, retries, schedules"]
-    LLM["LLM providers<br/>primary + fallback (Stage 8)"]
+    LLM["DeepSeek API<br/>flash, pro as fallback (Stage 8)"]
     CL["Clerk<br/>identity, sessions"]
     OBS["Langfuse, Sentry, PostHog<br/>scrubbed telemetry"]
 
@@ -425,6 +425,7 @@ Vercel deploys `main` while the migrations job runs, so migrations must stay bac
 | A read-only example through a user of its own                                      | Every screen with sample data, never mixed with the person's and never written to.                          | One more account of the person's; a shared Clerk account        | [0030](adr/0030-a-read-only-example-through-a-user-of-its-own.md)                                     |
 | Promo video in Remotion                                                            | The screens it shows don't exist yet; drawn from the design and versioned with it.                          | Screen recording; AI-generated video                            | [0020](adr/0020-promo-video-rendered-with-remotion.md)                                                |
 | Deterministic first, LLM as fallback                                               | Exact, free and testable for known formats.                                                                 | LLM extraction for everything                                   | [0009](adr/0009-deterministic-parsing-first.md)                                                       |
+| DeepSeek's own API for LLM calls                                                   | A personal, free project with the owner's credits; one account, a second model as fallback.                 | Claude Haiku 5.5 or GPT-6 Luna, direct or through AI Gateway    | [0031](adr/0031-deepseek-api-for-llm-calls.md)                                                        |
 | Integer minor units and date-only dates                                            | No floating-point drift; no time-zone shifts.                                                               | Decimals and timestamps                                         | [0006](adr/0006-money-as-integer-minor-units.md), [0007](adr/0007-transaction-dates-as-local-date.md) |
 | Forced RLS with a transaction-local setting                                        | A second barrier when a query forgets its filter.                                                           | Application-level filtering only                                | [0014](adr/0014-forced-rls-with-transaction-local-user.md)                                            |
 | Rules give a best guess and flag what to review                                    | Free, exact and testable; the quick review groups movements by the rule that guessed.                       | A confidence score; an Inngest step of its own                  | [0023](adr/0023-rules-give-a-best-guess-and-flag-what-to-review.md)                                   |

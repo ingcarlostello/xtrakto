@@ -33,6 +33,7 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 | `NEXT_PUBLIC_SENTRY_DSN`            | Sentry, project `xtrakto`, Client Keys (DSN). Public by design; inlined at build time                                                                                                         | Plain     |
 | `SENTRY_AUTH_TOKEN`                 | A Sentry organization token, for the build to upload source maps. Without it, the build uploads none                                                                                          | Sensitive |
 | `NEXT_PUBLIC_POSTHOG_KEY`           | PostHog, project `xtrakto`, its project API key (`phc_…`). Public by design; inlined at build time                                                                                            | Plain     |
+| `DEEPSEEK_API_KEY`                  | DeepSeek's key made only for Xtrakto (`sk-…`, ADR 0031). Its prepaid balance is the spend limit                                                                                               | Sensitive |
 | `WAITLIST_ONLY`                     | Absent. `1` turns production back to the waitlist alone (ADR 0022)                                                                                                                            | Plain     |
 
 `INNGEST_DEV` never goes on Vercel: dev mode skips Inngest's signature check, and `env.ts` refuses it there.
