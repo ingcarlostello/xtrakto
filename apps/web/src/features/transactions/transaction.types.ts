@@ -115,7 +115,10 @@ export type MovementTags = {
 
 /** A movement's line: the bank's text as printed, or that it gave none. */
 export type DescriptionView =
+  /** The bank's text titles it: nothing says what it was. */
   | { readonly kind: "bank"; readonly text: string }
+  /** A title in plain words, over the bank's text as printed (8.6a). */
+  | { readonly kind: "titled"; readonly title: string; readonly raw: string }
   | { readonly kind: "none"; readonly raw: string };
 
 /** A link to the list with other filters. */
@@ -216,8 +219,10 @@ export type DetailFact = { readonly label: string; readonly value: string };
 /** A movement as its detail shows it (docs/ui/v8-03). */
 export type MovementDetailView = {
   readonly id: string;
-  /** The bank's text, or that it gave none. */
+  /** Its title in plain words, the bank's text, or that it gave none. */
   readonly title: string;
+  /** The title is the bank's text, written as printed. */
+  readonly isBankText: boolean;
   /** Its text exactly as printed, for "Así lo escribe el banco". */
   readonly bankText: string;
   /** `"Domingo 27 de septiembre de 2026"`. */

@@ -15,7 +15,11 @@ import { reviewHref } from "@/utils/transactions-url.helpers";
 import { movementTone } from "./kind-view.helpers";
 import { amountText, descriptionView } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type { DetailFact, MovementDetailView } from "./transaction.types";
+import type {
+  DescriptionView,
+  DetailFact,
+  MovementDetailView,
+} from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.detail;
 
@@ -66,6 +70,13 @@ const reasonOf = ({
     : `${reason}. ${COPY.systemRule}`;
 };
 
+// Its title in plain words, the bank's text, or that the bank gave none.
+const titleOf = (description: DescriptionView): string => {
+  if (description.kind === "bank") return description.text;
+  if (description.kind === "titled") return description.title;
+  return TRANSACTIONS_COPY.noDescription;
+};
+
 // The quick review of the quarter the movement falls in.
 const reviewOf = (accountId: string, date: LocalDate) =>
   reviewHref({
@@ -82,14 +93,12 @@ export const movementDetailView = (
   detail: MovementDetail,
   accountId: string,
 ): MovementDetailView => {
-  const description = descriptionView(detail.descriptionRaw);
+  const description = descriptionView(detail);
   const { categoryId, isPendingReview } = detail;
   return {
     id: detail.id,
-    title:
-      description.kind === "bank"
-        ? description.text
-        : TRANSACTIONS_COPY.noDescription,
+    title: titleOf(description),
+    isBankText: description.kind === "bank",
     bankText: detail.descriptionRaw,
     date: formatWeekdayInWords(detail.date, { withYear: true }),
     amount: amountText(detail.amountMinor),

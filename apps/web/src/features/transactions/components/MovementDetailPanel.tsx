@@ -25,8 +25,8 @@ const COPY = TRANSACTIONS_COPY.detail;
 
 type PanelProps = { view: MovementDetailView; closeHref: TransactionsHref };
 
-// Its category's chip, the bank's text as its title with the day, and the
-// way to close it.
+// Its category's chip, its title with the day, and the way to close it.
+// The bank's text as a title is written as printed.
 function DetailHeading({
   view,
   closeHref,
@@ -39,7 +39,10 @@ function DetailHeading({
         <h2
           id={titleId}
           tabIndex={-1}
-          className="text-section font-bold tracking-[0.02em] break-words whitespace-pre-wrap"
+          className={cn(
+            "text-section font-bold break-words",
+            view.isBankText && "tracking-[0.02em] whitespace-pre-wrap",
+          )}
         >
           {view.title}
         </h2>
