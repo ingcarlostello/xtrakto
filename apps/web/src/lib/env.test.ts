@@ -24,6 +24,10 @@ const SENTRY_DSN = "https://publickey@o1.ingest.us.sentry.io/2";
 const POSTHOG_KEY = fakeKey("phc", "projectKey0123456789abcdef");
 const PERSONAL_KEY = fakeKey("phx", "secretPersonalKey0123456789");
 const DEEPSEEK_KEY = ["sk", "secretDeepSeekKey0123456789"].join("-");
+const LANGFUSE_KEYS = {
+  LANGFUSE_PUBLIC_KEY: ["pk", "lf", "publicKey0123456789"].join("-"),
+  LANGFUSE_SECRET_KEY: ["sk", "lf", "secretKey0123456789"].join("-"),
+};
 const REQUIRED = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
@@ -320,6 +324,51 @@ describe("parseServerEnv", () => {
     });
 
     expect(env.DEEPSEEK_API_KEY).toBeUndefined();
+  });
+
+  it.each([undefined, ""])(
+    "leaves LLM tracing off without Langfuse's keys (%j), as in CI",
+    (key) => {
+      const env = parseServerEnv({
+        ...VALID,
+        LANGFUSE_PUBLIC_KEY: key,
+        LANGFUSE_SECRET_KEY: key,
+      });
+
+      expect(env.LANGFUSE_PUBLIC_KEY).toBeUndefined();
+      expect(env.LANGFUSE_SECRET_KEY).toBeUndefined();
+    },
+  );
+
+  it("accepts Langfuse's two keys", () => {
+    expect(parseServerEnv({ ...VALID, ...LANGFUSE_KEYS })).toMatchObject(
+      LANGFUSE_KEYS,
+    );
+  });
+
+  it.each(["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"] as const)(
+    "requires the other Langfuse key with %s, or tracing would stop unnoticed",
+    (name) => {
+      const message = failureOf({ ...VALID, [name]: LANGFUSE_KEYS[name] });
+
+      expect(message).toContain(
+        name === "LANGFUSE_PUBLIC_KEY"
+          ? "LANGFUSE_SECRET_KEY"
+          : "LANGFUSE_PUBLIC_KEY",
+      );
+      expect(message).not.toContain("secret");
+    },
+  );
+
+  it("rejects Langfuse's secret key in the public one's place without printing it", () => {
+    const message = failureOf({
+      ...VALID,
+      LANGFUSE_PUBLIC_KEY: LANGFUSE_KEYS.LANGFUSE_SECRET_KEY,
+      LANGFUSE_SECRET_KEY: LANGFUSE_KEYS.LANGFUSE_SECRET_KEY,
+    });
+
+    expect(message).toContain("LANGFUSE_PUBLIC_KEY");
+    expect(message).not.toContain("secret");
   });
 });
 

@@ -19,6 +19,14 @@ export async function register(): Promise<void> {
         dsn: SENTRY_DSN,
         ...SENTRY_OPTIONS,
         tracePropagationTargets: [],
+        // lib/ai.ts turns the AI SDK's telemetry off on every call; were one
+        // to turn it on, this keeps its prompts and answers out (ADR 0032).
+        integrations: [
+          Sentry.vercelAIIntegration({
+            recordInputs: false,
+            recordOutputs: false,
+          }),
+        ],
       });
   }
 }

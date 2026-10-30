@@ -74,6 +74,14 @@ const serverEnvShape = z.object({
   // DeepSeek's API key (lib/ai.ts, ADR 0031). Unset in CI, and locally
   // without one, where no LLM call leaves; Vercel's production needs it.
   DEEPSEEK_API_KEY: optional(z.string().regex(/^sk-/, "must start with sk-")),
+  // Langfuse's project keys (lib/langfuse.ts, ADR 0032), both or neither.
+  // Without them, as in CI, no LLM call is traced.
+  LANGFUSE_PUBLIC_KEY: optional(
+    z.string().regex(/^pk-lf-/, "must start with pk-lf-"),
+  ),
+  LANGFUSE_SECRET_KEY: optional(
+    z.string().regex(/^sk-lf-/, "must start with sk-lf-"),
+  ),
   // Set by Next.js: production for `next build`, `next start` and Vercel.
   NODE_ENV: z.string().optional(),
   // Set by Vercel on every deployment, previews included.
@@ -127,11 +135,22 @@ const aiIssues = (env: ServerEnvShape): EnvIssue[] =>
     ? [{ path: "DEEPSEEK_API_KEY", message: "required on Vercel's production" }]
     : [];
 
+// One key without the other would turn tracing off unnoticed.
+const langfuseIssues = (env: ServerEnvShape): EnvIssue[] =>
+  (["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"] as const)
+    .filter(
+      (name) =>
+        !env[name] &&
+        Boolean(env.LANGFUSE_PUBLIC_KEY || env.LANGFUSE_SECRET_KEY),
+    )
+    .map((path) => ({ path, message: "required with the other Langfuse key" }));
+
 const serverEnvSchema = serverEnvShape.superRefine((env, context) => {
   for (const { path, message } of [
     ...productionIssues(env),
     ...inngestIssues(env),
     ...aiIssues(env),
+    ...langfuseIssues(env),
   ])
     context.addIssue({ code: "custom", path: [path], message });
 });

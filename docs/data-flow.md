@@ -77,6 +77,7 @@ Every table forces Row-Level Security: a person's rows are readable only in thei
 | PostHog                   | Only after consent: the app's events with format ids, ranges and error codes, a random id and the browser (ADR 0029) | Amounts, descriptions, names, URLs, IPs, the city                 | PostHog's retention            |
 | Hostinger, Forward Email  | DNS (Hostinger); the emails people send to hola@xtrakto.site, which Forward Email forwards to the owner's mailbox    | Anything from the app                                             | Forwarding only                |
 | LLM providers (Stage 8)   | Not used yet. Later: redacted descriptions only (system design §4)                                                   | Names, phone, ID and account numbers                              | The provider's API data policy |
+| Langfuse                  | Per LLM call: the prompt's name and version, and each attempt's model, outcome, tokens, cost and times (ADR 0032)    | A prompt, its input or an answer; anyone's id                     | Its free plan deletes nothing  |
 
 Every party above keeps its data in the United States, which the privacy page tells as an international transfer.
 
