@@ -28,6 +28,7 @@ const send = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   referenceLast4: "1270",
   categorySource: "rule",
   categoryRuleId: "nequi_out_number",
+  llmTitle: null,
   statement: {
     formatId: "bancolombia-movements-export",
     period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),

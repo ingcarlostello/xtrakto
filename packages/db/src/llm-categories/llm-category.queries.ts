@@ -56,14 +56,14 @@ type CategoryGroup = Omit<LlmMovementCategory, "descriptionNormalized"> & {
   readonly texts: string[];
 };
 
-// The answers by their direction and category, one update each.
+// The answers by their direction, category and title, one update each.
 const groupsOf = (
   categories: readonly LlmMovementCategory[],
 ): CategoryGroup[] => {
   const groups = new Map<string, CategoryGroup>();
-  for (const { descriptionNormalized, direction, categoryId } of categories) {
-    const key = `${direction} ${categoryId}`;
-    const group = groups.get(key) ?? { direction, categoryId, texts: [] };
+  for (const { descriptionNormalized, ...answer } of categories) {
+    const key = JSON.stringify(answer);
+    const group = groups.get(key) ?? { ...answer, texts: [] };
     group.texts.push(descriptionNormalized);
     groups.set(key, group);
   }
@@ -81,13 +81,14 @@ export const saveLlmCategories = async (
   categories: readonly LlmMovementCategory[],
 ): Promise<number> => {
   let changed = 0;
-  for (const { direction, categoryId, texts } of groupsOf(categories)) {
+  for (const { direction, categoryId, title, texts } of groupsOf(categories)) {
     const rows = await tx
       .update(transactions)
       .set({
         categoryId,
         categorySource: CATEGORY_SOURCE.LLM,
         llmCategoryId: categoryId,
+        llmTitle: title,
         isPendingReview: false,
       })
       .where(

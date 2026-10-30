@@ -15,6 +15,8 @@ export type LlmCategoryAnswer = {
   readonly confidence: number;
   /** The model that answered. */
   readonly model: AiModelId;
+  /** What was paid, in plain words; `null` when the model's wasn't plain (8.6b). */
+  readonly title: string | null;
 };
 
 /** The answers, by each text's position, and why the batches stopped early, if they did. */

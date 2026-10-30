@@ -29,6 +29,7 @@ const movement = (position: number, change: number, balance: number) => ({
   categoryId: null,
   categoryRuleId: null,
   isPendingReview: false,
+  llmTitle: null,
 });
 
 const breaks = (breakPositions: number[]): StatementBreaks => ({

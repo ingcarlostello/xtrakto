@@ -89,6 +89,7 @@ describe("movementTone", () => {
     categoryId,
     categoryRuleId: null,
     isPendingReview,
+    llmTitle: null,
   });
 
   it.each([

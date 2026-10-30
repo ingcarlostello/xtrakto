@@ -19,6 +19,8 @@ export type CachedLlmCategory = LlmText & {
   readonly confidence: number;
   /** The model that answered. */
   readonly model: string;
+  /** What was paid, in plain words, when the prompt's version asks it (8.6b). */
+  readonly title: string | null;
 };
 
 /** A text of the user's movements that waits for the LLM, as the bank wrote it. */
@@ -30,4 +32,6 @@ export type LlmWaitingText = {
 /** The category the LLM gave a text, for each of the user's movements with it. */
 export type LlmMovementCategory = LlmWaitingText & {
   readonly categoryId: CategoryId;
+  /** What was paid, in plain words, when the LLM said it (8.6b). */
+  readonly title: string | null;
 };

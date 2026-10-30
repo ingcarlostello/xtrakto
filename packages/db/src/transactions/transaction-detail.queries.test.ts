@@ -122,6 +122,7 @@ describe.skipIf(!testDatabase)("movement detail", () => {
       referenceLast4: null,
       categorySource: "rule",
       categoryRuleId: "key_payment",
+      llmTitle: null,
       statement: {
         formatId: "bancolombia-savings-quarterly",
         period: { from: "2026-06-30", to: "2026-09-30" },

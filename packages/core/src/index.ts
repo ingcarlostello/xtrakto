@@ -46,6 +46,7 @@ export {
   userRuleTextOf,
 } from "./categorization/user-rule.helpers";
 export {
+  isPlainTitle,
   movementTitle,
   type TitledMovement,
 } from "./categorization/movement-title.helpers";

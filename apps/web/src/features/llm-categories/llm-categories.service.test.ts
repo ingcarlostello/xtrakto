@@ -42,7 +42,7 @@ import {
   categorizeTexts,
   categorizeWaitingMovements,
 } from "./llm-categories.service";
-import type { CategorizeAnswer } from "./prompts/categorize.v1";
+import type { CategorizeAnswer } from "./prompts/categorize.v2";
 
 type Generate = (
   call: StructuredCall<CategorizeAnswer>,
@@ -78,7 +78,9 @@ const answerEveryLine: Generate = async ({ input }) => {
   const answers = input.split("\n").map((line) => {
     const [, number = "0", direction] = /^(\d+)\. (in|out) \|/.exec(line) ?? [];
     const category = direction === IN ? "refund" : "shopping";
-    return { line: Number(number), category, confidence: 0.9 } as const;
+    const title =
+      direction === IN ? "Devolución de una compra" : "Compra en una tienda";
+    return { line: Number(number), category, confidence: 0.9, title } as const;
   });
   return ok({ value: { answers }, model: "deepseek-flash" });
 };
@@ -120,6 +122,7 @@ describe("categorizeTexts", () => {
       categoryId: "refund",
       confidence: 0.9,
       model: "deepseek-flash",
+      title: "Devolución de una compra",
     });
     expect(answers.get(27)).toMatchObject({ categoryId: "shopping" });
     expect(stoppedBy).toBeUndefined();
@@ -133,7 +136,7 @@ describe("categorizeTexts", () => {
     });
 
     expect(calls()[0]).toMatchObject({
-      prompt: { name: "categorize", version: 1 },
+      prompt: { name: "categorize", version: 2 },
       ledger: LEDGER,
       models: ["deepseek-v4-pro"],
     });
@@ -197,10 +200,25 @@ const answerByText: Generate = async ({ input }) => {
       /^(\d+)\. \w+ \| (.*)$/.exec(line) ?? [];
     const at = Number(number);
     if (text.includes("AUDIFARMA"))
-      return { line: at, category: "health", confidence: 0.95 } as const;
+      return {
+        line: at,
+        category: "health",
+        confidence: 0.95,
+        title: "Compra en una droguería",
+      } as const;
     if (text.includes("DEVOLUCION"))
-      return { line: at, category: "refund", confidence: 0.9 } as const;
-    return { line: at, category: "shopping", confidence: 0.4 } as const;
+      return {
+        line: at,
+        category: "refund",
+        confidence: 0.9,
+        title: "Devolución de una compra",
+      } as const;
+    return {
+      line: at,
+      category: "shopping",
+      confidence: 0.4,
+      title: "Compra en una tienda",
+    } as const;
   });
   return ok({ value: { answers }, model: "deepseek-flash" });
 };
@@ -290,6 +308,20 @@ describe.skipIf(!testDatabase)("categorizeWaitingMovements", () => {
     return userId;
   };
 
+  // Each movement's text and the LLM's title, while its category is the LLM's.
+  const titlesOf = async (userId: UserId) =>
+    withUserContext(app.db, userId, async (ctx) => {
+      const [account] = await listMovementAccounts(ctx);
+      if (!account) throw new Error("No account.");
+      const { items } = await listTransactions(ctx, {
+        accountId: account.id,
+        offset: 0,
+      });
+      return Object.fromEntries(
+        items.map(({ descriptionRaw, llmTitle }) => [descriptionRaw, llmTitle]),
+      );
+    });
+
   // Each movement's text and category.
   const categoriesOf = async (userId: UserId) =>
     withUserContext(app.db, userId, async (ctx) => {
@@ -332,8 +364,13 @@ describe.skipIf(!testDatabase)("categorizeWaitingMovements", () => {
     expect(await waitingOf(userId)).toEqual([
       { descriptionNormalized: shop, direction: OUT },
     ]);
+    expect(await titlesOf(userId)).toEqual({
+      [drugstore]: "Compra en una droguería",
+      [refund]: "Devolución de una compra",
+      [shop]: null,
+    });
     const cached = await withUserContext(app.db, userId, (ctx) =>
-      findCachedLlmCategories(ctx, { name: "categorize", version: 1 }, [
+      findCachedLlmCategories(ctx, { name: "categorize", version: 2 }, [
         { redactedText: shop, direction: OUT },
       ]),
     );
@@ -344,6 +381,7 @@ describe.skipIf(!testDatabase)("categorizeWaitingMovements", () => {
         categoryId: "shopping",
         confidence: 0.4,
         model: "deepseek-flash",
+        title: "Compra en una tienda",
       },
     ]);
   });

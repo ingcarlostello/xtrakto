@@ -32,6 +32,8 @@ export const llmCategoryAnswers = pgTable(
     confidence: doublePrecision("confidence").notNull(),
     // The model that answered.
     model: text("model").notNull(),
+    // What was paid, in plain words, from version 2 on (8.6b).
+    title: text("title"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -54,5 +56,9 @@ export const llmCategoryAnswers = pgTable(
       sql`${t.confidence} between 0 and 1`,
     ),
     check("llm_category_answers_text_check", sql`${t.redactedText} <> ''`),
+    check(
+      "llm_category_answers_title_check",
+      sql`${t.title} is null or char_length(${t.title}) between 1 and 60`,
+    ),
   ],
 );

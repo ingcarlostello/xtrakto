@@ -87,8 +87,18 @@ describe("answersOf", () => {
       texts,
       {
         answers: [
-          { line: 2, category: "refund", confidence: 0.92 },
-          { line: 1, category: "health", confidence: 0.8 },
+          {
+            line: 2,
+            category: "refund",
+            confidence: 0.92,
+            title: "Devolución de una compra",
+          },
+          {
+            line: 1,
+            category: "health",
+            confidence: 0.8,
+            title: "Compra en una droguería",
+          },
         ],
       },
       FLASH,
@@ -96,10 +106,50 @@ describe("answersOf", () => {
 
     expect(answers).toEqual(
       new Map([
-        [0, { categoryId: "health", confidence: 0.8, model: FLASH }],
-        [1, { categoryId: "refund", confidence: 0.92, model: FLASH }],
+        [
+          0,
+          {
+            categoryId: "health",
+            confidence: 0.8,
+            model: FLASH,
+            title: "Compra en una droguería",
+          },
+        ],
+        [
+          1,
+          {
+            categoryId: "refund",
+            confidence: 0.92,
+            model: FLASH,
+            title: "Devolución de una compra",
+          },
+        ],
       ]),
     );
+  });
+
+  it("drops a title that isn't in plain words, keeping its category", () => {
+    const answers = answersOf(
+      texts,
+      {
+        answers: [
+          {
+            line: 1,
+            category: "health",
+            confidence: 0.9,
+            title: "Compra en AUDIFARMA",
+          },
+        ],
+      },
+      FLASH,
+    );
+
+    expect(answers.get(0)).toEqual({
+      categoryId: "health",
+      confidence: 0.9,
+      model: FLASH,
+      title: null,
+    });
   });
 
   it("drops a category the money's direction doesn't allow", () => {
@@ -107,8 +157,18 @@ describe("answersOf", () => {
       texts,
       {
         answers: [
-          { line: 1, category: "refund", confidence: 0.9 },
-          { line: 2, category: "shopping", confidence: 0.9 },
+          {
+            line: 1,
+            category: "refund",
+            confidence: 0.9,
+            title: "Compra en una droguería",
+          },
+          {
+            line: 2,
+            category: "shopping",
+            confidence: 0.9,
+            title: "Compra en una droguería",
+          },
         ],
       },
       FLASH,
@@ -122,16 +182,41 @@ describe("answersOf", () => {
       texts,
       {
         answers: [
-          { line: 3, category: "health", confidence: 0.9 },
-          { line: 1, category: "health", confidence: 0.6 },
-          { line: 1, category: "shopping", confidence: 0.95 },
+          {
+            line: 3,
+            category: "health",
+            confidence: 0.9,
+            title: "Compra en una droguería",
+          },
+          {
+            line: 1,
+            category: "health",
+            confidence: 0.6,
+            title: "Compra en una droguería",
+          },
+          {
+            line: 1,
+            category: "shopping",
+            confidence: 0.95,
+            title: "Compra en una droguería",
+          },
         ],
       },
       FLASH,
     );
 
     expect(answers).toEqual(
-      new Map([[0, { categoryId: "health", confidence: 0.6, model: FLASH }]]),
+      new Map([
+        [
+          0,
+          {
+            categoryId: "health",
+            confidence: 0.6,
+            model: FLASH,
+            title: "Compra en una droguería",
+          },
+        ],
+      ]),
     );
   });
 });
@@ -214,7 +299,15 @@ describe("uncachedGroups", () => {
 describe("cachedAnswersOf", () => {
   it("keeps each answered text of the batch, under the threshold too", () => {
     const answers = new Map([
-      [1, { categoryId: "transfers_to_people", confidence: 0.4, model: FLASH }],
+      [
+        1,
+        {
+          categoryId: "transfers_to_people",
+          confidence: 0.4,
+          model: FLASH,
+          title: "Pago a una persona",
+        },
+      ],
     ] as const);
 
     expect(cachedAnswersOf([DRUGSTORE, NEQUI], answers)).toEqual([
@@ -224,6 +317,7 @@ describe("cachedAnswersOf", () => {
         categoryId: "transfers_to_people",
         confidence: 0.4,
         model: FLASH,
+        title: "Pago a una persona",
       },
     ]);
   });
@@ -236,6 +330,7 @@ describe("movementCategoriesOf", () => {
     categoryId: "transfers_to_people" as const,
     confidence,
     model: FLASH,
+    title: "Pago a una persona",
   });
 
   it("gives a confident answer to every bank text its redacted text stands for", () => {
@@ -244,11 +339,13 @@ describe("movementCategoriesOf", () => {
         descriptionNormalized: "PAGO QR 3001234567",
         direction: OUT,
         categoryId: "transfers_to_people",
+        title: "Pago a una persona",
       },
       {
         descriptionNormalized: "PAGO QR 3109876543",
         direction: OUT,
         categoryId: "transfers_to_people",
+        title: "Pago a una persona",
       },
     ]);
   });

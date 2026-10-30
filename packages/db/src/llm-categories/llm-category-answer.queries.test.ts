@@ -24,6 +24,7 @@ const answerFor = (redactedText: string) => ({
   categoryId: "health" as const,
   confidence: 0.92,
   model: "deepseek-flash",
+  title: "Compra en una droguería",
 });
 
 const newText = () => `COMPRA EN TIENDA ${randomUUID().slice(0, 8)}`;

@@ -37,6 +37,7 @@ const item = (
   categoryId: null,
   categoryRuleId: null,
   isPendingReview: false,
+  llmTitle: null,
 });
 
 // A day's savings interest, as the table's rule categorized it.
@@ -213,9 +214,15 @@ describe("descriptionView", () => {
   const movement = (
     descriptionRaw: string,
     changes: Partial<
-      Pick<TransactionListItem, "categoryId" | "categoryRuleId">
+      Pick<TransactionListItem, "categoryId" | "categoryRuleId" | "llmTitle">
     > = {},
-  ) => ({ descriptionRaw, categoryId: null, categoryRuleId: null, ...changes });
+  ) => ({
+    descriptionRaw,
+    categoryId: null,
+    categoryRuleId: null,
+    llmTitle: null,
+    ...changes,
+  });
 
   it("titles a movement in plain words over the bank's text as printed", () => {
     expect(
@@ -229,6 +236,22 @@ describe("descriptionView", () => {
       kind: "titled",
       title: "Compra en supermercado",
       raw: "COMPRA EN  MERCADO XYZ",
+    });
+  });
+
+  it("titles a payment no rule names with the LLM's words while its category is the LLM's", () => {
+    expect(
+      descriptionView(
+        movement("COMPRA EN AUDIFARMA", {
+          categoryId: "health",
+          categoryRuleId: "unknown_merchant",
+          llmTitle: "Compra en una droguería",
+        }),
+      ),
+    ).toEqual({
+      kind: "titled",
+      title: "Compra en una droguería",
+      raw: "COMPRA EN AUDIFARMA",
     });
   });
 

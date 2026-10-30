@@ -32,6 +32,7 @@ const movement = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   referenceLast4: null,
   categorySource: "rule",
   categoryRuleId: "key_payment",
+  llmTitle: null,
   statement: {
     formatId: "bancolombia-movements-export",
     period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-31" }),
