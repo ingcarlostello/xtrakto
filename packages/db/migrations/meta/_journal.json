@@ -120,6 +120,20 @@
       "when": 1793371780069,
       "tag": "0016_llm-usage-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793384992108,
+      "tag": "0017_llm-categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793385000280,
+      "tag": "0018_llm-category-answers-rls",
+      "breakpoints": true
     }
   ]
 }

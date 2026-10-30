@@ -223,7 +223,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.2 Versioned prompts and Langfuse tracing
 - [x] 8.3 Usage tracking and limits
 - [x] 8.4 Evaluation harness and the categorization prompt
-- [ ] 8.5a LLM categories in the database
+- [x] 8.5a LLM categories in the database
 - [ ] 8.5b Categorize after ingestion
 - [ ] 8.6a Titles from the rules
 - [ ] 8.6b Titles from the LLM
@@ -1675,6 +1675,8 @@ Split in two when planned (about 650 lines).
 
 #### 8.5a LLM categories in the database
 
+Decided when it started (2026-10-30): a movement keeps the LLM's answer for its text in a column of its own (`llm_category_id`), as it keeps the table's rule, so undoing a user's rule gives it back without asking again; the cache keeps the answers under the confidence threshold too, so their texts aren't asked again, and the threshold applies when an answer is written to movements (8.5b); and a movement waits when it has no category or only the table's "Otros" for a merchant it doesn't know (`unknown_merchant`), in any statement, unless a verified quarterly statement hides it.
+
 **Tasks**
 
 - The answers' cache, without anyone's data: the prompt's name and version, the redacted text and its direction, the answer and the model; forced Row-Level Security that lets the application read and add only.
@@ -1682,6 +1684,8 @@ Split in two when planned (about 650 lines).
 - The user's movements waiting for the LLM, in every statement, and an answer written to every movement with its text.
 
 **Done when:** database tests prove what waits (never a guess, the user's, a moved one or a hidden one), an answer reaching every movement with its text, the user's rules first and their undo, and a cache without anyone's data.
+
+It came out at about 285 lines of code.
 
 **Commit:** `feat(db): LLM categories and their cache`
 

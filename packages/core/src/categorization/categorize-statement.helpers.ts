@@ -1,4 +1,5 @@
 import { CATEGORY_SOURCE } from "../categories/category-source.constants";
+import type { CategoryId } from "../categories/category.types";
 import type {
   PreparedStatement,
   PreparedTransaction,
@@ -31,13 +32,15 @@ export type SavedCategory = Pick<
 
 /**
  * What a saved movement counts as once one of the user's rules is gone
- * (6.3h): their other rules first, then the table's rule that matched it
- * when it was saved, which it keeps (ADR 0025). `undefined` when the table
- * no longer has that rule, so the movement keeps what it has.
+ * (6.3h): their other rules first, then the LLM's answer for its text, then
+ * the table's rule that matched it when it was saved, both of which it keeps
+ * (ADR 0025). `undefined` when the table no longer has that rule, so the
+ * movement keeps what it has.
  */
 export const savedMovementCategory = (
   movement: UserRuleMovement & {
     readonly categoryRuleId: CategorizationRuleId | null;
+    readonly llmCategoryId: CategoryId | null;
   },
   userRules: CompiledUserRules,
 ): SavedCategory | undefined => {
@@ -46,6 +49,12 @@ export const savedMovementCategory = (
     return {
       categoryId: usersCategory,
       categorySource: CATEGORY_SOURCE.USER,
+      isPendingReview: false,
+    };
+  if (movement.llmCategoryId !== null)
+    return {
+      categoryId: movement.llmCategoryId,
+      categorySource: CATEGORY_SOURCE.LLM,
       isPendingReview: false,
     };
   if (movement.categoryRuleId === null)

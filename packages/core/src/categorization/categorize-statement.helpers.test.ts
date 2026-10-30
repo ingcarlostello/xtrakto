@@ -154,7 +154,36 @@ describe("savedMovementCategory", () => {
     descriptionNormalized: "PAGO LLAVE Maria Lopez",
     amountMinor: amountMinorSchema.parse(-6_000_000),
     categoryRuleId: "key_payment",
+    llmCategoryId: null,
     ...changes,
+  });
+
+  // A purchase at a merchant no rule knew, which the LLM named (8.5a).
+  const named = saved({
+    descriptionNormalized: "COMPRA EN AUDIFARMA",
+    categoryRuleId: "unknown_merchant",
+    llmCategoryId: "health",
+  });
+
+  it("gives it the LLM's answer back without a rule of the user's", () => {
+    expect(savedMovementCategory(named, compileUserRules([]))).toEqual({
+      categoryId: "health",
+      categorySource: "llm",
+      isPendingReview: false,
+    });
+  });
+
+  it("gives it the user's other rule before the LLM's answer", () => {
+    const rules = compileUserRules([
+      {
+        target: "description",
+        descriptionFolded: "COMPRA EN AUDIFARMA",
+        direction: "out",
+        categoryId: "shopping",
+      },
+    ]);
+
+    expect(savedMovementCategory(named, rules)?.categoryId).toBe("shopping");
   });
 
   it("gives it the user's other rule first", () => {

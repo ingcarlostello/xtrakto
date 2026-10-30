@@ -110,7 +110,8 @@ const upsertDescriptionRule = (
       set: { categoryId, updatedAt: sql`now()` },
     });
 
-const goingWay = (direction: MoneyDirection | undefined): SQL => {
+/** Movements whose money goes that way, or any way at all. */
+export const goingWay = (direction: MoneyDirection | undefined): SQL => {
   if (direction === MONEY_DIRECTION.IN)
     return sql`${transactions.amountMinor} > 0`;
   if (direction === MONEY_DIRECTION.OUT)

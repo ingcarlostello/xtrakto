@@ -56,6 +56,44 @@ const referenceChecks = (t: ReferenceColumns) => [
   ),
 ];
 
+type CategoryColumns = {
+  readonly categoryId: AnyPgColumn;
+  readonly categorySource: AnyPgColumn;
+  readonly categoryRuleId: AnyPgColumn;
+  readonly llmCategoryId: AnyPgColumn;
+  readonly isPendingReview: AnyPgColumn;
+};
+
+// A category goes with who gave it, and keeps the rule and the LLM's answer
+// it had (ADR 0023, ADR 0025).
+const categoryChecks = (t: CategoryColumns) => [
+  check(
+    "transactions_category_source_check",
+    isOneOf(t.categorySource, Object.values(CATEGORY_SOURCE)),
+  ),
+  check(
+    "transactions_category_pair_check",
+    sql`(${t.categoryId} is null) = (${t.categorySource} is null)`,
+  ),
+  // A rule's category always names its rule. The user's may keep the rule
+  // whose guess they answered, and the LLM's the rule that knew only a
+  // merchant (8.5a); no other source has one.
+  check(
+    "transactions_category_rule_check",
+    sql`(not ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${t.categoryRuleId} is not null) and (${t.categoryRuleId} is null or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.USER)} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.LLM)})`,
+  ),
+  // The LLM's category is the answer the movement keeps.
+  check(
+    "transactions_llm_category_check",
+    sql`not ${sourceIs(t.categorySource, CATEGORY_SOURCE.LLM)} or (${t.llmCategoryId} is not null and ${t.categoryId} = ${t.llmCategoryId})`,
+  ),
+  // Only a rule's best guess waits for review, never the user's answer.
+  check(
+    "transactions_pending_review_check",
+    sql`not ${t.isPendingReview} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)}`,
+  ),
+];
+
 type CoverageColumns = {
   readonly coveredByStatementId: AnyPgColumn;
   readonly accountId: AnyPgColumn;
@@ -99,6 +137,9 @@ export const transactions = pgTable(
     categorySource: text("category_source").$type<CategorySource>(),
     // The rule that gave the category, by its stable id (ADR 0023).
     categoryRuleId: text("category_rule_id").$type<CategorizationRuleId>(),
+    // The LLM's answer for its text (8.5a), kept when the user decides, so
+    // undoing the user's rule gives it back (ADR 0025).
+    llmCategoryId: text("llm_category_id").$type<CategoryId>(),
     // The category is a best guess the quick review asks about (6.3).
     isPendingReview: boolean("pending_review").notNull().default(false),
     fingerprint: text("fingerprint").notNull(),
@@ -127,25 +168,7 @@ export const transactions = pgTable(
     index("transactions_account_date_idx").on(t.accountId, t.date),
     index("transactions_statement_idx").on(t.statementId),
     ...referenceChecks(t),
-    check(
-      "transactions_category_source_check",
-      isOneOf(t.categorySource, Object.values(CATEGORY_SOURCE)),
-    ),
-    check(
-      "transactions_category_pair_check",
-      sql`(${t.categoryId} is null) = (${t.categorySource} is null)`,
-    ),
-    // A rule's category always names its rule. The user's may keep the rule
-    // whose guess they answered (ADR 0025); no other source has one.
-    check(
-      "transactions_category_rule_check",
-      sql`(not ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${t.categoryRuleId} is not null) and (${t.categoryRuleId} is null or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.USER)})`,
-    ),
-    // Only a rule's best guess waits for review, never the user's answer.
-    check(
-      "transactions_pending_review_check",
-      sql`not ${t.isPendingReview} or ${sourceIs(t.categorySource, CATEGORY_SOURCE.RULE)}`,
-    ),
+    ...categoryChecks(t),
     check("transactions_fingerprint_check", isSha256Hex(t.fingerprint)),
     check(
       "transactions_order_check",
