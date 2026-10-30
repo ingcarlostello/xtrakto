@@ -114,6 +114,13 @@ export {
   findOrCreateUser,
   findUserId,
 } from "./users/user.queries";
+export { LLM_USAGE_OUTCOME } from "./llm-usage/llm-usage.constants";
+export {
+  platformLlmCostThisMonth,
+  recordLlmUsage,
+  userLlmCostIn,
+} from "./llm-usage/llm-usage.queries";
+export type { LlmUsage, LlmUsageOutcome } from "./llm-usage/llm-usage.types";
 export {
   addWaitlistEntry,
   type NewWaitlistEntry,

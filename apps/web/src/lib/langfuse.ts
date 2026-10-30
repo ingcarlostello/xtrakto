@@ -6,7 +6,7 @@ import {
   langfuseTraces,
 } from "@/utils/langfuse-trace.helpers";
 import { sanitizedError } from "@/utils/sanitized-error.utils";
-import type { AiAttempt, AiPrompt } from "./ai";
+import type { AiCallRecord } from "./ai";
 import { getServerEnv } from "./env";
 
 // Langfuse Cloud's US region, through its OpenTelemetry endpoint, which takes
@@ -14,12 +14,6 @@ import { getServerEnv } from "./env";
 // utils/langfuse-trace.helpers.ts (ADR 0032).
 const TRACES_URL = "https://us.cloud.langfuse.com/api/public/otel/v1/traces";
 const EXPORT_TIMEOUT_MS = 3_000;
-
-/** A call to DeepSeek: its prompt's name and version, and its attempts. */
-export type AiCallRecord = {
-  readonly prompt: Pick<AiPrompt<unknown>, "name" | "version">;
-  readonly attempts: readonly AiAttempt[];
-};
 
 const hexId = (bytes: number): string => randomBytes(bytes).toString("hex");
 

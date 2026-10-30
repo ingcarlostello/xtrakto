@@ -7,6 +7,7 @@ import { accounts } from "../accounts/account.schemas";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { ingestionJobs } from "../ingestion-jobs/ingestion-job.schemas";
+import { llmUsage } from "../llm-usage/llm-usage.schemas";
 import { statements } from "../statements/statement.schemas";
 import { transactions } from "../transactions/transaction.schemas";
 import { userCategoryRules } from "../user-category-rules/user-category-rule.schemas";
@@ -21,10 +22,11 @@ const DATA_TABLES = [
   transactions,
   ingestionJobs,
   userCategoryRules,
+  llmUsage,
 ];
 // seedUser leaves one row in users and in each data table.
-const SEEDED = [1, 1, 1, 1, 1, 1];
-const GONE = [0, 0, 0, 0, 0, 0];
+const SEEDED = [1, 1, 1, 1, 1, 1, 1];
+const GONE = [0, 0, 0, 0, 0, 0, 0];
 
 describe.skipIf(!testDatabase)("user queries", () => {
   let app: DbClient;

@@ -168,13 +168,14 @@ sequenceDiagram
 
 ## 5. Data model
 
-Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table has forced RLS: the five with a user's data on `user_id`, `users` so that a user can delete only their own row, which takes all their data with it through the cascades ([ADR 0016](adr/0016-users-delete-only-their-own-row.md)), and `waitlist_entries`, which the application may only add to ([ADR 0021](adr/0021-insert-only-public-waitlist.md)).
+Amounts are `bigint` in minor units. Transaction dates are `date`; real instants are `timestamptz`. Every table has forced RLS: the six with a user's data on `user_id`, `users` so that a user can delete only their own row, which takes all their data with it through the cascades ([ADR 0016](adr/0016-users-delete-only-their-own-row.md)), and `waitlist_entries`, which the application may only add to ([ADR 0021](adr/0021-insert-only-public-waitlist.md)).
 
 ```mermaid
 erDiagram
     USERS ||--o{ ACCOUNTS : owns
     USERS ||--o{ INGESTION_JOBS : submits
     USERS ||--o{ USER_CATEGORY_RULES : defines
+    USERS ||--o{ LLM_USAGE : spends
     ACCOUNTS ||--o{ STATEMENTS : has
     ACCOUNTS ||--o{ TRANSACTIONS : records
     STATEMENTS ||--o{ TRANSACTIONS : contains
@@ -246,6 +247,17 @@ erDiagram
         text reference_last4
         text category_id
     }
+    LLM_USAGE {
+        uuid id PK
+        uuid user_id FK
+        text prompt_name
+        int prompt_version
+        text model
+        text outcome
+        int input_tokens
+        int output_tokens
+        bigint cost_micro_usd
+    }
     WAITLIST_ENTRIES {
         uuid id PK
         text name
@@ -255,11 +267,11 @@ erDiagram
     }
 ```
 
-Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account, and the statement that hides a movement (`covered_by_statement_id`) is of its account too, with no action on delete, checked when the transaction ends: a statement that hides movements can't be deleted without them, and a user's deletion removes both whatever order its cascades take. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't; a partial unique index keeps one version of each period with balances, and another keeps one account without a number per bank and type. A statement that doesn't reconcile keeps its closing difference and the positions where its chain of balances breaks. A movement keeps the table's rule that matched it (`category_rule_id`, a stable id), also when the user decides, and whether its category is a best guess to review (`pending_review`); CHECK constraints allow a rule's id only with a category a rule or the user gave, and a review only with a rule's guess ([ADR 0023](adr/0023-rules-give-a-best-guess-and-flag-what-to-review.md), [ADR 0025](adr/0025-user-rules-come-first-and-keep-the-rules-guess.md)). A user's rule is a bank text, folded, with the direction of its money, or a reference's HMAC with its last 4 digits, never both; a unique index keeps one per text and direction and one per reference, and the bank's `0` never makes one. Its kind is its category's, never stored apart ([ADR 0024](adr/0024-kind-comes-from-the-category.md)). `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). The one exception is the daily cleanup of ingestion jobs, which has no user: it calls `expire_stale_ingestion_jobs()`, a `SECURITY DEFINER` function without parameters, with a fixed `search_path`, that only the application may run. CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content: a failed one says why, and a done one names the statement it saved, or the one that already held its movements.
+Foreign keys skip Row-Level Security, so they also carry `user_id`: a statement references its account by `(account_id, user_id)`, and a movement references its statement by `(statement_id, account_id, user_id)`. A row can't land on another user's account or on a statement of another account, and the statement that hides a movement (`covered_by_statement_id`) is of its account too, with no action on delete, checked when the transaction ends: a statement that hides movements can't be deleted without them, and a user's deletion removes both whatever order its cascades take. A statement is identified by its `content_hash`: the same file saved twice matches, while a corrected statement for the same period doesn't; a partial unique index keeps one version of each period with balances, and another keeps one account without a number per bank and type. A statement that doesn't reconcile keeps its closing difference and the positions where its chain of balances breaks. A movement keeps the table's rule that matched it (`category_rule_id`, a stable id), also when the user decides, and whether its category is a best guess to review (`pending_review`); CHECK constraints allow a rule's id only with a category a rule or the user gave, and a review only with a rule's guess ([ADR 0023](adr/0023-rules-give-a-best-guess-and-flag-what-to-review.md), [ADR 0025](adr/0025-user-rules-come-first-and-keep-the-rules-guess.md)). A user's rule is a bank text, folded, with the direction of its money, or a reference's HMAC with its last 4 digits, never both; a unique index keeps one per text and direction and one per reference, and the bank's `0` never makes one. Its kind is its category's, never stored apart ([ADR 0024](adr/0024-kind-comes-from-the-category.md)). `position` keeps the bank's order within a day; `occurrence_index` tells apart identical movements in one statement and is part of the fingerprint. The application connects as `xtrakto_app`, which owns no table and can't bypass RLS; `withUserContext` sets `app.user_id` for one transaction ([ADR 0014](adr/0014-forced-rls-with-transaction-local-user.md)). Two functions are the exceptions, each `SECURITY DEFINER`, without parameters, with a fixed `search_path`, and run only by the application: the daily cleanup of ingestion jobs, which has no user, calls `expire_stale_ingestion_jobs()`; and the platform's LLM budget reads every user's spend of the calendar month in Bogotá through `llm_platform_cost_this_month()`, a sum only. Each attempt of a call to an LLM's model is a row of `llm_usage`, with its prompt and version, model, outcome, tokens and cost in millionths of a dollar, never its content; it is only added and read, and it goes with its user. CHECK constraints keep amounts within JavaScript's safe integers and require a finished ingestion job to hold no content: a failed one says why, and a done one names the statement it saved, or the one that already held its movements.
 
 One user isn't a person: the example's, with a reserved id that isn't Clerk's, holds an invented quarter that anyone signed in can see and no one can change ([ADR 0030](adr/0030-a-read-only-example-through-a-user-of-its-own.md)).
 
-Later stages add `llm_usage` (8), `format_mappings` without user data (11), `usury_rates` (12) and document chunks with embeddings in pgvector (15).
+Later stages add `format_mappings` without user data (11), `usury_rates` (12) and document chunks with embeddings in pgvector (15).
 
 ---
 

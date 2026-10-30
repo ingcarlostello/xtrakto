@@ -106,6 +106,20 @@
       "when": 1792205825491,
       "tag": "0014_user-category-rules-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793371778303,
+      "tag": "0015_llm-usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793371780069,
+      "tag": "0016_llm-usage-rls",
+      "breakpoints": true
     }
   ]
 }

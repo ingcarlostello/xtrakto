@@ -63,6 +63,10 @@ export const PLAN_COPY = {
   resetsOn: "Se reinicia el",
   // MAX_FILE_SIZE_BYTES, as the upload screen says it.
   fileSize: "Archivos de hasta 10 MB",
+  // Only when the month's LLM calls ran out (8.3): "… esperan hasta el 1 de
+  // noviembre."
+  aiUsedUp:
+    "Este mes ya usaste la IA de tu plan: los movimientos que ninguna regla conoce esperan hasta el",
 } as const;
 
 export const SESSION_COPY = {

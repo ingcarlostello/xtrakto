@@ -60,6 +60,7 @@ The server receives the minimized content: the rows the parser reads, the accoun
 | Movements: date, the bank's text, amount, balance, category; references as HMAC and last 4 | Until the person deletes their account                                  |
 | Accounts: bank, type, last 4 digits, the holder's normalized name                          | Until the person deletes their account                                  |
 | The person's category rules and review answers                                             | Until they're undone, or the account is deleted                         |
+| Each LLM call's prompt and version, model, outcome, tokens and cost; never its content     | Until the account is deleted                                            |
 | `users`: the Clerk id                                                                      | Until the account is deleted                                            |
 | The waitlist: name, normalized email, consent version and time                             | Until the launch notice, or until the person asks (ADR 0021)            |
 
