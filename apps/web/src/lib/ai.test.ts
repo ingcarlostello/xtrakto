@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
 const LEDGER = { check: mocks.check, record: mocks.spend };
 
 vi.mock("./env", () => ({
-  getServerEnv: () => ({ DEEPSEEK_API_KEY: mocks.apiKey }),
+  getAiEnv: () => ({ DEEPSEEK_API_KEY: mocks.apiKey }),
 }));
 vi.mock("./langfuse", () => ({ recordAiCall: mocks.recordAiCall }));
 vi.mock("@ai-sdk/deepseek", () => ({ createDeepSeek: mocks.createDeepSeek }));
@@ -37,6 +37,7 @@ const PROMPT = {
   }),
   maxOutputTokens: 200,
 };
+const CALL = { prompt: PROMPT, input: INPUT, ledger: LEDGER };
 const ANSWER = '{"category":"groceries","confidence":0.9}';
 const USAGE = {
   inputTokens: { total: 40, noCache: 40, cacheRead: 0, cacheWrite: 0 },
@@ -117,7 +118,7 @@ describe("generateStructured", () => {
   it("makes no call without DeepSeek's key, as in CI", async () => {
     mocks.apiKey = undefined;
 
-    expect(await generateStructured(PROMPT, INPUT, LEDGER)).toEqual({
+    expect(await generateStructured(CALL)).toEqual({
       ok: false,
       error: { code: "AI_OFF" },
     });
@@ -132,7 +133,7 @@ describe("generateStructured", () => {
       const { flash } = useModels(answering(ANSWER), answering(ANSWER));
       mocks.check.mockResolvedValue(limit);
 
-      expect(await generateStructured(PROMPT, INPUT, LEDGER)).toEqual({
+      expect(await generateStructured(CALL)).toEqual({
         ok: false,
         error: { code: "AI_LIMIT_REACHED", limit },
       });
@@ -145,7 +146,7 @@ describe("generateStructured", () => {
   it("answers with the first model, as the schema reads it", async () => {
     const { pro } = useModels(answering(ANSWER), answering(ANSWER));
 
-    expect(await generateStructured(PROMPT, INPUT, LEDGER)).toEqual({
+    expect(await generateStructured(CALL)).toEqual({
       ok: true,
       value: {
         value: { category: "groceries", confidence: 0.9 },
@@ -156,13 +157,14 @@ describe("generateStructured", () => {
     expect(pro.doGenerateCalls).toHaveLength(0);
   });
 
-  it("asks for JSON, without thinking and with a time limit", async () => {
+  it("asks for JSON at temperature 0, without thinking and with a time limit", async () => {
     const { flash } = useModels(answering(ANSWER), answering(ANSWER));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     const [call] = flash.doGenerateCalls;
     expect(call?.responseFormat?.type).toBe("json");
+    expect(call?.temperature).toBe(0);
     expect(call?.reasoning).toBe("none");
     expect(call?.maxOutputTokens).toBe(200);
     expect(call?.abortSignal).toBeInstanceOf(AbortSignal);
@@ -185,7 +187,7 @@ describe("generateStructured", () => {
     const channel = tracingChannel("ai:telemetry");
     channel.subscribe(listener);
     try {
-      await generateStructured(PROMPT, INPUT, LEDGER);
+      await generateStructured(CALL);
     } finally {
       channel.unsubscribe(listener);
     }
@@ -208,7 +210,7 @@ describe("generateStructured", () => {
   ])("falls back to the second model once after $failure", async (row) => {
     const { flash } = useModels(row.model, answering(ANSWER));
 
-    const result = await generateStructured(PROMPT, INPUT, LEDGER);
+    const result = await generateStructured(CALL);
 
     expect(result.ok && result.value.model).toBe("deepseek-v4-pro");
     expect(flash.doGenerateCalls).toHaveLength(1);
@@ -217,7 +219,7 @@ describe("generateStructured", () => {
   it("fails with a code for each model when both fail", async () => {
     useModels(throwing(apiError(402)), answering("Mercado."));
 
-    expect(await generateStructured(PROMPT, INPUT, LEDGER)).toEqual({
+    expect(await generateStructured(CALL)).toEqual({
       ok: false,
       error: {
         code: "AI_FAILED",
@@ -232,7 +234,7 @@ describe("generateStructured", () => {
   it("counts an answer cut before any text as one the schema can't read", async () => {
     useModels(cutShort(), cutShort());
 
-    const result = await generateStructured(PROMPT, INPUT, LEDGER);
+    const result = await generateStructured(CALL);
 
     expect(!result.ok && result.error).toEqual({
       code: "AI_FAILED",
@@ -243,10 +245,27 @@ describe("generateStructured", () => {
     });
   });
 
+  it("asks only the models it's given, as an eval of one model does", async () => {
+    const { flash } = useModels(answering(ANSWER), throwing(apiError(503)));
+
+    const result = await generateStructured({
+      ...CALL,
+      models: ["deepseek-v4-pro"],
+    });
+
+    expect(!result.ok && result.error).toEqual({
+      code: "AI_FAILED",
+      failures: [
+        { model: "deepseek-v4-pro", reason: "PROVIDER_ERROR", status: 503 },
+      ],
+    });
+    expect(flash.doGenerateCalls).toHaveLength(0);
+  });
+
   it("tells a timeout from a network failure", async () => {
     useModels(throwing(timeout()), throwing(new TypeError("fetch failed")));
 
-    const result = await generateStructured(PROMPT, INPUT, LEDGER);
+    const result = await generateStructured(CALL);
 
     expect(!result.ok && result.error).toEqual({
       code: "AI_FAILED",
@@ -261,9 +280,7 @@ describe("generateStructured", () => {
     const answer = "VECI es un supermercado de barrio";
     useModels(throwing(apiError(400)), answering(answer));
 
-    const failure = JSON.stringify(
-      await generateStructured(PROMPT, INPUT, LEDGER),
-    );
+    const failure = JSON.stringify(await generateStructured(CALL));
 
     expect(failure).not.toContain("VECI");
     expect(failure).not.toContain(PROMPT.instructions);
@@ -274,7 +291,7 @@ describe("generateStructured's record for Langfuse", () => {
   it("hands its ledger the same record, once, after the call", async () => {
     useModels(throwing(apiError(503)), answering(ANSWER));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     expect(mocks.spend).toHaveBeenCalledOnce();
     expect(mocks.spend.mock.calls[0]?.[0]).toEqual(recorded());
@@ -283,7 +300,7 @@ describe("generateStructured's record for Langfuse", () => {
   it("records each attempt: its model, outcome, times and what it used", async () => {
     useModels(throwing(apiError(503)), answering(ANSWER));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     const { prompt, attempts } = recorded();
     expect(prompt).toEqual({ name: "check", version: 1 });
@@ -309,7 +326,7 @@ describe("generateStructured's record for Langfuse", () => {
   it("counts what an answer the schema rejects used, at deepseek-flash's prices", async () => {
     useModels(answering("Mercado."), answering(ANSWER));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     const [rejected] = recorded().attempts;
     expect(rejected?.outcome).toBe("INVALID_OUTPUT");
@@ -323,7 +340,7 @@ describe("generateStructured's record for Langfuse", () => {
   it("records a call that failed twice, once", async () => {
     useModels(throwing(timeout()), throwing(apiError(500)));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     expect(recorded().attempts.map(({ outcome }) => outcome)).toEqual([
       "TIMEOUT",
@@ -334,7 +351,7 @@ describe("generateStructured's record for Langfuse", () => {
   it("never hands Langfuse the instructions, the input or the answer", async () => {
     useModels(answering("VECI es un supermercado"), answering(ANSWER));
 
-    await generateStructured(PROMPT, INPUT, LEDGER);
+    await generateStructured(CALL);
 
     const record = JSON.stringify(mocks.recordAiCall.mock.calls);
     expect(record).not.toContain("VECI");

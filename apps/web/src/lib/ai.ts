@@ -10,7 +10,7 @@ import {
   Output,
 } from "ai";
 import type { z } from "zod";
-import { getServerEnv } from "./env";
+import { getAiEnv } from "./env";
 import { recordAiCall } from "./langfuse";
 
 // The only module that calls an LLM (project rules §14). It goes to
@@ -117,6 +117,15 @@ export type AiError =
       readonly failures: readonly AiAttemptFailure[];
     };
 
+/** What to ask, about what, who pays, and which models try, in order. */
+export type StructuredCall<T> = {
+  readonly prompt: AiPrompt<T>;
+  readonly input: string;
+  readonly ledger: AiLedger;
+  /** AI_MODELS unless an eval asks one model alone (8.4). */
+  readonly models?: readonly AiModelId[];
+};
+
 export type StructuredAnswer<T> = {
   readonly value: T;
   /** The model that answered. */
@@ -169,6 +178,9 @@ const generate = <T>(deepSeek: DeepSeek, model: AiModelId, call: Call<T>) =>
     prompt: call.input,
     output: Output.object({ schema: call.prompt.schema }),
     maxOutputTokens: call.prompt.maxOutputTokens,
+    // A text to classify or title gets the same answer each time, which the
+    // evals and the answers' cache count on (8.4).
+    temperature: 0,
     // DeepSeek's V4 models think before answering unless told not to. Short
     // texts to classify or title don't need it; it would spend the time.
     reasoning: "none",
@@ -211,7 +223,7 @@ const failuresOf = (attempts: readonly AiAttempt[]): AiAttemptFailure[] =>
   );
 
 const deepSeekProvider = (): DeepSeek | undefined => {
-  const apiKey = getServerEnv().DEEPSEEK_API_KEY;
+  const apiKey = getAiEnv().DEEPSEEK_API_KEY;
   return apiKey === undefined ? undefined : createDeepSeek({ apiKey });
 };
 
@@ -223,11 +235,12 @@ const deepSeekProvider = (): DeepSeek | undefined => {
  * attempt. Every failure comes back as a value, so a caller lets its
  * movements wait (system design §1); none carries content.
  */
-export const generateStructured = async <T>(
-  prompt: AiPrompt<T>,
-  input: string,
-  ledger: AiLedger,
-): Promise<Result<StructuredAnswer<T>, AiError>> => {
+export const generateStructured = async <T>({
+  prompt,
+  input,
+  ledger,
+  models = AI_MODELS,
+}: StructuredCall<T>): Promise<Result<StructuredAnswer<T>, AiError>> => {
   const deepSeek = deepSeekProvider();
   if (deepSeek === undefined) return err({ code: "AI_OFF" });
   const limit = await ledger.check();
@@ -241,7 +254,7 @@ export const generateStructured = async <T>(
     await ledger.record(call);
     await recordAiCall(call);
   };
-  for (const model of AI_MODELS) {
+  for (const model of models) {
     const result = await attempt(deepSeek, model, { prompt, input });
     attempts.push(result.attempt);
     if (result.ok) {

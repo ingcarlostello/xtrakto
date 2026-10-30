@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
 }));
 
-vi.mock("./env", () => ({ getServerEnv: () => mocks.env }));
+vi.mock("./env", () => ({ getAiEnv: () => mocks.env }));
 vi.mock("@sentry/nextjs", () => ({ captureException: mocks.captureException }));
 
 const PUBLIC_KEY = ["pk", "lf", "publicKey0123456789"].join("-");

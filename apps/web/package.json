@@ -10,7 +10,8 @@
     "check-types": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "db:seed": "tsx scripts/seed.mts"
+    "db:seed": "tsx scripts/seed.mts",
+    "eval": "tsx --conditions=react-server scripts/eval-categorization.mts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "3.0.75",
@@ -41,6 +42,7 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "5.0.3",
     "@xtrakto/eslint-config": "workspace:*",
+    "@xtrakto/evals": "workspace:*",
     "@xtrakto/typescript-config": "workspace:*",
     "eslint": "^9",
     "happy-dom": "20.14.5",

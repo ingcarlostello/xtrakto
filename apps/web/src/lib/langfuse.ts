@@ -7,7 +7,7 @@ import {
 } from "@/utils/langfuse-trace.helpers";
 import { sanitizedError } from "@/utils/sanitized-error.utils";
 import type { AiCallRecord } from "./ai";
-import { getServerEnv } from "./env";
+import { getAiEnv } from "./env";
 
 // Langfuse Cloud's US region, through its OpenTelemetry endpoint, which takes
 // OTLP's JSON: no SDK, so every attribute that leaves is written by
@@ -19,7 +19,7 @@ const hexId = (bytes: number): string => randomBytes(bytes).toString("hex");
 
 const send = async (call: AiCallRecord, keys: readonly [string, string]) => {
   const environment: LangfuseEnvironment =
-    getServerEnv().VERCEL_ENV === "production" ? "production" : "development";
+    getAiEnv().VERCEL_ENV === "production" ? "production" : "development";
   const body = langfuseTraces({
     prompt: call.prompt,
     environment,
@@ -51,7 +51,7 @@ const send = async (call: AiCallRecord, keys: readonly [string, string]) => {
  * failed export reaches Sentry as a code and never fails the call.
  */
 export const recordAiCall = async (call: AiCallRecord): Promise<void> => {
-  const { LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } = getServerEnv();
+  const { LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } = getAiEnv();
   if (!LANGFUSE_PUBLIC_KEY || !LANGFUSE_SECRET_KEY) return;
   try {
     await send(call, [LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY]);

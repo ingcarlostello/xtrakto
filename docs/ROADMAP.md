@@ -222,7 +222,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.1 [HUMAN] AI module with primary and fallback providers
 - [x] 8.2 Versioned prompts and Langfuse tracing
 - [x] 8.3 Usage tracking and limits
-- [ ] 8.4 Evaluation harness and the categorization prompt
+- [x] 8.4 Evaluation harness and the categorization prompt
 - [ ] 8.5a LLM categories in the database
 - [ ] 8.5b Categorize after ingestion
 - [ ] 8.6a Titles from the rules
@@ -1654,6 +1654,8 @@ It came out at about 245 lines of code; the design rules gain the plan's note in
 
 #### 8.4 Evaluation harness and the categorization prompt
 
+Decided when it started (2026-10-30): the runner is a script of `apps/web`, since it asks the prompt through `lib/ai` and a package can't import an app, while `@xtrakto/evals` keeps the sets, the metrics, the thresholds and the report; `lib/ai` reads only its own variables, so the eval runs where the app's others aren't set, as in CI, and a call can ask one model alone; and an answer counts from a confidence of 0.7, in the eval and when saved (8.5b).
+
 **Tasks**
 
 - `@xtrakto/evals`, pure TypeScript as `@xtrakto/core`: labeled sets as JSON, the metrics (accuracy, macro-F1, coverage above the confidence threshold) and a report of figures only.
@@ -1663,7 +1665,9 @@ It came out at about 245 lines of code; the design rules gain the plan's note in
 
 **Done when:** the first run's figures and cost per model are in the phase log, and both models meet the thresholds.
 
-**Commit:** `feat(evals): evaluation harness and categorization prompt`
+It came out at about 550 lines of code, past the 400 a phase should hold, and lands in commits of one pull request (decided with the human): the AI module's changes, the harness with its set, the prompt with its service, and the runner with its workflow; `CLAUDE.md` gains the command in a commit of its own.
+
+**Commits:** `feat(web): LLM calls an eval can make`, `feat(evals): evaluation harness and the categorization set`, `feat(web): categorization prompt and its service`, `feat(web): categorization eval for both models`, then `docs: run the LLM evals`
 
 #### 8.5 LLM categorization fallback
 

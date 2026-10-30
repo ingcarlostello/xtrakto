@@ -1,0 +1,50 @@
+name: Evals
+
+# Runs the LLM evals against DeepSeek when what they measure changes: the
+# prompts and their services, the AI module or the sets (8.4). A run costs
+# about USD 0.04 of the project's DeepSeek credits, so it doesn't run on
+# every pull request; `workflow_dispatch` runs it on demand.
+on:
+  pull_request:
+    paths:
+      - apps/web/src/lib/ai.ts
+      - apps/web/src/features/llm-categories/**
+      - apps/web/scripts/eval-*.mts
+      - packages/evals/**
+  workflow_dispatch:
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from `packageManager` in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The project's DeepSeek key, stored as a repository secret. Only the
+      # sets' invented texts go to DeepSeek, and the report holds figures only.
+      - name: Run the evals
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          if [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo "::error::The DEEPSEEK_API_KEY secret is not set"
+            exit 1
+          fi
+          pnpm --filter web eval
