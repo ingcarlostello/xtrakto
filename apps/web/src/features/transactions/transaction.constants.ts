@@ -169,6 +169,8 @@ export const TRANSACTIONS_COPY = {
     noCategory: "Sin categoría",
     why: "Por qué:",
     systemRule: "Regla del sistema, sin IA.",
+    // The LLM's category (8.5b): what it read, and what it never got.
+    ai: "la IA lo clasificó por el texto del banco, sin montos ni datos tuyos.",
     yours: "lo decidiste tú.",
     unknown: "ninguna regla conoce este movimiento todavía.",
     bestGuess: "Es nuestra mejor suposición: confírmala en la revisión.",

@@ -30,3 +30,9 @@ export const CATEGORIZE_BATCH_SIZE = 25;
 
 /** The lowest confidence an answer counts with, in the eval and when saved (8.5b). */
 export const MIN_LLM_CONFIDENCE = 0.7;
+
+/**
+ * Rounds of one batch after an upload, 200 texts at most: the rest wait for
+ * the next upload, and a text the LLM keeps leaving out isn't sent forever.
+ */
+export const MAX_LLM_ROUNDS = 8;

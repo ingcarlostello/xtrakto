@@ -50,12 +50,14 @@ const factsOf = (detail: MovementDetail): DetailFact[] => {
 };
 
 // Why it has its category: the rule's reason, which the system gave without
-// AI, or the user's answer; or that no rule knows it.
+// AI, the LLM's answer from the bank's text, or the user's answer; or that
+// no rule knows it.
 const reasonOf = ({
   categorySource,
   categoryRuleId,
 }: MovementDetail): string => {
   if (categorySource === CATEGORY_SOURCE.USER) return COPY.yours;
+  if (categorySource === CATEGORY_SOURCE.LLM) return COPY.ai;
   if (categorySource !== CATEGORY_SOURCE.RULE) return COPY.unknown;
   const reason =
     categoryRuleId === null ? undefined : RULE_REASONS.get(categoryRuleId);

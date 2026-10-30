@@ -99,6 +99,22 @@ describe("movementDetailView", () => {
     });
   });
 
+  it("says the AI categorized it from the bank's text, without its amounts or the user's data", () => {
+    const named = detail({
+      descriptionRaw: "COMPRA EN AUDIFARMA",
+      categoryId: "health",
+      categorySource: "llm",
+      categoryRuleId: "unknown_merchant",
+    });
+
+    expect(movementDetailView(named, "a1")).toMatchObject({
+      tone: "spending",
+      isGuess: false,
+      reason:
+        "la IA lo clasificó por el texto del banco, sin montos ni datos tuyos.",
+    });
+  });
+
   it("says no rule knows money in without a category", () => {
     const unknown = detail({
       descriptionRaw: "ABONO EJEMPLO",

@@ -1,6 +1,6 @@
 # 0019. Two Inngest steps that keep only ids, codes and counts
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0033](0033-llm-categories-after-ingestion-from-a-shared-cache.md), whose rounds of LLM categories follow `ingest`
 - **Date:** 2026-10-14
 
 ## Context
