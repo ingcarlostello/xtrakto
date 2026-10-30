@@ -1,4 +1,4 @@
-import type { CategoryId } from "@xtrakto/core";
+import { type CategoryId, isPlainTitle } from "@xtrakto/core";
 import { THRESHOLD_FIGURES } from "./categorization.constants";
 import type {
   CategorizationPrediction,
@@ -87,6 +87,10 @@ export const scoreCategorization = (
     (prediction) =>
       confidentAnswerOf(prediction, confidenceThreshold) === undefined,
   ).length;
+  const answered = predictions.flatMap(({ answer }) => answer ?? []);
+  const titled = answered.filter(
+    ({ title }) => title !== null && isPlainTitle(title),
+  ).length;
   return {
     labeled: labeled.length,
     confident: answers.length,
@@ -98,6 +102,8 @@ export const scoreCategorization = (
     vague: vague.length,
     abstained,
     abstention: share(abstained, vague.length),
+    titled,
+    titleShare: share(titled, answered.length),
   };
 };
 

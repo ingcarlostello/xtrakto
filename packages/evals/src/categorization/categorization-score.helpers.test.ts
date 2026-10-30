@@ -11,10 +11,13 @@ const THRESHOLD = 0.7;
 const answered = (
   expected: CategoryId | null,
   categoryId: CategoryId,
-  confidence = 0.9,
+  {
+    confidence = 0.9,
+    title = "Compra en una tienda",
+  }: { confidence?: number; title?: string | null } = {},
 ): CategorizationPrediction => ({
   expected,
-  answer: { categoryId, confidence },
+  answer: { categoryId, confidence, title },
 });
 
 const unanswered = (expected: CategoryId | null): CategorizationPrediction => ({
@@ -25,8 +28,8 @@ describe("scoreCategorization", () => {
   it("counts only the answers at or above the confidence threshold", () => {
     const score = scoreCategorization(
       [
-        answered("groceries", "groceries", 0.7),
-        answered("health", "health", 0.69),
+        answered("groceries", "groceries", { confidence: 0.7 }),
+        answered("health", "health", { confidence: 0.69 }),
         unanswered("transport"),
         answered("shopping", "groceries"),
       ],
@@ -79,9 +82,9 @@ describe("scoreCategorization", () => {
   it("says how many vague texts the model left below the threshold", () => {
     const score = scoreCategorization(
       [
-        answered(null, "shopping", 0.4),
+        answered(null, "shopping", { confidence: 0.4 }),
         unanswered(null),
-        answered(null, "shopping", 0.95),
+        answered(null, "shopping", { confidence: 0.95 }),
         answered("groceries", "groceries"),
       ],
       THRESHOLD,
@@ -107,6 +110,23 @@ describe("scoreCategorization", () => {
   });
 });
 
+describe("the titles' share", () => {
+  it("counts the answers, at any confidence, whose title reads in plain words", () => {
+    const score = scoreCategorization(
+      [
+        answered("groceries", "groceries"),
+        answered(null, "shopping", { confidence: 0.3 }),
+        answered("health", "health", { title: null }),
+        answered("health", "health", { title: "Pago a [NAME]" }),
+        unanswered("transport"),
+      ],
+      THRESHOLD,
+    );
+
+    expect(score).toMatchObject({ titled: 2, titleShare: 0.5 });
+  });
+});
+
 describe("failedThresholds", () => {
   const score = scoreCategorization(
     [
@@ -125,6 +145,7 @@ describe("failedThresholds", () => {
         macroF1: 0.3,
         coverage: 0.7,
         abstention: 1,
+        titleShare: 1,
       }),
     ).toEqual(["accuracy", "coverage"]);
   });
@@ -136,6 +157,7 @@ describe("failedThresholds", () => {
         macroF1: 1 / 3,
         coverage: 2 / 3,
         abstention: 1,
+        titleShare: 1,
       }),
     ).toEqual([]);
   });
