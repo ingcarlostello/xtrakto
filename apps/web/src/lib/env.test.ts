@@ -23,6 +23,7 @@ const DEV_SERVER = "http://127.0.0.1:8288";
 const SENTRY_DSN = "https://publickey@o1.ingest.us.sentry.io/2";
 const POSTHOG_KEY = fakeKey("phc", "projectKey0123456789abcdef");
 const PERSONAL_KEY = fakeKey("phx", "secretPersonalKey0123456789");
+const DEEPSEEK_KEY = ["sk", "secretDeepSeekKey0123456789"].join("-");
 const REQUIRED = {
   DATABASE_URL: LOCAL_URL,
   IDENTIFIER_HASH_KEY: HASH_KEY,
@@ -264,6 +265,61 @@ describe("parseServerEnv", () => {
 
     expect(message).toContain("NEXT_PUBLIC_POSTHOG_KEY");
     expect(message).not.toContain("secret");
+  });
+
+  it.each([undefined, ""])(
+    "leaves LLM calls off without DeepSeek's key (%j), as in CI",
+    (key) => {
+      expect(
+        parseServerEnv({ ...VALID, DEEPSEEK_API_KEY: key }).DEEPSEEK_API_KEY,
+      ).toBeUndefined();
+    },
+  );
+
+  it("accepts DeepSeek's key", () => {
+    expect(
+      parseServerEnv({ ...VALID, DEEPSEEK_API_KEY: DEEPSEEK_KEY })
+        .DEEPSEEK_API_KEY,
+    ).toBe(DEEPSEEK_KEY);
+  });
+
+  it("rejects a DeepSeek key without its prefix without printing it", () => {
+    const message = failureOf({
+      ...VALID,
+      DEEPSEEK_API_KEY: "secretDeepSeekKey0123456789",
+    });
+
+    expect(message).toContain("DEEPSEEK_API_KEY");
+    expect(message).not.toContain("secret");
+  });
+
+  it("requires DeepSeek's key on Vercel's production, or categories would wait unnoticed", () => {
+    const deployed = { ...REQUIRED, ...CLOUD_KEYS, VERCEL: "1" };
+
+    expect(failureOf({ ...deployed, VERCEL_ENV: "production" })).toContain(
+      "DEEPSEEK_API_KEY",
+    );
+    expect(
+      parseServerEnv({
+        ...deployed,
+        VERCEL_ENV: "production",
+        DEEPSEEK_API_KEY: DEEPSEEK_KEY,
+      }).DEEPSEEK_API_KEY,
+    ).toBe(DEEPSEEK_KEY);
+  });
+
+  it.each([
+    { where: "a preview", source: { VERCEL: "1", VERCEL_ENV: "preview" } },
+    { where: "a local production server", source: { NODE_ENV: "production" } },
+  ])("runs without DeepSeek's key on $where", ({ source }) => {
+    const env = parseServerEnv({
+      ...REQUIRED,
+      ...CLOUD_KEYS,
+      CLERK_WEBHOOK_SIGNING_SECRET: WEBHOOK_SECRET,
+      ...source,
+    });
+
+    expect(env.DEEPSEEK_API_KEY).toBeUndefined();
   });
 });
 

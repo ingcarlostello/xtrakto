@@ -71,10 +71,15 @@ const serverEnvShape = z.object({
   NEXT_PUBLIC_POSTHOG_KEY: optional(
     z.string().regex(/^phc_/, "must start with phc_"),
   ),
+  // DeepSeek's API key (lib/ai.ts, ADR 0031). Unset in CI, and locally
+  // without one, where no LLM call leaves; Vercel's production needs it.
+  DEEPSEEK_API_KEY: optional(z.string().regex(/^sk-/, "must start with sk-")),
   // Set by Next.js: production for `next build`, `next start` and Vercel.
   NODE_ENV: z.string().optional(),
   // Set by Vercel on every deployment, previews included.
   VERCEL: optional(z.string()),
+  // Set by Vercel too: which kind of deployment this is.
+  VERCEL_ENV: optional(z.enum(["production", "preview", "development"])),
 });
 
 type ServerEnvShape = z.infer<typeof serverEnvShape>;
@@ -114,10 +119,19 @@ const inngestIssues = (env: ServerEnvShape): EnvIssue[] => {
     }));
 };
 
+// Keyed on VERCEL_ENV, so that a local `next start` runs without DeepSeek;
+// on Vercel's production, a missing key would leave the movements no rule
+// knows waiting unnoticed.
+const aiIssues = (env: ServerEnvShape): EnvIssue[] =>
+  env.VERCEL_ENV === "production" && !env.DEEPSEEK_API_KEY
+    ? [{ path: "DEEPSEEK_API_KEY", message: "required on Vercel's production" }]
+    : [];
+
 const serverEnvSchema = serverEnvShape.superRefine((env, context) => {
   for (const { path, message } of [
     ...productionIssues(env),
     ...inngestIssues(env),
+    ...aiIssues(env),
   ])
     context.addIssue({ code: "custom", path: [path], message });
 });
