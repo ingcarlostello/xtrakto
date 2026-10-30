@@ -24,7 +24,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Conflicts:** if this roadmap contradicts the project rules, the rules win. Point out the conflict and propose an update to this file.
 
-**Outlined stages:** stages 8 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
+**Outlined stages:** stages 9 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
 **Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
@@ -92,7 +92,7 @@ The human decides before the phase starts. The agent may propose options with tr
 | Spreadsheet library | 2.2   | SheetJS from its official distribution (the `xlsx` package on the npm registry is outdated) or ExcelJS. Must work in Node and in a Web Worker.                                                        |
 | PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                                                                           |
 | Design direction    | 4.3   | Resolved: v8 (October 2026), v7 (the layout of v4 with the style of v6) adjusted after checking real Bancolombia files (`.claude/rules/design-system.md`); screenshots of every screen in `docs/ui/`. |
-| LLM providers       | 8.1   | Primary and fallback provider.                                                                                                                                                                        |
+| LLM providers       | 8.1   | Resolved: DeepSeek's own API, `deepseek-flash` with `deepseek-v4-pro` as fallback (October 2026; a personal, non-commercial project whose users accept that their redacted bank texts go to China).   |
 | Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                                                                                   |
 | Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                                                                          |
 
@@ -217,14 +217,18 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 7.7c How the bank writes you and what's yours _(design v8)_
 - [x] 7.8 Sample data to explore _(design v8)_
 
-**Stage 8 — LLM layer** _(outline)_
+**Stage 8 — LLM layer**
 
 - [ ] 8.1 [HUMAN] AI module with primary and fallback providers
 - [ ] 8.2 Versioned prompts and Langfuse tracing
 - [ ] 8.3 Usage tracking and limits
-- [ ] 8.4 Evaluation harness (`packages/evals`)
-- [ ] 8.5 LLM categorization fallback
-- [ ] 8.6 "Tu extracto, traducido"
+- [ ] 8.4 Evaluation harness and the categorization prompt
+- [ ] 8.5a LLM categories in the database
+- [ ] 8.5b Categorize after ingestion
+- [ ] 8.6a Titles from the rules
+- [ ] 8.6b Titles from the LLM
+- [ ] 8.6c Your statement, translated
+- [ ] 8.6d Plain words in Pagos fijos and Categorías
 
 **Stage 9 — PDF statements** _(outline)_
 
@@ -1579,16 +1583,153 @@ Decided with the human when it started (2026-10-28): the example is a user of it
 
 ---
 
-### Stage 8 — LLM layer _(outline)_
+### Stage 8 — LLM layer
 
-**Goal:** one observable, cost-bounded way to call LLMs, and the first LLM features.
+**Goal:** one observable, cost-bounded way to call LLMs, and the first LLM features: a category for what no rule knows, and "Tu extracto, traducido".
 
-- **8.1 [HUMAN] AI module:** `lib/ai` with the Vercel AI SDK, primary and fallback providers, structured output validated with Zod, one retry on the fallback model, timeouts.
-- **8.2 Prompts and tracing:** prompts as versioned files; Langfuse records model, tokens, cost and latency, with inputs and outputs masked.
-- **8.3 Usage and limits:** `llm_usage` table; per-user monthly cost cap, chat questions per day and request rate (Postgres counters); platform budget alert at 80% and hard stop at 100%.
-- **8.4 Evaluation harness:** `packages/evals` with a labeled synthetic set of at least 200 realistic, redacted descriptions; accuracy, macro-F1 and coverage with a threshold. Runs in CI only when prompts or the AI module change, and on demand.
-- **8.5 LLM categorization fallback:** unique redacted descriptions in batches; output restricted to category ids with a confidence; a global cache keyed by the redacted normalized description; `category_source = "llm"`.
-- **8.6 "Tu extracto, traducido":** a plain-language explanation per distinct description pattern (not per row), cached; counts and amounts inserted by code. Onboarding's first step gains "Traduce cada movimiento", left out in 5.8.
+Planned with the human on 2026-10-29 and 2026-10-30: ten sub-phases (about 3,100 lines of code), with these decisions.
+
+- **The LLM sees only what no rule names.** Deterministic first (ADR 0009): it categorizes the payments at a merchant no rule knows (`unknown_merchant`, "Otros", 6.2a) and the movements no rule knows at all; never a best guess the quick review asks about, nor a movement the user decided. It chooses among real spending's categories for money going out and income's for money coming in, never "moved": that needs the user's own accounts, which only the rules, the holder's name and the user know. A payment at a merchant stays real spending whatever it answers.
+- **DeepSeek's own API (gate 8.1).** Xtrakto is a personal, non-commercial project to learn with, free for whoever wants to try it: the human chose DeepSeek, where they have credits, knowing that its API keeps data in China, may train on it and states no retention period. Whoever uses the app accepts it, as the privacy page says from 8.5b; the legal review before a public launch (16.4) stands.
+- **What DeepSeek receives:** each distinct text once, redacted (`redactPii` with the holder's name), with the direction of its money; never an amount, a date, a reference or the account. A cache shared by every user keeps the answers by redacted text and prompt version, without a link to any person (decided with the human). Evals use invented texts only: no real text, redacted or not, goes to a provider from a development machine, and the human checks real files in production with their own account.
+- **In the background, never in the way:** the calls run in a step after the statement's transaction (ADR 0019, amended) and return counts only. A provider failure or a reached limit never fails an upload: those movements keep the rules' category and wait for the next run (system design §1).
+- **Titles from the rules first** (decided with the human). "Tu extracto, traducido" (`v8-01`, `v8-03`) titles a movement from its rule, which knows what interest, the 4x1000, a Nequi send or a card payment are, and asks the LLM only for the payments no rule names. The line under a title is the code's (what it counts as, the days it repeats, a sum), so numbers never come from the model. The outline's "explanation per pattern" narrows to that, since the rules already know what each bank operation means.
+- **Limits for the calls the app makes on its own:** a cost per user and month and a platform budget (8.3). The chat's questions per day and requests per minute move to 13.4, where a person first triggers a call.
+- **Telemetry through an allowlist,** as Sentry's and PostHog's: Langfuse gets the model, tokens, cost, latency, and the prompt's name and version, never a prompt's or an answer's content.
+
+#### 8.1 [HUMAN] AI module with primary and fallback providers
+
+Decided with the human on 2026-10-30 (gate): DeepSeek's own API, where the human has prepaid credits, with a key only for this project. `deepseek-flash` answers and `deepseek-v4-pro` is the fallback, on the same account: a second model covers an answer the schema rejects; when the whole API is down, the movements wait for the next run. Claude Haiku 5.5 and GPT-6 Luna, direct or through Vercel's AI Gateway, were weighed.
+
+**Human:** create the project's DeepSeek key and put it in `.env.local` and in Vercel's production environment; the prepaid balance is its spend limit.
+
+**Tasks**
+
+- `lib/ai`, server-only and the only module that imports the Vercel AI SDK and its provider (rules §14), with DeepSeek's own package (`@ai-sdk/deepseek`; a bare model id would go through Vercel's AI Gateway): a structured call validated with Zod, with a timeout per attempt. When the primary model fails, times out or answers what the schema rejects, one attempt on the fallback model, by hand, since the SDK has none; then an expected error. The SDK's errors carry the model's answer, so `lib/ai` turns them into codes (the model and what failed) before a log, Inngest or Sentry sees them (ADR 0019).
+- The key in `lib/env.ts`: required on Vercel's production, optional elsewhere, where the module says it's off.
+- An ADR: DeepSeek and its models, its data policy (China, possible training, no stated retention) and why it fits this project, and the fallback.
+
+**Done when:** tests cover the fallback (an error, a timeout, an answer the schema rejects) and errors without content; a call with an invented text reaches each model.
+
+**Commit:** `feat(web): AI module with primary and fallback providers`
+
+#### 8.2 Versioned prompts and Langfuse tracing
+
+**Human:** create the Langfuse Cloud project and put its keys in Vercel's production environment.
+
+**Tasks**
+
+- Prompts as versioned files (`prompts/<name>.v<n>.ts`): name, version, instructions and the answer's schema. `lib/ai` takes a prompt, never a loose string.
+- Every call records one generation in Langfuse by hand: its model, tokens, cost, latency, prompt name and version and outcome, never an input or an output; off without its keys, as Sentry. Langfuse gets a tracer provider of its own, since Sentry 11 owns OpenTelemetry's and keeps a tenth of the traces. An ADR, as 0028 and 0029.
+- The AI SDK's own telemetry stays off on every call, so no span with a prompt reaches Langfuse or Sentry; Sentry's AI integration is also told to record no inputs or outputs, which a call could otherwise turn on (`dataCollection.genAI` is already off).
+- Langfuse Cloud in the US region, as the other services but DeepSeek. `docs/data-flow.md` and system design §4 gain it, with what it keeps: the free plan shows 30 days and deletes nothing.
+
+**Done when:** tests show that only the allowlist reaches Langfuse; a check call shows there with its model, tokens, cost and latency and nothing else.
+
+**Commit:** `feat(web): versioned prompts and LLM tracing`
+
+#### 8.3 Usage tracking and limits
+
+**Tasks**
+
+- `llm_usage`: one row per call, with its user, feature, prompt and version, model, tokens, cost in millionths of a dollar (integers, as money) and outcome; forced Row-Level Security on `user_id`.
+- Each call's cost from a price table per model in code, since providers report tokens.
+- Before every call: the user's month under USD 1, and the platform's under its budget (an environment variable), by calendar month in Bogotá as the statements' limit; the platform's total through a `SECURITY DEFINER` function without parameters, as the daily cleanup's (ADR 0014). Over a limit the call doesn't happen, and the caller gets an expected error.
+- At 80% of the platform's budget, one Sentry message a month, which alerts the owner; at 100%, every call stops.
+- "Tu plan" (7.7b) says, only when the user's month ran out, that the movements no rule knows wait for the next month.
+
+**Done when:** tests cover the user's limit and the platform's budget, the 80% alert, the month's boundary in Bogotá, and that a user's usage neither counts for nor shows to another user.
+
+**Commit:** `feat(web): LLM usage and cost limits`
+
+#### 8.4 Evaluation harness and the categorization prompt
+
+**Tasks**
+
+- `@xtrakto/evals`, pure TypeScript as `@xtrakto/core`: labeled sets as JSON, the metrics (accuracy, macro-F1, coverage above the confidence threshold) and a report of figures only.
+- The categorization prompt v1 and its service: distinct redacted texts with their direction, in batches; each answer a category of the kinds allowed and a confidence, validated with Zod.
+- A set of at least 200 invented texts in Bancolombia's style that no rule knows (purchases, QR and PSE payments at merchants of every category, money coming in), each with its category; some ambiguous on purpose, which should come back below the threshold.
+- `pnpm --filter web eval` runs the set against both models, caps its own spend and fails under the thresholds, set with the human from the first run. CI runs it only when the prompts, `lib/ai` or the sets change, with the DeepSeek key as a GitHub secret.
+
+**Done when:** the first run's figures and cost per model are in the phase log, and both models meet the thresholds.
+
+**Commit:** `feat(evals): evaluation harness and categorization prompt`
+
+#### 8.5 LLM categorization fallback
+
+Split in two when planned (about 650 lines).
+
+#### 8.5a LLM categories in the database
+
+**Tasks**
+
+- The answers' cache, without anyone's data: the prompt's name and version, the redacted text and its direction, the answer and the model; forced Row-Level Security that lets the application read and add only.
+- A movement the LLM categorized has `category_source = "llm"` and keeps the table's rule that matched (`unknown_merchant`), or none; the CHECKs and ADR 0025 follow. The user's rules still come first, and undoing one gives back the LLM's answer.
+- The user's movements waiting for the LLM, in every statement, and an answer written to every movement with its text.
+
+**Done when:** database tests prove what waits (never a guess, the user's, a moved one or a hidden one), an answer reaching every movement with its text, the user's rules first and their undo, and a cache without anyone's data.
+
+**Commit:** `feat(db): LLM categories and their cache`
+
+#### 8.5b Categorize after ingestion
+
+**Tasks**
+
+- A step after `ingest` (ADR 0019, amended): it reads the user's movements waiting, takes the cache's answers, sends the rest within 8.3's limits, saves the answers above the threshold and returns counts only. A provider failure or a limit ends it without failing the job.
+- The detail panel's reason for the LLM's category, saying it was AI and from what (design system §9); it is corrected as any other.
+- `docs/data-flow.md`, the privacy page (DeepSeek, what it receives, the transfer to China, and that it may train on it) and system design §4, §6 and §10; an ADR.
+
+**Done when:** an upload of a synthetic file gets its unknown merchants' categories from the LLM, uploading it again sends nothing, and with the providers down the upload ends as before; checked in a local browser.
+
+**Commit:** `feat(web): LLM categorization after ingestion`
+
+#### 8.6 "Tu extracto, traducido"
+
+Split in four when planned (about 1,350 lines): the rules' titles, the LLM's, the summary's card, and the pages that wait for plain words (6.5, 6.5c, 6.8b, 6.8c).
+
+#### 8.6a Titles from the rules
+
+**Tasks**
+
+- Each rule of the table says what its movements are in plain words ("Intereses de tus ahorros", "Retiro en cajero", "Envío por Nequi", "Pagaste tu tarjeta"), with what was paid where the rule's words name it ("Pago de energía"). The title follows the category when the user decided it.
+- Movimientos's rows and the detail panel's title show it, with the bank's text under it as printed (design system §9); the bank's `0` keeps "Sin descripción del banco".
+
+**Done when:** every rule has a title (tested), and Movimientos reads right at phone width and with the keyboard.
+
+**Commits:** `feat(core): movement titles in plain words`, then `feat(web): titles in Movimientos`
+
+#### 8.6b Titles from the LLM
+
+**Tasks**
+
+- The categorization prompt v2 also names the payment in plain words for the texts no rule names ("Compra en una tienda en línea"), cached as v1's answers; the eval gains the titles' checks (length, no placeholders or digits, sentence case).
+- Wherever 8.6a shows a title, a payment no rule names shows the LLM's, else its bank text.
+
+**Done when:** an upload of a synthetic file titles its unknown merchants, and the titles pass the checks.
+
+**Commit:** `feat(web): LLM titles for what no rule names`
+
+#### 8.6c Your statement, translated
+
+**Tasks**
+
+- The summary's card of `v8-01`: the period's main lines (which ones, decided when it starts), each with its title, the bank's text, a line of the code's (what it counts as, the days it repeats, what it adds up to), its channel and amount; the filters Todo / Gasto / Movido / Ingresos / Por revisar, and "Ver los N movimientos".
+- Onboarding's first step gains "Traduce cada movimiento", left out in 5.8.
+
+**Done when:** the card renders from seeded data, works at phone width and with the keyboard.
+
+**Commit:** `feat(web): your statement, translated`
+
+#### 8.6d Plain words in Pagos fijos and Categorías
+
+**Tasks**
+
+- Pagos fijos's titles and icons ("Energía", "Cuotas de tu crédito", `v8-04`), "Pendiente: gas" in the calendar, and words of their own instead of "Revisa tu consumo o la tarifa." (6.5c).
+- A category's detail names its places and movements in plain words ("App de domicilios", "pedidos", `v8-06`).
+
+**Done when:** both pages read right from seeded data, at phone width and with the keyboard.
+
+**Commit:** `feat(web): plain words in recurring payments and categories`
 
 ### Stage 9 — PDF statements _(outline)_
 
@@ -1627,7 +1768,7 @@ Decided with the human when it started (2026-10-28): the example is a user of it
 - **13.1 Typed tools:** `getTransactions`, `getSpendingByCategory`, `getRecurring`, `getSummary`, `findTransactions`; the user id always comes from the session, never from the model.
 - **13.2 Agent:** LangGraph.js: understand the question → choose tools → compute → answer. No model-generated SQL.
 - **13.3 UI:** streaming answers, the transactions used, and "how it was calculated". Onboarding's first step gains "Responde con tus propios datos", left out in 5.8.
-- **13.4 Hardening:** descriptions are untrusted data (prompt injection); output validation; limit of 30 questions per day.
+- **13.4 Hardening:** descriptions are untrusted data (prompt injection); output validation; limits of 30 questions per day and 60 requests per minute (moved from 8.3, since a person triggers no call before the chat).
 - **13.5 Evals:** question and answer pairs with deterministic answers over the fixtures.
 - **13.6 (Optional) Sandbox:** Pyodide in a Web Worker for questions the tools can't answer; the data never leaves the browser.
 
