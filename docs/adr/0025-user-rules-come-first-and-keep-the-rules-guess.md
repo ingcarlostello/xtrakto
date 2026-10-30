@@ -1,6 +1,6 @@
 # 0025. The user's rules come first and keep the rule's guess
 
-- **Status:** Accepted; amended by [0026](0026-nequi-numbers-and-reference-rules-by-direction.md), where a reference's rule holds the ways its category allows
+- **Status:** Accepted; amended by [0026](0026-nequi-numbers-and-reference-rules-by-direction.md), where a reference's rule holds the ways its category allows, and by Phase 8.5a, where a movement also keeps the LLM's answer
 - **Date:** 2026-10-16
 
 ## Context
@@ -11,7 +11,7 @@ Phase 6.3 lets the user answer the quick review by group and correct a movement,
 
 - **A `user_category_rules` table** holds each user's rules, with forced Row-Level Security like the other tables with a user's data. A rule is a bank text, folded as `userRuleTextOf` writes it, with the direction of its money; or a reference's HMAC, which holds both ways, with its last 4 digits to show it. A new answer replaces the earlier one for the same text and direction, or the same reference. The bank's `0` never makes a rule, since it says nothing of what a movement was.
 - **The user's rules come first.** `categorizeStatement` gives a movement the category of its reference's rule, then of its text's, and only then the table's. The user's category is never a guess.
-- **A movement keeps the table's rule that matched.** `category_rule_id` stays when the user decides, so the review shows the groups already answered, and the labels of Stage 14 keep what the rule guessed next to what the user said. The CHECK now allows a rule's id with a category a rule or the user gave, and only a rule's guess may wait for review.
+- **A movement keeps the table's rule that matched.** `category_rule_id` stays when the user decides, so the review shows the groups already answered, and the labels of Stage 14 keep what the rule guessed next to what the user said. The CHECK now allows a rule's id with a category a rule or the user gave, and only a rule's guess may wait for review. Since 8.5a a movement also keeps the LLM's answer for its text (`llm_category_id`), when the user decides too, and the LLM's category may keep the rule that knew only a merchant (`unknown_merchant`).
 - **Saving a rule recategorizes the user's movements it holds for**, in any statement, hidden or not. SQL can't fold text, so the user's distinct texts going that way are read first and compared in TypeScript.
 
 ## Alternatives considered
@@ -26,4 +26,4 @@ Phase 6.3 lets the user answer the quick review by group and correct a movement,
 - An answer changes movements of every period and account of the user, as "Tus reglas" promises ("aplicado a todos tus extractos").
 - A rule whose text the bank writes differently next time doesn't hold; the review asks again.
 - Saving a text's rule leaves the movements already saved that a reference's rule holds, as ingestion does (6.3g); before 6.3g it gave them its category too.
-- Undoing an answer (6.3h) deletes its rule, and the movements it held take what the user's other rules say, else the table's rule each one kept (`category_rule_id`), with its guess and review, instead of running the table again on their texts and the account's holder name. A movement whose rule the table dropped keeps its category. Undoing a text's rule also undoes the corrections of single movements with that text (6.3g), which nothing tells apart from it.
+- Undoing an answer (6.3h) deletes its rule, and the movements it held take what the user's other rules say, else the LLM's answer each one kept (8.5a), else the table's rule each one kept (`category_rule_id`), with its guess and review, instead of running the table again on their texts and the account's holder name. A movement whose rule the table dropped keeps its category. Undoing a text's rule also undoes the corrections of single movements with that text (6.3g), which nothing tells apart from it.

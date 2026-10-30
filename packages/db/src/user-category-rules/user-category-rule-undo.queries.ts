@@ -1,6 +1,7 @@
 import {
   type AmountMinor,
   type CategorizationRuleId,
+  type CategoryId,
   compileUserRules,
   type SavedCategory,
   savedMovementCategory,
@@ -21,6 +22,7 @@ type SavedMovement = {
   readonly amountMinor: AmountMinor;
   readonly referenceHash: string | null;
   readonly categoryRuleId: CategorizationRuleId | null;
+  readonly llmCategoryId: CategoryId | null;
 };
 
 // The user's stored rule for the same reference, or the same text and
@@ -69,8 +71,9 @@ const recategorize = async (
 
 /**
  * Deletes one of the user's rules, as stored, and gives the movements it
- * held for what their other rules say, else the table's rule each kept, in
- * any statement (6.3h, ADR 0025). Returns how many it changed.
+ * held for what their other rules say, else the LLM's answer or the table's
+ * rule each kept, in any statement (6.3h, ADR 0025). Returns how many it
+ * changed.
  */
 export const deleteUserCategoryRule = async (
   ctx: UserContext,
@@ -86,6 +89,7 @@ export const deleteUserCategoryRule = async (
       amountMinor: transactions.amountMinor,
       referenceHash: transactions.referenceHash,
       categoryRuleId: transactions.categoryRuleId,
+      llmCategoryId: transactions.llmCategoryId,
     })
     .from(transactions)
     .where(and(eq(transactions.userId, ctx.userId), matching));

@@ -122,6 +122,21 @@ export {
 } from "./llm-usage/llm-usage.queries";
 export type { LlmUsage, LlmUsageOutcome } from "./llm-usage/llm-usage.types";
 export {
+  cacheLlmCategories,
+  findCachedLlmCategories,
+} from "./llm-categories/llm-category-answer.queries";
+export {
+  listLlmWaitingTexts,
+  saveLlmCategories,
+} from "./llm-categories/llm-category.queries";
+export type {
+  CachedLlmCategory,
+  LlmMovementCategory,
+  LlmPromptVersion,
+  LlmText,
+  LlmWaitingText,
+} from "./llm-categories/llm-category.types";
+export {
   addWaitlistEntry,
   type NewWaitlistEntry,
 } from "./waitlist-entries/waitlist-entry.queries";

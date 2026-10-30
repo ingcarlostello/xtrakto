@@ -120,10 +120,31 @@ describe.skipIf(!testDatabase)("transactions table", () => {
       { categoryId: "groceries" as const, categorySource: "rule" as const },
     ],
     [
-      "a rule for a category the LLM gave",
+      "the LLM's category without the answer it keeps",
+      { categoryId: "health" as const, categorySource: "llm" as const },
+    ],
+    [
+      "the LLM's category unlike its answer",
       {
         categoryId: "groceries" as const,
         categorySource: "llm" as const,
+        llmCategoryId: "health" as const,
+      },
+    ],
+    [
+      "the LLM's answer still to review",
+      {
+        categoryId: "health" as const,
+        categorySource: "llm" as const,
+        llmCategoryId: "health" as const,
+        isPendingReview: true,
+      },
+    ],
+    [
+      "a rule for a category the model gave",
+      {
+        categoryId: "groceries" as const,
+        categorySource: "model" as const,
         categoryRuleId: "merchant_groceries" as const,
       },
     ],
@@ -181,6 +202,33 @@ describe.skipIf(!testDatabase)("transactions table", () => {
         categoryId: "transfers_to_people" as const,
         categorySource: "user" as const,
         categoryRuleId: "key_payment_saving" as const,
+      },
+    ],
+    [
+      "the LLM's category, keeping the rule that knew only a merchant",
+      {
+        categoryId: "health" as const,
+        categorySource: "llm" as const,
+        categoryRuleId: "unknown_merchant" as const,
+        llmCategoryId: "health" as const,
+      },
+    ],
+    [
+      "the LLM's category for money no rule knows",
+      {
+        amountMinor: asAmount(5_000_000),
+        categoryId: "refund" as const,
+        categorySource: "llm" as const,
+        llmCategoryId: "refund" as const,
+      },
+    ],
+    [
+      "the user's category, keeping the LLM's answer",
+      {
+        categoryId: "shopping" as const,
+        categorySource: "user" as const,
+        categoryRuleId: "unknown_merchant" as const,
+        llmCategoryId: "health" as const,
       },
     ],
   ])("accepts %s", async (_, change) => {

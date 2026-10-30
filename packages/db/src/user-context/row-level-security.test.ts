@@ -29,6 +29,8 @@ const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   user_category_rules: READ_WRITE,
   // Added and read; deleting the user takes it through the cascade.
   llm_usage: ["SELECT", "INSERT"],
+  // Shared answers, linked to no one: read and added, never changed.
+  llm_category_answers: ["SELECT", "INSERT"],
 };
 
 // The tables that hold no user's data, each with its own policies. Every
@@ -43,6 +45,11 @@ const POLICIES_WITHOUT_USER: Readonly<Record<string, readonly string[]>> = {
   // People may be added, never read back (ADR 0021).
   waitlist_entries: [
     `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+  ],
+  // The LLM's answers by redacted text, which every user reads and adds to.
+  llm_category_answers: [
+    `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+    `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
   ],
 };
 
