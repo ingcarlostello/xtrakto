@@ -61,6 +61,7 @@ type CategoryColumns = {
   readonly categorySource: AnyPgColumn;
   readonly categoryRuleId: AnyPgColumn;
   readonly llmCategoryId: AnyPgColumn;
+  readonly llmTitle: AnyPgColumn;
   readonly isPendingReview: AnyPgColumn;
 };
 
@@ -86,6 +87,11 @@ const categoryChecks = (t: CategoryColumns) => [
   check(
     "transactions_llm_category_check",
     sql`not ${sourceIs(t.categorySource, CATEGORY_SOURCE.LLM)} or (${t.llmCategoryId} is not null and ${t.categoryId} = ${t.llmCategoryId})`,
+  ),
+  // The LLM's title goes with its answer.
+  check(
+    "transactions_llm_title_check",
+    sql`${t.llmTitle} is null or ${t.llmCategoryId} is not null`,
   ),
   // Only a rule's best guess waits for review, never the user's answer.
   check(
@@ -140,6 +146,8 @@ export const transactions = pgTable(
     // The LLM's answer for its text (8.5a), kept when the user decides, so
     // undoing the user's rule gives it back (ADR 0025).
     llmCategoryId: text("llm_category_id").$type<CategoryId>(),
+    // What the LLM said was paid, in plain words, with that answer (8.6b).
+    llmTitle: text("llm_title"),
     // The category is a best guess the quick review asks about (6.3).
     isPendingReview: boolean("pending_review").notNull().default(false),
     fingerprint: text("fingerprint").notNull(),

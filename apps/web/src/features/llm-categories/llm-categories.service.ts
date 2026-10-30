@@ -31,7 +31,7 @@ import type {
   LlmTextGroup,
   TextToCategorize,
 } from "./llm-categories.types";
-import { CATEGORIZE_V1 } from "./prompts/categorize.v1";
+import { CATEGORIZE_V2 } from "./prompts/categorize.v2";
 
 export type CategorizeTextsCall = {
   /** Distinct texts, each redacted with its holder's names. */
@@ -54,7 +54,7 @@ export const categorizeTexts = async ({
   const answers = new Map<number, LlmCategoryAnswer>();
   for (const batch of batchesOf(texts, CATEGORIZE_BATCH_SIZE)) {
     const result = await generateStructured({
-      prompt: CATEGORIZE_V1,
+      prompt: CATEGORIZE_V2,
       input: categorizeInput(batch.items),
       ledger,
       models,
@@ -68,7 +68,7 @@ export const categorizeTexts = async ({
 };
 
 // The cache's answers belong to the prompt's version that gave them.
-const PROMPT = { name: CATEGORIZE_V1.name, version: CATEGORIZE_V1.version };
+const PROMPT = { name: CATEGORIZE_V2.name, version: CATEGORIZE_V2.version };
 
 // The user's waiting texts as the LLM reads them, given the cache's answers
 // on the way; those it has no answer for come back.

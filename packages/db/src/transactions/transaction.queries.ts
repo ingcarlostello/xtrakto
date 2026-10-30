@@ -40,6 +40,11 @@ export type TransactionListItem = {
   readonly categoryRuleId: CategorizationRuleId | null;
   /** The category is a best guess the quick review asks about. */
   readonly isPendingReview: boolean;
+  /**
+   * What the LLM said was paid, in plain words, while its category is the
+   * LLM's answer (8.6b); `null` once the user gave another.
+   */
+  readonly llmTitle: string | null;
 };
 
 /** The columns of a `TransactionListItem`, for every list that shows one. */
@@ -52,6 +57,9 @@ export const LIST_ITEM_COLUMNS = {
   categoryId: transactions.categoryId,
   categoryRuleId: transactions.categoryRuleId,
   isPendingReview: transactions.isPendingReview,
+  llmTitle: sql<
+    string | null
+  >`case when ${transactions.categoryId} = ${transactions.llmCategoryId} then ${transactions.llmTitle} end`,
 };
 
 export type TransactionFilter = MovementSelection & {

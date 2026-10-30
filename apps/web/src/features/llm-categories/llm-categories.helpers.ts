@@ -1,4 +1,4 @@
-import { type MoneyDirection, redactPii } from "@xtrakto/core";
+import { isPlainTitle, type MoneyDirection, redactPii } from "@xtrakto/core";
 import type {
   CachedLlmCategory,
   LlmMovementCategory,
@@ -15,7 +15,7 @@ import type {
   LlmTextGroup,
   TextToCategorize,
 } from "./llm-categories.types";
-import type { CategorizeAnswer } from "./prompts/categorize.v1";
+import type { CategorizeAnswer } from "./prompts/categorize.v2";
 
 /** Consecutive slices of at most `size` items, each with where it starts. */
 export const batchesOf = <T>(
@@ -43,7 +43,7 @@ const isChoiceFor = (direction: MoneyDirection, category: string): boolean =>
  * Each text's answer, by its position in the batch, with the model that
  * gave it. An answer for a line the batch doesn't have, a second one for a
  * line, and a category its money's direction doesn't allow are dropped:
- * those texts wait.
+ * those texts wait. A title that isn't plain is dropped alone (8.6b).
  */
 export const answersOf = (
   texts: readonly TextToCategorize[],
@@ -51,12 +51,17 @@ export const answersOf = (
   model: AiModelId,
 ): Map<number, LlmCategoryAnswer> => {
   const byIndex = new Map<number, LlmCategoryAnswer>();
-  for (const { line, category, confidence } of answers) {
+  for (const { line, category, confidence, title } of answers) {
     const index = line - 1;
     const text = texts[index];
     if (text === undefined || byIndex.has(index)) continue;
     if (!isChoiceFor(text.direction, category)) continue;
-    byIndex.set(index, { categoryId: category, confidence, model });
+    byIndex.set(index, {
+      categoryId: category,
+      confidence,
+      model,
+      title: isPlainTitle(title) ? title : null,
+    });
   }
   return byIndex;
 };
@@ -120,16 +125,17 @@ export const movementCategoriesOf = (
   const confident = new Map(
     answers
       .filter(({ confidence }) => confidence >= MIN_LLM_CONFIDENCE)
-      .map((answer) => [keyOf(answer), answer.categoryId]),
+      .map((answer) => [keyOf(answer), answer]),
   );
   return groups.flatMap(({ descriptions, ...text }) => {
-    const categoryId = confident.get(keyOf(text));
-    return categoryId === undefined
+    const answer = confident.get(keyOf(text));
+    return answer === undefined
       ? []
       : descriptions.map((descriptionNormalized) => ({
           descriptionNormalized,
           direction: text.direction,
-          categoryId,
+          categoryId: answer.categoryId,
+          title: answer.title,
         }));
   });
 };

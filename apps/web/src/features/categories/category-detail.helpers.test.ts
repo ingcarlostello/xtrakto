@@ -244,6 +244,7 @@ const item = (
   categoryId,
   categoryRuleId: rule,
   isPendingReview,
+  llmTitle: null,
 });
 
 // The category's detail with its newest movements, for one account or two.

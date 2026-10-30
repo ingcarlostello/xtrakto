@@ -13,6 +13,7 @@ import { resolveIdentifiedAccount } from "../accounts/account.queries";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
 import { saveStatement } from "../statements/statement.queries";
+import { listTransactions } from "../transactions/transaction.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import { deleteUserCategoryRule } from "../user-category-rules/user-category-rule-undo.queries";
 import { saveUserCategoryRule } from "../user-category-rules/user-category-rule.queries";
@@ -47,6 +48,9 @@ const DRUGSTORE = {
   descriptionNormalized: "COMPRA EN AUDIFARMA",
   direction: "out",
 } as const;
+
+// What the LLM says a drugstore's purchase is, in plain words (8.6b).
+const DRUGSTORE_TITLE = "Compra en una droguería";
 
 const DRUGSTORE_IS_SHOPPING: UserCategoryRule = {
   target: "description",
@@ -127,6 +131,7 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
           categoryId: transactions.categoryId,
           categorySource: transactions.categorySource,
           llmCategoryId: transactions.llmCategoryId,
+          llmTitle: transactions.llmTitle,
           categoryRuleId: transactions.categoryRuleId,
           isPendingReview: transactions.isPendingReview,
         })
@@ -154,7 +159,9 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
     const userId = await newUser(AUGUST, SEPTEMBER);
 
     const changed = await inContext(userId, (ctx) =>
-      saveLlmCategories(ctx, [{ ...DRUGSTORE, categoryId: "health" }]),
+      saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+      ]),
     );
 
     expect(changed).toBe(3);
@@ -163,6 +170,7 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
         categoryId: "health",
         categorySource: "llm",
         llmCategoryId: "health",
+        llmTitle: DRUGSTORE_TITLE,
         categoryRuleId: "unknown_merchant",
         isPendingReview: false,
       })),
@@ -170,6 +178,44 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
     expect(await waitingOf(userId)).toEqual([
       { descriptionNormalized: "ABONO DEVOLUCION COMPRA", direction: "in" },
       { descriptionNormalized: "COMPRA EN AUDIFARMA", direction: "in" },
+    ]);
+  });
+
+  it("gives each text its own title, though their category is the same", async () => {
+    const userId = await newUser(AUGUST, [
+      {
+        date: "2026-09-10",
+        amount: -60_000,
+        description: "COMPRA EN NATURISTA SOL",
+      },
+    ]);
+    const NATURIST_TITLE = "Compra en una tienda naturista";
+
+    await inContext(userId, (ctx) =>
+      saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+        {
+          descriptionNormalized: "COMPRA EN NATURISTA SOL",
+          direction: "out",
+          categoryId: "health",
+          title: NATURIST_TITLE,
+        },
+      ]),
+    );
+    const titles = await inContext(userId, ({ tx }) =>
+      tx
+        .selectDistinct({
+          description: transactions.descriptionNormalized,
+          llmTitle: transactions.llmTitle,
+        })
+        .from(transactions)
+        .where(eq(transactions.llmCategoryId, "health"))
+        .orderBy(asc(transactions.descriptionNormalized)),
+    );
+
+    expect(titles).toEqual([
+      { description: "COMPRA EN AUDIFARMA", llmTitle: DRUGSTORE_TITLE },
+      { description: "COMPRA EN NATURISTA SOL", llmTitle: NATURIST_TITLE },
     ]);
   });
 
@@ -183,7 +229,11 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
           { ...DRUGSTORE, descriptionNormalized: "PAGO LLAVE ALGUIEN" },
           { ...DRUGSTORE, descriptionNormalized: "0" },
           { ...DRUGSTORE, descriptionNormalized: "COMPRA EN EXITO" },
-        ].map((text) => ({ ...text, categoryId: "shopping" as const })),
+        ].map((text) => ({
+          ...text,
+          categoryId: "shopping" as const,
+          title: null,
+        })),
       ),
     );
 
@@ -198,8 +248,8 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
       // Money in no rule knew, so the user's category keeps no rule.
       await saveUserCategoryRule(ctx, REFUNDS_ARE_INCOME);
       return saveLlmCategories(ctx, [
-        { ...DRUGSTORE, categoryId: "health" },
-        { ...REFUND, categoryId: "refund" },
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+        { ...REFUND, categoryId: "refund", title: null },
       ]);
     });
 
@@ -215,7 +265,9 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
     const userId = await newUser(AUGUST);
 
     const undone = await inContext(userId, async (ctx) => {
-      await saveLlmCategories(ctx, [{ ...DRUGSTORE, categoryId: "health" }]);
+      await saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+      ]);
       await saveUserCategoryRule(ctx, DRUGSTORE_IS_SHOPPING);
       return deleteUserCategoryRule(ctx, DRUGSTORE_IS_SHOPPING);
     });
@@ -226,10 +278,36 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
         categoryId: "health",
         categorySource: "llm",
         llmCategoryId: "health",
+        llmTitle: DRUGSTORE_TITLE,
         categoryRuleId: "unknown_merchant",
         isPendingReview: false,
       })),
     );
+  });
+
+  it("lists the LLM's title while the category is its answer, and none once the user gave another", async () => {
+    const userId = await newUser(AUGUST);
+    const listed = () =>
+      inContext(userId, async (ctx) => {
+        const accountId = await accountOf(ctx);
+        const { items } = await listTransactions(ctx, { accountId, offset: 0 });
+        return items
+          .filter((item) => item.descriptionRaw === "COMPRA EN AUDIFARMA")
+          .map((item) => item.llmTitle);
+      });
+
+    await inContext(userId, (ctx) =>
+      saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+      ]),
+    );
+    const answered = await listed();
+    await inContext(userId, (ctx) =>
+      saveUserCategoryRule(ctx, DRUGSTORE_IS_SHOPPING),
+    );
+
+    expect(answered).toEqual([DRUGSTORE_TITLE, DRUGSTORE_TITLE]);
+    expect(await listed()).toEqual([null, null]);
   });
 
   it("never waits for, nor changes, a movement a verified quarterly statement hides", async () => {
@@ -249,7 +327,9 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
     );
 
     const changed = await inContext(userId, (ctx) =>
-      saveLlmCategories(ctx, [{ ...DRUGSTORE, categoryId: "health" }]),
+      saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+      ]),
     );
 
     expect(changed).toBe(0);
@@ -263,7 +343,9 @@ describe.skipIf(!testDatabase)("the movements the LLM categorizes", () => {
     const otherId = await newUser(SEPTEMBER);
 
     await inContext(userId, (ctx) =>
-      saveLlmCategories(ctx, [{ ...DRUGSTORE, categoryId: "health" }]),
+      saveLlmCategories(ctx, [
+        { ...DRUGSTORE, categoryId: "health", title: DRUGSTORE_TITLE },
+      ]),
     );
 
     expect(

@@ -19,6 +19,8 @@ export type CategorizationPrediction = {
   readonly answer?: {
     readonly categoryId: CategoryId;
     readonly confidence: number;
+    /** What was paid, in plain words, when the model gave one (8.6b). */
+    readonly title: string | null;
   };
 };
 
@@ -44,6 +46,10 @@ export type CategorizationScore = {
   readonly abstained: number;
   /** Abstained among the vague cases, from 0 to 1. */
   readonly abstention: number;
+  /** Answers, at any confidence, with a title in plain words (8.6b). */
+  readonly titled: number;
+  /** Titled among the answers, from 0 to 1. */
+  readonly titleShare: number;
 };
 
 /** A figure of the score that has a threshold. */

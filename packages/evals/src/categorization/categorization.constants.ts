@@ -6,6 +6,7 @@ export const THRESHOLD_FIGURES = [
   "macroF1",
   "coverage",
   "abstention",
+  "titleShare",
 ] as const;
 
 /**
@@ -19,4 +20,5 @@ export const CATEGORIZATION_THRESHOLDS: CategorizationThresholds = {
   macroF1: 0.93,
   coverage: 0.9,
   abstention: 0.85,
+  titleShare: 0.95,
 };

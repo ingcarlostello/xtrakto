@@ -3,7 +3,7 @@ import { amountMinorSchema } from "../money/money.schemas";
 import type { CategorizationRuleId } from "./categorization.types";
 import { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import { categorizeByRules } from "./categorization.helpers";
-import { movementTitle } from "./movement-title.helpers";
+import { isPlainTitle, movementTitle } from "./movement-title.helpers";
 
 const OUT = -9_000_000;
 const IN = 9_000_000;
@@ -18,6 +18,7 @@ const ruled = (description: string, amount: number) => {
     description,
     categoryId: found?.categoryId ?? null,
     categoryRuleId: found?.ruleId ?? null,
+    llmTitle: null,
   };
 };
 
@@ -97,7 +98,49 @@ describe("movementTitle", () => {
         description: "PAGO PSE ALGO",
         categoryId: "utilities",
         categoryRuleId: retired,
+        llmTitle: null,
       }),
     ).toBe("Pago de servicios");
+  });
+
+  it("titles a movement with the LLM's words while its category is the LLM's", () => {
+    const drugstore = ruled("COMPRA EN AUDIFARMA", OUT);
+
+    expect(
+      movementTitle({
+        ...drugstore,
+        categoryId: "health",
+        llmTitle: "Compra en una droguería",
+      }),
+    ).toBe("Compra en una droguería");
+  });
+});
+
+describe("isPlainTitle", () => {
+  it.each([
+    "Compra en una droguería",
+    "Devolución de una compra",
+    "Pago de un curso en línea",
+    "Pago de impuestos a la DIAN",
+    "Pago de trámite a la Registraduría",
+  ])("takes %j", (title) => {
+    expect(isPlainTitle(title)).toBe(true);
+  });
+
+  it.each([
+    ["a placeholder", "Pago a [NAME]"],
+    ["digits", "Compra en tienda 24"],
+    ["capitals inside", "Compra En Droguería"],
+    ["a person's name", "Pago a Maria Lopez"],
+    ["a word in capitals", "Compra en AUDIFARMA"],
+    ["a capital inside a word", "Compra en eBay"],
+    ["all capitals", "COMPRA EN DROGUERIA"],
+    ["a lowercase start", "compra en una droguería"],
+    ["a final period", "Compra en una droguería."],
+    ["a space after it", "Compra en una droguería "],
+    ["too short", "Pa"],
+    ["too long", "Compra de muchas cosas en una tienda muy grande del centro"],
+  ])("refuses a title with %s", (_, title) => {
+    expect(isPlainTitle(title)).toBe(false);
   });
 });

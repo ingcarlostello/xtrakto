@@ -226,7 +226,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.5a LLM categories in the database
 - [x] 8.5b Categorize after ingestion
 - [x] 8.6a Titles from the rules
-- [ ] 8.6b Titles from the LLM
+- [x] 8.6b Titles from the LLM
 - [ ] 8.6c Your statement, translated
 - [ ] 8.6d Plain words in Pagos fijos and Categorías
 
@@ -1726,6 +1726,8 @@ It came out at about 230 lines of code; the design rules gain the titles in a co
 
 #### 8.6b Titles from the LLM
 
+Decided when it started (2026-10-30): the title is saved with the answer, in the cache and on the movement, only from a confidence of 0.7, as the category; a title that doesn't read in plain words is dropped and the category stays; a payment no rule names without the LLM's title keeps 8.6a's "Compra en un comercio" rather than its bank text; and the movements prompt v1 categorized wait no more, so they aren't asked again and keep their category's title.
+
 **Tasks**
 
 - The categorization prompt v2 also names the payment in plain words for the texts no rule names ("Compra en una tienda en línea"), cached as v1's answers; the eval gains the titles' checks (length, no placeholders or digits, sentence case).
@@ -1733,7 +1735,9 @@ It came out at about 230 lines of code; the design rules gain the titles in a co
 
 **Done when:** an upload of a synthetic file titles its unknown merchants, and the titles pass the checks.
 
-**Commit:** `feat(web): LLM titles for what no rule names`
+It came out at about 100 lines of code, in commits of one pull request: the titles from the database to Movimientos, the eval's titles' share, and the design rules.
+
+**Commits:** `feat(web): LLM titles for what no rule names`, `feat(evals): the titles' share`, then `docs(rules): the LLM's titles in Movimientos`
 
 #### 8.6c Your statement, translated
 

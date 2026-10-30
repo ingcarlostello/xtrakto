@@ -37,6 +37,7 @@ export const findCachedLlmCategories = async (
       categoryId: llmCategoryAnswers.categoryId,
       confidence: llmCategoryAnswers.confidence,
       model: llmCategoryAnswers.model,
+      title: llmCategoryAnswers.title,
     })
     .from(llmCategoryAnswers)
     .where(

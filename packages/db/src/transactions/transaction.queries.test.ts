@@ -113,6 +113,7 @@ describe.skipIf(!testDatabase)("listTransactions", () => {
       "descriptionRaw",
       "id",
       "isPendingReview",
+      "llmTitle",
     ]);
   });
 

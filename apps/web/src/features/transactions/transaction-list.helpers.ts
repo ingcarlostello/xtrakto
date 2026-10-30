@@ -188,9 +188,10 @@ export const descriptionView = ({
   descriptionRaw,
   categoryId,
   categoryRuleId,
+  llmTitle,
 }: Pick<
   TransactionListItem,
-  "descriptionRaw" | "categoryId" | "categoryRuleId"
+  "descriptionRaw" | "categoryId" | "categoryRuleId" | "llmTitle"
 >): DescriptionView => {
   if (descriptionRaw.trim() === NO_DESCRIPTION_TEXT)
     return { kind: "none", raw: descriptionRaw };
@@ -198,6 +199,7 @@ export const descriptionView = ({
     description: descriptionRaw,
     categoryId,
     categoryRuleId,
+    llmTitle,
   });
   return title === undefined
     ? { kind: "bank", text: descriptionRaw }

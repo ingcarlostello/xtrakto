@@ -10,6 +10,7 @@ const LABELS: Readonly<Record<ThresholdFigure, string>> = {
   macroF1: "macro-F1",
   coverage: "coverage",
   abstention: "abstention",
+  titleShare: "titles",
 };
 
 const figureLine = (
@@ -33,7 +34,7 @@ export const categorizationReport = (
   thresholds: CategorizationThresholds,
 ): string[] => [
   ...THRESHOLD_FIGURES.map((figure) => figureLine(figure, score, thresholds)),
-  `labeled ${score.labeled}, confident ${score.confident}, correct ${score.correct}; vague ${score.vague}, abstained ${score.abstained}`,
+  `labeled ${score.labeled}, confident ${score.confident}, correct ${score.correct}; vague ${score.vague}, abstained ${score.abstained}; titled ${score.titled}`,
   ...[...score.f1ByCategory]
     .sort(([a, f1A], [b, f1B]) => f1A - f1B || a.localeCompare(b))
     .map(([category, f1]) => `  ${category.padEnd(20)}F1 ${f1.toFixed(2)}`),
