@@ -21,7 +21,7 @@ export const PRIVACY_COPY = {
   title: "Cómo cuidamos tus datos",
   intro:
     "Qué datos usa Xtrakto, para qué, con quién los comparte y cómo decides sobre ellos.",
-  effective: "Vigente desde el 27 de octubre de 2026.",
+  effective: "Vigente desde el 30 de octubre de 2026.",
   sections: [
     {
       id: "responsable",
@@ -43,6 +43,7 @@ export const PRIVACY_COPY = {
         "El nombre del titular, para reconocer las transferencias entre tus propias cuentas.",
         "Los números de Nequi o de cuenta de otras personas que traen tus movimientos: los guardamos cifrados con una clave secreta, y solo vemos sus últimos 4 dígitos. Los textos del banco pueden nombrar a quién le transferiste; solo tú los ves.",
         "Tus respuestas en la revisión rápida y tus correcciones de categoría, para clasificar tus movimientos.",
+        "Los textos del banco que ninguna regla reconoce, como «COMPRA EN TIENDA XYZ», para clasificarlos con inteligencia artificial (IA), sin tu nombre ni números de cuenta, celular o documento.",
         "La lista de espera: tu nombre y tu correo, solo para avisarte cuando Xtrakto esté disponible.",
       ],
     },
@@ -58,7 +59,7 @@ export const PRIVACY_COPY = {
       id: "terceros",
       title: "Con quién los compartimos",
       paragraphs: [
-        "Para funcionar, Xtrakto usa estos proveedores, que tratan los datos por encargo nuestro y solo para lo que les pedimos. Sus servidores están en Estados Unidos, así que tus datos se transfieren a ese país.",
+        "Para funcionar, Xtrakto usa estos proveedores, que tratan los datos por encargo nuestro y solo para lo que les pedimos. Sus servidores están en Estados Unidos, salvo los de DeepSeek, que están en China, así que tus datos se transfieren a esos países.",
       ],
       items: [
         "Vercel aloja la app.",
@@ -67,6 +68,8 @@ export const PRIVACY_COPY = {
         "Inngest procesa tus archivos en segundo plano: solo recibe identificadores, nunca tus movimientos.",
         "Sentry recibe los errores técnicos, sin montos ni textos del banco.",
         "PostHog recibe la medición de uso, solo si la aceptas.",
+        "DeepSeek clasifica con IA los movimientos que ninguna regla reconoce. Recibe solo el texto del banco, sin tu nombre ni números de cuenta, celular o documento, y si el dinero entró o salió: nunca montos, fechas ni tu cuenta. Sus servidores están en China, no dice cuánto tiempo guarda esos textos y puede usarlos para entrenar sus modelos.",
+        "Langfuse recibe, de cada consulta a la IA, qué modelo respondió, cuánto usó y cuánto costó, sin el texto ni tus datos.",
         "Hostinger administra el dominio, y Forward Email reenvía los correos que nos escribes.",
       ],
     },
@@ -77,6 +80,7 @@ export const PRIVACY_COPY = {
       items: [
         "Lo que tu navegador envía de un archivo: hasta que termina de procesarse, y como máximo 24 horas.",
         "Tus movimientos, cuentas, reglas y respuestas: mientras tengas tu cuenta, o hasta que los borres.",
+        "La categoría que la IA le dio a cada texto del banco, sin nada que te identifique: la guardamos para no volver a preguntar, y no se borra con tus datos.",
         "Tu lugar en la lista de espera: hasta que te avisemos del lanzamiento, o hasta que nos pidas borrarlo.",
         "Los errores técnicos y la medición de uso: el tiempo que los conservan Sentry y PostHog.",
       ],

@@ -224,7 +224,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.3 Usage tracking and limits
 - [x] 8.4 Evaluation harness and the categorization prompt
 - [x] 8.5a LLM categories in the database
-- [ ] 8.5b Categorize after ingestion
+- [x] 8.5b Categorize after ingestion
 - [ ] 8.6a Titles from the rules
 - [ ] 8.6b Titles from the LLM
 - [ ] 8.6c Your statement, translated
@@ -1691,6 +1691,8 @@ It came out at about 285 lines of code.
 
 #### 8.5b Categorize after ingestion
 
+Decided when it started (2026-10-30): up to 8 rounds of one batch each, as steps of the ingestion function, which lets Inngest's checkpointing chain steps in one request for 15 seconds only, so a round's two attempts of 20 seconds end within the route's 60 (ADR 0033); every text is redacted with all the user's holder names; and the privacy page also names Langfuse, which 8.2 left out.
+
 **Tasks**
 
 - A step after `ingest` (ADR 0019, amended): it reads the user's movements waiting, takes the cache's answers, sends the rest within 8.3's limits, saves the answers above the threshold and returns counts only. A provider failure or a limit ends it without failing the job.
@@ -1699,7 +1701,9 @@ It came out at about 285 lines of code.
 
 **Done when:** an upload of a synthetic file gets its unknown merchants' categories from the LLM, uploading it again sends nothing, and with the providers down the upload ends as before; checked in a local browser.
 
-**Commit:** `feat(web): LLM categorization after ingestion`
+It came out at about 180 lines of code; the design rules gain the AI's reason in a commit of their own.
+
+**Commits:** `feat(web): LLM categorization after ingestion`, then `docs(rules): the AI's reason in a movement's detail`
 
 #### 8.6 "Tu extracto, traducido"
 
