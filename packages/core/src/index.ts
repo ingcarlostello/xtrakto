@@ -45,6 +45,10 @@ export {
   referenceRuleDirection,
   userRuleTextOf,
 } from "./categorization/user-rule.helpers";
+export {
+  movementTitle,
+  type TitledMovement,
+} from "./categorization/movement-title.helpers";
 export { CHANNELS } from "./categorization/channel.constants";
 export { channelOf } from "./categorization/channel.helpers";
 export type { Channel, ChannelId } from "./categorization/channel.types";

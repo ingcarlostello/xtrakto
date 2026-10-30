@@ -28,6 +28,7 @@ export const MERCHANT_RULES = [
     words: SUBSCRIPTION_WORDS,
     direction: OUT,
     categoryId: "subscriptions",
+    titleEs: "Suscripción",
     reasonEs:
       "los pagos a plataformas de video, música o software son suscripciones",
   },
@@ -37,6 +38,7 @@ export const MERCHANT_RULES = [
     words: RESTAURANT_WORDS,
     direction: OUT,
     categoryId: "restaurants",
+    titleEs: "Restaurante o domicilio",
     reasonEs:
       "los pagos en restaurantes, cafés y apps de domicilios son restaurantes y domicilios",
   },
@@ -46,6 +48,7 @@ export const MERCHANT_RULES = [
     words: TRANSPORT_WORDS,
     direction: OUT,
     categoryId: "transport",
+    titleEs: "Transporte",
     reasonEs:
       "los pagos de apps de transporte, taxis, gasolina, peajes y parqueaderos son transporte",
   },
@@ -55,6 +58,7 @@ export const MERCHANT_RULES = [
     words: SHOPPING_WORDS,
     direction: OUT,
     categoryId: "shopping",
+    titleEs: "Compra en una tienda",
     reasonEs: "las compras en almacenes y tiendas en línea son compras",
   },
   {
@@ -63,6 +67,7 @@ export const MERCHANT_RULES = [
     words: GROCERY_WORDS,
     direction: OUT,
     categoryId: "groceries",
+    titleEs: "Compra en supermercado",
     reasonEs: "las compras en supermercados son mercado",
   },
   {
@@ -71,6 +76,7 @@ export const MERCHANT_RULES = [
     words: HEALTH_WORDS,
     direction: OUT,
     categoryId: "health",
+    titleEs: "Droguería o salud",
     reasonEs:
       "los pagos en droguerías, clínicas y servicios de salud son salud",
   },
@@ -80,6 +86,7 @@ export const MERCHANT_RULES = [
     words: HOUSING_WORDS,
     direction: OUT,
     categoryId: "housing",
+    titleEs: "Arriendo o administración",
     reasonEs: "los pagos de arriendo y de conjuntos residenciales son vivienda",
   },
   {
@@ -88,6 +95,7 @@ export const MERCHANT_RULES = [
     words: ENTERTAINMENT_WORDS,
     direction: OUT,
     categoryId: "entertainment",
+    titleEs: "Cine, boletas o juegos",
     reasonEs: "los pagos de cine, boletas y videojuegos son entretenimiento",
   },
   {
@@ -96,6 +104,7 @@ export const MERCHANT_RULES = [
     words: EDUCATION_WORDS,
     direction: OUT,
     categoryId: "education",
+    titleEs: "Educación",
     reasonEs: "los pagos a universidades, colegios y cursos son educación",
   },
   // A purchase or a payment at a merchant no rule knows is still spending.
@@ -104,6 +113,7 @@ export const MERCHANT_RULES = [
     startsWith: PAYMENT_PREFIXES,
     direction: OUT,
     categoryId: "other_spending",
+    titleEs: "Compra en un comercio",
     reasonEs:
       "es un pago a un comercio que aún no conocemos: cuenta como gasto",
   },
