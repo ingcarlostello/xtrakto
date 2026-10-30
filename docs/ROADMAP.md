@@ -225,7 +225,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.4 Evaluation harness and the categorization prompt
 - [x] 8.5a LLM categories in the database
 - [x] 8.5b Categorize after ingestion
-- [ ] 8.6a Titles from the rules
+- [x] 8.6a Titles from the rules
 - [ ] 8.6b Titles from the LLM
 - [ ] 8.6c Your statement, translated
 - [ ] 8.6d Plain words in Pagos fijos and Categorías
@@ -1711,6 +1711,8 @@ Split in four when planned (about 1,350 lines): the rules' titles, the LLM's, th
 
 #### 8.6a Titles from the rules
 
+Decided when it started (2026-10-30): a movement's title is its rule's while its category is the rule's, and its category's once the user or the LLM gave another, so the title needs no category source; the utility rules name what was paid by their words (energía, gas, agua, celular o internet, televisión), and a withdrawal at a _corresponsal_ says so; a payment no rule names is "Compra en un comercio" until 8.6b, and money in nothing names keeps its bank text as the title.
+
 **Tasks**
 
 - Each rule of the table says what its movements are in plain words ("Intereses de tus ahorros", "Retiro en cajero", "Envío por Nequi", "Pagaste tu tarjeta"), with what was paid where the rule's words name it ("Pago de energía"). The title follows the category when the user decided it.
@@ -1718,7 +1720,9 @@ Split in four when planned (about 1,350 lines): the rules' titles, the LLM's, th
 
 **Done when:** every rule has a title (tested), and Movimientos reads right at phone width and with the keyboard.
 
-**Commits:** `feat(core): movement titles in plain words`, then `feat(web): titles in Movimientos`
+It came out at about 230 lines of code; the design rules gain the titles in a commit of their own.
+
+**Commits:** `feat(core): movement titles in plain words`, `feat(web): titles in Movimientos`, then `docs(rules): titles in plain words in Movimientos`
 
 #### 8.6b Titles from the LLM
 

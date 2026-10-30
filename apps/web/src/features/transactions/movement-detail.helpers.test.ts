@@ -33,10 +33,11 @@ const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
 });
 
 describe("movementDetailView", () => {
-  it("shows a movement's fields and the rule's reason for its category", () => {
+  it("shows a movement's title in plain words, its fields and the rule's reason for its category", () => {
     expect(movementDetailView(detail(), "a1")).toEqual({
       id: "m1",
-      title: "PAGO PSE EMPRESA DE ENERGIA",
+      title: "Pago de energía",
+      isBankText: false,
       bankText: "PAGO PSE EMPRESA DE ENERGIA",
       date: "Domingo 27 de septiembre de 2026",
       amount: "−$182.000",
@@ -131,6 +132,21 @@ describe("movementDetailView", () => {
         { label: "Saldo después", value: "$8.793.890" },
       ],
       reason: "ninguna regla conoce este movimiento todavía.",
+    });
+  });
+
+  it("titles a movement nothing names by its bank text, as printed", () => {
+    const unknown = detail({
+      descriptionRaw: "ABONO  EJEMPLO",
+      amountMinor: amountMinorSchema.parse(100_000),
+      categoryId: null,
+      categorySource: null,
+      categoryRuleId: null,
+    });
+
+    expect(movementDetailView(unknown, "a1")).toMatchObject({
+      title: "ABONO  EJEMPLO",
+      isBankText: true,
     });
   });
 

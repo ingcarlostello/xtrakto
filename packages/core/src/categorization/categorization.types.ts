@@ -86,6 +86,8 @@ export type CategorizationRule = TextPattern & {
   readonly isGuess?: boolean;
   /** Why, as the movement's detail says it before "Regla del sistema, sin IA". */
   readonly reasonEs: string;
+  /** What its movements are, in plain words, over the bank's text (8.6a). */
+  readonly titleEs: string;
 };
 
 export type CategorizationRuleId = (typeof CATEGORIZATION_RULES)[number]["id"];

@@ -39,7 +39,14 @@ type RowLink = {
   readonly isOpen: boolean;
 };
 
-function Title({ text, link }: { text: string; link?: RowLink }) {
+type TitleProps = {
+  text: string;
+  link?: RowLink;
+  /** The bank's text under the title, which screen readers hear after it. */
+  describedBy?: string;
+};
+
+function Title({ text, link, describedBy }: TitleProps) {
   if (!link) return text;
   return (
     <Link
@@ -47,6 +54,7 @@ function Title({ text, link }: { text: string; link?: RowLink }) {
       href={link.href}
       scroll={false}
       aria-current={link.isOpen ? "true" : undefined}
+      aria-describedby={describedBy}
       className={ROW_LINK}
     >
       {text}
@@ -54,20 +62,35 @@ function Title({ text, link }: { text: string; link?: RowLink }) {
   );
 }
 
-function Description({ raw, link }: { raw: string; link?: RowLink }) {
-  const view = descriptionView(raw);
+// Its title in plain words over the bank's text as printed (8.6a); the
+// bank's text alone when nothing says what it was.
+function Description({
+  item,
+  link,
+}: {
+  item: TransactionListItem;
+  link?: RowLink;
+}) {
+  const view = descriptionView(item);
   if (view.kind === "bank")
     return (
       <p className={`text-body font-semibold ${BANK_TEXT}`}>
         <Title text={view.text} link={link} />
       </p>
     );
+  const bankTextId = `${movementLinkId(item.id)}-bank`;
   return (
     <>
       <p className="text-body font-bold">
-        <Title text={COPY.noDescription} link={link} />
+        <Title
+          text={view.kind === "titled" ? view.title : COPY.noDescription}
+          link={link}
+          describedBy={link && bankTextId}
+        />
       </p>
-      <p className={`text-meta text-ink-muted ${BANK_TEXT}`}>{view.raw}</p>
+      <p id={bankTextId} className={`text-meta text-ink-muted ${BANK_TEXT}`}>
+        {view.raw}
+      </p>
     </>
   );
 }
@@ -151,7 +174,7 @@ function TransactionItem({ item, isCounted, mark, links }: ItemProps) {
     >
       <MovementIcon categoryId={item.categoryId} tone={tone} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <Description raw={item.descriptionRaw} link={link} />
+        <Description item={item} link={link} />
         <MovementTagList tags={movementTags(item, isCounted)} />
         {mark && <MarkNote note={mark.note} />}
       </div>
