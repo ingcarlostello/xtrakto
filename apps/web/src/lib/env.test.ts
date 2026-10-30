@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseServerEnv, parseWaitlistEnv } from "./env";
+import { parseAiEnv, parseServerEnv, parseWaitlistEnv } from "./env";
 
 // Invented values. The passwords and keys are marked so that a test can prove
 // they never reach the error message, which ends up in logs. The keys are put
@@ -366,6 +366,28 @@ describe("parseServerEnv", () => {
       LANGFUSE_PUBLIC_KEY: LANGFUSE_KEYS.LANGFUSE_SECRET_KEY,
       LANGFUSE_SECRET_KEY: LANGFUSE_KEYS.LANGFUSE_SECRET_KEY,
     });
+
+    expect(message).toContain("LANGFUSE_PUBLIC_KEY");
+    expect(message).not.toContain("secret");
+  });
+});
+
+describe("parseAiEnv", () => {
+  it("reads the LLM modules' keys without the rest of the server's, as the evals in CI", () => {
+    expect(
+      parseAiEnv({ DEEPSEEK_API_KEY: DEEPSEEK_KEY, ...LANGFUSE_KEYS }),
+    ).toEqual({ DEEPSEEK_API_KEY: DEEPSEEK_KEY, ...LANGFUSE_KEYS });
+  });
+
+  it("still refuses one Langfuse key without the other, without printing it", () => {
+    const message = (() => {
+      try {
+        parseAiEnv({ LANGFUSE_SECRET_KEY: LANGFUSE_KEYS.LANGFUSE_SECRET_KEY });
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+      return "accepted";
+    })();
 
     expect(message).toContain("LANGFUSE_PUBLIC_KEY");
     expect(message).not.toContain("secret");

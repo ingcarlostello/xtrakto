@@ -136,7 +136,9 @@ const aiIssues = (env: ServerEnvShape): EnvIssue[] =>
     : [];
 
 // One key without the other would turn tracing off unnoticed.
-const langfuseIssues = (env: ServerEnvShape): EnvIssue[] =>
+const langfuseIssues = (
+  env: Pick<ServerEnvShape, "LANGFUSE_PUBLIC_KEY" | "LANGFUSE_SECRET_KEY">,
+): EnvIssue[] =>
   (["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"] as const)
     .filter(
       (name) =>
@@ -163,6 +165,23 @@ const waitlistEnvSchema = serverEnvShape.pick({ DATABASE_URL: true });
 
 export type WaitlistEnv = z.infer<typeof waitlistEnvSchema>;
 
+// The LLM modules' variables (lib/ai.ts, lib/langfuse.ts), which the evals
+// read where none of the rest are set, as in CI (8.4). A server checks them
+// with the rest when it starts.
+const aiEnvSchema = serverEnvShape
+  .pick({
+    DEEPSEEK_API_KEY: true,
+    LANGFUSE_PUBLIC_KEY: true,
+    LANGFUSE_SECRET_KEY: true,
+    VERCEL_ENV: true,
+  })
+  .superRefine((env, context) => {
+    for (const { path, message } of langfuseIssues(env))
+      context.addIssue({ code: "custom", path: [path], message });
+  });
+
+export type AiEnv = z.infer<typeof aiEnvSchema>;
+
 type EnvSource = Readonly<Record<string, string | undefined>>;
 
 // The error names each invalid variable and why, never its value: it ends up
@@ -186,6 +205,10 @@ export const parseServerEnv = (source: EnvSource): ServerEnv =>
 export const parseWaitlistEnv = (source: EnvSource): WaitlistEnv =>
   parseWith(waitlistEnvSchema, source);
 
+/** The same for the LLM modules: DeepSeek's and Langfuse's keys alone. */
+export const parseAiEnv = (source: EnvSource): AiEnv =>
+  parseWith(aiEnvSchema, source);
+
 /** `next dev` sets NODE_ENV to development; Next.js inlines it at compile time. */
 // Set by Next.js per command, not by the deployment, so turbo.json doesn't list it.
 // eslint-disable-next-line turbo/no-undeclared-env-vars
@@ -200,6 +223,14 @@ let serverEnv: ServerEnv | undefined;
 export const getServerEnv = (): ServerEnv => {
   serverEnv ??= parseServerEnv(process.env);
   return serverEnv;
+};
+
+let aiEnv: AiEnv | undefined;
+
+/** The LLM modules' variables, parsed on first use as the whole set is. */
+export const getAiEnv = (): AiEnv => {
+  aiEnv ??= parseAiEnv(process.env);
+  return aiEnv;
 };
 
 /**
