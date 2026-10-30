@@ -9,5 +9,7 @@ next-env.d.ts
 .remember/
 # Generated with one spreadsheet row per line (packages/parsers/scripts/generate-fixtures.mjs).
 packages/parsers/fixtures/*.json
+# Written by hand with one case per line, to read and review them as a list.
+packages/evals/src/**/*.cases.json
 # Written by drizzle-kit.
 packages/db/migrations/meta/
