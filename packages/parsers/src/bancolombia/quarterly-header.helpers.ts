@@ -6,6 +6,7 @@ import {
   parseSlashDate,
 } from "@xtrakto/core";
 import type {
+  AmountMinor,
   ParsedStatement,
   Period,
   Result,
@@ -39,6 +40,71 @@ export type QuarterlyHeader = Required<
     | "totals"
   >
 >;
+
+/** Where a statement prints its account: the block and its columns' names. */
+type AccountLocation = {
+  readonly block: string;
+  readonly typeColumn: string;
+  readonly numberColumn: string;
+};
+
+type SummaryKey = keyof typeof SUMMARY_COLUMN;
+
+/** A statement's period, from its first and last days in order. */
+export const periodOf = (
+  { from, to }: Period,
+  block: string,
+): Result<Period> =>
+  compareLocalDates(from, to) <= 0
+    ? ok({ from, to })
+    : parseFailed({ reason: "invalid_period", block });
+
+/**
+ * A savings account and its last digits, from its type and number as the
+ * statement prints them. The full number never leaves the parser.
+ */
+export const accountOf = (
+  { type, number }: { readonly type: string; readonly number: string },
+  { block, typeColumn, numberColumn }: AccountLocation,
+): Result<Pick<QuarterlyHeader, "accountType" | "accountLast4">> => {
+  if (type !== SAVINGS_ACCOUNT_TYPE) {
+    return parseFailed({
+      reason: "unsupported_account_type",
+      block,
+      column: typeColumn,
+    });
+  }
+  if (!ACCOUNT_NUMBER_PATTERN.test(number)) {
+    return parseFailed({
+      reason: "invalid_value",
+      block,
+      column: numberColumn,
+    });
+  }
+  return ok({
+    accountType: ACCOUNT_TYPE.SAVINGS,
+    accountLast4: number.slice(-ACCOUNT_LAST_DIGITS),
+  });
+};
+
+/** The balances and totals a statement's summary prints, by their keys. */
+export const summaryOf = (
+  amounts: Readonly<Record<SummaryKey, AmountMinor>>,
+): Pick<
+  QuarterlyHeader,
+  "openingBalanceMinor" | "closingBalanceMinor" | "totals"
+> => ({
+  openingBalanceMinor: amounts.OPENING_BALANCE,
+  closingBalanceMinor: amounts.CLOSING_BALANCE,
+  totals: {
+    creditsMinor: amounts.CREDITS,
+    // As printed: positive, the opposite of the sum of the debits.
+    debitsMinor: amounts.DEBITS,
+    interestMinor: amounts.INTEREST,
+    withholdingMinor: amounts.WITHHOLDING,
+    averageBalanceMinor: amounts.AVERAGE_BALANCE,
+  },
+});
 
 type BlockSpec<K extends string, T> = {
   /** The label that opens the block. */
@@ -120,10 +186,7 @@ const readPeriod = (rows: SheetRows): Result<Period> => {
     read: parseSlashDate,
   });
   if (!dates.ok) return dates;
-  const { FROM: from, TO: to } = dates.value;
-  return compareLocalDates(from, to) <= 0
-    ? ok({ from, to })
-    : parseFailed({ reason: "invalid_period", block });
+  return periodOf({ from: dates.value.FROM, to: dates.value.TO }, block);
 };
 
 const readAccount = (
@@ -136,20 +199,14 @@ const readAccount = (
     read: readText,
   });
   if (!account.ok) return account;
-  const { TYPE: type, NUMBER: number } = account.value;
-  if (type !== SAVINGS_ACCOUNT_TYPE) {
-    const column = ACCOUNT_COLUMN.TYPE;
-    return parseFailed({ reason: "unsupported_account_type", block, column });
-  }
-  if (!ACCOUNT_NUMBER_PATTERN.test(number)) {
-    const column = ACCOUNT_COLUMN.NUMBER;
-    return parseFailed({ reason: "invalid_value", block, column });
-  }
-  // Only the last digits leave the parser; the full number is never kept.
-  return ok({
-    accountType: ACCOUNT_TYPE.SAVINGS,
-    accountLast4: number.slice(-ACCOUNT_LAST_DIGITS),
-  });
+  return accountOf(
+    { type: account.value.TYPE, number: account.value.NUMBER },
+    {
+      block,
+      typeColumn: ACCOUNT_COLUMN.TYPE,
+      numberColumn: ACCOUNT_COLUMN.NUMBER,
+    },
+  );
 };
 
 const readSummary = (
@@ -165,20 +222,7 @@ const readSummary = (
     columns: SUMMARY_COLUMN,
     read: parseAmountText,
   });
-  if (!summary.ok) return summary;
-  const amounts = summary.value;
-  return ok({
-    openingBalanceMinor: amounts.OPENING_BALANCE,
-    closingBalanceMinor: amounts.CLOSING_BALANCE,
-    totals: {
-      creditsMinor: amounts.CREDITS,
-      // As printed: positive, the opposite of the sum of the debits.
-      debitsMinor: amounts.DEBITS,
-      interestMinor: amounts.INTEREST,
-      withholdingMinor: amounts.WITHHOLDING,
-      averageBalanceMinor: amounts.AVERAGE_BALANCE,
-    },
-  });
+  return summary.ok ? ok(summaryOf(summary.value)) : summary;
 };
 
 /**

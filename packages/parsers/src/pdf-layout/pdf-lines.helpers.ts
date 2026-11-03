@@ -11,7 +11,12 @@ const SEGMENT_GAP = 2.5;
 // in a word whose font changes partway.
 const TOUCHING_GAP = 0.2;
 
-type Segment = { text: string; left: number; right: number };
+type Segment = {
+  text: string;
+  left: number;
+  right: number;
+  items: PdfTextItem[];
+};
 
 // A character's width in the item: a space's in a monospace font such as the
 // quarterly statement's, about one and a half spaces' in others.
@@ -34,20 +39,18 @@ const toSegments = (items: readonly PdfTextItem[]): PdfSegment[] => {
     if (last !== undefined && gap <= SEGMENT_GAP * character) {
       last.text += spacesFor(gap, character) + item.str;
       last.right = Math.max(last.right, item.x + item.width);
+      last.items.push(item);
     } else {
       segments.push({
         text: item.str,
         left: item.x,
         right: item.x + item.width,
+        items: [item],
       });
     }
     character = characterWidth(item);
   }
-  return segments.map(({ text, left, right }) => ({
-    text: text.trim(),
-    left,
-    right,
-  }));
+  return segments.map((segment) => ({ ...segment, text: segment.text.trim() }));
 };
 
 // Items by baseline, each joining the line of the item above while it stays

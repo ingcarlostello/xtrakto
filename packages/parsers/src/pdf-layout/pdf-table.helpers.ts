@@ -1,6 +1,12 @@
 import { hasText } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
-import type { PdfLine, PdfSegment, PdfTableLayout } from "./pdf-layout.types";
+import type {
+  PdfLine,
+  PdfSegment,
+  PdfTable,
+  PdfTableLayout,
+  PdfTableLine,
+} from "./pdf-layout.types";
 
 type Span = { readonly left: number; readonly right: number };
 
@@ -177,11 +183,37 @@ const learnEdges = (tables: readonly PageTable[], width: number): Edges[] => {
   }));
 };
 
-const toCells = (line: PdfLine, columns: readonly Column[]): Cells => {
-  const cells: Cells = columns.map(() => null);
-  const columnOf = assign(line.segments, columns);
+/**
+ * A PDF's table, page after page: each page's header, found by its names in
+ * order, ignoring accents and case, never by fixed positions, and each line
+ * under it with the column each of its segments goes to. A line's segments
+ * keep their order, at the columns they sit nearest: by their titles, then by
+ * the edge most of a column's cells share (the left of text, the right of
+ * amounts), learned from the lines with several cells.
+ */
+export const pdfTables = (
+  lines: readonly PdfLine[],
+  names: readonly string[],
+): readonly PdfTable[] => {
+  const tables = pageTables(lines, names);
+  const edges = learnEdges(tables, names.length);
+  return tables.map(({ page, header, lines: tableLines }) => {
+    const columns = fromHeader(header, edges);
+    return {
+      page,
+      header,
+      lines: tableLines.map((line) => ({
+        line,
+        columns: assign(line.segments, columns),
+      })),
+    };
+  });
+};
+
+const toCells = ({ line, columns }: PdfTableLine, width: number): Cells => {
+  const cells: Cells = Array.from({ length: width }, () => null);
   line.segments.forEach(({ text }, index) => {
-    const column = columnOf[index] ?? 0;
+    const column = columns[index] ?? 0;
     const cell = cells[column] ?? null;
     cells[column] = cell === null ? text : `${cell} ${text}`;
   });
@@ -264,26 +296,22 @@ const placeLine = (
 /**
  * A table's rows from a PDF's lines, as a spreadsheet would hold them: page
  * after page, the page's header as printed, then a row of text cells (`null`
- * when empty) for each line under it. Columns are found by their header's
- * names, ignoring accents and case, never by fixed positions; each line's
- * cells keep their order, at the columns they sit nearest. With an anchor, a
- * line without it belongs to a cell wrapped over several lines, which joins
- * its row, also across a page break; a page's footer stays a row of its own.
+ * when empty) for each line under it, its segments in the columns
+ * `pdfTables` gives them. With an anchor, a line without it belongs to a cell
+ * wrapped over several lines, which joins its row, also across a page break;
+ * a page's footer stays a row of its own.
  */
 export const pdfTableRows = (
   lines: readonly PdfLine[],
   { columns: names, anchor }: PdfTableLayout,
 ): SheetRows => {
-  const tables = pageTables(lines, names);
-  const edges = learnEdges(tables, names.length);
   const anchorIndex = anchor === undefined ? -1 : names.indexOf(anchor);
   const assembly: Assembly = { rows: [] };
-  for (const table of tables) {
+  for (const table of pdfTables(lines, names)) {
     assembly.rows.push(table.header.map(({ text }) => text));
-    const columns = fromHeader(table.header, edges);
     const page: PageCells = {
-      lines: table.lines,
-      cells: table.lines.map((line) => toCells(line, columns)),
+      lines: table.lines.map(({ line }) => line),
+      cells: table.lines.map((placed) => toCells(placed, names.length)),
       anchor: anchorIndex,
     };
     page.cells.forEach((cells, index) =>

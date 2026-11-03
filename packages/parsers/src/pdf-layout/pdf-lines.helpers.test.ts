@@ -47,14 +47,16 @@ describe("pdfLines", () => {
     ]);
   });
 
-  it("joins a line's words with the spaces their gaps hold, two where the bank wrote two", () => {
-    const [line] = pdfLines(pdf(words("COMPRA EN  MERCADO XYZ", [123, 100])));
+  it("joins a line's words with the spaces their gaps hold, two where the bank wrote two, keeping the items it joins", () => {
+    const items = words("COMPRA EN  MERCADO XYZ", [123, 100]);
+    const [line] = pdfLines(pdf(items));
 
     expect(line?.segments).toEqual([
       {
         text: "COMPRA EN  MERCADO XYZ",
         left: 123,
         right: 123 + 22 * CHARACTER,
+        items,
       },
     ]);
   });
