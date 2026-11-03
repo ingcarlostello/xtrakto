@@ -232,7 +232,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 9 — PDF statements**
 
-- [ ] 9.1 PDF text extraction
+- [x] 9.1 PDF text extraction
 - [ ] 9.2 Rows from text positions
 - [ ] 9.3 Quarterly statement PDF parser
 - [ ] 9.3b Movements export PDF parser _(design v8)_
@@ -1797,6 +1797,8 @@ Planned with the human on 2026-11-03: six sub-phases (about 1,800 lines of code)
 
 **Done when:** each case has its test and every real PDF extracts; a local check, not committed, runs `extractPdf` in the extraction worker of a production build, and pdf.js stays out of the server's bundle and the page's.
 
+It came out at about 190 lines of code, besides the 50-line writer.
+
 **Commit:** `feat(parsers): PDF text extraction`
 
 #### 9.2 Rows from text positions
@@ -1850,7 +1852,6 @@ Planned with the human on 2026-11-03: six sub-phases (about 1,800 lines of code)
 
 - The fixtures and the five private pairs give the same movements as their Excel twins; the private test counts the fields that differ.
 - In ingestion, a movements PDF goes to the account its digits name, also when the user has several; it adds nothing after its Excel twin, and it's hidden on a verified quarterly statement's days.
-- If a ligature drops a letter from the text (Appendix A.2b), this phase decides with the human: leave it to 10.1's matching, or recover it from the font.
 
 **Commit:** `feat(parsers): Bancolombia movements export PDF parser`
 
@@ -2056,7 +2057,7 @@ Observed on real files. Values below are illustrative; no real data.
 - Page 1 opens with "Sucursal Virtual Personas" and "Movimientos: Cuentas", the date and time it was downloaded ("Sábado, 3 de octubre de 2026, 9:15 a. m."), the holder's name in capitals, "Cuenta de Ahorros" and the whole account number in groups (`Ahorros 123 - 456789 - 01`). Then every page holds a table `Fecha | Descripción | Referencia | Valor` and, at its foot, the IP address the file was downloaded from (`Dirección IP 203.0.113.7`): personal data, never sent.
 - Rows newest first, as in the Excel. `Fecha` as `3 sep 2026`; `Valor` as `-$ 45.900,00` or `$ 27,84` (a period for thousands, a comma for decimals, the sign before `$`).
 - A description or a reference wider than its column wraps to a second line of the same row, while the row's other cells stay on its first line. A reference the Excel leaves empty can read `null`. Double spaces show as wider gaps.
-- Its text layer may drop a letter where a lowercase ligature is drawn (`Ofcina` for `Oficina`, in a mixed-case description); 9.3b measures it.
+- Where a mixed-case description draws a lowercase ligature (`fi`), some text extractors drop a letter (`Ofcina` for `Oficina`); pdf.js reads those words whole (9.1).
 - No balances and no period, as the Excel.
 
 ### A.3 Bancolombia — quarterly statement (PDF)

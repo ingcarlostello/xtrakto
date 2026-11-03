@@ -13,7 +13,7 @@ Early development: stages 0 to 6 are done. The spreadsheet parsers are verified 
 - TypeScript 6 in strict mode, on Node.js 22
 - pnpm 12 workspaces and Turborepo 2
 - ESLint 9, Prettier 3 and Vitest 5
-- SheetJS 0.20 to read XLSX and CSV files, installed from its official CDN ([ADR 0011](docs/adr/0011-sheetjs-for-spreadsheet-extraction.md))
+- SheetJS 0.20 to read XLSX and CSV files, installed from its official CDN ([ADR 0011](docs/adr/0011-sheetjs-for-spreadsheet-extraction.md)), and pdf.js 6 to read a PDF's text with its positions ([ADR 0034](docs/adr/0034-pdf-text-read-with-pdfjs-in-the-extraction-worker.md))
 - PostgreSQL 18 with pgvector: Neon in the cloud, Docker Compose locally ([ADR 0013](docs/adr/0013-neon-for-postgresql.md)), through Drizzle ORM
 - Zod for every trust boundary, environment variables included
 - Clerk for sign-in, in Spanish ([ADR 0004](docs/adr/0004-clerk-for-authentication.md))

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@xtrakto/core": "workspace:*",
+    "pdfjs-dist": "6.5.438",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@xtrakto/eslint-config": "workspace:*",
     "@xtrakto/typescript-config": "workspace:*",
     "eslint": "9.39.5",
+    "pdfkit": "0.20.2",
     "typescript": "6.0.3",
     "vite": "8.3.3",
     "vitest": "5.0.3"
