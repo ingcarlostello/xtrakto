@@ -38,6 +38,9 @@ const movement = ([date, amount, text, [categoryId, rule]]: Row) =>
     referenceLast4: null,
     categoryId,
     categoryRuleId: rule,
+    id: "m1",
+    isPendingReview: false,
+    llmTitle: null,
   }) satisfies PeriodMovement;
 
 // A period's summary as `getSummary` reads it, with its fixed payments.

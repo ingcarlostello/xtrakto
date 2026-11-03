@@ -1,20 +1,26 @@
-import type { AmountMinor, Period, RecurringMovement } from "@xtrakto/core";
+import type { Period, RecurringMovement } from "@xtrakto/core";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
+import {
+  LIST_ITEM_COLUMNS,
+  type TransactionListItem,
+} from "./transaction.queries";
 import { transactions } from "./transaction.schemas";
 
-/** A movement that counts, with what a period's summary reads of it. */
-export type PeriodMovement = RecurringMovement & {
-  /** The balance its statement printed after it, when it prints them. */
-  readonly balanceAfterMinor: AmountMinor | null;
-};
+/**
+ * A movement that counts, with what a period's summary reads of it: what
+ * a list shows of it, which "Tu extracto, traducido" shows too (8.6c), and
+ * the number it went to.
+ */
+export type PeriodMovement = RecurringMovement & TransactionListItem;
 
 /**
  * An account's movements that count in a period, the oldest first, with
- * only what its summary (`summarizeMovements`), its balance and its
- * payments that repeat (`findRecurringPayments`) read of each.
+ * only what its summary (`summarizeMovements`), its balance, its payments
+ * that repeat (`findRecurringPayments`) and its translated lines read of
+ * each.
  */
 export const listSummaryMovements = (
   { tx, userId }: UserContext,
@@ -25,14 +31,9 @@ export const listSummaryMovements = (
 ): Promise<PeriodMovement[]> =>
   tx
     .select({
-      date: transactions.date,
-      amountMinor: transactions.amountMinor,
-      balanceAfterMinor: transactions.balanceAfterMinor,
-      descriptionRaw: transactions.descriptionRaw,
+      ...LIST_ITEM_COLUMNS,
       referenceHash: transactions.referenceHash,
       referenceLast4: transactions.referenceLast4,
-      categoryId: transactions.categoryId,
-      categoryRuleId: transactions.categoryRuleId,
     })
     .from(transactions)
     .innerJoin(statements, eq(statements.id, transactions.statementId))

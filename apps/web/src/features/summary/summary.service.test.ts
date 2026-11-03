@@ -140,7 +140,8 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
       unreconciled,
     } = result;
     return {
-      movements,
+      // Their ids blanked, so two users' summaries compare.
+      movements: movements.map((movement) => ({ ...movement, id: "" })),
       summary,
       fixedPayments,
       balance,

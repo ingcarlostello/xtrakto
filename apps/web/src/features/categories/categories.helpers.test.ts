@@ -36,6 +36,9 @@ const movement = ([amount, text, [categoryId, rule]]: Row) =>
     referenceLast4: null,
     categoryId,
     categoryRuleId: rule,
+    id: "m1",
+    isPendingReview: false,
+    llmTitle: null,
   }) satisfies PeriodMovement;
 
 // A period's movements as the page reads them, and what they add up to.
