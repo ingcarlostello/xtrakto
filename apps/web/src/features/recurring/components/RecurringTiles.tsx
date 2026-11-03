@@ -1,6 +1,9 @@
 import type { RecurringPayment } from "@xtrakto/core";
 import { Calendar, Repeat } from "lucide-react";
-import { CATEGORY_ICONS } from "@/components/movement-icon/category-icons.constants";
+import {
+  CATEGORY_ICONS,
+  SERVICE_ICONS,
+} from "@/components/movement-icon/category-icons.constants";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn.utils";
 import { recurringTiles } from "../recurring-view.helpers";
@@ -10,12 +13,15 @@ import type { RecurringTile } from "../recurring.types";
 const TILE_ICONS = { monthly: Calendar, yearly: Repeat } as const;
 
 // A tile's chip, label, figure and what it means (design-system.md §9); the
-// payment that rose sits on the attention surface, with the orange dot.
+// payment that rose sits on the attention surface, with the orange dot and
+// the icon of its home service, else its category's.
 function TileCard({ tile }: { tile: RecurringTile }) {
   const isRose = tile.kind === "rose";
   const Icon =
     tile.kind === "rose"
-      ? CATEGORY_ICONS[tile.categoryId]
+      ? ((tile.service === undefined
+          ? undefined
+          : SERVICE_ICONS[tile.service]) ?? CATEGORY_ICONS[tile.categoryId])
       : TILE_ICONS[tile.kind];
   return (
     <Card className={cn("h-full", isRose && "bg-spending-surface")}>

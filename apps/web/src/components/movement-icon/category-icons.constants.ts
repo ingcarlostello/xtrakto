@@ -1,4 +1,4 @@
-import type { CategoryId } from "@xtrakto/core";
+import type { CategoryId, HomeService } from "@xtrakto/core";
 import {
   ArrowLeftRight,
   Banknote,
@@ -6,8 +6,10 @@ import {
   Clapperboard,
   CreditCard,
   Download,
+  Droplet,
   Ellipsis,
   FileText,
+  Flame,
   Globe,
   GraduationCap,
   Heart,
@@ -19,9 +21,12 @@ import {
   Repeat,
   ShoppingBag,
   ShoppingCart,
+  Smartphone,
   TrendingUp,
+  Tv,
   Users,
   Utensils,
+  Zap,
 } from "lucide-react";
 
 /**
@@ -57,6 +62,18 @@ export const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
 
 /** A movement no rule knows, or whose category the table no longer has. */
 export const UNKNOWN_CATEGORY_ICON = Ellipsis;
+
+/**
+ * The icon of each home service a fixed payment pays (8.6d, docs/ui/v8-04),
+ * in place of its category's.
+ */
+export const SERVICE_ICONS: Record<HomeService, LucideIcon> = {
+  energy: Zap,
+  gas: Flame,
+  water: Droplet,
+  phone_internet: Smartphone,
+  tv: Tv,
+};
 
 /** Each kind's icon on its tile (§8). */
 export const KIND_ICONS = {

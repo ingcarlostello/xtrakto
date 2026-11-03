@@ -1,6 +1,7 @@
 import type {
   CalendarMonth,
   CategoryId,
+  HomeService,
   RecurringPayment,
   RecurringPayments,
 } from "@xtrakto/core";
@@ -28,7 +29,12 @@ export type RecurringView = "active" | "stopped";
 export type RecurringTile = (
   | { readonly kind: "monthly" | "yearly" }
   /** The payment that rose the most, on the attention surface. */
-  | { readonly kind: "rose"; readonly categoryId: CategoryId }
+  | {
+      readonly kind: "rose";
+      readonly categoryId: CategoryId;
+      /** The home service it pays, whose icon it shows. */
+      readonly service?: HomeService;
+    }
 ) & {
   /** "Pagas al mes", "Energía subió 12%". */
   readonly label: string;
@@ -54,6 +60,9 @@ export type MonthBar = {
 export type RecurringRowView = {
   readonly key: string;
   readonly categoryId: CategoryId;
+  /** The home service it pays, whose icon it shows. */
+  readonly service?: HomeService;
+  /** What it pays for ("Energía"), else who was paid as the bank wrote it. */
   readonly title: string;
   /** The latest way the bank wrote it, as printed. */
   readonly bankText: string;

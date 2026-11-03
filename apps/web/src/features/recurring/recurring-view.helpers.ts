@@ -14,6 +14,7 @@ import {
   isAmountMinor,
   type RecurringPayment,
   type RecurringPayments,
+  recurringPaymentService,
   recurringPaymentTitle,
   risenRecurringInsights,
   sumAmounts,
@@ -200,9 +201,11 @@ export const rowView = (
   const [bankText = payment.label, ...others] = payment.bankTexts;
   const installmentsText = installmentsOf(payment, month);
   const note = noteOf(payment, month, view);
+  const service = recurringPaymentService(payment);
   return {
     key: `${payment.label}-${payment.referenceLast4 ?? ""}-${payment.categoryId}`,
     categoryId: payment.categoryId,
+    ...(service === undefined ? {} : { service }),
     title: recurringPaymentTitle(payment),
     bankText,
     ...(others.length > 0
@@ -238,9 +241,11 @@ const roseTile = (
   const [most] = risenRecurringInsights(spending);
   if (most === undefined) return undefined;
   const { title, note } = insightText(most);
+  const service = recurringPaymentService(most.payment);
   return {
     kind: "rose",
     categoryId: most.payment.categoryId,
+    ...(service === undefined ? {} : { service }),
     label: title,
     amount: formatSignedAmount(most.riseMinor, CURRENCY.COP),
     caption: note,

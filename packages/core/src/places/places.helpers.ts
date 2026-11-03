@@ -1,11 +1,13 @@
 import { channelOf } from "../categorization/channel.helpers";
+import { HOME_SERVICES } from "../categorization/movement-title.constants";
+import { homeServiceOf } from "../categorization/movement-title.helpers";
 import { compareLocalDates } from "../dates/date.helpers";
 import {
   isNumberPayee,
   movementsByPayee,
   payeeLabelOf,
 } from "../recurring/recurring-payee.helpers";
-import { recurringPaymentTitle } from "../recurring/recurring-title.helpers";
+import { payeeTitle } from "../recurring/recurring-title.helpers";
 import type { RecurringMovement } from "../recurring/recurring.types";
 import { totalOfMovements } from "../summary/summary.helpers";
 import { foldText } from "../text/text.utils";
@@ -42,14 +44,20 @@ const bankTextsOf = (movements: readonly RecurringMovement[]): string[] => {
     .map(([text]) => text);
 };
 
-// Who a group paid, as the bank last wrote it.
+// The home service a utility's words name ("Energía", 8.6d); else who a
+// group paid, as the bank last wrote it.
 const titleOf = ({ payee, movements }: Group, isNamed: boolean): string => {
   const latest = movements.at(-1);
   if (latest === undefined) return payee;
+  const service = homeServiceOf({
+    description: latest.descriptionRaw,
+    categoryId: latest.categoryId,
+  });
+  if (service !== undefined) return HOME_SERVICES[service];
   if (!isNamed) return latest.descriptionRaw.trim();
   if (!isNumberPayee(payee)) return payeeLabelOf(latest.descriptionRaw);
   const channel = channelOf(latest.descriptionRaw);
-  return recurringPaymentTitle({
+  return payeeTitle({
     label: latest.descriptionRaw.trim(),
     referenceLast4: latest.referenceLast4,
     channels: channel === null ? [] : [channel.id],

@@ -3,7 +3,11 @@ import { amountMinorSchema } from "../money/money.schemas";
 import type { CategorizationRuleId } from "./categorization.types";
 import { CATEGORIZATION_RULES } from "./categorization-rules.constants";
 import { categorizeByRules } from "./categorization.helpers";
-import { isPlainTitle, movementTitle } from "./movement-title.helpers";
+import {
+  homeServiceOf,
+  isPlainTitle,
+  movementTitle,
+} from "./movement-title.helpers";
 
 const OUT = -9_000_000;
 const IN = 9_000_000;
@@ -113,6 +117,35 @@ describe("movementTitle", () => {
         llmTitle: "Compra en una droguería",
       }),
     ).toBe("Compra en una droguería");
+  });
+});
+
+describe("homeServiceOf", () => {
+  it.each([
+    ["PAGO PSE Electrificadora de", "energy"],
+    ["TRANSF A GAS NATURAL CIUDAD", "gas"],
+    ["PAGO PSE Acueducto Municipa", "water"],
+    ["PAGO PSE CLARO COLOMBIA", "phone_internet"],
+    ["COMPRA EN DIRECTV", "tv"],
+  ])("names the home service %s pays by its words", (description, service) => {
+    expect(homeServiceOf({ description, categoryId: "utilities" })).toBe(
+      service,
+    );
+  });
+
+  it("names none for a company whose words name no service", () => {
+    expect(
+      homeServiceOf({ description: "PAGO PSE EPM", categoryId: "utilities" }),
+    ).toBeUndefined();
+  });
+
+  it("names none outside home services, whatever the words", () => {
+    expect(
+      homeServiceOf({
+        description: "PAGO PSE GAS NATURAL CIUDAD",
+        categoryId: "housing",
+      }),
+    ).toBeUndefined();
   });
 });
 

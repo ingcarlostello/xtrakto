@@ -152,6 +152,38 @@ describe("placesOf", () => {
     ).toEqual(["PANADERIA SAN", "BAR ALTO", "CAFE DEL PARQUE"]);
   });
 
+  it("names a home service's place by what its words say it sells", () => {
+    const utility = (text: string) => ({
+      text,
+      categoryId: "utilities" as const,
+    });
+
+    expect(
+      placesOf([
+        movement(
+          "2026-07-03",
+          -15_000_000,
+          utility("PAGO PSE EMPRESA DE ENERGIA"),
+        ),
+        movement(
+          "2026-07-11",
+          -3_099_000,
+          utility("TRANSF A GAS NATURAL CIUDAD"),
+        ),
+        movement(
+          "2026-08-11",
+          -3_099_000,
+          utility("PAGO PSE GAS NATURAL CIUDAD"),
+        ),
+        movement("2026-07-19", -2_000_000, utility("PAGO PSE EPM")),
+      ]).map(({ title, total }) => [title, total.count]),
+    ).toEqual([
+      ["Energía", 1],
+      ["Gas", 2],
+      ["EPM", 1],
+    ]);
+  });
+
   it("finds no place without movements", () => {
     expect(placesOf([])).toEqual([]);
   });

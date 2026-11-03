@@ -97,9 +97,11 @@ describe("insightText", () => {
   });
 
   it("says since when a new fixed payment repeats, on its day or its days", () => {
-    const gym = {
+    const gym: RecurringPayment = {
       ...ENERGY,
       label: "GIMNASIO FIT",
+      bankTexts: ["COMPRA EN  GIMNASIO FIT"],
+      categoryId: "entertainment",
       days: { first: 10, last: 10 },
     };
     const since = { year: 2026, month: 7 };
@@ -112,26 +114,86 @@ describe("insightText", () => {
       },
     );
     expect(
-      insightText({ kind: "new_recurring", payment: ENERGY, since }).note,
-    ).toBe("Se repite desde julio, entre el 14 y el 16.");
+      insightText({ kind: "new_recurring", payment: ENERGY, since }),
+    ).toMatchObject({
+      title: "Nuevo pago fijo: energía",
+      note: "Se repite desde julio, entre el 14 y el 16.",
+    });
   });
 
+  // A fixed payment that rose 12%, from its first month to its last.
+  const rose = (payment: RecurringPayment) =>
+    insightText({
+      kind: "recurring_rose",
+      payment,
+      percent: 12,
+      from: paid(7, -16_230_000),
+      to: paid(9, -18_200_000),
+      riseMinor: amount(1_970_000),
+    });
+
   it("says how much a fixed payment rose, from its first month to its last", () => {
-    expect(
-      insightText({
-        kind: "recurring_rose",
-        payment: ENERGY,
-        percent: 12,
-        from: paid(7, -16_230_000),
-        to: paid(9, -18_200_000),
-        riseMinor: amount(1_970_000),
-      }),
-    ).toEqual({
-      title: "EMPRESA DE ENERGIA subió 12%",
+    expect(rose(ENERGY)).toEqual({
+      title: "Energía subió 12%",
       note: "De $162.300 en julio a $182.000 en septiembre. Revisa tu consumo o la tarifa.",
       needsAttention: true,
     });
   });
+
+  const PLAN = "Revisa el precio de tu plan.";
+  const USAGE = "Revisa tu consumo o la tarifa.";
+
+  it.each([
+    {
+      what: "a phone plan",
+      text: "PAGO PSE CLARO COLOMBIA",
+      categoryId: "utilities",
+      check: PLAN,
+    },
+    {
+      what: "television",
+      text: "COMPRA EN DIRECTV",
+      categoryId: "utilities",
+      check: PLAN,
+    },
+    {
+      what: "a subscription",
+      text: "COMPRA EN  NETFLIX.COM",
+      categoryId: "subscriptions",
+      check: PLAN,
+    },
+    {
+      what: "water",
+      text: "PAGO PSE Acueducto Municipa",
+      categoryId: "utilities",
+      check: USAGE,
+    },
+    {
+      what: "a home service its words don't name",
+      text: "PAGO PSE EPM",
+      categoryId: "utilities",
+      check: USAGE,
+    },
+    {
+      what: "a loan",
+      text: "PAGO PSE Financiera Andes S",
+      categoryId: "loan_payment",
+      check: "Revisa la tasa o los cargos de tu crédito.",
+    },
+    {
+      what: "anything else",
+      text: "COMPRA EN  GIMNASIO FIT",
+      categoryId: "entertainment",
+      check: "Revisa por qué subió.",
+    },
+  ] as const)(
+    "says what to look at when $what rose",
+    ({ text, categoryId, check }) => {
+      expect(rose({ ...ENERGY, bankTexts: [text], categoryId }).note).toBe(
+        `De $162.300 en julio a $182.000 en septiembre. ${check}`,
+      );
+    },
+  );
 
   it("names a Nequi number by its channel", () => {
     const send: RecurringPayment = {
