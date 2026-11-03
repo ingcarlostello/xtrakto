@@ -9,12 +9,12 @@ import {
 } from "@xtrakto/core";
 import type { PeriodMovement } from "@xtrakto/db";
 import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
+import { descriptionView } from "@/components/movement-row/movement-row.helpers";
 import type { PeriodLink } from "@/components/period-controls/period-controls.types";
 import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { movementTone } from "@/features/transactions/kind-view.helpers";
 import {
   amountText,
-  descriptionView,
   movementTags,
 } from "@/features/transactions/transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "@/features/transactions/transaction.constants";

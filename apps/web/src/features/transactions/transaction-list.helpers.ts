@@ -9,7 +9,6 @@ import {
   formatSignedAmount,
   formatWeekdayInWords,
   type LocalDate,
-  movementTitle,
   parseTypedAmount,
   SAVINGS_INTEREST_RULE_ID,
   sumAmounts,
@@ -25,12 +24,10 @@ import {
 import {
   MAX_MOVEMENTS_SHOWN,
   MOVEMENTS_STEP,
-  NO_DESCRIPTION_TEXT,
   TRANSACTIONS_COPY as COPY,
 } from "./transaction.constants";
 import type {
   AccountTransactions,
-  DescriptionView,
   DetailLinks,
   MovementLine,
   MovementList,
@@ -178,33 +175,6 @@ export const dayHeading = (date: LocalDate, currentYear: string): string =>
 /** `"Saldo del día $6.482.310"`. */
 export const dayBalanceText = (balance: AmountMinor): string =>
   `${COPY.dayBalance} ${formatAmount(balance, CURRENCY_SHOWN)}`;
-
-/**
- * How a movement is titled: in plain words over the bank's text as printed
- * (8.6a), by the bank's text when nothing says what it was, or, for its
- * `0`, that it gave none.
- */
-export const descriptionView = ({
-  descriptionRaw,
-  categoryId,
-  categoryRuleId,
-  llmTitle,
-}: Pick<
-  TransactionListItem,
-  "descriptionRaw" | "categoryId" | "categoryRuleId" | "llmTitle"
->): DescriptionView => {
-  if (descriptionRaw.trim() === NO_DESCRIPTION_TEXT)
-    return { kind: "none", raw: descriptionRaw };
-  const title = movementTitle({
-    description: descriptionRaw,
-    categoryId,
-    categoryRuleId,
-    llmTitle,
-  });
-  return title === undefined
-    ? { kind: "bank", text: descriptionRaw }
-    : { kind: "titled", title, raw: descriptionRaw };
-};
 
 export const CATEGORY_LABELS: ReadonlyMap<CategoryId, string> = new Map(
   CATEGORIES.map(({ id, labelEs }) => [id, labelEs]),

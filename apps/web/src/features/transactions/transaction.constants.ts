@@ -46,9 +46,6 @@ export const DEFAULT_CATEGORY_OF_KIND = {
 /** The longest search the list takes: a bank's text is about 30 characters. */
 export const MAX_SEARCH_LENGTH = 60;
 
-/** What the bank writes for a movement it didn't describe. */
-export const NO_DESCRIPTION_TEXT = "0";
-
 /** How a period's CSV is named, before its dates (7.6). */
 export const MOVEMENTS_CSV_NAME = "xtrakto-movimientos";
 
