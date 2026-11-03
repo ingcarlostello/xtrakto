@@ -51,6 +51,10 @@ It writes into `fixtures/xlsx/`, which git ignores:
 | `quarterly-10mb.xlsx`                                                                                            | `quarterly-large` plus sheets of random text: about 9.2 MB, under the 10 MB limit, and 36 KB of content once minimized (ADR 0017).                   |
 | `oversize-11mb.xlsx`                                                                                             | The same with one more sheet: about 11.5 MB, over the limit.                                                                                         |
 
+## PDF files
+
+`pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1).
+
 ## Confirmed on real files
 
 The private tests confirmed what these fixtures assume, with refinements from more real files (October 2026, roadmap Appendix A):
@@ -72,3 +76,5 @@ pnpm --filter @xtrakto/parsers test:private
 ```
 
 `src/bancolombia/real-exports.private.test.ts` reads every `.xlsx` there, in any folder, as the app will: it extracts, recognizes and parses each file, reconciles each quarterly statement, checks that back-to-back quarterly statements of an account share the day one ends and the next starts, on the same balance (what "Encadenado" needs), compares an export's movements with the quarterly statement whose period holds them, and checks that minimizing a file (ADR 0017) leaves its parse unchanged and keeps long numbers only in an export's references. It prints only counts, yes/no answers, error codes and row numbers, never a description, amount, name or file name. `pnpm test` and CI never run it, and it skips itself when the folder has no exports.
+
+`src/extraction/pdf-extraction.private.test.ts` reads every `.pdf` there the same way (Phase 9.1): it extracts each file's text, reports their pages and the most text items on a page, and checks that no text keeps letters written apart or ligatures. It prints counts only, and skips itself when the folder has no PDFs.

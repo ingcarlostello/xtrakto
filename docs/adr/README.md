@@ -51,3 +51,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0031](0031-deepseek-api-for-llm-calls.md)                         | DeepSeek's own API for LLM calls                                                       | Accepted |
 | [0032](0032-llm-calls-reach-langfuse-through-an-allowlist.md)      | LLM calls reach Langfuse through an allowlist                                          | Accepted |
 | [0033](0033-llm-categories-after-ingestion-from-a-shared-cache.md) | LLM categories after ingestion, from a shared cache                                    | Accepted |
+| [0034](0034-pdf-text-read-with-pdfjs-in-the-extraction-worker.md)  | PDF text read with pdf.js in the extraction worker                                     | Accepted |
