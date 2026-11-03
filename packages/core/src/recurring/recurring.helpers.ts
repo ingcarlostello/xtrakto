@@ -150,9 +150,17 @@ const trendOf = (
     : { kind: "variable" };
 };
 
-// What a payment's months say of it, paid to `payee` and of `categoryId`.
+// What a payment's months say of it, paid to `payee`, with the category and
+// the LLM's title of its latest payment.
 const paymentOf = (
-  { payee, categoryId }: { payee: string; categoryId: CategoryId },
+  {
+    payee,
+    categoryId,
+    llmTitle,
+  }: Pick<RecurringMovement, "llmTitle"> & {
+    payee: string;
+    categoryId: CategoryId;
+  },
   months: readonly PaidMonth[],
 ): RecurringPayment | undefined => {
   const typical = middleBy(months, ({ amountMinor }) => size(amountMinor));
@@ -167,6 +175,7 @@ const paymentOf = (
     referenceLast4: isNumber ? last.referenceLast4 : null,
     bankTexts: [...new Set(latestFirst.map((p) => p.descriptionRaw))],
     categoryId,
+    ...(llmTitle ? { llmTitle } : {}),
     channels: [
       ...new Set(paid.flatMap((p) => channelOf(p.descriptionRaw)?.id ?? [])),
     ],
@@ -193,7 +202,10 @@ const recurringPaymentOf = ({
   const months = repeatingMonths(monthsOf(payments), isSpending);
   return months === undefined
     ? undefined
-    : paymentOf({ payee, categoryId: latest.categoryId }, months);
+    : paymentOf(
+        { payee, categoryId: latest.categoryId, llmTitle: latest.llmTitle },
+        months,
+      );
 };
 
 /**

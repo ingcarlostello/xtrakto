@@ -4,7 +4,13 @@ import type {
   CategorizationRule,
   CategorizationRuleId,
 } from "./categorization.types";
-import { CATEGORY_TITLES, TITLE_REFINEMENTS } from "./movement-title.constants";
+import {
+  CATEGORY_TITLES,
+  type HomeService,
+  TITLE_REFINEMENTS,
+  type TitleRefinement,
+  UTILITY_TITLES,
+} from "./movement-title.constants";
 import {
   containsKeyword,
   foldDescription,
@@ -56,6 +62,19 @@ const TABLE_RULES = new Map<CategorizationRuleId, CategorizationRule>(
   CATEGORIZATION_RULES.map((rule) => [rule.id, rule]),
 );
 
+// The first of some refinements whose words the text has.
+const refinementOf = <T extends TitleRefinement>(
+  refinements: readonly T[],
+  description: string,
+): T | undefined => {
+  const { words } = foldDescription(description);
+  return refinements.find((candidate) =>
+    candidate.words.some((keyword) =>
+      containsKeyword(words, parseKeyword(keyword)),
+    ),
+  );
+};
+
 const ruleTitle = (
   ruleId: CategorizationRuleId,
   rule: CategorizationRule,
@@ -63,14 +82,22 @@ const ruleTitle = (
 ): string => {
   const refinements = TITLE_REFINEMENTS[ruleId];
   if (refinements === undefined) return rule.titleEs;
-  const { words } = foldDescription(description);
-  const refinement = refinements.find((candidate) =>
-    candidate.words.some((keyword) =>
-      containsKeyword(words, parseKeyword(keyword)),
-    ),
-  );
-  return refinement?.titleEs ?? rule.titleEs;
+  return refinementOf(refinements, description)?.titleEs ?? rule.titleEs;
 };
+
+/**
+ * The home service a utility's text names by the utility rules' words
+ * (8.6d): energy for "PAGO PSE EMPRESA DE ENERGIA". None for another
+ * category, or for a company whose words name no service ("EPM").
+ */
+export const homeServiceOf = ({
+  description,
+  categoryId,
+}: Pick<TitledMovement, "description" | "categoryId">):
+  HomeService | undefined =>
+  categoryId === "utilities"
+    ? refinementOf(UTILITY_TITLES, description)?.service
+    : undefined;
 
 /**
  * A movement's title in plain words (8.6a): the LLM's while its category

@@ -1,3 +1,5 @@
+import type { CategoryId } from "../categories/category.types";
+
 /** How many months in a row make a payment fixed (design v8: "Necesitamos 3 meses para encontrarlos"). */
 export const MIN_RECURRING_MONTHS = 3;
 
@@ -20,3 +22,16 @@ export const TREND_PERCENT = {
  * from this many letters on, so short names never merge.
  */
 export const MIN_SHARED_NAME_LENGTH = 8;
+
+/**
+ * What a payment of these categories pays for each month, in plain words
+ * (8.6d, docs/ui/v8-04), where no home service's words or LLM's title say
+ * more.
+ */
+export const PAYMENT_TITLES: Partial<Record<CategoryId, string>> = {
+  utilities: "Servicios del hogar",
+  loan_payment: "Cuotas de tu crédito",
+  credit_card_payment: "Pago de tu tarjeta",
+  investment: "Ahorro o inversión",
+  own_account_transfer: "A otra cuenta tuya",
+};

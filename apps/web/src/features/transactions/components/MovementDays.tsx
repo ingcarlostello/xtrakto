@@ -8,12 +8,12 @@ import {
   BANK_TEXT,
   ROW_LINK,
 } from "@/components/movement-row/movement-row.constants";
+import { descriptionView } from "@/components/movement-row/movement-row.helpers";
 import { movementTone } from "../kind-view.helpers";
 import {
   amountText,
   dayBalanceText,
   dayHeading,
-  descriptionView,
   interestNote,
   interestTitle,
   movementTags,

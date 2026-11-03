@@ -30,7 +30,7 @@ export const INSIGHT_COPY = {
     note: "Pasaron por pasarelas de pago y el banco no dice dónde compraste: elige su categoría en Movimientos.",
   },
   newRecurring: {
-    // "Nuevo pago fijo: GIMNASIO FIT"
+    // "Nuevo pago fijo: energía", "Nuevo pago fijo: GIMNASIO FIT"
     title: "Nuevo pago fijo:",
     // "Se repite desde julio, el día 10.", "…, entre el 8 y el 12."
     since: "Se repite desde",
@@ -39,12 +39,18 @@ export const INSIGHT_COPY = {
     andThe: "y el",
   },
   recurringRose: {
-    // "EMPRESA DE ENERGIA subió 12%"
+    // "Energía subió 12%"
     rose: "subió",
     // "De $162.300 en julio a $182.000 en septiembre."
     from: "De",
     in: "en",
     to: "a",
-    check: "Revisa tu consumo o la tarifa.",
+    // What to look at, by what the payment pays for (8.6d).
+    check: {
+      usage: "Revisa tu consumo o la tarifa.",
+      plan: "Revisa el precio de tu plan.",
+      loan: "Revisa la tasa o los cargos de tu crédito.",
+      other: "Revisa por qué subió.",
+    },
   },
 } as const;

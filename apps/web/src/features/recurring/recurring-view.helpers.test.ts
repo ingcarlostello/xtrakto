@@ -168,7 +168,7 @@ describe("rowView", () => {
     expect(rowView(LOAN, SEPTEMBER)).toEqual({
       key: "Financiera Andes S--loan_payment",
       categoryId: "loan_payment",
-      title: "Financiera Andes S",
+      title: "Cuotas de tu crédito",
       bankText: "PAGO PSE Financiera Andes S",
       installmentsText: "2 cuotas: $1.540.000 y $311.000.",
       cadence: "Mensual · entre el 1 y el 4",
@@ -183,6 +183,8 @@ describe("rowView", () => {
     const row = rowView(ENERGY, SEPTEMBER);
 
     expect(row).toMatchObject({
+      service: "energy",
+      title: "Energía",
       alsoText: "También: “PAGO PSE Electrificadora de S”.",
       cadence: "Mensual · día 15",
       trend: { label: "Subió 12%", variant: "spending" },
@@ -201,6 +203,7 @@ describe("rowView", () => {
 
   it("shows the range of an amount that moves a lot, and its channels", () => {
     expect(rowView(CARD, SEPTEMBER)).toMatchObject({
+      title: "Pago de tu tarjeta",
       channels: ["Sucursal virtual", "PSE"],
       hasSeveralChannels: true,
       trend: { label: "Monto variable", variant: "neutral" },
@@ -247,7 +250,8 @@ describe("recurringTiles", () => {
       {
         kind: "rose",
         categoryId: "utilities",
-        label: "Electrificadora de subió 12%",
+        service: "energy",
+        label: "Energía subió 12%",
         amount: "+$17.000",
         caption:
           "De $165.000 en agosto a $182.000 en septiembre. Revisa tu consumo o la tarifa.",
@@ -272,16 +276,18 @@ describe("recurringTiles", () => {
     const water: RecurringPayment = {
       ...ENERGY,
       label: "Acueducto Municipa",
+      bankTexts: ["PAGO PSE Acueducto Municipa"],
       trend: { kind: "rose", percent: 20 },
     };
     const gas: RecurringPayment = {
       ...ENERGY,
       label: "GAS NATURAL CIUDAD",
+      bankTexts: ["PAGO PSE GAS NATURAL CIUDAD"],
       months: [paid(8, [-16_500_000]), paid(9, [-18_400_000])],
     };
 
-    expect(roseLabel([ENERGY, water])).toBe("Acueducto Municipa subió 20%");
-    expect(roseLabel([ENERGY, gas])).toBe("GAS NATURAL CIUDAD subió 12%");
+    expect(roseLabel([ENERGY, water])).toBe("Agua subió 20%");
+    expect(roseLabel([ENERGY, gas])).toBe("Gas subió 12%");
   });
 });
 

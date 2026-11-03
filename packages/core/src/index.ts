@@ -50,6 +50,7 @@ export {
   movementTitle,
   type TitledMovement,
 } from "./categorization/movement-title.helpers";
+export type { HomeService } from "./categorization/movement-title.constants";
 export { CHANNELS } from "./categorization/channel.constants";
 export { channelOf } from "./categorization/channel.helpers";
 export type { Channel, ChannelId } from "./categorization/channel.types";
@@ -147,7 +148,11 @@ export { prepareStatement } from "./statements/prepared-statement.helpers";
 export { normalizeHolderName } from "./statements/holder-name.helpers";
 export { findRecurringPayments } from "./recurring/recurring.helpers";
 export { payeeLabelOf } from "./recurring/recurring-payee.helpers";
-export { recurringPaymentTitle } from "./recurring/recurring-title.helpers";
+export {
+  recurringPaymentInText,
+  recurringPaymentService,
+  recurringPaymentTitle,
+} from "./recurring/recurring-title.helpers";
 export type {
   AmountTrend,
   RecurringMonth,

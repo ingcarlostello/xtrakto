@@ -10,16 +10,14 @@ import {
   quarterOfMonth,
 } from "@xtrakto/core";
 import type { MovementDetail } from "@xtrakto/db";
+import { descriptionView } from "@/components/movement-row/movement-row.helpers";
+import type { DescriptionView } from "@/components/movement-row/movement-row.types";
 import { statementLabel } from "@/utils/statement-label.helpers";
 import { reviewHref } from "@/utils/transactions-url.helpers";
 import { movementTone } from "./kind-view.helpers";
-import { amountText, descriptionView } from "./transaction-list.helpers";
+import { amountText } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type {
-  DescriptionView,
-  DetailFact,
-  MovementDetailView,
-} from "./transaction.types";
+import type { DetailFact, MovementDetailView } from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.detail;
 

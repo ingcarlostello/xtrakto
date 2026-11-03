@@ -6,7 +6,7 @@ import {
   monthPeriod,
   monthWeeks,
   type RecurringPayment,
-  recurringPaymentTitle,
+  recurringPaymentInText,
 } from "@xtrakto/core";
 import { channelWords } from "@/utils/channel-text.helpers";
 import { joined } from "@/utils/list-text.utils";
@@ -72,15 +72,15 @@ const calendarWeeks = (
   );
 };
 
-// "Pendiente: GAS NATURAL CIUDAD, del 8 al 12." and "Aún no aparece. Unos
-// $31 mil, por transferencia o PSE.": its latest month's amount, about.
+// "Pendiente: gas, del 8 al 12." and "Aún no aparece. Unos $31 mil, por
+// transferencia o PSE.": its latest month's amount, about.
 const pendingView = (payment: RecurringPayment): PendingPayment => {
   const channels = channelWords(payment.channels);
   const by =
     channels.length > 0 ? `, ${COPY.by} ${joined(channels, COPY.or)}` : "";
   return {
     key: `${payment.label}-${payment.referenceLast4 ?? ""}`,
-    title: `${COPY.pending} ${recurringPaymentTitle(payment)}, ${daysText(payment)}.`,
+    title: `${COPY.pending} ${recurringPaymentInText(payment)}, ${daysText(payment)}.`,
     detail: `${COPY.notYet} ${COPY.about} ${compactSize(latestAmountOf(payment))}${by}.`,
   };
 };
@@ -113,7 +113,7 @@ export const paymentsCalendar = (
       )
     : [];
   const days = byFirstDay(spending).map(
-    (payment) => `${recurringPaymentTitle(payment)}, ${daysText(payment)}`,
+    (payment) => `${recurringPaymentInText(payment)}, ${daysText(payment)}`,
   );
   return {
     title: formatMonthName(current),

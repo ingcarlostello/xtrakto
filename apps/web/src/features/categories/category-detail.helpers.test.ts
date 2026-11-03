@@ -263,13 +263,14 @@ const withLatest = (
 });
 
 describe("latestRows", () => {
-  it("shows each one's bank text, day, channel and amount, opening its detail among the category's", () => {
+  it("titles each one in plain words over its bank text, with its day, channel and amount, opening its detail among the category's", () => {
     const [row] = latestRows(withLatest([item("m1", COFFEE)]));
 
     expect(row).toEqual({
       id: "m1",
-      title: "PAGO QR CAFE LA ESQUIN",
-      hasDescription: true,
+      title: "Restaurante o domicilio",
+      isBankText: false,
+      bankText: "PAGO QR CAFE LA ESQUIN",
       date: "16 de septiembre",
       channel: "QR",
       isPendingReview: false,
@@ -303,7 +304,8 @@ describe("latestRows", () => {
 
     expect(row).toMatchObject({
       title: "Sin descripción del banco",
-      hasDescription: false,
+      isBankText: false,
+      bankText: "0",
       channel: undefined,
       isPendingReview: true,
       href: {
@@ -314,6 +316,27 @@ describe("latestRows", () => {
           movement: "m2",
         },
       },
+    });
+  });
+
+  it("titles a payment no rule names with the LLM's words while its category is the LLM's", () => {
+    const [row] = latestRows(
+      withLatest([
+        {
+          ...item("m3", [
+            "2026-09-20",
+            -2_500_000,
+            "COMPRA EN  LA PERLA",
+            ["restaurants", "unknown_merchant"],
+          ]),
+          llmTitle: "Compra en una panadería",
+        },
+      ]),
+    );
+
+    expect(row).toMatchObject({
+      title: "Compra en una panadería",
+      bankText: "COMPRA EN  LA PERLA",
     });
   });
 });

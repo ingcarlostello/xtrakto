@@ -38,9 +38,27 @@ export type TitleRefinement = {
   readonly titleEs: string;
 };
 
-// What a home service's company sells, as the utility rules' words name it.
-const UTILITY_TITLES: readonly TitleRefinement[] = [
+/**
+ * Each home service a utility's words name, as Pagos fijos calls it (8.6d,
+ * docs/ui/v8-04): "Energía" where a movement reads "Pago de energía".
+ */
+export const HOME_SERVICES = {
+  energy: "Energía",
+  gas: "Gas",
+  water: "Agua",
+  phone_internet: "Celular o internet",
+  tv: "Televisión",
+} as const;
+
+export type HomeService = keyof typeof HOME_SERVICES;
+
+/** A home service's title, for the texts with the words of its companies. */
+export type ServiceTitle = TitleRefinement & { readonly service: HomeService };
+
+/** What a home service's company sells, as the utility rules' words name it. */
+export const UTILITY_TITLES: readonly ServiceTitle[] = [
   {
+    service: "energy",
     words: [
       "ENERGIA",
       "ELECTRIFIC*",
@@ -53,9 +71,14 @@ const UTILITY_TITLES: readonly TitleRefinement[] = [
     ],
     titleEs: "Pago de energía",
   },
-  { words: ["GAS", "GASES", "VANTI"], titleEs: "Pago de gas" },
-  { words: ["ACUEDUCTO", "ALCANTARIL*"], titleEs: "Pago de agua" },
+  { service: "gas", words: ["GAS", "GASES", "VANTI"], titleEs: "Pago de gas" },
   {
+    service: "water",
+    words: ["ACUEDUCTO", "ALCANTARIL*"],
+    titleEs: "Pago de agua",
+  },
+  {
+    service: "phone_internet",
     words: [
       "CLARO",
       "COMCEL",
@@ -68,7 +91,7 @@ const UTILITY_TITLES: readonly TitleRefinement[] = [
     ],
     titleEs: "Pago de celular o internet",
   },
-  { words: ["DIRECTV"], titleEs: "Pago de televisión" },
+  { service: "tv", words: ["DIRECTV"], titleEs: "Pago de televisión" },
 ];
 
 /**

@@ -16,6 +16,8 @@ export type RecurringMovement = {
   readonly categoryId: CategoryId | null;
   /** The table's rule that matched it, which tells the 4x1000 apart. */
   readonly categoryRuleId: CategorizationRuleId | null;
+  /** The LLM's title, while its category is the LLM's answer (8.6b). */
+  readonly llmTitle?: string | null;
 };
 
 /** How a payment's amount moves from month to month. */
@@ -51,6 +53,8 @@ export type RecurringPayment = {
   readonly bankTexts: readonly string[];
   /** The latest payment's. */
   readonly categoryId: CategoryId;
+  /** The latest payment's LLM title, while its category is the LLM's answer (8.6b). */
+  readonly llmTitle?: string;
   readonly channels: readonly ChannelId[];
   /** The months in a row it was paid, the oldest first. */
   readonly months: readonly RecurringMonth[];

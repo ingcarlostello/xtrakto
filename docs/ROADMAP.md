@@ -228,7 +228,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.6a Titles from the rules
 - [x] 8.6b Titles from the LLM
 - [x] 8.6c Your statement, translated
-- [ ] 8.6d Plain words in Pagos fijos and Categorías
+- [x] 8.6d Plain words in Pagos fijos and Categorías
 
 **Stage 9 — PDF statements** _(outline)_
 
@@ -1756,6 +1756,8 @@ It came out at about 580 lines of code, in the commits planned: the design rules
 
 #### 8.6d Plain words in Pagos fijos and Categorías
 
+Decided when it started (2026-11-03): a fixed payment is named for what it pays where the rules say it, a home service by the utility rules' words ("Energía", "Gas", "Agua") and a loan, a card, savings or the user's own account by its category ("Cuotas de tu crédito"), else by the LLM's title (8.6b), else by who was paid, as before; a category's places stay as the bank writes them but a home service's, since neither the rules nor the LLM give a business's name (decided with the human); and a week counts its category's payments in its own word ("pedidos"), "pagos" in the rest.
+
 **Tasks**
 
 - Pagos fijos's titles and icons ("Energía", "Cuotas de tu crédito", `v8-04`), "Pendiente: gas" in the calendar, and words of their own instead of "Revisa tu consumo o la tarifa." (6.5c).
@@ -1763,7 +1765,9 @@ It came out at about 580 lines of code, in the commits planned: the design rules
 
 **Done when:** both pages read right from seeded data, at phone width and with the keyboard.
 
-**Commit:** `feat(web): plain words in recurring payments and categories`
+It came out at about 235 lines of code added and 50 deleted, besides about 35 moved to share how a movement's title reads, in commits of one pull request (decided with the human): the design rules, the shared title, the fixed payments' names with the core they need, and a category's detail. The core and Pagos fijos land together because each half fails the other's tests alone.
+
+**Commits:** `docs(rules): plain words in recurring payments and categories`, `refactor(web): share how a movement's title reads`, `feat: name fixed payments for what they pay`, then `feat(web): plain words in a category's detail`
 
 ### Stage 9 — PDF statements _(outline)_
 

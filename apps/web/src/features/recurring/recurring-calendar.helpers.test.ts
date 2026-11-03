@@ -1,6 +1,7 @@
 import {
   amountMinorSchema,
   type CalendarMonth,
+  type CategoryId,
   type ChannelId,
   localDateSchema,
   type RecurringPayment,
@@ -28,6 +29,7 @@ const payment = ({
   months,
   amountMinor = -11_000_000,
   channels = ["pse"],
+  categoryId = "utilities",
 }: {
   label: string;
   first: number;
@@ -35,11 +37,12 @@ const payment = ({
   months: readonly number[];
   amountMinor?: number;
   channels?: readonly ChannelId[];
+  categoryId?: CategoryId;
 }): RecurringPayment => ({
   label,
   referenceLast4: null,
   bankTexts: [`PAGO PSE ${label}`],
-  categoryId: "utilities",
+  categoryId,
   channels,
   months: months.map((value) => ({
     month: month(value),
@@ -58,13 +61,15 @@ const LOAN = payment({
   first: 2,
   last: 4,
   months: [8, 9, 10],
+  categoryId: "loan_payment",
 });
-// Due on the 5th, not in October yet.
+// Due on the 5th, not in October yet; no rule names it.
 const INTERNET = payment({
   label: "HOGAR CONECTADO SA",
   first: 5,
   months: [7, 8, 9],
   amountMinor: -12_990_000,
+  categoryId: "other_spending",
 });
 // Due from the 18th to the 22nd, not in October yet; its typical month was
 // less than its latest.
@@ -182,7 +187,7 @@ describe("paymentsCalendar", () => {
       },
       {
         key: "GAS NATURAL CIUDAD-",
-        title: "Pendiente: GAS NATURAL CIUDAD, del 18 al 22.",
+        title: "Pendiente: gas, del 18 al 22.",
         detail: "Aún no aparece. Unos $31 mil, por transferencia o PSE.",
       },
     ]);
@@ -214,7 +219,7 @@ describe("paymentsCalendar", () => {
       paymentsCalendar([GAS, LOAN, INTERNET], { month: OCTOBER, today: TODAY })
         ?.label,
     ).toBe(
-      "Cuándo sale cada pago en octubre: Financiera Andes S, del 2 al 4; HOGAR CONECTADO SA, el 5; GAS NATURAL CIUDAD, del 18 al 22.",
+      "Cuándo sale cada pago en octubre: cuotas de tu crédito, del 2 al 4; HOGAR CONECTADO SA, el 5; gas, del 18 al 22.",
     );
   });
 });

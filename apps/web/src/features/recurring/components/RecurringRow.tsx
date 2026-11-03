@@ -57,9 +57,10 @@ type RecurringRowProps = {
 };
 
 /**
- * A payment that repeats (docs/ui/v8-04): its category's chip, who was paid
- * and how the bank wrote it, its days, channels and trend, its months from
- * `lg`, and its amount. On phones the amount stays beside the name.
+ * A payment that repeats (docs/ui/v8-04): the chip of its home service or
+ * its category, what it pays for and how the bank wrote it, its days,
+ * channels and trend, its months from `lg`, and its amount. On phones the
+ * amount stays beside the name.
  */
 export function RecurringRow({ row, tone, bars }: RecurringRowProps) {
   return (
@@ -67,6 +68,7 @@ export function RecurringRow({ row, tone, bars }: RecurringRowProps) {
       <div className="row-span-2 lg:row-span-1">
         <MovementIcon
           categoryId={row.categoryId}
+          service={row.service}
           tone={tone === "spending" ? "neutral" : "moved"}
         />
       </div>

@@ -323,4 +323,25 @@ describe("findRecurringPayments", () => {
       "ANA",
     ]);
   });
+
+  it("keeps the LLM's title of its latest payment, and none when it has none", () => {
+    const gym = (date: string, llmTitle: string | null) => ({
+      ...payment(date, -11_000_000, GYM),
+      llmTitle,
+    });
+
+    const titled = findRecurringPayments([
+      gym("2026-07-10", null),
+      gym("2026-08-10", null),
+      gym("2026-09-10", "Pago de gimnasio"),
+    ]);
+    const untitled = findRecurringPayments([
+      gym("2026-07-10", "Pago de gimnasio"),
+      gym("2026-08-10", "Pago de gimnasio"),
+      gym("2026-09-10", null),
+    ]);
+
+    expect(titled.spending[0]?.llmTitle).toBe("Pago de gimnasio");
+    expect(untitled.spending[0]).not.toHaveProperty("llmTitle");
+  });
 });

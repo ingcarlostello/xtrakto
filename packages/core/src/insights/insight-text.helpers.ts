@@ -10,7 +10,12 @@ import {
   isAmountMinor,
 } from "../money/money.helpers";
 import type { AmountMinor } from "../money/money.types";
-import { recurringPaymentTitle } from "../recurring/recurring-title.helpers";
+import {
+  recurringPaymentInText,
+  recurringPaymentService,
+  recurringPaymentTitle,
+} from "../recurring/recurring-title.helpers";
+import type { RecurringPayment } from "../recurring/recurring.types";
 import { INSIGHT_COPY as COPY } from "./insights.constants";
 import type {
   GmfTaxInsight,
@@ -73,7 +78,7 @@ const savingsYieldText = ({
   };
 };
 
-// "Nuevo pago fijo: GIMNASIO FIT" and "Se repite desde julio, el día 10."
+// "Nuevo pago fijo: energía" and "Se repite desde julio, el día 10."
 const newRecurringText = ({
   payment,
   since,
@@ -85,14 +90,29 @@ const newRecurringText = ({
       ? `${copy.onDay} ${first}`
       : `${copy.between} ${first} ${copy.andThe} ${last}`;
   return {
-    title: `${copy.title} ${recurringPaymentTitle(payment)}`,
+    title: `${copy.title} ${recurringPaymentInText(payment)}`,
     note: `${copy.since} ${monthWord(since)}, ${days}.`,
     needsAttention: false,
   };
 };
 
-// "EMPRESA DE ENERGIA subió 12%" and "De $162.300 en julio a $182.000 en
-// septiembre. Revisa tu consumo o la tarifa."
+// What to look at when a fixed payment rose, by what it pays for: a home
+// service's use or rate, a plan's price, a loan's rate or charges, else why.
+const checkOf = (payment: RecurringPayment): string => {
+  const { check } = COPY.recurringRose;
+  const service = recurringPaymentService(payment);
+  if (
+    service === "phone_internet" ||
+    service === "tv" ||
+    payment.categoryId === "subscriptions"
+  )
+    return check.plan;
+  if (payment.categoryId === "utilities") return check.usage;
+  return payment.categoryId === "loan_payment" ? check.loan : check.other;
+};
+
+// "Energía subió 12%" and "De $162.300 en julio a $182.000 en septiembre.
+// Revisa tu consumo o la tarifa."
 const recurringRoseText = ({
   payment,
   percent,
@@ -102,7 +122,7 @@ const recurringRoseText = ({
   const { recurringRose: copy } = COPY;
   return {
     title: `${recurringPaymentTitle(payment)} ${copy.rose} ${percent}%`,
-    note: `${copy.from} ${withoutSign(from.amountMinor)} ${copy.in} ${monthWord(from.month)} ${copy.to} ${withoutSign(to.amountMinor)} ${copy.in} ${monthWord(to.month)}. ${copy.check}`,
+    note: `${copy.from} ${withoutSign(from.amountMinor)} ${copy.in} ${monthWord(from.month)} ${copy.to} ${withoutSign(to.amountMinor)} ${copy.in} ${monthWord(to.month)}. ${checkOf(payment)}`,
     needsAttention: true,
   };
 };

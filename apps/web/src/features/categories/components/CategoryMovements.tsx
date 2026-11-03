@@ -45,25 +45,46 @@ function LatestTags({ row }: { row: LatestRow }) {
   );
 }
 
-// As Movimientos shows a movement (design-system.md §9): the bank's text,
-// here over its day and its tags, and its amount; neutral and in ink while
-// its category is a guess. The text opens its detail in Movimientos.
+// Its title in plain words over the bank's text as printed, which screen
+// readers hear after it (8.6a); the bank's text alone when nothing says
+// what it was. The title opens its detail in Movimientos.
+function LatestTitle({ row }: { row: LatestRow }) {
+  const bankTextId = `latest-${row.id}-bank`;
+  return (
+    <>
+      <p
+        className={cn(
+          "text-body",
+          row.isBankText ? `font-semibold ${BANK_TEXT}` : "font-bold",
+        )}
+      >
+        <Link
+          href={row.href}
+          aria-describedby={row.bankText ? bankTextId : undefined}
+          className={ROW_LINK}
+        >
+          {row.title}
+        </Link>
+      </p>
+      {row.bankText && (
+        <p id={bankTextId} className={`text-meta text-ink-muted ${BANK_TEXT}`}>
+          {row.bankText}
+        </p>
+      )}
+    </>
+  );
+}
+
+// As Movimientos shows a movement (design-system.md §9): its title, here
+// over its day and its tags, and its amount; neutral and in ink while its
+// category is a guess.
 function LatestItem({ row, categoryId }: RowProps) {
   const tone = row.isPendingReview ? "neutral" : "spending";
   return (
     <li className="relative grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-divider py-3.5">
       <MovementIcon categoryId={categoryId} tone={tone} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p
-          className={cn(
-            "text-body",
-            row.hasDescription ? `font-semibold ${BANK_TEXT}` : "font-bold",
-          )}
-        >
-          <Link href={row.href} className={ROW_LINK}>
-            {row.title}
-          </Link>
-        </p>
+        <LatestTitle row={row} />
         <p className="text-caption text-ink-muted">{row.date}</p>
         <LatestTags row={row} />
       </div>
