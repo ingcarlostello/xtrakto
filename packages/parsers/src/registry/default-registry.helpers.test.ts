@@ -5,14 +5,17 @@ import { fixtureContent, fixtureRows } from "../../fixtures/fixture.utils";
 import movementsBasic from "../../fixtures/movements-basic.json";
 import movementsOverlap from "../../fixtures/movements-overlap.json";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
+import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
 import quarterlyLarge from "../../fixtures/quarterly-large.json";
+import quarterlyLargePdf from "../../fixtures/quarterly-large-pdf.json";
 import quarterlyPrevious from "../../fixtures/quarterly-previous.json";
 import quarterlyRepeatedHeader from "../../fixtures/quarterly-repeated-header.json";
 import quarterlyYearRollover from "../../fixtures/quarterly-year-rollover.json";
 import { DEFAULT_PARSERS, findParser } from "./default-registry.helpers";
 
 const QUARTERLY = "bancolombia-savings-quarterly";
+const QUARTERLY_PDF = "bancolombia-savings-quarterly-pdf";
 const EXPORT = "bancolombia-movements-export";
 
 const spreadsheet = (rows: SpreadsheetCell[][]): ExtractedContent => ({
@@ -80,6 +83,16 @@ const FIXTURES = [
     id: QUARTERLY,
   },
   { name: "quarterly-large", fixture: quarterlyLarge, id: QUARTERLY },
+  {
+    name: "quarterly-basic-pdf",
+    fixture: quarterlyBasicPdf,
+    id: QUARTERLY_PDF,
+  },
+  {
+    name: "quarterly-large-pdf",
+    fixture: quarterlyLargePdf,
+    id: QUARTERLY_PDF,
+  },
   { name: "movements-basic", fixture: movementsBasic, id: EXPORT },
   { name: "movements-overlap", fixture: movementsOverlap, id: EXPORT },
 ];
@@ -164,7 +177,10 @@ describe("format detection", () => {
       label: "a workbook without sheets",
       content: { type: "spreadsheet", sheets: [] },
     },
-    { label: "a PDF", content: { type: "pdf", pages: [{ items: [] }] } },
+    {
+      label: "a PDF without a statement's table",
+      content: { type: "pdf", pages: [{ items: [] }] },
+    },
   ])("reports $label as an unknown format", ({ content }) => {
     expect(recognizedBy(content)).toEqual([]);
     expect(findParser(content)).toEqual(

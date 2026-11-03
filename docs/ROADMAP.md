@@ -234,7 +234,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 9.1 PDF text extraction
 - [x] 9.2 Rows from text positions
-- [ ] 9.3 Quarterly statement PDF parser
+- [x] 9.3 Quarterly statement PDF parser
 - [ ] 9.3b Movements export PDF parser _(design v8)_
 - [ ] 9.4a PDFs on the upload screen
 - [ ] 9.4b PDFs across the app
@@ -1820,10 +1820,12 @@ It came out at about 310 lines of code, past the 210 estimated, in one commit.
 
 #### 9.3 Quarterly statement PDF parser
 
+Found while building it (2026-11-03), on the real files: where the spreadsheet's description has two spaces in a row, the PDF prints one, so the two formats' raw texts differ there while their normalized texts and fingerprints don't. `minimize` keeps the very text items `parse` reads, so 9.2's segments keep their items and its tables say which column each segment went to; the pages' footers are dropped before the rows are read, so a movement's row doesn't depend on whether they were sent.
+
 **Tasks**
 
 - `bancolombiaQuarterlyPdfParser` (`bancolombia-savings-quarterly-pdf`) reads Appendix A.3:
-  - Page 1's header by its labels: `DESDE` and `HASTA`, `CUENTA DE AHORROS`, `NÚMERO` and its last 4 digits, and the holder, the first line of the block without labels at its left.
+  - Page 1's header by its labels: `DESDE` and `HASTA`, `CUENTA DE AHORROS`, `NÚMERO` and its last 4 digits, and the holder, the first line of the block without labels at its left, above the summary.
   - The summary by label, each amount the first one to its right. `VALOR INTERESES PAGADOS` is the Excel's `INTERESES`; `CUENTAS X COBRAR` isn't read.
   - The movements with 9.2 and the Excel parser's readers of a row, shared in a refactor: `d/mm` dates, amounts, `|¡` restored as `ñí`, long numbers masked (ADR 0012) and `FIN ESTADO DE CUENTA`.
   - Each page's header and footer, skipped by what they say, never by fixed positions.
@@ -1833,11 +1835,13 @@ It came out at about 310 lines of code, past the 210 estimated, in one commit.
 
 **Done when:**
 
-- Every PDF fixture gives the same statement as its Excel twin, every field but `sourceRow`.
+- Every PDF fixture gives the same statement as its Excel twin, every field but `sourceRow` and the raw description's repeated spaces.
 - The three private pairs do too, reconcile, parse the same once minimized and keep no personal data.
 - An ingestion test saves an Excel fixture and then its PDF, and the other way around, and the second adds nothing.
 
-**Commit:** `feat(parsers): Bancolombia quarterly statement PDF parser`
+It came out at about 490 lines of code, past the 400 a phase should hold, and lands in two commits of one pull request: the readers it shares, then the parser.
+
+**Commits:** `refactor(parsers): share the quarterly statement's readers and each PDF table's columns`, then `feat(parsers): Bancolombia quarterly statement PDF parser`
 
 #### 9.3b Movements export PDF parser _(added with design v8)_
 
@@ -2072,6 +2076,7 @@ Observed on real files. Values below are illustrative; no real data.
 - The movements table has the Excel's header and columns (`FECHA | DESCRIPCIÓN | SUCURSAL | DCTO. | VALOR | SALDO`), in a monospace font with right-aligned amounts, about 55 rows a page and fewer on the first; `FIN ESTADO DE CUENTA` stands in DESCRIPCIÓN after the last movement.
 - Plain text extraction is unusable: from page 2 on, columns come out as separate blocks (all dates, then all descriptions, then all amounts), and some lines from two movements merge into one. Rows must be rebuilt from the positions of the text items.
 - The `ñí` the Excel splits into two cells is printed inside one description as `|¡` (`PAGO PSE Ejemplo Compa|¡a de Finan`). A description the bank cut can end in a hyphen (`PAGO QR Ejemplo Bre-`), which stays.
+- Where the Excel's description has two spaces in a row (`COMPRA EN  TIENDA`), the PDF prints one; about a fifth of the real rows (9.3).
 - The spreadsheet export of the same statement is the ground truth for the PDF parser's tests.
 
 ### A.4 Credit cards

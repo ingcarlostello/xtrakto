@@ -1,11 +1,13 @@
 import { bancolombiaMovementsExportParser } from "../bancolombia/movements-export-parser.helpers";
 import { bancolombiaQuarterlyParser } from "../bancolombia/quarterly-parser.helpers";
+import { bancolombiaQuarterlyPdfParser } from "../bancolombia/quarterly-pdf-parser.helpers";
 import type { BankParser } from "./bank-parser.types";
 import { createParserRegistry } from "./parser-registry.helpers";
 
 /** Every supported format. Each recognizes only its own files. */
 export const DEFAULT_PARSERS: readonly BankParser[] = [
   bancolombiaQuarterlyParser,
+  bancolombiaQuarterlyPdfParser,
   bancolombiaMovementsExportParser,
 ];
 

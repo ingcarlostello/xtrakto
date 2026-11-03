@@ -23,7 +23,7 @@ export type ParseFailureReason =
   | "incomplete_page_header"
   /** A movements export without movements, so without a period either. */
   | "no_movements"
-  /** The content isn't a spreadsheet. */
+  /** The content isn't of the parser's type: a spreadsheet or a PDF. */
   | "content_type"
   /** The statement read doesn't satisfy the parsed statement schema. */
   | "invalid_output";

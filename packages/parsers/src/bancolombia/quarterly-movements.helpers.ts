@@ -64,9 +64,7 @@ const DAY_MONTH_PATTERN = /^\d{1,2}\/\d{1,2}$/;
  * Where the movements table starts: the first movements label, followed by
  * a header with every column that is read.
  */
-export const findMovementsTable = (
-  rows: SheetRows,
-): Result<{ readonly start: number; readonly columns: MovementColumns }> => {
+export const findMovementsTable = (rows: SheetRows): Result<MovementsTable> => {
   const labelRow = findLabelRow(rows, BLOCK);
   if (labelRow === undefined) {
     return parseFailed({ reason: "missing_block", block: BLOCK });
@@ -182,18 +180,22 @@ const readMovement = (
 const damagedPage = (row: number): Result<never> =>
   parseFailed({ reason: "incomplete_page_header", block: BLOCK, row });
 
+/** Where the movements table's rows start, and where each column is. */
+export type MovementsTable = {
+  readonly start: number;
+  readonly columns: MovementColumns;
+};
+
 /**
- * Reads the movements after the first movements header until
- * `FIN ESTADO DE CUENTA`, skipping blank rows and the blocks each new page
- * repeats. Any other row that isn't a movement becomes a warning.
+ * Reads the movements from a table's first row until `FIN ESTADO DE CUENTA`,
+ * skipping blank rows, repeated headers and the blocks each new page repeats.
+ * Any other row that isn't a movement becomes a warning.
  */
-export const readQuarterlyMovements = (
+export const readMovementRows = (
   rows: SheetRows,
+  { start, columns }: MovementsTable,
   period: Period,
 ): Result<QuarterlyMovements> => {
-  const table = findMovementsTable(rows);
-  if (!table.ok) return table;
-  const { start, columns } = table.value;
   const transactions: ParsedTransaction[] = [];
   const warnings: ParseWarning[] = [];
   let isSkippingPage = false;
@@ -226,4 +228,13 @@ export const readQuarterlyMovements = (
     }
   }
   return parseFailed({ reason: "missing_end", block: BLOCK });
+};
+
+/** Reads the movements after the spreadsheet's first movements header. */
+export const readQuarterlyMovements = (
+  rows: SheetRows,
+  period: Period,
+): Result<QuarterlyMovements> => {
+  const table = findMovementsTable(rows);
+  return table.ok ? readMovementRows(rows, table.value, period) : table;
 };

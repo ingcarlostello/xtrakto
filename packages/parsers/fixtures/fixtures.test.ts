@@ -3,8 +3,10 @@ import { extractedContentSchema } from "@xtrakto/core";
 import movementsBasic from "./movements-basic.json";
 import movementsOverlap from "./movements-overlap.json";
 import quarterlyBasic from "./quarterly-basic.json";
+import quarterlyBasicPdf from "./quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "./quarterly-broken-balance.json";
 import quarterlyLarge from "./quarterly-large.json";
+import quarterlyLargePdf from "./quarterly-large-pdf.json";
 import quarterlyPrevious from "./quarterly-previous.json";
 import quarterlyRepeatedHeader from "./quarterly-repeated-header.json";
 import quarterlyYearRollover from "./quarterly-year-rollover.json";
@@ -16,6 +18,8 @@ const FIXTURES = {
   "quarterly-repeated-header": quarterlyRepeatedHeader,
   "quarterly-broken-balance": quarterlyBrokenBalance,
   "quarterly-large": quarterlyLarge,
+  "quarterly-basic-pdf": quarterlyBasicPdf,
+  "quarterly-large-pdf": quarterlyLargePdf,
   "movements-basic": movementsBasic,
   "movements-overlap": movementsOverlap,
 };

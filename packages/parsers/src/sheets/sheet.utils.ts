@@ -60,7 +60,7 @@ export const cellText = (
 };
 
 /** A label as compared: no accents (ñ counts as n), uppercase, single spaces. */
-const comparableText = (text: string): string =>
+export const comparableText = (text: string): string =>
   text
     .normalize("NFD")
     .replace(COMBINING_MARKS, "")

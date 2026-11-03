@@ -88,6 +88,7 @@ const withoutEndMarker = (content: ExtractedContent): ExtractedContent =>
     : content;
 
 const QUARTERLY = fixture("quarterly-basic");
+const QUARTERLY_PDF = fixture("quarterly-basic-pdf");
 const PREVIOUS_QUARTERLY = fixture("quarterly-previous");
 const BROKEN_QUARTERLY = fixture("quarterly-broken-balance");
 const JULY_EXPORT = fixture("movements-overlap");
@@ -289,6 +290,30 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
     });
     expect(await slotsUsedBy(userId)).toBe(1);
   });
+
+  it.each([
+    { first: "spreadsheet", contents: [QUARTERLY, QUARTERLY_PDF] },
+    { first: "PDF", contents: [QUARTERLY_PDF, QUARTERLY] },
+  ])(
+    "adds nothing for a quarter's other file after its $first, which takes no slot",
+    async ({ contents: [first, second] }) => {
+      const userId = await newUser();
+      await run(await submit(userId, first ?? QUARTERLY));
+
+      expect(await run(await submit(userId, second ?? QUARTERLY))).toEqual({
+        status: "done",
+        stats: {
+          ...allNew(QUARTERLY_MOVEMENTS),
+          added: 0,
+          skipped: QUARTERLY_MOVEMENTS,
+        },
+      });
+      expect(await accountsOf(userId)).toMatchObject([
+        { last4: QUARTERLY_LAST4 },
+      ]);
+      expect(await slotsUsedBy(userId)).toBe(1);
+    },
+  );
 
   it("hides an export's movements on a verified quarterly statement's days", async () => {
     const userId = await newUser();
