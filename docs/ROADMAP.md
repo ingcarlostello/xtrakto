@@ -24,7 +24,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Conflicts:** if this roadmap contradicts the project rules, the rules win. Point out the conflict and propose an update to this file.
 
-**Outlined stages:** stages 9 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
+**Outlined stages:** stages 10 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
 **Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
@@ -230,13 +230,14 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.6c Your statement, translated
 - [x] 8.6d Plain words in Pagos fijos and Categorías
 
-**Stage 9 — PDF statements** _(outline)_
+**Stage 9 — PDF statements**
 
-- [ ] 9.1 Browser PDF extraction with password
-- [ ] 9.2 Layout reconstruction
+- [ ] 9.1 PDF text extraction
+- [ ] 9.2 Rows from text positions
 - [ ] 9.3 Quarterly statement PDF parser
 - [ ] 9.3b Movements export PDF parser _(design v8)_
-- [ ] 9.4 PDF edge cases
+- [ ] 9.4a PDFs on the upload screen
+- [ ] 9.4b PDFs across the app
 
 **Stage 10 — Monthly use and retention** _(outline)_
 
@@ -1769,13 +1770,129 @@ It came out at about 235 lines of code added and 50 deleted, besides about 35 mo
 
 **Commits:** `docs(rules): plain words in recurring payments and categories`, `refactor(web): share how a movement's title reads`, `feat: name fixed payments for what they pay`, then `feat(web): plain words in a category's detail`
 
-### Stage 9 — PDF statements _(outline)_
+### Stage 9 — PDF statements
 
-- **9.1 Browser extraction:** pdf.js in a Web Worker; ask for the password when the file is encrypted, with the hint "suele ser tu número de documento" (`docs/ui/v8-09`); the password never leaves the browser; output text items with positions. Movements export PDFs have no password. The upload screen and onboarding then mention PDF ("Excel o PDF", the password hint), left out in Stage 5.
-- **9.2 Layout reconstruction:** text items → rows, grouping by vertical position with a tolerance and assigning columns by the header's horizontal ranges. Synthetic fixtures of text items.
-- **9.3 Quarterly statement PDF parser:** Appendix A.3. Private parity test: the PDF and the XLSX of the same statement produce identical transactions.
-- **9.3b Movements export PDF parser** _(added with design v8)_: the fourth format ("Movimientos de la Sucursal Virtual (PDF)"); descriptions split across two lines are joined (`docs/ui/v8-08`). Private parity test against the XLSX of the same range.
-- **9.4 Edge cases:** wrong password, PDFs without a text layer (scanned), 30-page limit, size limit, each with a clear message.
+**Goal:** read Bancolombia's PDF statements, the quarterly statement and the movements export, exactly as their Excel versions, in the browser, without the file or its password leaving it.
+
+Planned with the human on 2026-11-03: six sub-phases (about 1,800 lines of code), with these decisions.
+
+- **Parsers first, the screen last** (decided with the human). 9.1 to 9.3b live in `@xtrakto/parsers` and are tested in Node; 9.4a and 9.4b open PDFs in the app once both formats read, so production's copy stays true in every phase. The outline put the worker and the password in 9.1 and the edge cases in a 9.4 of their own: extraction now detects them (9.1) and the upload screen explains them (9.4a).
+- **A password when the file has one** (decided with the human). Any encrypted PDF asks for its password and opens. The copy never says that every quarterly statement has one, since the human's three open without it, so v8's tag "PDF con contraseña" reads "PDF". The password that opened one PDF is tried on the other encrypted PDFs of the same choice (decided with the human): it lives in the page's memory only, until none waits, its file is removed or the screen closes, and never reaches a request, a log, Sentry or PostHog.
+- **The movements PDF names its account and its holder** (decided with the human). Unlike its Excel, it prints the whole account number and the holder's name: it identifies the account by its last 4 digits, as the quarterly statement does, so the upload screen doesn't ask where it goes, and the account keeps the name for the rules of the holder's name (6.2a). Account resolution, coverage, versions and "Encadenado" already depend on the digits and the balances, never on the format: no schema change.
+- **Each PDF is a format of its own** (`bancolombia-savings-quarterly-pdf`, `bancolombia-movements-export-pdf`), so its content hash differs from its Excel twin's: the PDF and the Excel of one quarter are two versions of its period, and the second adds nothing; a movements PDF and an Excel of the same range deduplicate through their fingerprints.
+- **Parity with the Excel twin is the ground truth.** The committed PDF fixtures are the invented statements of the Excel fixtures, laid out as the bank prints them, and give the same movements; the private tests compare the human's three quarterly and five movements pairs, counts only.
+- **pdf.js in the extraction worker** (an ADR in 9.1): `pdfjs-dist`'s legacy build, imported only when a PDF is read, so neither the server nor an Excel upload loads it; its worker module runs in the same thread; no `eval`, and no fonts or CMaps fetched.
+- **Positioned text travels.** The browser sends the `pdf` variant of the extracted content (1.5a), minimized per format: no address, city, branch, download time or IP. The parsers rebuild rows from positions on both sides: the browser for the preview, the server as the authoritative parse.
+- **Left for later:** what v8 draws for other phases: "Verificado por tu extracto trimestral", "referencias agregadas" and interest a day apart (10.1), the coverage timeline (10.2) and "¿Otro banco?" (11.3). An encrypted PDF's page count shows once it opens, not before, as `v8-09` draws it.
+
+#### 9.1 PDF text extraction
+
+**Tasks**
+
+- `extractPdf(bytes, { password })` in `@xtrakto/parsers` gives the `pdf` content: each page's horizontal text items, their text in NFC (the follow-up of 2.1), `x` and `y` from the page's top left, and their width and height, rounded. Empty items and rotated text are dropped.
+- Expected errors as codes with a reason, as `extractSpreadsheet`'s: a password needed, a wrong password, no text layer (a scanned PDF), more than 30 pages (checked before reading them; core exports `MAX_PDF_PAGES`), and a damaged file.
+- `fixtures/pdf-writer.mjs` (pdfkit, a development dependency) writes text at given positions, and the edge cases: encrypted with an invented password, an image only, 31 pages and damaged bytes, each with its test.
+- The private loader reads PDFs too, as bytes and never names; a private test extracts every real PDF and reports counts only: pages, the most items on a page, decomposed letters and ligatures.
+- An ADR, with its row in system design §12: pdf.js in the extraction worker, its pinned version (after the fix of CVE-2024-4367), its options, and the alternatives (pdf.js's own worker, extraction on the server, which ADR 0008 rules out).
+
+**Done when:** each case has its test and every real PDF extracts; a local check, not committed, runs `extractPdf` in the extraction worker of a production build, and pdf.js stays out of the server's bundle and the page's.
+
+**Commit:** `feat(parsers): PDF text extraction`
+
+#### 9.2 Rows from text positions
+
+**Tasks**
+
+- Text items become lines by their `y`, with a tolerance relative to their height; each line's items in `x` order, joined with a space by the gap between them.
+- A table is found by its header's names, ignoring accents and case. Its columns' ranges come from the header's positions (text aligned left, amounts right), and each item goes to a column by its center. The result is rows of text cells (`SheetRows`, `null` when empty), page after page, with each page's repeated header.
+- Where a format wraps a cell (the movements PDF), a line without the anchor cell, its date, joins the row above it, across a page break too; never in the quarterly statement, whose end marker stands on a line of its own.
+- Synthetic fixtures of text items: in column order, as the quarterly statement writes them from page 2, with small offsets, right-aligned amounts, cells over two lines, empty cells and several pages.
+
+**Done when:** each fixture gives its expected rows.
+
+**Commit:** `feat(parsers): rebuild PDF rows from text positions`
+
+#### 9.3 Quarterly statement PDF parser
+
+**Tasks**
+
+- `bancolombiaQuarterlyPdfParser` (`bancolombia-savings-quarterly-pdf`) reads Appendix A.3:
+  - Page 1's header by its labels: `DESDE` and `HASTA`, `CUENTA DE AHORROS`, `NÚMERO` and its last 4 digits, and the holder, the first line of the block without labels at its left.
+  - The summary by label, each amount the first one to its right. `VALOR INTERESES PAGADOS` is the Excel's `INTERESES`; `CUENTAS X COBRAR` isn't read.
+  - The movements with 9.2 and the Excel parser's readers of a row, shared in a refactor: `d/mm` dates, amounts, `|¡` restored as `ñí`, long numbers masked (ADR 0012) and `FIN ESTADO DE CUENTA`.
+  - Each page's header and footer, skipped by what they say, never by fixed positions.
+- `minimize` keeps only what `parse` reads, at its position: no address, city, branch, promotions, footer or repeated page headers, and the account number as its last 4 digits; idempotent.
+- `canParse`, the default registry, `FormatId` and the web's maps keyed by it.
+- `generate:fixtures` writes `quarterly-basic` and `quarterly-large` as text items, laid out as the bank prints them in PDF.
+
+**Done when:**
+
+- Every PDF fixture gives the same statement as its Excel twin, every field but `sourceRow`.
+- The three private pairs do too, reconcile, parse the same once minimized and keep no personal data.
+- An ingestion test saves an Excel fixture and then its PDF, and the other way around, and the second adds nothing.
+
+**Commit:** `feat(parsers): Bancolombia quarterly statement PDF parser`
+
+#### 9.3b Movements export PDF parser _(added with design v8)_
+
+**Tasks**
+
+- `bancolombiaMovementsPdfParser` (`bancolombia-movements-export-pdf`), the fourth format ("Movimientos de la Sucursal Virtual (PDF)"), reads Appendix A.2b:
+  - The holder, the account type and the whole account number, kept as its last 4 digits: the format identifies its account (`identifiesAccount`).
+  - Dates such as `3 sep 2026` (with or without a dot, `sep` and `sept` alike) and amounts such as `-$ 1.234,56`, through new helpers in core.
+  - Descriptions and references wrapped over two lines, joined (`docs/ui/v8-08`); each joined description reported with a warning code of its own, for the upload result (9.4b).
+  - A `null` reference read as none; reference kinds and the ascending, stable order as the Excel export's; the period from the rows, and no balances.
+- `minimize` drops the download's date and time and each page's IP address, keeps the account number as its last 4 digits, masks descriptions and keeps references whole, since the server hashes them.
+- PDF fixtures from `movements-basic` and `movements-overlap`, with wrapped lines, `null` references and an IP address for documentation (`203.0.113.0/24`).
+- System design §3: the movements PDF names its account.
+
+**Done when:**
+
+- The fixtures and the five private pairs give the same movements as their Excel twins; the private test counts the fields that differ.
+- In ingestion, a movements PDF goes to the account its digits name, also when the user has several; it adds nothing after its Excel twin, and it's hidden on a verified quarterly statement's days.
+- If a ligature drops a letter from the text (Appendix A.2b), this phase decides with the human: leave it to 10.1's matching, or recover it from the font.
+
+**Commit:** `feat(parsers): Bancolombia movements export PDF parser`
+
+#### 9.4 PDFs in the app
+
+Split in two when planned (about 650 lines): the upload screen, then the rest of the app.
+
+#### 9.4a PDFs on the upload screen
+
+**Tasks**
+
+- The picker and the drop zone take `.pdf` too. The extraction worker turns asynchronous, knows a PDF by its first bytes (`%PDF-`) and reads it with `extractPdf`, which downloads pdf.js only then; its messages carry the password.
+- The password, in the file's row on the attention surface, as `docs/ui/v8-09` draws it:
+  - "Este PDF tiene contraseña", the field with show and hide, and the hint "En Bancolombia suele ser tu número de documento, sin puntos ni espacios. No la guardamos.".
+  - "Abrir PDF" and "Elegir otro archivo".
+  - A wrong one says so and asks again; the one that opened a PDF is tried on the others waiting (above).
+  - With the keyboard, the focus goes to the field and Enter opens the file.
+- Each problem in plain Spanish (`v8-13`): a scanned PDF, more than 30 pages, a damaged PDF, "no es un Excel ni un PDF", and "el Excel o PDF que descargaste de tu banco". The final ones join `FILE_PROBLEM`, so `ingestion_failed` counts them; a password asked for or mistyped is no event.
+- The file type each format comes in (Excel or PDF), in the tags, the file's icon (`file-text` for a PDF) and "Archivos subidos".
+- `generate:pdf` writes git-ignored PDFs for manual uploads: both formats, encrypted with an invented password, scanned, 31 pages and damaged.
+- `docs/data-flow.md` and the privacy page (what a PDF sends, its address and IP discarded, and the page's date), system design §1, and the design rules.
+
+**Done when:**
+
+- In a local browser, every synthetic PDF reads or explains itself, at desktop, 390px and 360px and with the keyboard.
+- One password opens several PDFs, and it shows in no request, log or event.
+- **Human:** uploads a real PDF in a throwaway account.
+
+**Commit:** `feat(web): read PDF statements on the upload screen`
+
+#### 9.4b PDFs across the app
+
+**Tasks**
+
+- The upload screen's copy (`v8-07`): "en Excel o PDF" in its subtitle, "Hasta 10 MB y 30 páginas por archivo." under the drop zone, Excel and PDF in "Bancolombia: lo que ya leemos", and the password and the IP in "Cómo cuidamos tus datos".
+- The upload result's first step for a PDF, while the page holds what it read (`v8-08`): "2 páginas · 48 filas. Unimos 3 descripciones partidas en dos líneas."
+- The welcome (`v8-15` to `v8-17`) and the empty summary's download paths (`v8-12`) in Excel or PDF.
+- The profile's "Y hasta 30 páginas por PDF." and "Ni tu dirección ni la IP que traen algunos PDF." (`v8-11`), left out in 7.7.
+
+**Done when:** every screen reads right, at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): PDF statements across the app`
 
 ### Stage 10 — Monthly use and retention _(outline)_
 
@@ -1933,10 +2050,23 @@ Observed on real files. Values below are illustrative; no real data.
   - This export dates `ABONO INTERESES AHORROS` on the day the interest was paid: **the next day**, or the same day for a month's last day, which then holds two interest rows. So a range includes the interest of the day before it starts and leaves out the interest of its last day, unless that day ends a month.
   - Where a description has an accented letter, the quarterly statement can cut it just before that letter while this export keeps it (`PAGO LLAVE COMIDAS R` and `PAGO LLAVE COMIDAS RÁ`; one real case).
 
+### A.2b Bancolombia — movements export (PDF)
+
+- The same download as A.2, as a PDF made by the online banking's own page (pdfmake): no password, about 15 movements a page. Checked on five real files, each with its Excel (2026-11-03).
+- Page 1 opens with "Sucursal Virtual Personas" and "Movimientos: Cuentas", the date and time it was downloaded ("Sábado, 3 de octubre de 2026, 9:15 a. m."), the holder's name in capitals, "Cuenta de Ahorros" and the whole account number in groups (`Ahorros 123 - 456789 - 01`). Then every page holds a table `Fecha | Descripción | Referencia | Valor` and, at its foot, the IP address the file was downloaded from (`Dirección IP 203.0.113.7`): personal data, never sent.
+- Rows newest first, as in the Excel. `Fecha` as `3 sep 2026`; `Valor` as `-$ 45.900,00` or `$ 27,84` (a period for thousands, a comma for decimals, the sign before `$`).
+- A description or a reference wider than its column wraps to a second line of the same row, while the row's other cells stay on its first line. A reference the Excel leaves empty can read `null`. Double spaces show as wider gaps.
+- Its text layer may drop a letter where a lowercase ligature is drawn (`Ofcina` for `Oficina`, in a mixed-case description); 9.3b measures it.
+- No balances and no period, as the Excel.
+
 ### A.3 Bancolombia — quarterly statement (PDF)
 
-- Password-protected, usually with the holder's ID number.
+- Made by the bank's statement system (ABCpdf). It may come password-protected, usually with the holder's ID number; the three real files checked open without one, each with its Excel (2026-11-03).
+- Every page repeats a header: the bank's logo (an image), "ESTADO DE CUENTA" and a box with `DESDE: 2026/06/30   HASTA: 2026/09/30`, `CUENTA DE AHORROS`, `NÚMERO` with the account's 11 digits and `SUCURSAL <CITY>`; at its left, three lines without labels: the holder's name, the address and the city. At its foot, the bank's consumer-defense contact (`DCF:…`) and `PÁGINA: 1`.
+- Page 1 alone has a promotional box and `RESUMEN`, each figure as its label, `$` and its amount, in two groups of four: `SALDO ANTERIOR`, `TOTAL ABONOS`, `TOTAL CARGOS`, `SALDO ACTUAL`; and `SALDO PROMEDIO`, `CUENTAS X COBRAR`, `VALOR INTERESES PAGADOS`, `RETEFUENTE`. The Excel's `INTERESES` reads `VALOR INTERESES PAGADOS` here, and `CUENTAS X COBRAR` takes the place of `CUPO SUGERIDO`. Amounts are written as in the Excel (A.1).
+- The movements table has the Excel's header and columns (`FECHA | DESCRIPCIÓN | SUCURSAL | DCTO. | VALOR | SALDO`), in a monospace font with right-aligned amounts, about 55 rows a page and fewer on the first; `FIN ESTADO DE CUENTA` stands in DESCRIPCIÓN after the last movement.
 - Plain text extraction is unusable: from page 2 on, columns come out as separate blocks (all dates, then all descriptions, then all amounts), and some lines from two movements merge into one. Rows must be rebuilt from the positions of the text items.
+- The `ñí` the Excel splits into two cells is printed inside one description as `|¡` (`PAGO PSE Ejemplo Compa|¡a de Finan`). A description the bank cut can end in a hyphen (`PAGO QR Ejemplo Bre-`), which stays.
 - The spreadsheet export of the same statement is the ground truth for the PDF parser's tests.
 
 ### A.4 Credit cards
