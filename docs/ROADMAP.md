@@ -233,7 +233,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 9 — PDF statements**
 
 - [x] 9.1 PDF text extraction
-- [ ] 9.2 Rows from text positions
+- [x] 9.2 Rows from text positions
 - [ ] 9.3 Quarterly statement PDF parser
 - [ ] 9.3b Movements export PDF parser _(design v8)_
 - [ ] 9.4a PDFs on the upload screen
@@ -1803,14 +1803,18 @@ It came out at about 190 lines of code, besides the 50-line writer.
 
 #### 9.2 Rows from text positions
 
+Found while building it (2026-11-03), on the real files: the quarterly statement centers its titles over columns whose text starts at their left, so a cell alone on its line, such as the end marker, sits nearer the date's title than its own; and the movements export lifts a reference over two lines half a line above its row's date. Columns are placed by their titles, then by the edge their cells line up on, and a wrapped cell can start above its row.
+
 **Tasks**
 
-- Text items become lines by their `y`, with a tolerance relative to their height; each line's items in `x` order, joined with a space by the gap between them.
-- A table is found by its header's names, ignoring accents and case. Its columns' ranges come from the header's positions (text aligned left, amounts right), and each item goes to a column by its center. The result is rows of text cells (`SheetRows`, `null` when empty), page after page, with each page's repeated header.
-- Where a format wraps a cell (the movements PDF), a line without the anchor cell, its date, joins the row above it, across a page break too; never in the quarterly statement, whose end marker stands on a line of its own.
+- Text items become lines by their `y`, with a tolerance relative to their height; each line's items in `x` order, joined into segments with the spaces their gaps hold.
+- A table is found by its header's names in order, ignoring accents and case. Each line's segments go, in order, to the columns they sit nearest: by their titles first, then by the edge most of a column's cells share (the left of text, the right of amounts), learned from the lines with several cells. The result is rows of text cells (`SheetRows`, `null` when empty), page after page, with each page's repeated header.
+- Where a format wraps a cell (the movements PDF), a line without the anchor cell, its date, joins its row: the one above it, also across a page break, or the one right below, whose date it sits just above; a page's footer stays a row of its own. Never in the quarterly statement, whose end marker stands on a line of its own.
 - Synthetic fixtures of text items: in column order, as the quarterly statement writes them from page 2, with small offsets, right-aligned amounts, cells over two lines, empty cells and several pages.
 
 **Done when:** each fixture gives its expected rows.
+
+It came out at about 310 lines of code, past the 210 estimated, in one commit.
 
 **Commit:** `feat(parsers): rebuild PDF rows from text positions`
 
@@ -2055,8 +2059,8 @@ Observed on real files. Values below are illustrative; no real data.
 
 - The same download as A.2, as a PDF made by the online banking's own page (pdfmake): no password, about 15 movements a page. Checked on five real files, each with its Excel (2026-11-03).
 - Page 1 opens with "Sucursal Virtual Personas" and "Movimientos: Cuentas", the date and time it was downloaded ("Sábado, 3 de octubre de 2026, 9:15 a. m."), the holder's name in capitals, "Cuenta de Ahorros" and the whole account number in groups (`Ahorros 123 - 456789 - 01`). Then every page holds a table `Fecha | Descripción | Referencia | Valor` and, at its foot, the IP address the file was downloaded from (`Dirección IP 203.0.113.7`): personal data, never sent.
-- Rows newest first, as in the Excel. `Fecha` as `3 sep 2026`; `Valor` as `-$ 45.900,00` or `$ 27,84` (a period for thousands, a comma for decimals, the sign before `$`).
-- A description or a reference wider than its column wraps to a second line of the same row, while the row's other cells stay on its first line. A reference the Excel leaves empty can read `null`. Double spaces show as wider gaps.
+- Rows newest first, as in the Excel. `Fecha` as `3 sep 2026`; `Valor` as `-$ 45.900,00` or `$ 31,07` (a period for thousands, a comma for decimals, the sign before `$`).
+- A description or a reference wider than its column wraps to a second line of the same row, about 16 points below, while the row's other cells stay on its first line. A reference over two lines starts half a line above the row's date instead, its second line half a line below it. Rows keep whole on a page: none of the five real files splits one. A reference the Excel leaves empty can read `null`. Double spaces show as wider gaps.
 - Where a mixed-case description draws a lowercase ligature (`fi`), some text extractors drop a letter (`Ofcina` for `Oficina`); pdf.js reads those words whole (9.1).
 - No balances and no period, as the Excel.
 
