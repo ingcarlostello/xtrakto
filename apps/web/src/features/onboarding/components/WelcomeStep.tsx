@@ -1,4 +1,10 @@
-import { ArrowLeftRight, CircleCheck, Layers, List } from "lucide-react";
+import {
+  ArrowLeftRight,
+  CircleCheck,
+  FileText,
+  Layers,
+  List,
+} from "lucide-react";
 import Link from "next/link";
 import { StatementIllustration } from "@/components/empty-state/StatementIllustration";
 import { TONE_CLASSES } from "@/components/movement-icon/category-icons.constants";
@@ -12,6 +18,7 @@ import { WELCOME_COPY as COPY } from "../onboarding.constants";
 
 const FEATURES = [
   { icon: ArrowLeftRight, ...COPY.features.moved },
+  { icon: FileText, ...COPY.features.translated },
   { icon: List, ...COPY.features.days },
   { icon: CircleCheck, ...COPY.features.verified },
   { icon: Layers, ...COPY.features.once },

@@ -16,14 +16,15 @@ import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
 import { GlanceSection } from "@/features/summary/components/GlanceSection";
 import { SummaryViewed } from "@/features/summary/components/SummaryViewed";
+import { TranslatedStatement } from "@/features/summary/components/TranslatedStatement";
 import { WhereItWent } from "@/features/summary/components/WhereItWent";
 import { SUMMARY_COPY } from "@/features/summary/summary.constants";
+import { summarySearchSchema } from "@/features/summary/summary.schemas";
 import { getSummary } from "@/features/summary/summary.service";
 import { UnreconciledEmpty } from "@/features/transactions/components/Unreconciled";
 import { findUnreconciledStatement } from "@/features/transactions/transaction.service";
 import { HowItWorks } from "@/features/upload/components/HowItWorks";
 import { requireViewer } from "@/lib/example-mode";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
 import { summaryHref } from "@/utils/transactions-url.helpers";
 
 const COPY = PAGE_COPY.summary;
@@ -69,14 +70,29 @@ async function NoSummary({ clerkUserId }: { clerkUserId: string }) {
   );
 }
 
+// "Subir extracto" after the months, the whole width on phones.
+function UploadAction() {
+  return (
+    <Button
+      nativeButton={false}
+      render={<Link href="/upload" />}
+      className="w-full sm:w-auto"
+    >
+      <Upload aria-hidden strokeWidth={2.2} />
+      {SUMMARY_COPY.upload}
+    </Button>
+  );
+}
+
 // docs/ui/v8-01: an account's quarter, or one of its months, at a glance
 // beside the account's card, over its balance and real spending day by day
-// beside where it went, under the color legend and the period controls,
-// with the review banner while groups wait. The account and the period live
-// in the URL; the example's, while the browser explores it (7.8).
+// beside where it went, then its statement translated, under the color
+// legend and the period controls, with the review banner while groups wait.
+// The account, the period and the translated lines live in the URL; the
+// example's, while the browser explores it (7.8).
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
   const { clerkUserId, isExample } = await requireViewer();
-  const { account, period } = accountPeriodSearchSchema.parse(
+  const { account, period, lines } = summarySearchSchema.parse(
     await searchParams,
   );
   const summary = await getSummary(clerkUserId, {
@@ -92,16 +108,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
       <PeriodControls
         choices={summary}
         hrefOf={summaryHref}
-        action={
-          <Button
-            nativeButton={false}
-            render={<Link href="/upload" />}
-            className="w-full sm:w-auto"
-          >
-            <Upload aria-hidden strokeWidth={2.2} />
-            {SUMMARY_COPY.upload}
-          </Button>
-        }
+        action={<UploadAction />}
       />
       <PendingReviewBanner clerkUserId={clerkUserId} />
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -109,6 +116,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         <AccountCard summary={summary} />
         <DayByDayChart summary={summary} />
         <WhereItWent summary={summary} />
+        <TranslatedStatement summary={summary} filter={lines} />
       </div>
       {!isExample && <SummaryViewed />}
     </>

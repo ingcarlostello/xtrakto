@@ -154,4 +154,11 @@ describe("summaryHref", () => {
     });
     expect(summaryHref({})).toEqual({ pathname: "/", query: {} });
   });
+
+  it("keeps the lines «Tu extracto, traducido» shows", () => {
+    expect(summaryHref({ period: QUARTER, lines: "moved" })).toEqual({
+      pathname: "/",
+      query: { period: "2026-q3", lines: "moved" },
+    });
+  });
 });

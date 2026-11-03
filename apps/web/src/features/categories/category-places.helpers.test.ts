@@ -30,6 +30,9 @@ const movement = (
     referenceLast4: null,
     categoryId,
     categoryRuleId: rule,
+    id: "m1",
+    isPendingReview: false,
+    llmTitle: null,
   }) satisfies PeriodMovement;
 
 const detailOf = (rows: readonly Row[]) => ({

@@ -32,6 +32,9 @@ const movement = ([date, amount, [categoryId, rule] = FOOD]: Row) =>
     referenceLast4: null,
     categoryId,
     categoryRuleId: rule,
+    id: "m1",
+    isPendingReview: false,
+    llmTitle: null,
   }) satisfies PeriodMovement;
 
 type Shown = { period?: MovementPeriod; categoryId?: CategoryId };

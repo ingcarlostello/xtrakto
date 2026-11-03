@@ -115,6 +115,42 @@ export const SUMMARY_COPY = {
     payments: { one: "pago", other: "pagos" },
     by: "por",
   },
+  // "Tu extracto, traducido": the period's main lines and what they mean.
+  translated: {
+    title: "Tu extracto, traducido",
+    subtitle: "Lo que dice el banco y lo que significa.",
+    filtersLabel: "Qué líneas ver",
+    filters: {
+      all: "Todo",
+      spending: "Gasto",
+      moved: "Movido",
+      income: "Ingresos",
+      review: "Por revisar",
+    },
+    empty: "No hubo movimientos de este tipo en el periodo.",
+    // "Ver los 312 movimientos".
+    seeAll: "Ver los",
+    seeOne: "Ver el movimiento",
+    // "Creemos que es tu inversión. Confírmalo en la revisión."
+    weThink: "Creemos que es",
+    confirm: "Confírmalo en la revisión.",
+    // "Se repite entre el 1 y el 4 de cada mes."
+    repeats: "Se repite",
+    card: "Ese gasto está en el extracto de la tarjeta. Aquí no lo contamos dos veces.",
+    toInvestment: "No es gasto: pasó a tu inversión.",
+    toOwnAccount: "No es gasto: pasó a otra cuenta tuya.",
+    cameBack: "No es ingreso: es tu propia plata que regresó.",
+    // "Con el del 30 de julio suman $39,8M.", "Con otros 3 suman $4,2M."
+    withThe: "Con el del",
+    withOthers: "Con otros",
+    addUpTo: "suman",
+    countsAs: {
+      spending: "Cuenta como gasto real.",
+      income: "Cuenta como ingreso.",
+      internal: "No es gasto ni ingreso: solo se movió.",
+    },
+    unknown: "Aún no sabemos qué es: no cuenta en tus totales.",
+  },
   // "El 85%".
   the: "El",
   // Income of a kind without a noun of its own.
@@ -128,6 +164,17 @@ export const INCOME_NOUNS: Partial<Record<CategoryId, Noun>> = {
   deposit: { one: "consignación", other: "consignaciones" },
   refund: { one: "devolución", other: "devoluciones" },
   other_income: { one: "ingreso sin detalle", other: "ingresos sin detalle" },
+};
+
+/** What a guess to review is, in running text: "tu inversión". */
+export const GUESSED_AS: Partial<Record<CategoryId, string>> = {
+  investment: "tu inversión",
+  own_account_transfer: "plata tuya",
+  credit_card_payment: "el pago de tu tarjeta",
+  loan_payment: "la cuota de un crédito",
+  transfers_to_people: "un pago a otra persona",
+  other_spending: "un gasto",
+  other_income: "un ingreso",
 };
 
 /** Where money that only moved went: "a tu inversión". */

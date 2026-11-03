@@ -123,7 +123,13 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
     const movements = await inContext((ctx) =>
       listSummaryMovements(ctx, { accountId, period: THIRD_QUARTER }),
     );
-    const without = { referenceHash: null, referenceLast4: null };
+    const without = {
+      id: expect.any(String),
+      referenceHash: null,
+      referenceLast4: null,
+      isPendingReview: false,
+      llmTitle: null,
+    };
 
     // Each with the balance its quarterly statement printed after it.
     expect(movements).toEqual([

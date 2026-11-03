@@ -191,3 +191,13 @@ export type {
   PeriodSummary,
   SummaryMovement,
 } from "./summary/summary.types";
+export {
+  isInLineFilter,
+  translatedLines,
+} from "./translation/translated-lines.helpers";
+export type {
+  LineFilter,
+  LineNote,
+  TranslatableMovement,
+  TranslatedLine,
+} from "./translation/translated-lines.types";

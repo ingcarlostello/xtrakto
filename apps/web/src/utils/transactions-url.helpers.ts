@@ -21,6 +21,7 @@ export const TRANSACTIONS_PARAMS = {
   category: "category",
   shown: "show",
   movement: "movement",
+  lines: "lines",
 } as const;
 
 /** What the list shows of the period: one kind, or what waits for review. */
@@ -211,15 +212,20 @@ export const categoryHref = ({
   query: categoriesHref(link).query,
 });
 
-/** The summary of an account's period, when given (6.7a). */
+/**
+ * The summary of an account's period, when given (6.7a), with the lines
+ * "Tu extracto, traducido" shows (8.6c).
+ */
 export const summaryHref = ({
   accountId,
   period,
+  lines,
 }: {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
   readonly period?: MovementPeriod;
+  readonly lines?: MovementFilter;
 }) => ({
   pathname: "/" as const,
   query: {
@@ -229,5 +235,6 @@ export const summaryHref = ({
     ...(period === undefined
       ? {}
       : { [TRANSACTIONS_PARAMS.period]: periodParam(period) }),
+    ...(lines === undefined ? {} : { [TRANSACTIONS_PARAMS.lines]: lines }),
   },
 });

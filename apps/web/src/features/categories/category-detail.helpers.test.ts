@@ -44,6 +44,9 @@ const movement = ([date, amount, text, [categoryId, rule]]: Row) =>
     referenceLast4: null,
     categoryId,
     categoryRuleId: rule,
+    id: "m1",
+    isPendingReview: false,
+    llmTitle: null,
   }) satisfies PeriodMovement;
 
 const FOOD = ["restaurants", "merchant_restaurants"] as const;

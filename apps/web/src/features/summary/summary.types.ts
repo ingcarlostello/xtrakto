@@ -15,6 +15,8 @@ import type {
   ChartEvent,
   ChartTick,
 } from "@/components/line-chart/line-chart.types";
+import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
+import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import type {
@@ -93,6 +95,40 @@ export type SpendingTile = {
   readonly note: string;
   /** On the attention surface, with a verb in its note. */
   readonly needsAttention: boolean;
+};
+
+/** A line of "Tu extracto, traducido" (docs/ui/v8-01), as its card reads. */
+export type TranslatedLineView = {
+  readonly id: string;
+  readonly categoryId: CategoryId | null;
+  readonly tone: MovementTone;
+  /** "Te llegó plata de otro banco", or the bank's text when nothing names it. */
+  readonly title: string;
+  /** The title is the bank's text, written as printed. */
+  readonly isBankText: boolean;
+  /** "PAGO INTERBANC SISTEMAS COLOMB", under a title in plain words. */
+  readonly bankText?: string;
+  /** "Con el del 30 de julio suman $39,8M." */
+  readonly note: string;
+  /** "Transferencia". */
+  readonly channel?: string;
+  readonly isPendingReview: boolean;
+  /** "+$31.540.200". */
+  readonly amount: string;
+  /** Its detail in Movimientos. */
+  readonly href: ReturnType<typeof transactionsHref>;
+};
+
+/** "Tu extracto, traducido" (docs/ui/v8-01), for one of its filters. */
+export type TranslatedStatementView = {
+  /** "Todo / Gasto / Movido / Ingresos / Por revisar · 24". */
+  readonly filters: readonly FilterChip[];
+  readonly lines: readonly TranslatedLineView[];
+  /** "Ver los 312 movimientos", in Movimientos with the filter; none without. */
+  readonly seeAll?: {
+    readonly label: string;
+    readonly href: ReturnType<typeof transactionsHref>;
+  };
 };
 
 /** A label on a chart's axis, and where it goes on the plot, from 0 to 100. */
