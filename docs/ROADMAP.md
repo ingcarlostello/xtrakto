@@ -227,7 +227,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 8.5b Categorize after ingestion
 - [x] 8.6a Titles from the rules
 - [x] 8.6b Titles from the LLM
-- [ ] 8.6c Your statement, translated
+- [x] 8.6c Your statement, translated
 - [ ] 8.6d Plain words in Pagos fijos and Categorías
 
 **Stage 9 — PDF statements** _(outline)_
@@ -1741,6 +1741,8 @@ It came out at about 100 lines of code, in commits of one pull request: the titl
 
 #### 8.6c Your statement, translated
 
+Decided with the human when it started (2026-10-30): a line is a bank text, its money's way and its category, showing its largest movement in the period; "Todo" first takes the largest line of each kind that has one (income, real spending, money that moved out, money that came back, a guess to review), as v8 explains several things at once, then fills to five by amount, and every other filter shows its five largest; the explanation is the first that holds of the guess to confirm, a fixed payment's days, what money that moved is, what its text adds up to in the period, and what it counts as; the filter lives in the URL (`?lines=`), each line opens its detail in Movimientos, and "Pregúntale a tu extracto" beside it waits for Stage 13. Estimated at 550 to 650 lines, it lands in commits of one pull request.
+
 **Tasks**
 
 - The summary's card of `v8-01`: the period's main lines (which ones, decided when it starts), each with its title, the bank's text, a line of the code's (what it counts as, the days it repeats, what it adds up to), its channel and amount; the filters Todo / Gasto / Movido / Ingresos / Por revisar, and "Ver los N movimientos".
@@ -1748,7 +1750,9 @@ It came out at about 100 lines of code, in commits of one pull request: the titl
 
 **Done when:** the card renders from seeded data, works at phone width and with the keyboard.
 
-**Commit:** `feat(web): your statement, translated`
+It came out at about 580 lines of code, in the commits planned: the design rules, the summary's movements with what a list shows of them, the lines and their explanations in core, and the card with the welcome's feature.
+
+**Commits:** `docs(rules): your statement, translated`, `feat(db): what a list shows of the summary's movements`, `feat(core): a period's main lines and what they mean`, then `feat(web): your statement, translated`
 
 #### 8.6d Plain words in Pagos fijos and Categorías
 
