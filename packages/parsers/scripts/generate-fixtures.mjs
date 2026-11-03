@@ -1,6 +1,7 @@
 // Generates the synthetic Bancolombia fixtures in fixtures/: the content
-// extractSpreadsheet returns for each export, following Appendix A of
-// docs/ROADMAP.md, from the invented data in fixture-data.mjs. Balances and
+// extractSpreadsheet returns for each export, and extractPdf for the PDFs of
+// two quarterly statements, following Appendix A of docs/ROADMAP.md, from the
+// invented data in fixture-data.mjs. Balances and
 // totals are computed here, so every statement reconciles except
 // quarterly-broken-balance, and a fixed seed makes quarterly-large repeatable.
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -15,6 +16,7 @@ import {
   PREVIOUS_MOVEMENTS,
   ROLLOVER_MOVEMENTS,
 } from "./fixture-data.mjs";
+import { quarterlyPdfPages, renderPdf } from "./quarterly-pdf-layout.mjs";
 
 const FIXTURES_DIR = join(import.meta.dirname, "..", "fixtures");
 const SHEET_NAME = "Hoja1";
@@ -138,6 +140,37 @@ const quarterlyStatement = ({
     ),
     [null, "FIN ESTADO DE CUENTA"],
   ];
+};
+
+// The same statement as its PDF prints it (quarterly-pdf-layout.mjs): the
+// summary by its PDF labels, where CUPO SUGERIDO's place is CUENTAS X COBRAR.
+const quarterlyPdf = ({ period, opening, movements }) => {
+  const [
+    opened,
+    credits,
+    debits,
+    closing,
+    average,
+    receivable,
+    interest,
+    withholding,
+  ] = summaryRow(opening, movements);
+  return quarterlyPdfPages({
+    holder: HOLDER,
+    account: { type: ACCOUNT[0], number: ACCOUNT[1], branch: ACCOUNT[2] },
+    period: { from: slashDate(period.from), to: slashDate(period.to) },
+    summary: {
+      "SALDO ANTERIOR": opened,
+      "TOTAL ABONOS": credits,
+      "TOTAL CARGOS": debits,
+      "SALDO ACTUAL": closing,
+      "SALDO PROMEDIO": average,
+      "CUENTAS X COBRAR": receivable,
+      "VALOR INTERESES PAGADOS": interest,
+      RETEFUENTE: withholding,
+    },
+    rows: movementRows(opening, movements),
+  });
 };
 
 // Newest first, as the bank lists them; within a day, the latest row first.
@@ -277,7 +310,20 @@ const fixtures = {
   ),
 };
 
+// The PDFs of two statements above: one over two pages, one over eight.
+const pdfFixtures = {
+  "quarterly-basic-pdf": quarterlyPdf(basic),
+  "quarterly-large-pdf": quarterlyPdf({
+    period: QUARTER,
+    opening: 500_000_000,
+    movements: largeMovements(500_000_000),
+  }),
+};
+
 mkdirSync(FIXTURES_DIR, { recursive: true });
 for (const [name, rows] of Object.entries(fixtures)) {
   writeFileSync(join(FIXTURES_DIR, `${name}.json`), render(rows));
+}
+for (const [name, pages] of Object.entries(pdfFixtures)) {
+  writeFileSync(join(FIXTURES_DIR, `${name}.json`), renderPdf(pages));
 }

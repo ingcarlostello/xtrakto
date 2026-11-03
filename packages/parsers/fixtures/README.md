@@ -53,7 +53,9 @@ It writes into `fixtures/xlsx/`, which git ignores:
 
 ## PDF files
 
-`pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1).
+`quarterly-basic-pdf.json` and `quarterly-large-pdf.json` are `quarterly-basic` and `quarterly-large` as the bank prints them in PDF (Appendix A.3), as the text items `extractPdf` returns (Phase 9.3). `scripts/quarterly-pdf-layout.mjs` lays them out: every page repeats the header box and, left of it, the holder's block; the first page has a promotion and the summary; the table's titles sit centered over their columns, dates and amounts line up on their right and text on its left; from the second page the text comes column by column; and each page ends with the bank's contact and its number. One space stands where the spreadsheet's description has two, as the bank prints it. The basic statement takes two pages, the large one eight. Their parser reads each as its spreadsheet twin.
+
+`pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1), and a statement's PDF fixture written with it reads back the same (9.3).
 
 ## Confirmed on real files
 
@@ -78,3 +80,5 @@ pnpm --filter @xtrakto/parsers test:private
 `src/bancolombia/real-exports.private.test.ts` reads every `.xlsx` there, in any folder, as the app will: it extracts, recognizes and parses each file, reconciles each quarterly statement, checks that back-to-back quarterly statements of an account share the day one ends and the next starts, on the same balance (what "Encadenado" needs), compares an export's movements with the quarterly statement whose period holds them, and checks that minimizing a file (ADR 0017) leaves its parse unchanged and keeps long numbers only in an export's references. It prints only counts, yes/no answers, error codes and row numbers, never a description, amount, name or file name. `pnpm test` and CI never run it, and it skips itself when the folder has no exports.
 
 `src/extraction/pdf-extraction.private.test.ts` reads every `.pdf` there the same way (Phase 9.1): it extracts each file's text, reports their pages and the most text items on a page, and checks that no text keeps letters written apart or ligatures. It prints counts only, and skips itself when the folder has no PDFs.
+
+`src/bancolombia/real-quarterly-pdfs.private.test.ts` reads each quarterly statement's PDF there (Phase 9.3) against its spreadsheet, the one of its account and period: it counts the fields that differ, but for the repeated spaces the PDF prints as one; reconciles it; and checks that once minimized it reads the same and sends no address, city, later page's header, footer or long number. It prints counts only.

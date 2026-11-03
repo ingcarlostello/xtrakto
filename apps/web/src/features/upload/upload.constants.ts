@@ -107,6 +107,7 @@ export const FILE_PROBLEM = {
 // (`utils/statement-label.constants.ts`).
 export const FORMAT_BANKS = {
   "bancolombia-savings-quarterly": "bancolombia",
+  "bancolombia-savings-quarterly-pdf": "bancolombia",
   "bancolombia-movements-export": "bancolombia",
 } as const satisfies Record<FormatId, keyof typeof BANK_LABELS>;
 

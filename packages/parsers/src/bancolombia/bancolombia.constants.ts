@@ -8,11 +8,14 @@ export const BANCOLOMBIA_BANK_ID = "bancolombia";
 
 // Stored with each statement as its format.
 export const QUARTERLY_FORMAT_ID = "bancolombia-savings-quarterly";
+export const QUARTERLY_PDF_FORMAT_ID = "bancolombia-savings-quarterly-pdf";
 export const MOVEMENTS_EXPORT_FORMAT_ID = "bancolombia-movements-export";
 
 /** The formats this package reads. */
 export type FormatId =
-  typeof QUARTERLY_FORMAT_ID | typeof MOVEMENTS_EXPORT_FORMAT_ID;
+  | typeof QUARTERLY_FORMAT_ID
+  | typeof QUARTERLY_PDF_FORMAT_ID
+  | typeof MOVEMENTS_EXPORT_FORMAT_ID;
 
 /** Labels that open each block, in the first column. */
 export const QUARTERLY_BLOCK = {
@@ -73,6 +76,46 @@ export const SPLIT_MARK = "¡";
 
 /** The only account type the MVP reads. */
 export const SAVINGS_ACCOUNT_TYPE = "CUENTA DE AHORROS";
+
+// The quarterly statement's PDF (Appendix A.3).
+
+/** What the page's header box and its summary are called in a failure. */
+export const QUARTERLY_PDF_BLOCK = {
+  HEADER: "ESTADO DE CUENTA",
+  SUMMARY: "RESUMEN",
+} as const;
+
+/** The labels in the page's header box, each before its value. */
+export const QUARTERLY_PDF_LABEL = {
+  FROM: "DESDE:",
+  TO: "HASTA:",
+  NUMBER: "NÚMERO",
+} as const;
+
+/** How the header box's account type starts: "CUENTA DE AHORROS". */
+export const QUARTERLY_PDF_ACCOUNT_TYPE = /^CUENTA\s/i;
+
+/** The summary's labels: the spreadsheet's INTERESES reads differently. */
+export const QUARTERLY_PDF_SUMMARY = {
+  ...SUMMARY_COLUMN,
+  INTEREST: "VALOR INTERESES PAGADOS",
+} as const;
+
+/** Every column of the movements table, as each page's header prints them. */
+export const QUARTERLY_PDF_COLUMNS = [
+  "FECHA",
+  "DESCRIPCIÓN",
+  "SUCURSAL",
+  "DCTO.",
+  "VALOR",
+  "SALDO",
+] as const;
+
+/** What each page prints under its table: the bank's contact, its number. */
+export const QUARTERLY_PDF_FOOTERS = ["DCF:", "PÁGINA:"] as const;
+
+/** How the PDF prints, inside one description, the "ñí" a spreadsheet splits. */
+export const PDF_SPLIT_MARK = "|¡";
 
 /** The movements export's header is its first row. */
 export const EXPORT_HEADER_ROW = 0;
