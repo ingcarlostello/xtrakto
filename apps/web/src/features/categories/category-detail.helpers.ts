@@ -10,10 +10,10 @@ import {
   formatDayInWords,
   formatMonthName,
   formatSignedAmount,
-  NO_DESCRIPTION,
   sumAmounts,
 } from "@xtrakto/core";
 import type { PeriodMovement, TransactionListItem } from "@xtrakto/db";
+import { descriptionView } from "@/components/movement-row/movement-row.helpers";
 import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
 import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
@@ -186,23 +186,28 @@ const movementsHref = (detail: Links, movementId?: string) =>
     ...(movementId === undefined ? {} : { movementId }),
   });
 
-const hasDescription = ({ descriptionRaw }: TransactionListItem): boolean =>
-  descriptionRaw.trim() !== NO_DESCRIPTION;
+// Its title in plain words over the bank's text, or the bank's text alone.
+const titleOf = (item: TransactionListItem) => {
+  const view = descriptionView(item);
+  if (view.kind === "bank") return { title: view.text, isBankText: true };
+  return {
+    title: view.kind === "titled" ? view.title : COPY.latest.noDescription,
+    isBankText: false,
+    bankText: view.raw,
+  };
+};
 
 /**
- * The category's newest movements: the bank's text as printed, the day,
- * the channel, whether its category is a guess, and its amount; each opens
- * its detail in Movimientos.
+ * The category's newest movements: its title in plain words over the
+ * bank's text, as Movimientos shows it, the day, the channel, whether its
+ * category is a guess, and its amount; each opens its detail in Movimientos.
  */
 export const latestRows = (
   detail: Links & Pick<CategoryDetail, "latest">,
 ): readonly LatestRow[] =>
   detail.latest.map((item) => ({
     id: item.id,
-    title: hasDescription(item)
-      ? item.descriptionRaw
-      : COPY.latest.noDescription,
-    hasDescription: hasDescription(item),
+    ...titleOf(item),
     date: formatDayInWords(item.date),
     channel: channelOf(item.descriptionRaw)?.labelEs,
     isPendingReview: item.isPendingReview,

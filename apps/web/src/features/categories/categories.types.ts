@@ -115,10 +115,15 @@ export type CategoryTiles = {
 /** One of a category's newest movements, as its detail lists it. */
 export type LatestRow = {
   readonly id: string;
-  /** The bank's text as printed, or that it gave none. */
+  /**
+   * In plain words (8.6a), as Movimientos titles it; the bank's text as
+   * printed when nothing says what it was; or that the bank gave none.
+   */
   readonly title: string;
-  /** False for the bank's `0`, titled "Sin descripción del banco". */
-  readonly hasDescription: boolean;
+  /** The title is the bank's text as printed. */
+  readonly isBankText: boolean;
+  /** The bank's text under a title that isn't it. */
+  readonly bankText?: string;
   /** "27 de septiembre". */
   readonly date: string;
   readonly channel: string | undefined;

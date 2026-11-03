@@ -30,7 +30,7 @@ import {
   type MovementPeriod,
   periodDays,
 } from "@/utils/transactions-url.helpers";
-import { CATEGORIES_COPY } from "./categories.constants";
+import { CATEGORIES_COPY, WEEK_NOUNS } from "./categories.constants";
 import type {
   CategoryDetail,
   CategoryWeek,
@@ -112,7 +112,7 @@ type Weeks = {
 type EventPlace = { readonly plot: ChartPlot; readonly from: LocalDate };
 
 // The week that stands out, when one does: what it took and how many
-// movements, against what a normal week took.
+// payments, in its category's word, against what a normal week took.
 const eventOf = (
   { weeks, categoryId }: Weeks,
   { plot, from }: EventPlace,
@@ -121,7 +121,7 @@ const eventOf = (
   const typical = typicalOf(weeks);
   if (peak === undefined || peak.amountMinor === 0) return undefined;
   if (typical > 0 && peak.amountMinor < typical * STANDS_OUT) return undefined;
-  const count = countText(peak.count, CATEGORIES_COPY.spending.movements);
+  const count = countText(peak.count, WEEK_NOUNS[categoryId] ?? COPY.payments);
   return {
     x: coordinate(plot.x(daysBetween(from, peak.from))),
     y: coordinate(plot.y(peak.amountMinor)),

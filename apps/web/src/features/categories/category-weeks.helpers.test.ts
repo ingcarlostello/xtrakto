@@ -146,7 +146,7 @@ describe("weeklyChart", () => {
       x: 38.46,
       y: 31.67,
       title: "Semana del 5 de agosto: $410.000",
-      detail: "2 movimientos. Una semana normal es de $50 mil.",
+      detail: "2 pedidos. Una semana normal es de $50 mil.",
     });
     expect(chart?.label).toBe(
       "Gasto en «Restaurantes y domicilios» por semana, del 1 de julio al 29 de septiembre. La semana con más fue la del 5 de agosto: $410.000.",
@@ -198,8 +198,26 @@ describe("weeklyChart", () => {
     expect(chart?.event).toMatchObject({
       title: "Semana del 15 de julio: $300.000",
       detail:
-        "1 movimiento. La mayoría de las semanas no tuvo gasto en «Efectivo».",
+        "1 retiro. La mayoría de las semanas no tuvo gasto en «Efectivo».",
     });
+  });
+
+  it("counts payments when the category has no word of its own for them", () => {
+    const BUS = ["transport", "merchant_transport"] as const;
+    const chart = weeklyChart(
+      detailOf(
+        [
+          ["2026-07-20", -1_850_000, BUS],
+          ["2026-07-21", -2_100_000, BUS],
+          ["2026-09-29", 320_000_000, SALARY],
+        ],
+        { categoryId: "transport" },
+      ),
+    );
+
+    expect(chart?.event?.detail).toBe(
+      "2 pagos. La mayoría de las semanas no tuvo gasto en «Transporte».",
+    );
   });
 
   it("draws nothing when the category took nothing in the period", () => {

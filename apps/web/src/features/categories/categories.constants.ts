@@ -1,4 +1,5 @@
 import type { CategoryId, CategoryKind } from "@xtrakto/core";
+import type { Noun } from "@/utils/count-text.utils";
 
 // "Categorías" (docs/ui/v8-05): where the real spending went, by category,
 // and where the rest only moved.
@@ -57,7 +58,9 @@ export const CATEGORIES_COPY = {
     legend: "Gasto por semana",
     // "Semana del 5 de agosto: $410.000".
     weekOf: "Semana del",
-    // "9 movimientos. Una semana normal es de $210 mil."
+    // "9 pedidos. Una semana normal es de $210 mil.": a category's own
+    // word for its payments (`WEEK_NOUNS`), else "pagos".
+    payments: { one: "pago", other: "pagos" },
     normalWeek: "Una semana normal es de",
     // "La mayoría de las semanas no tuvo gasto en «Efectivo»."
     mostWeeks: "La mayoría de las semanas no tuvo gasto en",
@@ -127,6 +130,20 @@ export const PLACES_SHOWN = 5;
 
 /** How many other ways the bank wrote a place its note names. */
 export const OTHER_TEXTS = 2;
+
+/**
+ * How the week that stands out counts the payments of these categories, in
+ * plain words (8.6d, docs/ui/v8-06): "9 pedidos".
+ */
+export const WEEK_NOUNS: Partial<Record<CategoryId, Noun>> = {
+  restaurants: { one: "pedido", other: "pedidos" },
+  groceries: { one: "compra", other: "compras" },
+  shopping: { one: "compra", other: "compras" },
+  cash_withdrawal: { one: "retiro", other: "retiros" },
+  loan_payment: { one: "cuota", other: "cuotas" },
+  subscriptions: { one: "cobro", other: "cobros" },
+  taxes_and_fees: { one: "cobro", other: "cobros" },
+};
 
 /** Where money that only moved went, by its category. */
 export const MOVED_LABELS: Partial<Record<CategoryId, string>> = {
