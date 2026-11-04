@@ -288,55 +288,57 @@ That is the summary; the other screens keep the header, title row and controls, 
 
 ### Concept → icon (Lucide names)
 
-| Concept                                       | Icon                               |
-| --------------------------------------------- | ---------------------------------- |
-| Income                                        | `download` (arrow into tray)       |
-| Real spending                                 | `shopping-cart`                    |
-| Moved                                         | `arrow-left-right`                 |
-| Investment                                    | `trending-up`                      |
-| Loan / bank ("Créditos")                      | `landmark`                         |
-| Credit card                                   | `credit-card`                      |
-| Cash ("Efectivo")                             | `banknote`                         |
-| Nequi / phone                                 | `smartphone`                       |
-| Bank costs ("Costos del banco": 4x1000, fees) | `file-text`                        |
-| Payments to people ("Pagos a personas")       | `users`                            |
-| Payment gateways ("Pasarelas de pago")        | `globe`                            |
-| Groceries ("Mercado")                         | `shopping-bag`                     |
-| Restaurants and delivery                      | `utensils`                         |
-| Shopping ("Compras")                          | `package`                          |
-| Transport                                     | `car`                              |
-| Home services ("Servicios del hogar")         | `house`                            |
-| Energy, in Pagos fijos                        | `zap`                              |
-| Gas, in Pagos fijos                           | `flame`                            |
-| Water, in Pagos fijos                         | `droplet`                          |
-| Phone or internet, in Pagos fijos             | `smartphone`                       |
-| Television, in Pagos fijos                    | `tv`                               |
-| Health                                        | `heart`                            |
-| Housing ("Vivienda")                          | `key-round`                        |
-| Education ("Educación")                       | `graduation-cap`                   |
-| Entertainment ("Entretenimiento")             | `clapperboard`                     |
-| Subscriptions                                 | `repeat`                           |
-| Other                                         | `ellipsis`                         |
-| To review ("Por revisar")                     | `circle-alert`                     |
-| A category, and rules from the quick review   | `tag`                              |
-| Recurring payments                            | `calendar`                         |
-| Privacy                                       | `shield-check`                     |
-| Files we don't keep (privacy facts)           | `eye-off`                          |
-| Numbers kept only as a code (privacy facts)   | `lock`                             |
-| More, on the phone's bar ("Más")              | `ellipsis`                         |
-| Signs in with Google (profile)                | `globe`                            |
-| Signs in by email (profile)                   | `mail`                             |
-| Sign out ("Cerrar sesión")                    | `log-out`                          |
-| The example ("Estás viendo un ejemplo")       | `eye`                              |
-| Upload                                        | `upload`                           |
-| Download a CSV                                | `file-down` (`download` is income) |
-| Ask / chat                                    | `message-square`                   |
-| Summary                                       | `layout-grid`                      |
-| Transactions                                  | `list`                             |
-| Categories                                    | `chart-pie`                        |
-| Notifications                                 | `bell`                             |
-| Profile                                       | `user`                             |
-| Assistant                                     | Custom open-ring arrow (see Brand) |
+| Concept                                       | Icon                                |
+| --------------------------------------------- | ----------------------------------- |
+| Income                                        | `download` (arrow into tray)        |
+| Real spending                                 | `shopping-cart`                     |
+| Moved                                         | `arrow-left-right`                  |
+| Investment                                    | `trending-up`                       |
+| Loan / bank ("Créditos")                      | `landmark`                          |
+| Credit card                                   | `credit-card`                       |
+| Cash ("Efectivo")                             | `banknote`                          |
+| Nequi / phone                                 | `smartphone`                        |
+| Bank costs ("Costos del banco": 4x1000, fees) | `file-text`                         |
+| Payments to people ("Pagos a personas")       | `users`                             |
+| Payment gateways ("Pasarelas de pago")        | `globe`                             |
+| Groceries ("Mercado")                         | `shopping-bag`                      |
+| Restaurants and delivery                      | `utensils`                          |
+| Shopping ("Compras")                          | `package`                           |
+| Transport                                     | `car`                               |
+| Home services ("Servicios del hogar")         | `house`                             |
+| Energy, in Pagos fijos                        | `zap`                               |
+| Gas, in Pagos fijos                           | `flame`                             |
+| Water, in Pagos fijos                         | `droplet`                           |
+| Phone or internet, in Pagos fijos             | `smartphone`                        |
+| Television, in Pagos fijos                    | `tv`                                |
+| Health                                        | `heart`                             |
+| Housing ("Vivienda")                          | `key-round`                         |
+| Education ("Educación")                       | `graduation-cap`                    |
+| Entertainment ("Entretenimiento")             | `clapperboard`                      |
+| Subscriptions                                 | `repeat`                            |
+| Other                                         | `ellipsis`                          |
+| To review ("Por revisar")                     | `circle-alert`                      |
+| A category, and rules from the quick review   | `tag`                               |
+| Recurring payments                            | `calendar`                          |
+| Privacy                                       | `shield-check`                      |
+| Files we don't keep (privacy facts)           | `eye-off`                           |
+| Numbers kept only as a code (privacy facts)   | `lock`                              |
+| More, on the phone's bar ("Más")              | `ellipsis`                          |
+| Signs in with Google (profile)                | `globe`                             |
+| Signs in by email (profile)                   | `mail`                              |
+| Sign out ("Cerrar sesión")                    | `log-out`                           |
+| The example ("Estás viendo un ejemplo")       | `eye`                               |
+| Upload                                        | `upload`                            |
+| A chosen Excel file, a PDF                    | `file-spreadsheet`, `file-text`     |
+| A PDF's password                              | `lock` (`eye-off` / `eye` shows it) |
+| Download a CSV                                | `file-down` (`download` is income)  |
+| Ask / chat                                    | `message-square`                    |
+| Summary                                       | `layout-grid`                       |
+| Transactions                                  | `list`                              |
+| Categories                                    | `chart-pie`                         |
+| Notifications                                 | `bell`                              |
+| Profile                                       | `user`                              |
+| Assistant                                     | Custom open-ring arrow (see Brand)  |
 
 An unclassified movement shows the icon of its best guess in neutral ink, and one without a category shows `ellipsis`. Every income category uses `download`. Each category's icon is in `CATEGORY_ICONS`, and its chip is `MovementIcon` (`components/movement-icon/`), which Movimientos and Pagos fijos share. A fixed payment of a home service whose words name it shows its service's icon instead (`SERVICE_ICONS`, Phase 8.6d), as v8-04 draws them.
 
@@ -653,11 +655,12 @@ On the upload screen, inside the card "Elige uno o varios archivos": `--radius-m
 
 ### File row
 
-One per chosen file, in a list with dividers: a 44px icon chip (`--surface-muted`, `file-spreadsheet` in ink), the file name (Manrope 700 15px, cut with an ellipsis; it never leaves the browser) and "Quitar" on the right (link action, with an `aria-label` that names the file; the focus then goes back to "Elegir archivos"). Under the name, announced politely:
+One per chosen file, in a list with dividers: a 44px icon chip (`--surface-muted`, in ink: `file-spreadsheet` for an Excel file, `file-text` for a PDF, by its format once read and by its name before), the file name (Manrope 700 15px, cut with an ellipsis; it never leaves the browser) and "Quitar" on the right (link action, with an `aria-label` that names the file; the focus then goes back to "Elegir archivos"). Under the name, announced politely:
 
 - Waiting or being read: the step, in Caption `--text-muted` ("Leyendo el archivo…").
-- Read: the tags (bank, format, file type and period: "jul–sep 2026" for a statement's own period, "1–15 ago 2026" for a range of movements), then the count ("33 movimientos").
-- With a problem: the row sits on the attention surface (`#FFF6EF`, `--radius-md`, reaching past the row so the chips stay aligned), the chip turns white with the 9px orange dot, and it says what happened (Manrope 700 14px) and what to do (Caption), as `v8-13` does.
+- Read: the tags (bank, format, file type, "Excel" or "PDF", and period: "jul–sep 2026" for a statement's own period, "1–15 ago 2026" for a range of movements), then the count ("33 movimientos").
+- With a problem: the row sits on the attention surface (`#FFF6EF`, `--radius-md`, reaching past the row so the chips stay aligned), the chip turns white with the 9px orange dot, and it says what happened (Manrope 700 14px) and what to do (Caption), as `v8-13` does: a file that isn't an Excel or a PDF, a scanned PDF ("Este PDF no trae texto"), one over 30 pages, one that doesn't open ("Puede estar dañado"), one that isn't a statement.
+- **A PDF that asks for its password** (Phase 9.4a, `v8-09` drawn in the row, as several files can wait): the attention surface with the `lock` chip and its dot, "Este PDF tiene contraseña" and "Escríbela para abrirlo; no sale de tu navegador.", the chip and "Quitar" by the title. Under the row (its whole width on phones, the text's from `sm`), outside what is announced, the form (`PdfPasswordForm`): "Contraseña del PDF" (Caption 700); the field as a white pill, as Movimientos's search draws it (§9), with `lock` inside on the left and, on the right, a 44px "Mostrar la contraseña" toggle (`eye-off` while hidden, `eye` once shown, `aria-pressed`); the hint "En Bancolombia suele ser tu número de documento, sin puntos ni espacios. No la guardamos." (Caption `--text-muted`); then the Primary "Abrir PDF" with `lock` and the Secondary "Elegir otro archivo", which takes the file out and opens the picker. Enter opens it. While the password typed is tried, the form stays and the button reads "Abriendo…" (`aria-disabled`, keeping its focus); a wrong one says "Esa contraseña no abre este PDF. Revísala y escríbela de nuevo." in Caption 600 `--danger` as an alert (`aria-invalid` on the field), and the field takes the focus back with its text selected. The field takes the focus when its form appears and the focus is nowhere else (the page, or "Elegir archivos"), never from another field; when a PDF opens and its form goes, the focus goes back to "Elegir archivos". The password that opened a PDF is tried quietly on the others still locked (their rows read "Leyendo el archivo…"); one it doesn't open asks for its own without calling it wrong.
 
 Below the list, a Primary "Subir N archivos" for the files read whose account is settled: a movements export that has to ask waits for the choice. The files go up one at a time; each row keeps its tags and adds a line in Caption 600 `--text-secondary` ("Subiendo…", then "Subido · en cola para procesar"), without "Quitar" once it's on its way. Meanwhile the button reads "Subiendo…" and keeps its focus (`aria-disabled`, faded like a disabled button). A file that got no answer sits on the attention surface ("No se subió") with a "Reintentar" link action under its text. Once sent, the same line follows its job every 2 seconds: "Procesando…", then the row becomes the upload result below; a job that failed sits on the attention surface with what happened, one message per error code as `v8-13` writes them ("No pudimos leer este archivo", "No alcanzamos a procesarlo"), and one open for more than 2 minutes adds a Caption `--text-muted` line: "Está tardando más de lo normal; seguimos revisando." After a reload, the jobs the URL's fragment kept come back as rows named by format and period ("Extracto trimestral jul–sep 2026"), since a file's name never leaves the browser. When the screen stops asking (3 failures in a row, or 10 minutes without a change), a Caption `--text-secondary` line below the list says so, with a "Revisar de nuevo" link action, in a `role="status"` region. When the month's statements run out, the button stays disabled with a caption: "Llegaste al límite de este mes. Se renuevan el 1 de noviembre."
 
@@ -675,7 +678,7 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 
 "Archivos subidos", beside the upload card on the upload screen (below it on phones), once the user has sent a file (`UploadedFiles`, `v8-07`): a card with its title, "Los más recientes primero." and one row per file sent, newest first, each with a `--divider` line above it.
 
-- Each row: the 44px file chip, the file named by format and period in Card title with `text-wrap: balance` ("Extracto trimestral jul–sep 2026"; its name never leaves the browser), one Caption `--text-muted` line with what came of it, and a badge on the right, under the text on phones:
+- Each row: the 44px file chip (`file-text` for a PDF's format), the file named by format and period in Card title with `text-wrap: balance` ("Extracto trimestral jul–sep 2026"; its name never leaves the browser), one Caption `--text-muted` line with what came of it, which starts with its file type ("Excel" or "PDF"), and a badge on the right, under the text on phones:
 
 | What came of it                          | Line                                           | Badge                         |
 | ---------------------------------------- | ---------------------------------------------- | ----------------------------- |
