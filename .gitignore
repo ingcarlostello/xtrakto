@@ -26,8 +26,10 @@ next-env.d.ts
 # Real bank statements (local development only, any depth)
 **/fixtures/private/
 
-# Synthetic XLSX files generated for manual checks (`generate:xlsx`)
+# Synthetic XLSX and PDF files generated for manual checks (`generate:xlsx`,
+# `generate:pdf`)
 **/fixtures/xlsx/
+**/fixtures/pdf/
 
 # The promo video's music: its license (Pixabay) forbids redistributing the
 # track on its own, so only the rendered video is committed (ADR 0020)
