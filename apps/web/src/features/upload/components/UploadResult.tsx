@@ -25,21 +25,36 @@ function ResultIcon({ isOk, kind }: ResultIconProps) {
 
 type CountsProps = { counts: ResultView["counts"]; isOk: boolean };
 
+// Three tiles, or four with the references a file added, on the soft blue
+// of information (v8-08): two by two on phones.
 function Counts({ counts, isOk }: CountsProps) {
   return (
-    <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-      {counts.map(({ value, label }) => (
+    <ul
+      className={cn(
+        "grid grid-cols-2 gap-2.5",
+        counts.length > 3 ? "sm:grid-cols-4" : "sm:grid-cols-3",
+      )}
+    >
+      {counts.map(({ value, label, isInfo }) => (
         <li
           key={label}
           className={cn(
             "flex flex-col gap-1 rounded-md px-4 py-3",
-            isOk ? "bg-surface-muted" : "bg-surface",
+            isInfo && "bg-primary-soft",
+            !isInfo && (isOk ? "bg-surface-muted" : "bg-surface"),
           )}
         >
           <span className="font-display text-amount-l font-medium tabular-nums">
             {value}
           </span>
-          <span className="text-caption text-ink-muted">{label}</span>
+          <span
+            className={cn(
+              "text-caption",
+              isInfo ? "text-ink-secondary" : "text-ink-muted",
+            )}
+          >
+            {label}
+          </span>
         </li>
       ))}
     </ul>

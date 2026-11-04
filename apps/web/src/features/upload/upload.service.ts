@@ -16,11 +16,7 @@ import {
   deletePendingIngestionJob,
   findOrCreateUser,
   findUserId,
-  type IngestionJobResult,
-  type IngestionStats,
   listAccounts,
-  listIngestionJobResults,
-  listRecentIngestionJobs,
   type UserContext,
   type UserId,
   withUserContext,
@@ -40,11 +36,8 @@ import type {
   MonthlyUsage,
   SubmitStatementRequest,
   SubmittedStatement,
-  JobOutcome,
   UploadAccount,
-  UploadJob,
 } from "./upload.types";
-import { MAX_LISTED_FILES } from "./uploaded-files.constants";
 
 // The calendar month in Bogotá the limit counts, and the day it renews.
 const currentMonth = () => {
@@ -173,89 +166,4 @@ export const queueStatement = async (
   if (!job.ok) return job;
   await announceJob(db, userId, job.value);
   return ok({ jobId: job.value });
-};
-
-// Only what the screen shows of a job (system design §4).
-const NO_COUNTS: IngestionStats = {
-  total: 0,
-  added: 0,
-  skipped: 0,
-  covered: 0,
-  hidden: 0,
-  replaced: 0,
-};
-
-const outcomeOf = ({
-  stats,
-  statement,
-}: IngestionJobResult): JobOutcome | undefined =>
-  statement === null
-    ? undefined
-    : {
-        stats: { ...NO_COUNTS, ...stats },
-        statementId: statement.id,
-        accountId: statement.accountId,
-        period: statement.period,
-        balance: statement.balance,
-        ...(statement.differenceMinor === null
-          ? {}
-          : { differenceMinor: statement.differenceMinor }),
-        ...(statement.chainedTo === null
-          ? {}
-          : { chainedTo: statement.chainedTo }),
-      };
-
-const uploadJob = (job: IngestionJobResult): UploadJob => {
-  const outcome = outcomeOf(job);
-  return {
-    jobId: job.id,
-    status: job.status,
-    isSlow: job.isSlow,
-    ...(job.formatId === null ? {} : { formatId: job.formatId }),
-    ...(job.errorCode === null ? {} : { errorCode: job.errorCode }),
-    ...(outcome ? { outcome } : {}),
-  };
-};
-
-/**
- * The signed-in user's jobs among `jobIds`, in that order, as the upload
- * screen follows them: never their content. Other users' jobs, and jobs that
- * are gone, are left out; reading never creates the user's row.
- */
-export const listUploadJobs = async (
-  clerkUserId: string,
-  jobIds: readonly string[],
-): Promise<readonly UploadJob[]> => {
-  if (jobIds.length === 0) return [];
-  const jobs = await withSanitizedErrors("JOBS_NOT_READ", async () => {
-    const db = getDb();
-    const userId = await findUserId(db, clerkUserId);
-    if (!userId) return [];
-    return withUserContext(db, userId, (ctx) =>
-      listIngestionJobResults(ctx, jobIds),
-    );
-  });
-  const byId = new Map(jobs.map((job) => [job.id, job]));
-  return jobIds.flatMap((id) => {
-    const job = byId.get(id);
-    return job ? [uploadJob(job)] : [];
-  });
-};
-
-/**
- * The signed-in user's latest files sent, newest first, each with what its
- * job came to: never their content. Reading never creates the user's row.
- */
-export const listUploadedFiles = async (
-  clerkUserId: string,
-): Promise<readonly UploadJob[]> => {
-  const jobs = await withSanitizedErrors("FILES_NOT_READ", async () => {
-    const db = getDb();
-    const userId = await findUserId(db, clerkUserId);
-    if (!userId) return [];
-    return withUserContext(db, userId, (ctx) =>
-      listRecentIngestionJobs(ctx, MAX_LISTED_FILES),
-    );
-  });
-  return jobs.map(uploadJob);
 };

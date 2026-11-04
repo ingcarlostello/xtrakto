@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({
   getSignedInClerkUserId: mocks.getSignedInClerkUserId,
 }));
-vi.mock("../upload.service", () => ({
+vi.mock("../upload-results.service", () => ({
   listUploadJobs: mocks.listUploadJobs,
 }));
 

@@ -6,6 +6,7 @@ import { uploadedFileView } from "./uploaded-files.helpers";
 
 const QUARTER = periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" });
 const OCTOBER = periodSchema.parse({ from: "2026-10-01", to: "2026-10-08" });
+const NO_MATCHES = { matched: 0, dayApart: 0, references: 0, verifiedBy: [] };
 
 const quarterly: UploadJob = {
   jobId: "job",
@@ -40,6 +41,7 @@ const done = (
     accountId: "a1",
     period: QUARTER,
     balance: "verified",
+    matches: NO_MATCHES,
     ...rest,
   },
 });
@@ -157,6 +159,67 @@ describe("uploadedFileView", () => {
     expect(uploadedFileView({ ...pdf, status: "processing" }).detail).toBe(
       "PDF",
     );
+  });
+
+  describe("the references a file's movements gave or took (10.1b)", () => {
+    const withReferences = (references: number) => ({
+      matches: { ...NO_MATCHES, matched: 48, references },
+    });
+
+    it("completes a file that added references and nothing new", () => {
+      expect(
+        uploadedFileView(
+          done(
+            movements,
+            { total: 48, added: 0, covered: 48 },
+            { period: OCTOBER, balance: "none", ...withReferences(12) },
+          ),
+        ),
+      ).toEqual({
+        title: "Movimientos 1–8 oct 2026",
+        detail: "Excel · 48 ya los tenías · 12 referencias agregadas",
+        badge: { label: "Completado", variant: "info" },
+      });
+    });
+
+    it("says an export with new movements is verified once its quarterly statement agrees with it", () => {
+      expect(
+        uploadedFileView(
+          done(
+            movements,
+            { total: 14, added: 14 },
+            {
+              period: OCTOBER,
+              balance: "none",
+              matches: { ...NO_MATCHES, matched: 14, verifiedBy: [QUARTER] },
+            },
+          ),
+        ),
+      ).toEqual({
+        title: "Movimientos 1–8 oct 2026",
+        detail: "Excel · 14 nuevos · verificado por tu extracto trimestral",
+        badge: { label: "Verificado", variant: "ok" },
+      });
+    });
+
+    it("adds them to a quarterly statement's line and to an export's with new movements", () => {
+      expect(
+        uploadedFileView(done(quarterly, {}, withReferences(1))).detail,
+      ).toBe(
+        "Excel · 33 movimientos · cuadra al centavo · 1 referencia agregada",
+      );
+      expect(
+        uploadedFileView(
+          done(
+            movements,
+            { total: 21, added: 6 },
+            { period: OCTOBER, balance: "none", ...withReferences(3) },
+          ),
+        ).detail,
+      ).toBe(
+        "Excel · 6 nuevos · 3 referencias agregadas · sin saldo para verificar",
+      );
+    });
   });
 
   it("writes one movement already had in the singular", () => {

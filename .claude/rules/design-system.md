@@ -437,7 +437,7 @@ The totals are the account's for the period: neither the search nor the filter c
 | Without balance   | `--text-faint`       | "Sin saldo para verificar" · "Archivo de movimientos" |
 | Doesn't reconcile | `--status-attention` | "No cuadra por $12.400" · "Revisa el archivo"         |
 
-A movements export without balances becomes "Verificado por tu extracto trimestral" once a quarterly statement covers its dates and agrees with it.
+A movements export without balances becomes "Verificado por tu extracto trimestral" once a quarterly statement covers its dates and agrees with it. As Phase 10.1b builds it: verified quarterly statements cover every day of the file and every movement on those days has its twin (10.1a), worked out when read, so the upload order doesn't matter and a file uploaded twice reads the same; "Verificado por tu extracto trimestral" · "Este tipo de archivo no trae saldos; lo comparamos con jul–sep 2026 y coincide." with the verified dot.
 
 On the upload screen the same pill counts the month's statements, beside the page title (full width under it on phones): "7 de 10 disponibles" · "Archivos este mes" with the verified dot; with none left, "0 de 10 disponibles" · "Se renuevan el 1 de noviembre" with the attention dot (`StatusPill`, `components/status-pill/`).
 
@@ -669,10 +669,18 @@ Below the list, a Primary "Subir N archivos" for the files read whose account is
 A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadResult`):
 
 - Header: a 44px chip (`--income-soft` with `circle-check` in `--income-on-soft`), the outcome as Card title ("Listo: leímos tu archivo", "Ya tenías todo este archivo", "Listo: reemplazamos el extracto que no cuadraba"), the file's name in Caption `--text-muted` (its format and period after a reload) and its tags.
-- Count tiles: `--surface-muted`, `--radius-md`, padding 12px 16px; the number in Amount L with `tabular-nums` and its meaning in Caption `--text-muted`: "movimientos en el archivo", "ya los tenías: no se duplican", "nuevos". Three columns, two on phones.
+- Count tiles: `--surface-muted`, `--radius-md`, padding 12px 16px; the number in Amount L with `tabular-nums` and its meaning in Caption `--text-muted`: "movimientos en el archivo", "ya los tenías: no se duplican", "nuevos". Since Phase 10.1b a fourth, "12 referencias agregadas", when the file's movements gave references to its quarterly statement's or took them from movements files saved before (a phone's or a code's), on `--primary-soft` with its meaning in `--text-secondary`, as information. Three columns, four with the references, two on phones.
 - The status pill: "Saldo verificado" · "33 movimientos cuadran", "Sin saldo para verificar" · "Archivo de movimientos" (`--text-faint` dot) or "No cuadra por $810" · "Revisa el archivo". A verified quarterly statement that opens with the closing balance of the account's previous one reads "Encadenado" · "Empieza donde terminó abr–jun 2026", whichever was uploaded first.
 - The steps, in order: "Leído en tu navegador", "Reconocido", "Revisando duplicados" and the balance check. Each has a 24px mark (`--income-soft` with a check), its title (Manrope 700 14px) and one Caption `--text-muted` line, joined to the next by a 1px `--divider` line. The first one's line counts the movements ("33 movimientos"); for a PDF, while the page holds what it read, its pages and rows and the descriptions it joined (Phase 9.4b, `v8-08`): "2 páginas · 48 filas. Unimos 3 descripciones partidas en dos líneas.", or "2 páginas · 33 filas" when nothing was joined. After a reload it counts the movements again.
+- **What a movements export matched** (Phase 10.1b, `v8-08` and `v8-13`), counted when read, so it reads the same whichever file came first:
+  - "Revisando duplicados" says where they were: "48 movimientos ya estaban en tu extracto trimestral.", or, when another file had some, "48 movimientos ya estaban en tu cuenta: no se duplican. De ellos, 28 venían en tu extracto trimestral."; and, when interest matched a day apart, "Los intereses vienen con un día de diferencia entre archivos; igual los reconocimos." (a quarterly statement that took over movements files' movements says it too).
+  - The balance check of a movements export: "Verificado con tu extracto trimestral" · "Este archivo no trae saldos, pero todo coincide con jul–sep 2026."; matched in part, "Este archivo no trae saldos" · "15 movimientos coinciden con tu extracto trimestral; los demás, cuando subas el de su periodo."; with nothing to compare, "Este archivo no trae saldos" · "Los movimientos de la Sucursal Virtual no los incluyen. Los verificamos cuando subas el extracto trimestral de ese periodo.". v8-13's "Subir el trimestral" stays out: the drop zone sits right above the result, and this quarter's movements have no quarterly statement yet.
+  - "Clasificado", last, when references were added: "12 referencias nuevas, como números de Nequi o de PSE.".
 - A statement that doesn't reconcile sits on the attention surface: the file's chip (`file-spreadsheet`, or `file-text` for a PDF) in white with the orange dot, the title "El saldo final no cuadra por $810", "Puede faltar una página o una fila. No mostramos sus números hasta que cuadre.", only the file's count (nothing of it counts), white tiles, and its balance step marked with the orange dot on `--spending-soft`.
+
+### What follows ("Lo que sigue")
+
+As Phase 10.1b builds `v8-08`'s card (`NextStep`): under the upload card, since the results sit in its list (as v8's phone orders them), once the last file done has movements waiting for the quick review in its quarter. A `card` with "Lo que sigue" (Section title); a box on the attention surface (`--radius-md`, padding 16) with the white 44px chip, `circle-alert` and its 9px orange dot, "24 movimientos por revisar en jul–sep 2026" (Manrope 700 14px) over "Confírmalos en la revisión: pueden cambiar tu gasto real." (Caption `--text-secondary`); the Primary "Revisar ahora", to the quick review of that account and quarter, and the Secondary "Ver movimientos", to the file's; then "¿Tienes más archivos? Súbelos todos juntos; si se cruzan, no pasa nada." (Caption `--text-muted`). v8's "1 grupo nuevo por revisar" and "Ahora tenemos los números de Nequi: dinos si alguno es tuyo." count what waits instead, since what's new isn't known once read.
 
 ### Uploaded files
 
@@ -680,16 +688,19 @@ A processed file's row in the list, as `v8-08` shows it within Stage 5 (`UploadR
 
 - Each row: the 44px file chip (`file-text` for a PDF's format), the file named by format and period in Card title with `text-wrap: balance` ("Extracto trimestral jul–sep 2026"; its name never leaves the browser), one Caption `--text-muted` line with what came of it, which starts with its file type ("Excel" or "PDF"), and a badge on the right, under the text on phones:
 
-| What came of it                          | Line                                           | Badge                         |
-| ---------------------------------------- | ---------------------------------------------- | ----------------------------- |
-| A quarterly statement that reconciles    | "Excel · 379 movimientos · cuadra al centavo"  | "Verificado" (`ok`)           |
-| One that starts where the previous ended | "Excel · 355 movimientos · encadenado"         | "Verificado" (`ok`)           |
-| A movements export with new movements    | "Excel · 21 nuevos · sin saldo para verificar" | "Sin verificar"               |
-| A file the account already had           | "Excel · 63 ya los tenías · nada nuevo"        | "Sin cambios"                 |
-| A statement that doesn't reconcile       | "Excel · 33 movimientos · no cuadra por $810"  | "No cuadra" (`attention`)     |
-| A failed job                             | What happened, as its error code says it       | "No se procesó" (`attention`) |
-| A job still open                         | "Excel"                                        | "En proceso"                  |
+| What came of it                              | Line                                                        | Badge                         |
+| -------------------------------------------- | ----------------------------------------------------------- | ----------------------------- |
+| A quarterly statement that reconciles        | "Excel · 379 movimientos · cuadra al centavo"               | "Verificado" (`ok`)           |
+| One that starts where the previous ended     | "Excel · 355 movimientos · encadenado"                      | "Verificado" (`ok`)           |
+| A movements export with new movements        | "Excel · 21 nuevos · sin saldo para verificar"              | "Sin verificar"               |
+| One its quarterly statement verified (10.1b) | "Excel · 14 nuevos · verificado por tu extracto trimestral" | "Verificado" (`ok`)           |
+| A file the account already had               | "Excel · 63 ya los tenías · nada nuevo"                     | "Sin cambios"                 |
+| One that only added references (10.1b)       | "PDF · 48 ya los tenías · 12 referencias agregadas"         | "Completado" (`info`)         |
+| A statement that doesn't reconcile           | "Excel · 33 movimientos · no cuadra por $810"               | "No cuadra" (`attention`)     |
+| A failed job                                 | What happened, as its error code says it                    | "No se procesó" (`attention`) |
+| A job still open                             | "Excel"                                                     | "En proceso"                  |
 
+- Any other line adds the references its movements gave or took before its last fact: "Excel · 33 movimientos · cuadra al centavo · 1 referencia agregada", "Excel · 6 nuevos · 3 referencias agregadas · sin saldo para verificar" (10.1b).
 - The first 5 rows show; a link action "Ver N más" shows the rest (the latest 30) and then reads "Ver menos", with `aria-expanded` and the focus kept on it.
 
 ### Welcome (onboarding)

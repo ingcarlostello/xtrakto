@@ -3,7 +3,9 @@ import {
   formatAmount,
   formatMonthRange,
   isAmountMinor,
+  type Period,
 } from "@xtrakto/core";
+import type { StatementMatches } from "@xtrakto/db";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { countText } from "@/utils/count-text.utils";
 import {
@@ -33,6 +35,8 @@ export type ResultView = {
   readonly counts: readonly {
     readonly value: string;
     readonly label: string;
+    /** Information, on the soft blue: the references a file added. */
+    readonly isInfo?: boolean;
   }[];
   readonly pill: {
     readonly tone: StatusTone;
@@ -64,11 +68,19 @@ const titleOf = (outcome: JobOutcome): string => {
     return amount ? `${COPY.notReconciledBy} ${amount}` : COPY.notReconciled;
   }
   if (outcome.stats.replaced > 0) return COPY.replaced;
-  return outcome.stats.added === 0 ? COPY.alreadyHad : COPY.read;
+  // A file that only added references still brought something (v8-08).
+  const broughtNothing =
+    outcome.stats.added === 0 && outcome.matches.references === 0;
+  return broughtNothing ? COPY.alreadyHad : COPY.read;
 };
 
-// A statement that doesn't reconcile counts nothing: only its size.
-const countsOf = ({ stats, balance }: JobOutcome): ResultView["counts"] => {
+// A statement that doesn't reconcile counts nothing: only its size. The
+// references a file added come last, as information (v8-08).
+const countsOf = ({
+  stats,
+  balance,
+  matches,
+}: JobOutcome): ResultView["counts"] => {
   const tile = (count: number, label: { one: string; other: string }) => ({
     value: NUMBER.format(count),
     label: noun(count, label),
@@ -79,8 +91,16 @@ const countsOf = ({ stats, balance }: JobOutcome): ResultView["counts"] => {
     inFile,
     tile(stats.total - stats.added, COPY.had),
     tile(stats.added, COPY.new),
+    ...(matches.references > 0
+      ? [{ ...tile(matches.references, COPY.references), isInfo: true }]
+      : []),
   ];
 };
+
+// The quarterly statements that verify a movements export, in words:
+// "jul–sep 2026", or "jul–sep 2026 y oct–dic 2026".
+const quarterlyWords = (periods: readonly Period[]): string =>
+  periods.map(formatMonthRange).join(` ${COPY.and} `);
 
 // Chained says more than verified: it also opens where the previous closed.
 const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
@@ -96,11 +116,21 @@ const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
         detail: `${countText(stats.total, UPLOAD_COPY.movements)} ${noun(stats.total, COPY.reconcile)}`,
       };
 
+// A movements export prints no balances, unless its quarterly statement
+// verifies it, movement by movement (10.1b).
+const noBalancePill = ({ verifiedBy }: StatementMatches): ResultView["pill"] =>
+  verifiedBy.length > 0
+    ? {
+        tone: "ok",
+        title: COPY.verifiedByQuarterly,
+        detail: `${COPY.verifiedByQuarterlyDetail} ${quarterlyWords(verifiedBy)} ${COPY.andMatches}`,
+      }
+    : { tone: "none", title: COPY.noBalance, detail: COPY.movementsFile };
+
 const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
   const { balance } = outcome;
   if (balance === STATEMENT_BALANCE.VERIFIED) return verifiedPill(outcome);
-  if (balance === STATEMENT_BALANCE.NONE)
-    return { tone: "none", title: COPY.noBalance, detail: COPY.movementsFile };
+  if (balance === STATEMENT_BALANCE.NONE) return noBalancePill(outcome.matches);
   const amount = offBy(outcome);
   return {
     tone: "attention",
@@ -111,28 +141,85 @@ const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
   };
 };
 
-const duplicatesText = ({ stats, balance }: JobOutcome): string => {
+// What the account had of the file, and where: a movements export its
+// quarterly statement repeats says so (10.1b).
+const hadSentences = (
+  { stats, balance, matches }: JobOutcome,
+  had: number,
+): readonly string[] => {
+  const movements = countText(had, UPLOAD_COPY.movements);
+  if (balance === STATEMENT_BALANCE.NONE && matches.matched > 0)
+    return matches.matched === had
+      ? [`${movements} ${COPY.hadInQuarterly}`]
+      : [
+          `${movements} ${COPY.hadIn}`,
+          `${COPY.someInQuarterly} ${NUMBER.format(matches.matched)} ${COPY.inQuarterly}`,
+        ];
+  return [
+    `${movements} ${COPY.hadIn}`,
+    ...(stats.covered > 0 ? [COPY.coveredNote] : []),
+    ...(stats.hidden > 0 ? [COPY.hiddenNote] : []),
+  ];
+};
+
+const duplicatesText = (outcome: JobOutcome): string => {
+  const { stats, balance, matches } = outcome;
   if (balance === STATEMENT_BALANCE.UNVERIFIED) return COPY.keptApart;
   const had = stats.total - stats.added;
   if (had === 0) return COPY.noneHad;
   return [
-    `${countText(had, UPLOAD_COPY.movements)} ${COPY.hadIn}`,
-    ...(stats.covered > 0 ? [COPY.coveredNote] : []),
-    ...(stats.hidden > 0 ? [COPY.hiddenNote] : []),
+    ...hadSentences(outcome, had),
+    ...(matches.dayApart > 0 ? [COPY.interestDayApart] : []),
   ].join(" ");
 };
 
-const balanceStep = ({ balance }: JobOutcome): ResultStep => {
+// A movements export: verified by its quarterly statement, matched in
+// part, or waiting for the statement of its period (v8-13).
+const noBalanceStep = ({
+  verifiedBy,
+  matched,
+}: StatementMatches): ResultStep => {
+  if (verifiedBy.length > 0)
+    return {
+      title: COPY.verifiedWithQuarterly,
+      detail: `${COPY.verifiedWithQuarterlyDetail} ${quarterlyWords(verifiedBy)}.`,
+      isOk: true,
+    };
+  return {
+    title: COPY.noBalanceStep,
+    detail:
+      matched > 0
+        ? `${countText(matched, UPLOAD_COPY.movements)} ${COPY.partlyVerifiedDetail}`
+        : COPY.noBalanceDetail,
+    isOk: true,
+  };
+};
+
+const balanceStep = ({ balance, matches }: JobOutcome): ResultStep => {
   if (balance === STATEMENT_BALANCE.VERIFIED)
     return { title: COPY.verified, detail: COPY.verifiedDetail, isOk: true };
-  if (balance === STATEMENT_BALANCE.NONE)
-    return { title: COPY.noBalance, detail: COPY.noBalanceDetail, isOk: true };
+  if (balance === STATEMENT_BALANCE.NONE) return noBalanceStep(matches);
   return {
     title: COPY.notReconciled,
     detail: COPY.notReconciledDetail,
     isOk: false,
   };
 };
+
+// The references a movements export gave its quarterly statement's
+// movements, which the quick review can now ask about (v8-08).
+const classifiedSteps = ({
+  matches: { references },
+}: JobOutcome): readonly ResultStep[] =>
+  references > 0
+    ? [
+        {
+          title: COPY.stepClassified,
+          detail: `${countText(references, COPY.newReferences)}, ${COPY.referencesKinds}`,
+          isOk: true,
+        },
+      ]
+    : [];
 
 // A PDF's pages and rows while the page holds its reading: "2 páginas · 48
 // filas. Unimos 3 descripciones partidas en dos líneas." (docs/ui/v8-08).
@@ -161,6 +248,7 @@ const stepsOf = (
   },
   { title: COPY.stepDuplicates, detail: duplicatesText(outcome), isOk: true },
   balanceStep(outcome),
+  ...classifiedSteps(outcome),
 ];
 
 /**

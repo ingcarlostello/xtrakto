@@ -1116,3 +1116,54 @@ Checked: seventeen deliberate bugs, each in a file of its own. Fifteen fail a te
 - **Stats:** the job's stats gain nothing. What a file matched and the references it added are counted when read, in 10.1b, so they hold in either upload order.
 - **Pending for the human:** two movements exports around a month's end in `fixtures/private/`, one ending on its last day and one crossing it. Their comparison is skipped until then.
 - **Size:** about 550 lines of code without tests, comments and blank lines (350 to 400 estimated), past the 400 a phase should hold: four commits of one pull request, core, the parsers, the database and the app; `CLAUDE.md`'s gotcha in one of its own.
+
+## 10.1b Matches in the upload result
+
+_2026-11-04_
+
+What a movements export matched (10.1a) now shows where the files go up. `listStatementMatches` (`@xtrakto/db`) counts it when read, as "Encadenado" is, so it holds in either upload order and for files saved before:
+
+- **For each statement:** its movements the other format repeats (a movements export's hidden ones, or the quarterly statement's they repeat), those a day apart, and the references they carried over, a phone's or a code's. Each reference is the later file's, the upload that carried it over, so the export's row and the quarterly statement's never both count it.
+- **For a movements export:** the quarterly statements that verify it, when verified ones cover every day of it, after their opening balance's, and every hidden movement of the account on those days has its twin.
+
+`listUploadJobs` and `listUploadedFiles` moved to a service of their own (`upload-results.service.ts`), which reads the matches with the jobs, and, while the screen follows them, the movements of each job's quarter that wait for the review (`countCountedMovements`, once per account and quarter). A job that saved nothing of its own, such as the same file again, points at the statement saved before, so it shows no references.
+
+On the screen (`v8-08`, `v8-07`, `v8-13`):
+
+- **The result:**
+  - the fourth tile, "3 referencias agregadas", on the soft blue of information, two by two on phones;
+  - "Verificado por tu extracto trimestral" · "Este tipo de archivo no trae saldos; lo comparamos con jul–sep 2026 y coincide." with the verified dot;
+  - "Revisando duplicados": "14 movimientos ya estaban en tu extracto trimestral." (or "… De ellos, 28 venían en tu extracto trimestral.") and "Los intereses vienen con un día de diferencia entre archivos; igual los reconocimos.";
+  - the balance step of a movements export: "Verificado con tu extracto trimestral", matched in part ("15 movimientos coinciden con tu extracto trimestral; los demás, cuando subas el de su periodo."), or v8-13's "Este archivo no trae saldos";
+  - "Clasificado": "3 referencias nuevas, como números de Nequi o de PSE.";
+  - a file that brought only references reads "Listo: leímos tu archivo", as v8-08 does.
+- **"Lo que sigue" (`NextStep`):** under the upload card, for the last file done whose quarter has movements waiting for the review: "6 movimientos por revisar en jul–sep 2026" on the attention surface, "Revisar ahora" to that quarter's review, "Ver movimientos", and "¿Tienes más archivos? …".
+- **"Archivos subidos":**
+  - "Excel · 14 ya los tenías · 3 referencias agregadas" with "Completado" (`info`);
+  - an export its quarterly statement verified after it: "Excel · 14 nuevos · verificado por tu extracto trimestral", "Verificado";
+  - the references in any other line.
+
+The design rules and system design §3 say so.
+
+21 new tests:
+
+- 7 in the database (255 there):
+  - each side of a match, interest a day apart, and the references the later file's, in either order;
+  - an export across a day no quarterly statement covers;
+  - one with a movement without a twin;
+  - a repeated file verified;
+  - an export verified by two quarters;
+  - nothing of another user's.
+- 14 in the app (1,111), besides the service's 4 that moved with it: quarters counted once and a repeated file without references; the result's tile, title, pill, steps and sentences for a verified file, a file across two quarters, one covered in part, one some of whose movements another file had, and a quarterly statement that took references; "Lo que sigue" and its quarter; and "Completado", the references in a line, and an export verified later in the list.
+
+Checked: nineteen deliberate bugs, each in a file of its own. Eighteen fail a test, one only after its test was split: a day left out still verified. One survives: computing the verification for a quarterly statement too changes nothing, since a quarterly statement starts on its opening balance's day, which none covers.
+
+In a local browser, with two fresh Clerk test users deleted afterwards (the local counts as before, 4|4|8|564|1|13): the quarterly statement first, then July's export (three references, verified, interest a day apart, "Lo que sigue" with 6 movements to review), then the same export again ("Ya tenías todo este archivo", verified, no references); the export first, then the quarterly statement (19 new, 14 already there, three references); after a reload, the export verified and the list's rows as above. Nothing overflows at 390px and 360px, the keyboard reaches "Revisar ahora", and no page error.
+
+**Deviations and follow-ups:**
+
+- **Placement:** v8-08 draws "Lo que sigue" beside the result. Here the results sit in the upload card's list, so it goes under the card, as v8's phone orders it.
+- **Wording:** v8's "1 grupo nuevo por revisar" and "Ahora tenemos los números de Nequi…" count what waits instead, since what's new isn't known once read.
+- **"Subir el trimestral":** v8-13's button stays out. The drop zone is right above, and this quarter's movements have no quarterly statement yet.
+- **Reference kinds:** an ATM's reference is carried over with the others, but doesn't count among those "agregadas", which name Nequi's and PSE's.
+- **Size:** about 450 lines of code without tests, comments and blank lines (about 300 estimated), besides about 85 moved. Three commits of one pull request; the moved reads land with the app's, since they changed too.

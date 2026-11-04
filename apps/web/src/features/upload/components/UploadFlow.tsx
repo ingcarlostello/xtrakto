@@ -18,6 +18,7 @@ import {
   previewTags,
 } from "../upload-display.helpers";
 import type { FileRowView } from "../upload-display.helpers";
+import { nextStepOf } from "../next-step.helpers";
 import type { PollingStop } from "../upload-jobs.helpers";
 import { resultView } from "../upload-result.helpers";
 import { batchPreviews } from "../upload-send.helpers";
@@ -36,6 +37,7 @@ import type {
 import { AccountChoice } from "./AccountChoice";
 import { DropZone } from "./DropZone";
 import { FileRow } from "./FileRow";
+import { NextStep } from "./NextStep";
 import { PdfPasswordForm } from "./PdfPasswordForm";
 import { UploadResult } from "./UploadResult";
 
@@ -244,36 +246,58 @@ type UploadFlowProps = {
   children?: ReactNode;
 };
 
+// The jobs of the files the screen shows, in its order: those sent from
+// it, then those the URL kept.
+const shownJobs = (
+  items: readonly UploadItem[],
+  restored: readonly string[],
+  jobs: ReadonlyMap<string, UploadJob>,
+): readonly UploadJob[] =>
+  [
+    ...items.flatMap((item) =>
+      item.status === UPLOAD_STATUS.SENT ? [item.jobId] : [],
+    ),
+    ...restored,
+  ].flatMap((jobId) => {
+    const job = jobs.get(jobId);
+    return job ? [job] : [];
+  });
+
 export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
   const { items, restored, statuses, files, isBusy, ...flow } =
     useUploadFlow(accounts);
   const { picker, addFiles, actions, sendAll } = flow;
+  // What follows once a file's quarter has movements to review (v8-08).
+  const nextStep = nextStepOf(shownJobs(items, restored, statuses.jobs));
   return (
-    <Card variant="card">
-      <CardHeader>
-        <h2 className="text-section font-bold text-balance">
-          {COPY.chooseTitle}
-        </h2>
-        <CardDescription>{COPY.chooseDescription}</CardDescription>
-      </CardHeader>
-      <DropZone ref={picker} onFiles={addFiles} />
-      <FileList
-        {...{ items, restored, accounts, isBusy, actions, picker }}
-        jobs={statuses.jobs}
-      />
-      <StatusCheck
-        stopped={statuses.stopped}
-        onCheckAgain={statuses.checkAgain}
-      />
-      {(files.length > 0 || isBusy) && (
-        <SubmitFiles
-          count={files.length}
-          usage={usage}
-          isBusy={isBusy}
-          onSubmit={sendAll}
+    <>
+      <Card variant="card">
+        <CardHeader>
+          <h2 className="text-section font-bold text-balance">
+            {COPY.chooseTitle}
+          </h2>
+          <CardDescription>{COPY.chooseDescription}</CardDescription>
+        </CardHeader>
+        <DropZone ref={picker} onFiles={addFiles} />
+        <FileList
+          {...{ items, restored, accounts, isBusy, actions, picker }}
+          jobs={statuses.jobs}
         />
-      )}
-      {children}
-    </Card>
+        <StatusCheck
+          stopped={statuses.stopped}
+          onCheckAgain={statuses.checkAgain}
+        />
+        {(files.length > 0 || isBusy) && (
+          <SubmitFiles
+            count={files.length}
+            usage={usage}
+            isBusy={isBusy}
+            onSubmit={sendAll}
+          />
+        )}
+        {children}
+      </Card>
+      {nextStep && <NextStep step={nextStep} />}
+    </>
   );
 }
