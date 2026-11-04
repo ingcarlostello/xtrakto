@@ -1,4 +1,9 @@
 export type { FormatId } from "./bancolombia/bancolombia.constants";
+export {
+  type MatchableMovement,
+  matchMovements,
+  type MovementMatch,
+} from "./bancolombia/movement-matching.helpers";
 export { normalizeDescription } from "./descriptions/description.helpers";
 export { extractPdf, isPdf } from "./extraction/pdf-extraction.helpers";
 export type { PdfExtractionOptions } from "./extraction/pdf-extraction.helpers";

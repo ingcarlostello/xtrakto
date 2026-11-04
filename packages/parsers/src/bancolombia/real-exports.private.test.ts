@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isWithinPeriod } from "@xtrakto/core";
-import type {
-  AppError,
-  LocalDate,
-  ParsedStatement,
-  ParsedTransaction,
-} from "@xtrakto/core";
+import type { AppError, LocalDate, ParsedStatement } from "@xtrakto/core";
 import { readPrivateExports } from "../../fixtures/private-exports.mjs";
 import { extractSpreadsheet } from "../extraction/spreadsheet-extraction.helpers";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
@@ -21,22 +15,11 @@ import { findExportColumns } from "./movements-export.helpers";
 // and row numbers, so a failure never prints a description, an amount, a
 // name or a file name.
 
-const INTEREST = "ABONO INTERESES AHORROS";
 const LONG_NUMBER = /\d{6,}/;
 
 type ReadExport = {
   readonly statement?: ParsedStatement;
   readonly failure?: AppError;
-};
-
-/** How an export's movements compare with its quarterly statement's. */
-type Comparison = {
-  /** Export movements whose description and amount the statement lacks. */
-  readonly notInQuarterly: number;
-  /** Export movements the statement has only on another date. */
-  readonly otherDateDifferences: number;
-  /** Statement movements on the export's dates that the export lacks. */
-  readonly missingFromExport: number;
 };
 
 // Each file read as the app reads it: extracted, recognized and parsed.
@@ -61,85 +44,6 @@ const shiftDays = (date: LocalDate, days: number): string =>
   )
     .toISOString()
     .slice(0, 10);
-
-const isMonthEnd = (date: LocalDate) => shiftDays(date, 1).endsWith("-01");
-
-const isInterest = ({ descriptionNormalized }: ParsedTransaction) =>
-  descriptionNormalized === INTEREST;
-
-// Where the statement should date an export movement (Appendix A.2): on the
-// same day, except interest, which the export dates on the day it was paid:
-// the next day, or the same day for a month's last day, which then holds two
-// interest rows.
-const expectedDates = (movement: ParsedTransaction): readonly string[] => {
-  if (!isInterest(movement)) return [movement.date];
-  const dayBefore = shiftDays(movement.date, -1);
-  return isMonthEnd(movement.date) ? [dayBefore, movement.date] : [dayBefore];
-};
-
-// The statement cuts a description before an accented letter that the
-// export keeps ("COMIDAS R" and "COMIDAS RÁ", Appendix A.2).
-const isSameDescription = (statement: string, exported: string) =>
-  statement === exported || statement === exported.replace(/[^ -~]$/u, "");
-
-const isSameMovement = (
-  statement: ParsedTransaction,
-  exported: ParsedTransaction,
-) =>
-  isSameDescription(
-    statement.descriptionNormalized,
-    exported.descriptionNormalized,
-  ) && statement.amountMinor === exported.amountMinor;
-
-// A statement movement the export should hold: one on the export's dates,
-// except the interest of its last day, paid the next day unless that day
-// ends a month.
-const belongsInExport = (
-  movement: ParsedTransaction,
-  { period }: ParsedStatement,
-) =>
-  isWithinPeriod(movement.date, period) &&
-  !(
-    isInterest(movement) &&
-    movement.date === period.to &&
-    !isMonthEnd(movement.date)
-  );
-
-// Pairs each export movement with one statement movement: first on the
-// expected dates, then, to tell the differences apart, on any date.
-const compareMovements = (
-  quarter: ParsedStatement,
-  exported: ParsedStatement,
-): Comparison => {
-  const unused = new Set(quarter.transactions);
-  const take = (
-    movement: ParsedTransaction,
-    isDateExpected: (date: string) => boolean,
-  ): boolean => {
-    const match = [...unused].find(
-      (candidate) =>
-        isSameMovement(candidate, movement) && isDateExpected(candidate.date),
-    );
-    if (match !== undefined) unused.delete(match);
-    return match !== undefined;
-  };
-  const unmatched: ParsedTransaction[] = [];
-  for (const movement of exported.transactions) {
-    const dates = expectedDates(movement);
-    if (!take(movement, (date) => dates.includes(date)))
-      unmatched.push(movement);
-  }
-  const otherDateDifferences = unmatched.filter((movement) =>
-    take(movement, () => true),
-  ).length;
-  return {
-    notInQuarterly: unmatched.length - otherDateDifferences,
-    otherDateDifferences,
-    missingFromExport: [...unused].filter((movement) =>
-      belongsInExport(movement, exported),
-    ).length,
-  };
-};
 
 /** What minimizing a file before it's sent does to it (ADR 0017). */
 type Minimized = {
@@ -188,16 +92,6 @@ const quarterlies = quarterlyFiles.flatMap(({ statement }) =>
 const movementExports = ofFormat(MOVEMENTS_EXPORT_FORMAT_ID).flatMap(
   ({ statement }) => (statement ? [statement] : []),
 );
-
-// Each export with the quarterly statement whose period holds all its dates.
-const overlaps = movementExports.flatMap((exported) => {
-  const quarter = quarterlies.find(
-    ({ period }) =>
-      isWithinPeriod(exported.period.from, period) &&
-      isWithinPeriod(exported.period.to, period),
-  );
-  return quarter ? [{ quarter, exported }] : [];
-});
 
 // Each quarterly statement with the next one of its account that starts the
 // day it ends or the day after: back to back, as a chain needs them (5.6c).
@@ -262,16 +156,5 @@ describe.skipIf(files.length === 0)("real Bancolombia exports", () => {
 
   it("finds no unexpected rows in the quarterly statements", () => {
     for (const { warnings } of quarterlies) expect(warnings).toEqual([]);
-  });
-
-  it("finds an export's movements in its quarterly statement, with only interest dated a day later", () => {
-    expect(overlaps.length).toBeGreaterThan(0);
-    for (const { quarter, exported } of overlaps) {
-      expect(compareMovements(quarter, exported)).toEqual({
-        notInQuarterly: 0,
-        otherDateDifferences: 0,
-        missingFromExport: 0,
-      });
-    }
   });
 });
