@@ -55,7 +55,9 @@ It writes into `fixtures/xlsx/`, which git ignores:
 
 `quarterly-basic-pdf.json` and `quarterly-large-pdf.json` are `quarterly-basic` and `quarterly-large` as the bank prints them in PDF (Appendix A.3), as the text items `extractPdf` returns (Phase 9.3). `scripts/quarterly-pdf-layout.mjs` lays them out: every page repeats the header box and, left of it, the holder's block; the first page has a promotion and the summary; the table's titles sit centered over their columns, dates and amounts line up on their right and text on its left; from the second page the text comes column by column; and each page ends with the bank's contact and its number. One space stands where the spreadsheet's description has two, as the bank prints it. The basic statement takes two pages, the large one eight. Their parser reads each as its spreadsheet twin.
 
-`pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1), and a statement's PDF fixture written with it reads back the same (9.3).
+`movements-basic-pdf.json` and `movements-overlap-pdf.json` are `movements-basic` and `movements-overlap` as the online banking prints them in PDF (Appendix A.2b), two pages each (Phase 9.3b). `scripts/movements-pdf-layout.mjs` lays them out: the first page opens with its titles, the date and time it was downloaded, the holder's name and the account's type and number (`Ahorros 123 - 456789 - 01`); every page holds the table, newest movement first, with one item per line of a cell, as pdf.js reads the bank's; a description or a reference too wide for its column wraps to a second line, a reference starting half a line above its row's date; a transfer from another bank prints its missing reference as `null`; and each page ends with an IP address of the range kept for documentation (`203.0.113.7`). One space stands where the spreadsheet's description has two. Their parser reads each as its spreadsheet twin, naming the account and the holder besides.
+
+`pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1), and a statement's PDF fixture written with it reads back the same (9.3, 9.3b).
 
 ## Confirmed on real files
 
@@ -66,6 +68,7 @@ The private tests confirmed what these fixtures assume, with refinements from mo
 - The export's header is its first row.
 - Back-to-back quarterly statements share a day: one ends on the day the next starts, as `quarterly-previous` and `quarterly-basic` do, and the next opens with the previous one's closing balance.
 - The export dates interest on the day it was paid: the next day, or the same day for a month's last day. A range that ends with a month holds two interest rows on its last day, and a range that starts mid-month holds the previous day's interest on its first day.
+- The export writes `null` as the reference of some movements without one, in Excel and in PDF; the parsers read it as none (Phase 9.3b).
 
 Parsers still must not rely on the sheet name.
 
@@ -82,3 +85,5 @@ pnpm --filter @xtrakto/parsers test:private
 `src/extraction/pdf-extraction.private.test.ts` reads every `.pdf` there the same way (Phase 9.1): it extracts each file's text, reports their pages and the most text items on a page, and checks that no text keeps letters written apart or ligatures. It prints counts only, and skips itself when the folder has no PDFs.
 
 `src/bancolombia/real-quarterly-pdfs.private.test.ts` reads each quarterly statement's PDF there (Phase 9.3) against its spreadsheet, the one of its account and period: it counts the fields that differ, but for the repeated spaces the PDF prints as one; reconciles it; and checks that once minimized it reads the same and sends no address, city, later page's header, footer or long number. It prints counts only.
+
+`src/bancolombia/real-movements-pdfs.private.test.ts` reads each movements export's PDF there (Phase 9.3b) against its spreadsheet: the one of the same download or, when the two were downloaded for different ranges, the one sharing the most of its movements, on the days both cover. It counts the movements that differ, field by field, but for the repeated spaces the PDF prints as one; checks that each names the account and the holder of a quarterly statement there; and that once minimized it reads the same and sends none of the page's titles, the download's date and time, the IP addresses, or a long number outside the references. It prints counts only.

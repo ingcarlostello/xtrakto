@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { extractedContentSchema } from "@xtrakto/core";
 import movementsBasic from "./movements-basic.json";
+import movementsBasicPdf from "./movements-basic-pdf.json";
 import movementsOverlap from "./movements-overlap.json";
+import movementsOverlapPdf from "./movements-overlap-pdf.json";
 import quarterlyBasic from "./quarterly-basic.json";
 import quarterlyBasicPdf from "./quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "./quarterly-broken-balance.json";
@@ -22,6 +24,8 @@ const FIXTURES = {
   "quarterly-large-pdf": quarterlyLargePdf,
   "movements-basic": movementsBasic,
   "movements-overlap": movementsOverlap,
+  "movements-basic-pdf": movementsBasicPdf,
+  "movements-overlap-pdf": movementsOverlapPdf,
 };
 
 describe("synthetic fixtures", () => {

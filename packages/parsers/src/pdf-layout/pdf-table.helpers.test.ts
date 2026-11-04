@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { PdfContent, PdfTextItem } from "@xtrakto/core";
+import type { PdfTableRow } from "./pdf-layout.types";
 import { pdfLines } from "./pdf-lines.helpers";
-import { pdfTableRows } from "./pdf-table.helpers";
+import { linesAboveTable, pdfTableRows, pdfTables } from "./pdf-table.helpers";
 
 type At = readonly [number, number];
 
@@ -124,14 +125,19 @@ const pdf = (...pages: (readonly PdfTextItem[])[]): PdfContent => ({
   pages: pages.map((items) => ({ items: [...items] })),
 });
 
-const quarterlyRows = (content: PdfContent) =>
-  pdfTableRows(pdfLines(content), { columns: QUARTERLY_COLUMNS });
+const cellsOf = (rows: readonly PdfTableRow[]) =>
+  rows.map(({ cells }) => cells);
 
-const movementsRows = (content: PdfContent) =>
+const quarterlyRows = (content: PdfContent) =>
+  cellsOf(pdfTableRows(pdfLines(content), { columns: QUARTERLY_COLUMNS }));
+
+const movementsTable = (content: PdfContent) =>
   pdfTableRows(pdfLines(content), {
     columns: MOVEMENTS_COLUMNS,
     anchor: "Fecha",
   });
+
+const movementsRows = (content: PdfContent) => cellsOf(movementsTable(content));
 
 describe("pdfTableRows", () => {
   it("rebuilds a quarterly statement's rows from text written column by column, page after page with its header", () => {
@@ -190,7 +196,7 @@ describe("pdfTableRows", () => {
       columns: ["Fecha", "Descripcion", "Referencia", "Valor"],
     });
 
-    expect(rows).toEqual([
+    expect(cellsOf(rows)).toEqual([
       ["FECHA", "DESCRIPCIÓN", "REFERENCIA", "VALOR"],
       ["3 sep 2026", "DESCRIPCION", null, "-$ 1.000,00"],
     ]);
@@ -236,7 +242,9 @@ describe("pdfTableRows", () => {
       ],
     );
 
-    expect(movementsRows(content)).toEqual([
+    const rows = movementsTable(content);
+
+    expect(cellsOf(rows)).toEqual([
       MOVEMENTS_COLUMNS,
       ["12 sep 2026", "PAGO LLAVE EJEMPLO", null, "-$ 63.500,00"],
       [
@@ -262,6 +270,42 @@ describe("pdfTableRows", () => {
       ["09 sep 2026", "ABONO INTERESES AHORROS", null, "$ 19,42"],
       [null, null, null, "Dirección IP 203.0.113.7"],
     ]);
+    // Each row says which of its cells it joined from several lines.
+    expect(rows.map(({ wrapped }) => wrapped)).toEqual([
+      [],
+      [],
+      [1],
+      [1, 2],
+      [1],
+      [],
+      [],
+      [],
+      [],
+    ]);
+  });
+
+  it("keeps the lines above the first table, or every line without one", () => {
+    const heading = proportional("Movimientos: Cuentas", [50, 120]);
+    const content = pdf([
+      heading,
+      ...movementsHeader(164),
+      ...movementItems(
+        ["3 sep 2026", "COMPRA EN TIENDA", null, "-$ 1.000,00"],
+        197,
+      ),
+    ]);
+    const lines = pdfLines(content);
+    const above = (columns: readonly string[]) =>
+      linesAboveTable(lines, pdfTables(lines, columns)).map(
+        ({ segments }) => segments[0]?.text,
+      );
+
+    expect(above(MOVEMENTS_COLUMNS)).toEqual([heading.str]);
+    expect(above(QUARTERLY_COLUMNS)).toEqual([
+      heading.str,
+      "Fecha",
+      "3 sep 2026",
+    ]);
   });
 
   it("keeps every line its own row when the format wraps no cell", () => {
@@ -277,11 +321,13 @@ describe("pdfTableRows", () => {
       columns: MOVEMENTS_COLUMNS,
     });
 
-    expect(rows).toEqual([
-      MOVEMENTS_COLUMNS,
-      ["12 sep 2026", "PAGO PSE Servicios", null, "-$ 148.270,00"],
-      [null, "Ejemplo", null, null],
-    ]);
+    expect(rows).toEqual(
+      [
+        MOVEMENTS_COLUMNS,
+        ["12 sep 2026", "PAGO PSE Servicios", null, "-$ 148.270,00"],
+        [null, "Ejemplo", null, null],
+      ].map((cells) => ({ cells, wrapped: [] })),
+    );
   });
 
   it("reads nothing from a page without the table's header", () => {

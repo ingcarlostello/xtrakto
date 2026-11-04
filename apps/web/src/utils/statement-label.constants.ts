@@ -7,6 +7,7 @@ export const FORMAT_LABELS = {
   "bancolombia-savings-quarterly": "Extracto trimestral",
   "bancolombia-savings-quarterly-pdf": "Extracto trimestral",
   "bancolombia-movements-export": "Movimientos",
+  "bancolombia-movements-export-pdf": "Movimientos",
 } as const satisfies Record<FormatId, string>;
 
 // A statement's own period reads as months, a range of movements as days.
@@ -14,4 +15,5 @@ export const FORMAT_PERIOD_SOURCE = {
   "bancolombia-savings-quarterly": PERIOD_SOURCE.STATEMENT,
   "bancolombia-savings-quarterly-pdf": PERIOD_SOURCE.STATEMENT,
   "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
+  "bancolombia-movements-export-pdf": PERIOD_SOURCE.ROWS,
 } as const satisfies Record<FormatId, PeriodSource>;

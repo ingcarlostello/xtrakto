@@ -1,14 +1,10 @@
 import { ok, parseAmountText, parseSlashDate } from "@xtrakto/core";
 import type { AmountMinor, LocalDate, Result } from "@xtrakto/core";
 import { normalizeDescription } from "../descriptions/description.helpers";
-import type {
-  PdfLine,
-  PdfSegment,
-  PdfTable,
-} from "../pdf-layout/pdf-layout.types";
+import type { PdfLine, PdfSegment } from "../pdf-layout/pdf-layout.types";
 import { comparableText } from "../sheets/sheet.utils";
 import {
-  QUARTERLY_PDF_ACCOUNT_TYPE,
+  PDF_ACCOUNT_TYPE,
   QUARTERLY_PDF_BLOCK,
   QUARTERLY_PDF_LABEL,
   QUARTERLY_PDF_SUMMARY,
@@ -91,22 +87,6 @@ const summaryParts = (
     }),
   );
 
-/**
- * The lines above the first movements table: the first page's header box,
- * the holder's block beside it and the summary. Every page repeats the box
- * and the block; the first page's are read.
- */
-export const quarterlyPdfHeaderLines = (
-  lines: readonly PdfLine[],
-  tables: readonly PdfTable[],
-): readonly PdfLine[] => {
-  const firstTitle = tables[0]?.header[0];
-  const tableStart = lines.findIndex(
-    ({ segments }) => firstTitle !== undefined && segments.includes(firstTitle),
-  );
-  return lines.slice(0, tableStart === -1 ? lines.length : tableStart);
-};
-
 // The holder's name: the first text left of the header box and above the
 // summary, whose labels sit at the left too.
 const holderOf = (
@@ -124,11 +104,13 @@ const holderOf = (
 };
 
 /**
- * Finds the header's fields by their labels, never by fixed positions: the
- * period after DESDE: and HASTA:, the account type that starts with CUENTA,
- * the number after NÚMERO, the summary's amounts after theirs, and the
- * holder, the first text left of the box, which has no label. The address and
- * the city under the holder are never read.
+ * Finds the header's fields in the lines above the first movements table (the
+ * first page's header box, the holder's block beside it and the summary; every
+ * page repeats the box and the block) by their labels, never by fixed
+ * positions: the period after DESDE: and HASTA:, the account type that starts
+ * with CUENTA, the number after NÚMERO, the summary's amounts after theirs,
+ * and the holder, the first text left of the box, which has no label. The
+ * address and the city under the holder are never read.
  */
 export const findQuarterlyPdfHeader = (
   lines: readonly PdfLine[],
@@ -139,9 +121,7 @@ export const findQuarterlyPdfHeader = (
     to: labeled(lines, QUARTERLY_PDF_LABEL.TO, isFilled),
     type: lines
       .flatMap(({ segments }) => segments)
-      .find(({ text }) =>
-        QUARTERLY_PDF_ACCOUNT_TYPE.test(comparableText(text)),
-      ),
+      .find(({ text }) => PDF_ACCOUNT_TYPE.test(comparableText(text))),
     number: labeled(lines, QUARTERLY_PDF_LABEL.NUMBER, isFilled),
     holder: holderOf(lines, from?.segments[0]?.left),
     summary: summaryParts(lines),

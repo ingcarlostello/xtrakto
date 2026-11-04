@@ -13,7 +13,7 @@ import {
 import { extractPdf } from "../extraction/pdf-extraction.helpers";
 import { extractSpreadsheet } from "../extraction/spreadsheet-extraction.helpers";
 import { pdfLines } from "../pdf-layout/pdf-lines.helpers";
-import { pdfTables } from "../pdf-layout/pdf-table.helpers";
+import { linesAboveTable, pdfTables } from "../pdf-layout/pdf-table.helpers";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
 import { findParser } from "../registry/default-registry.helpers";
 import {
@@ -21,10 +21,7 @@ import {
   QUARTERLY_PDF_COLUMNS,
   QUARTERLY_PDF_FORMAT_ID,
 } from "./bancolombia.constants";
-import {
-  findQuarterlyPdfHeader,
-  quarterlyPdfHeaderLines,
-} from "./quarterly-pdf-header.helpers";
+import { findQuarterlyPdfHeader } from "./quarterly-pdf-header.helpers";
 import { isPageFooter } from "./quarterly-pdf-movements.helpers";
 
 // The human's real quarterly statements as PDFs, in the git-ignored
@@ -110,7 +107,7 @@ const pdfOf = (content: ExtractedContent): PdfContent => {
 const personalItems = (content: PdfContent): Set<PdfTextItem> => {
   const lines = pdfLines(content);
   const tables = pdfTables(lines, QUARTERLY_PDF_COLUMNS);
-  const headerLines = quarterlyPdfHeaderLines(lines, tables);
+  const headerLines = linesAboveTable(lines, tables);
   const boxLeft =
     findQuarterlyPdfHeader(headerLines).from?.segments[0]?.left ?? 0;
   const leftBlock = headerLines

@@ -1,8 +1,8 @@
 import { DEFAULT_TIME_ZONE } from "@xtrakto/core";
 import type { ExcelDateTimeZones } from "@xtrakto/core";
 
-// The quarterly statement and the movements export as Appendices A.1 and A.2
-// of docs/ROADMAP.md describe them.
+// The quarterly statement and the movements export, in Excel and in PDF, as
+// Appendix A of docs/ROADMAP.md describes them.
 
 export const BANCOLOMBIA_BANK_ID = "bancolombia";
 
@@ -10,12 +10,14 @@ export const BANCOLOMBIA_BANK_ID = "bancolombia";
 export const QUARTERLY_FORMAT_ID = "bancolombia-savings-quarterly";
 export const QUARTERLY_PDF_FORMAT_ID = "bancolombia-savings-quarterly-pdf";
 export const MOVEMENTS_EXPORT_FORMAT_ID = "bancolombia-movements-export";
+export const MOVEMENTS_PDF_FORMAT_ID = "bancolombia-movements-export-pdf";
 
 /** The formats this package reads. */
 export type FormatId =
   | typeof QUARTERLY_FORMAT_ID
   | typeof QUARTERLY_PDF_FORMAT_ID
-  | typeof MOVEMENTS_EXPORT_FORMAT_ID;
+  | typeof MOVEMENTS_EXPORT_FORMAT_ID
+  | typeof MOVEMENTS_PDF_FORMAT_ID;
 
 /** Labels that open each block, in the first column. */
 export const QUARTERLY_BLOCK = {
@@ -92,8 +94,12 @@ export const QUARTERLY_PDF_LABEL = {
   NUMBER: "NÚMERO",
 } as const;
 
-/** How the header box's account type starts: "CUENTA DE AHORROS". */
-export const QUARTERLY_PDF_ACCOUNT_TYPE = /^CUENTA\s/i;
+/**
+ * How a PDF's account type starts, compared without accents or case: the
+ * quarterly statement's "CUENTA DE AHORROS", the movements export's "Cuenta
+ * de Ahorros".
+ */
+export const PDF_ACCOUNT_TYPE = /^CUENTA\s/i;
 
 /** The summary's labels: the spreadsheet's INTERESES reads differently. */
 export const QUARTERLY_PDF_SUMMARY = {
@@ -136,3 +142,36 @@ export const EXPORT_DATE_TIME_ZONES: ExcelDateTimeZones = {
 
 /** How an ATM withdrawal's reference starts: `ATM <location>`. */
 export const ATM_REFERENCE_PREFIX = "ATM ";
+
+/** How the export writes some of the references it doesn't have, in Excel and in PDF. */
+export const EXPORT_NO_REFERENCE = "null";
+
+// The movements export's PDF (Appendix A.2b).
+
+/** What a failure calls the PDF's first page: by its title. */
+export const MOVEMENTS_PDF_BLOCK = "Movimientos: Cuentas";
+
+/** What a failure calls the header's fields, which the PDF prints unlabeled. */
+export const MOVEMENTS_PDF_FIELD = {
+  HOLDER: "CLIENTE",
+  TYPE: "CUENTA",
+  NUMBER: "NÚMERO",
+} as const;
+
+/**
+ * The account's number as the PDF prints it, in groups after its product's
+ * name: "Ahorros 123 - 456789 - 01". Its last 4 digits alone also match.
+ */
+export const MOVEMENTS_PDF_ACCOUNT_NUMBER =
+  /^(?:\p{L}+\s+)?\d+(?:\s*-\s*\d+)*$/u;
+
+/** Every column of the movements table, as each page's header prints them. */
+export const MOVEMENTS_PDF_COLUMNS = [
+  EXPORT_COLUMN.DATE,
+  EXPORT_COLUMN.DESCRIPTION,
+  EXPORT_COLUMN.REFERENCE,
+  EXPORT_COLUMN.AMOUNT,
+] as const;
+
+/** What each page prints under its table: the IP address it came from. */
+export const MOVEMENTS_PDF_FOOTER = "Dirección IP";

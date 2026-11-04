@@ -139,6 +139,8 @@ describe("readExportMovements", () => {
   it.each([
     { label: "an empty reference", reference: null },
     { label: "a reference of spaces", reference: "   " },
+    // The bank writes it for some movements without one (Appendix A.2).
+    { label: "a reference that says null", reference: "null" },
   ])("gives $label the kind none and no raw reference", ({ reference }) => {
     const rows = withCell(17, COLUMN.REFERENCE, reference);
     const movement = movementsOf(rows)[0];

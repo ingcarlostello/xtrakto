@@ -235,7 +235,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 9.1 PDF text extraction
 - [x] 9.2 Rows from text positions
 - [x] 9.3 Quarterly statement PDF parser
-- [ ] 9.3b Movements export PDF parser _(design v8)_
+- [x] 9.3b Movements export PDF parser _(design v8)_
 - [ ] 9.4a PDFs on the upload screen
 - [ ] 9.4b PDFs across the app
 
@@ -1845,6 +1845,8 @@ It came out at about 490 lines of code, past the 400 a phase should hold, and la
 
 #### 9.3b Movements export PDF parser _(added with design v8)_
 
+Found while building it (2026-11-03), on the real files: the bank writes `null` itself for some movements without a reference, in the spreadsheet too, whose parser read it as a code: both formats now read it as none. Where the spreadsheet's description has two spaces in a row, the PDF prints one, as the quarterly statement's does (9.3). One of the five pairs isn't one download, since its spreadsheet ends a day earlier: the private test compares each PDF with the spreadsheet that shares the most of its movements, on the days both cover.
+
 **Tasks**
 
 - `bancolombiaMovementsPdfParser` (`bancolombia-movements-export-pdf`), the fourth format ("Movimientos de la Sucursal Virtual (PDF)"), reads Appendix A.2b:
@@ -1861,7 +1863,9 @@ It came out at about 490 lines of code, past the 400 a phase should hold, and la
 - The fixtures and the five private pairs give the same movements as their Excel twins; the private test counts the fields that differ.
 - In ingestion, a movements PDF goes to the account its digits name, also when the user has several; it adds nothing after its Excel twin, and it's hidden on a verified quarterly statement's days.
 
-**Commit:** `feat(parsers): Bancolombia movements export PDF parser`
+It came out at about 400 lines of code, besides a 120-line layout script, and lands in two commits of one pull request: core's readers of the PDF's dates and amounts, then the parser.
+
+**Commits:** `feat(core): dates and amounts as the movements export's PDF prints them`, then `feat(parsers): Bancolombia movements export PDF parser`
 
 #### 9.4 PDFs in the app
 
@@ -2051,7 +2055,7 @@ Observed on real files. Values below are illustrative; no real data.
 - A single sheet; the first row is the header `Fecha | Descripción | Referencia | Valor`.
 - `Fecha`: real date cells with time 05:00, which is local midnight in `America/Bogota` stored as UTC. Convert to the local date.
 - `Descripción`: the same text as in the quarterly statement.
-- `Referencia`: a text cell (leading zeros kept), often empty. For `TRANSFERENCIAS A NEQUI` it is the recipient's mobile number (10 digits starting with 3) → PII, must be hashed. For ATM withdrawals, `ATM <location>`, longer than the description; for QR and key payments, a 10-digit code with leading zeros (sometimes empty); for PSE, a 9-digit number; for `TRANSFERENCIA CTA SUC VIRTUAL`, the destination account number → PII; for utilities, one or more contract numbers separated by spaces.
+- `Referencia`: a text cell (leading zeros kept), often empty; for some movements it says `null`, which is none as well (9.3b). For `TRANSFERENCIAS A NEQUI` it is the recipient's mobile number (10 digits starting with 3) → PII, must be hashed. For ATM withdrawals, `ATM <location>`, longer than the description; for QR and key payments, a 10-digit code with leading zeros (sometimes empty); for PSE, a 9-digit number; for `TRANSFERENCIA CTA SUC VIRTUAL`, the destination account number → PII; for utilities, one or more contract numbers separated by spaces.
 - `Valor`: numeric cell, signed.
 - **No balance column, no account number and no period.** Rows are ordered newest first; within a day, the order doesn't follow the quarterly statement's.
 - Saving the export as CSV from Excel turns dates into `d/mm/yyyy` text and amounts into text with a decimal comma (`11,24`), in Windows-1252 with `;`. Parsers read the Excel file.
@@ -2064,7 +2068,7 @@ Observed on real files. Values below are illustrative; no real data.
 - The same download as A.2, as a PDF made by the online banking's own page (pdfmake): no password, about 15 movements a page. Checked on five real files, each with its Excel (2026-11-03).
 - Page 1 opens with "Sucursal Virtual Personas" and "Movimientos: Cuentas", the date and time it was downloaded ("Sábado, 3 de octubre de 2026, 9:15 a. m."), the holder's name in capitals, "Cuenta de Ahorros" and the whole account number in groups (`Ahorros 123 - 456789 - 01`). Then every page holds a table `Fecha | Descripción | Referencia | Valor` and, at its foot, the IP address the file was downloaded from (`Dirección IP 203.0.113.7`): personal data, never sent.
 - Rows newest first, as in the Excel. `Fecha` as `3 sep 2026`; `Valor` as `-$ 45.900,00` or `$ 31,07` (a period for thousands, a comma for decimals, the sign before `$`).
-- A description or a reference wider than its column wraps to a second line of the same row, about 16 points below, while the row's other cells stay on its first line. A reference over two lines starts half a line above the row's date instead, its second line half a line below it. Rows keep whole on a page: none of the five real files splits one. A reference the Excel leaves empty can read `null`. Double spaces show as wider gaps.
+- A description or a reference wider than its column wraps to a second line of the same row, about 16 points below, while the row's other cells stay on its first line. A reference over two lines starts half a line above the row's date instead, its second line half a line below it. Rows keep whole on a page: none of the five real files splits one. A reference can read `null`, as in the Excel. Where the Excel's description has two spaces in a row, the PDF prints one, as the quarterly statement's (A.3).
 - Where a mixed-case description draws a lowercase ligature (`fi`), some text extractors drop a letter (`Ofcina` for `Oficina`); pdf.js reads those words whole (9.1).
 - No balances and no period, as the Excel.
 

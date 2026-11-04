@@ -19,7 +19,8 @@ export type BankParser = {
   readonly accountType: AccountType;
   /**
    * Whether the format names its account, by its last 4 digits. A movements
-   * export doesn't, so the user chooses where it goes when uploading it.
+   * export in Excel doesn't, so the user chooses where it goes when uploading
+   * it; its PDF does.
    */
   readonly identifiesAccount: boolean;
   /** Recognizes the format by its signature, such as a header row. Never throws. */

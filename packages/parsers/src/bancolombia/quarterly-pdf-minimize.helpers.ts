@@ -2,17 +2,14 @@ import type { ExtractedContent, PdfTextItem } from "@xtrakto/core";
 import { maskLongNumbers } from "../descriptions/description.helpers";
 import { pdfLines } from "../pdf-layout/pdf-lines.helpers";
 import type { PdfSegment, PdfTable } from "../pdf-layout/pdf-layout.types";
-import { pdfTables } from "../pdf-layout/pdf-table.helpers";
+import { linesAboveTable, pdfTables } from "../pdf-layout/pdf-table.helpers";
 import {
   ACCOUNT_LAST_DIGITS,
   ACCOUNT_NUMBER_PATTERN,
   MOVEMENTS_COLUMN,
   QUARTERLY_PDF_COLUMNS,
 } from "./bancolombia.constants";
-import {
-  findQuarterlyPdfHeader,
-  quarterlyPdfHeaderLines,
-} from "./quarterly-pdf-header.helpers";
+import { findQuarterlyPdfHeader } from "./quarterly-pdf-header.helpers";
 import type { QuarterlyPdfHeaderParts } from "./quarterly-pdf-header.helpers";
 import { isPageFooter } from "./quarterly-pdf-movements.helpers";
 
@@ -100,10 +97,7 @@ export const minimizeQuarterlyPdf = (
   const lines = pdfLines(content);
   const tables = pdfTables(lines, QUARTERLY_PDF_COLUMNS);
   const sent: Sent = new Map();
-  keepHeader(
-    sent,
-    findQuarterlyPdfHeader(quarterlyPdfHeaderLines(lines, tables)),
-  );
+  keepHeader(sent, findQuarterlyPdfHeader(linesAboveTable(lines, tables)));
   keepTables(sent, tables);
   return {
     type: "pdf",
