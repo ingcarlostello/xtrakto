@@ -1,6 +1,6 @@
 # 0018. A verified quarterly statement covers the other format's movements
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by Phase 10.1a, where a matched movement stays hidden and points at the one it repeats
 - **Date:** 2026-10-14
 
 ## Context
@@ -29,5 +29,5 @@ A quarterly statement can also fail to reconcile (a page or a row missing), and 
 
 - No movement counts twice across the two formats, whichever arrives first, and no statement that doesn't reconcile reaches a summary.
 - Every query that reads movements for the user must apply the predicate; it lives in `@xtrakto/db`, next to the queries.
-- An export's movements on a covered day stay hidden even when the quarterly statement differs from it; until 10.1, the quarterly statement is the reference.
-- Phase 10.1 clears the coverage of the movements it matches, and keeps the rest hidden.
+- An export's movements on a covered day stay hidden even when the quarterly statement differs from it: the quarterly statement is the reference.
+- Phase 10.1a matches them without clearing their coverage, which stays the only way a movement is hidden, so the predicate and its readers don't change. A matched movement points at the one it repeats (`matched_transaction_id`), in the statement that hides it, one hidden movement each; the one that counts takes its reference, which only the export carries. A hidden movement without a twin stays hidden, unmatched.

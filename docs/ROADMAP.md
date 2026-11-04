@@ -241,7 +241,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 10 — Monthly use and retention**
 
-- [ ] 10.1a Match movements across formats
+- [x] 10.1a Match movements across formats
 - [ ] 10.1b Matches in the upload result
 - [ ] 10.1c Matches in Movimientos
 - [ ] 10.2a Coverage timeline
@@ -1965,7 +1965,9 @@ Split in three when planned (about 850 lines), the last two with the human's app
 - Database tests prove both upload orders; interest a day apart and at a month's end; a cut description; identical movements in their order; a movement without a twin staying hidden; a quarterly statement that doesn't reconcile matching nothing; a "No sé" and a category chosen for one movement kept, in either order; a Nequi number marked as the user's reaching its twin; what was saved before matching with the next upload; and another user's movements never matching.
 - The private test matches the human's pairs one to one through `matchMovements`, against each quarterly statement's Excel and PDF; and the two exports around a month's end give the same fingerprints on the days they share, else 10.1a matches two movements files too (counts only).
 
-**Commits:** `feat(parsers): match movements across formats`, `feat(db): link matched movements and carry their references`, then `feat(web): match movements across formats when saving a statement`
+It came out at about 550 lines of code (350 to 400 estimated), past the 400 a phase should hold, in four commits of one pull request: what a matched movement takes (core), the matching (parsers), the link (database), and ingestion. The comparison of two exports around a month's end waits for the human's files.
+
+**Commits:** `feat(core): what a matched movement takes from its twin`, `feat(parsers): match movements across formats`, `feat(db): link matched movements and carry their references`, then `feat(web): match movements across formats when saving a statement`
 
 #### 10.1b Matches in the upload result
 
