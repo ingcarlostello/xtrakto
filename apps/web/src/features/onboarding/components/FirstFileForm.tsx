@@ -71,8 +71,8 @@ function FirstFileOption({
 }
 
 /**
- * docs/ui/v8-16 within Stage 5: the two Excel files, the quarterly statement
- * first and chosen. A GET form, so the choice goes to the last step in its
+ * docs/ui/v8-16 without the credit card and other banks: the two files, the
+ * quarterly statement first and chosen. A GET form, so the choice goes to the last step in its
  * URL, which puts that file's guide first; nothing is stored.
  */
 export function FirstFileForm() {

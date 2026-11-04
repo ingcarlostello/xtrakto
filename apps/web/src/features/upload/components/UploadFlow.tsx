@@ -152,14 +152,20 @@ type FileListProps = {
 
 type SentFileProps = {
   name: string;
-  tags: readonly string[];
+  /** What the page read of the file; none for a job the URL kept. */
+  preview?: StatementPreview;
   job: UploadJob;
 };
 
 // A sent file whose job is done shows its result; until then, its row.
-function SentFile({ name, tags, job }: SentFileProps) {
+function SentFile({ name, preview, job }: SentFileProps) {
   return job.outcome ? (
-    <UploadResult name={name} tags={tags} view={resultView(job, job.outcome)} />
+    <UploadResult
+      name={name}
+      kind={jobFileKind(job)}
+      tags={preview ? previewTags(preview) : []}
+      view={resultView(job, job.outcome, preview?.pdf)}
+    />
   ) : (
     <FileRow name={name} view={jobView(job)} kind={jobFileKind(job)} />
   );
@@ -177,7 +183,7 @@ function FileList({ items, restored, jobs, ...rest }: FileListProps) {
           <SentFile
             key={item.id}
             name={item.file.name}
-            tags={previewTags(item.preview)}
+            preview={item.preview}
             job={job}
           />
         ) : (
@@ -193,7 +199,7 @@ function FileList({ items, restored, jobs, ...rest }: FileListProps) {
       {restored.map((jobId) => {
         const job = jobs.get(jobId);
         return job ? (
-          <SentFile key={jobId} name={jobLabel(job)} tags={[]} job={job} />
+          <SentFile key={jobId} name={jobLabel(job)} job={job} />
         ) : (
           <FileRow
             key={jobId}

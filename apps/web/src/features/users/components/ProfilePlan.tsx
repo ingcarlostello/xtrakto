@@ -52,9 +52,9 @@ function MonthFiles({ used, limit, resetsOn }: MonthFilesProps) {
 }
 
 /**
- * "Tu plan" (docs/ui/v8-11): the month's statements, the size a file may
- * have, and, when the month's LLM calls ran out, until when the movements no
- * rule knows wait.
+ * "Tu plan" (docs/ui/v8-11): the month's statements, the size a file and the
+ * pages a PDF may have, and, when the month's LLM calls ran out, until when
+ * the movements no rule knows wait.
  */
 export function ProfilePlan({ isAiUsedUp, ...files }: ProfilePlanProps) {
   return (
@@ -64,9 +64,10 @@ export function ProfilePlan({ isAiUsedUp, ...files }: ProfilePlanProps) {
         <Badge variant="info">{COPY.free}</Badge>
       </div>
       <MonthFiles {...files} />
-      <p className="rounded-sm bg-surface-muted p-4 text-sm font-bold">
-        {COPY.fileSize}
-      </p>
+      <div className="flex flex-col gap-0.5 rounded-sm bg-surface-muted p-4">
+        <p className="text-sm font-bold">{COPY.fileSize}</p>
+        <p className="text-caption text-ink-muted">{COPY.pdfPages}</p>
+      </div>
       {isAiUsedUp && (
         <p className="rounded-sm bg-surface-muted p-4 text-sm">
           {`${COPY.aiUsedUp} ${formatDayInWords(files.resetsOn)}.`}

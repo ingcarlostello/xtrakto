@@ -2,8 +2,8 @@ import { amountMinorSchema, periodSchema } from "@xtrakto/core";
 import type { IngestionStats } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import { resultView } from "./upload-result.helpers";
-import { RESULT_COPY } from "./upload.constants";
-import type { JobOutcome, UploadJob } from "./upload.types";
+import { RESULT_COPY } from "./upload-result.constants";
+import type { JobOutcome, PdfReading, UploadJob } from "./upload.types";
 
 const QUARTER = periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" });
 const PREVIOUS_QUARTER = periodSchema.parse({
@@ -226,5 +226,45 @@ describe("resultView", () => {
       label: "movimiento en el archivo",
     });
     expect(view.pill.detail).toBe("1 movimiento cuadra");
+  });
+
+  describe("a PDF's first step", () => {
+    const movementsPdf: UploadJob = {
+      ...quarterly,
+      formatId: "bancolombia-movements-export-pdf",
+    };
+    const august = outcome(
+      { total: 48, added: 0, covered: 48 },
+      { balance: "none" },
+    );
+    const readOf = (result: JobOutcome, pdf?: PdfReading) =>
+      resultView(movementsPdf, result, pdf).steps[0];
+
+    it("says its pages and rows, and the descriptions joined from two lines", () => {
+      expect(readOf(august, { pageCount: 2, joinedDescriptions: 3 })).toEqual({
+        title: "Leído en tu navegador",
+        detail:
+          "2 páginas · 48 filas. Unimos 3 descripciones partidas en dos líneas.",
+        isOk: true,
+      });
+    });
+
+    it("says only its pages and rows when nothing was joined", () => {
+      expect(
+        readOf(august, { pageCount: 2, joinedDescriptions: 0 })?.detail,
+      ).toBe("2 páginas · 48 filas");
+    });
+
+    it("writes one page, row and description in the singular", () => {
+      const one = outcome({ total: 1, added: 1 }, { balance: "none" });
+
+      expect(readOf(one, { pageCount: 1, joinedDescriptions: 1 })?.detail).toBe(
+        "1 página · 1 fila. Unimos 1 descripción partida en dos líneas.",
+      );
+    });
+
+    it("says its movements once the page no longer holds what it read", () => {
+      expect(readOf(august)?.detail).toBe("48 movimientos");
+    });
   });
 });

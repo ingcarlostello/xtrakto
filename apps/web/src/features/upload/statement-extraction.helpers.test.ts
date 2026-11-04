@@ -25,18 +25,39 @@ const BYTES = new Uint8Array([80, 75, 3, 4]);
 const PDF_BYTES = new TextEncoder().encode("%PDF-1.7\n");
 const PASSWORD = "clave-inventada";
 
-// The invented movements export in PDF, as pdf.js reads it.
-const MOVEMENTS_PDF = extractedContentSchema.parse(
-  JSON.parse(
-    readFileSync(
-      new URL(
-        "../../../../../packages/parsers/fixtures/movements-basic-pdf.json",
-        import.meta.url,
+const fixture = (name: string): ExtractedContent =>
+  extractedContentSchema.parse(
+    JSON.parse(
+      readFileSync(
+        new URL(
+          `../../../../../packages/parsers/fixtures/${name}.json`,
+          import.meta.url,
+        ),
+        "utf8",
       ),
-      "utf8",
     ),
-  ),
-);
+  );
+
+// The invented statements in PDF, as pdf.js reads them.
+const MOVEMENTS_PDF = fixture("movements-basic-pdf");
+const QUARTERLY_PDF = fixture("quarterly-basic-pdf");
+const LINE_HEIGHT = 7.7;
+
+// A row that isn't a movement where the table's end stood, and the end a line
+// below it: the parser skips that row with a warning.
+const withStrayRow = (content: ExtractedContent): ExtractedContent => {
+  if (content.type !== "pdf") return content;
+  const last = content.pages.at(-1)?.items ?? [];
+  const endY = last.find(({ str }) => str === "FIN")?.y;
+  const items = [
+    ...last.map((item) =>
+      item.y === endY ? { ...item, y: item.y + LINE_HEIGHT } : item,
+    ),
+    { str: "SUBTOTAL", x: 40, y: endY ?? 0, width: 28.8, height: 6 },
+    { str: "1,000.00", x: 474.2, y: endY ?? 0, width: 28.8, height: 6 },
+  ];
+  return { type: "pdf", pages: [...content.pages.slice(0, -1), { items }] };
+};
 const HEADER: SpreadsheetCell[] = [
   "Fecha",
   "Descripción",
@@ -185,6 +206,8 @@ describe("extractStatement", () => {
           formatId: "bancolombia-movements-export-pdf",
           accountLast4: "8901",
           movementCount: 17,
+          // Its pages, and the descriptions it wrapped over two lines.
+          pdf: { pageCount: 2, joinedDescriptions: 5 },
         },
       },
     });
@@ -193,6 +216,21 @@ describe("extractStatement", () => {
       /Dirección IP|203\.0\.113|a\. m\./,
     );
     expect(stages).toEqual(Object.values(EXTRACTION_STAGE));
+  });
+
+  it("counts a PDF's joined descriptions only, not the rows its parser skipped", async () => {
+    mocks.extractPdf.mockResolvedValue(ok(withStrayRow(QUARTERLY_PDF)));
+
+    expect(await extract(PDF_BYTES)).toMatchObject({
+      ok: true,
+      value: {
+        preview: {
+          formatId: "bancolombia-savings-quarterly-pdf",
+          movementCount: 33,
+          pdf: { pageCount: 2, joinedDescriptions: 0 },
+        },
+      },
+    });
   });
 
   it("passes on a PDF's request for its password, before recognizing anything", async () => {

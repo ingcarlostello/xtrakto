@@ -237,7 +237,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 9.3 Quarterly statement PDF parser
 - [x] 9.3b Movements export PDF parser _(design v8)_
 - [x] 9.4a PDFs on the upload screen
-- [ ] 9.4b PDFs across the app
+- [x] 9.4b PDFs across the app
 
 **Stage 10 — Monthly use and retention** _(outline)_
 
@@ -1900,6 +1900,8 @@ It came out at about 570 lines of code (about 450 estimated), besides an 87-line
 
 #### 9.4b PDFs across the app
 
+Found while building it (2026-11-04): v8-08's rows are the movements the file has, so its first step counts them as rows beside the PDF's pages, from what the page read: the pages as the file has them, and the descriptions the movements PDF joined (9.3b's warnings). After a reload the page holds none of that, and the step counts the movements as before. The movements PDF prints the holder's name (9.3b), so the welcome and the profile, which said the name comes from the quarterly statement, name that PDF too. A quarterly PDF that doesn't reconcile shows a PDF's chip in its result.
+
 **Tasks**
 
 - The upload screen's copy (`v8-07`): "en Excel o PDF" in its subtitle, "Hasta 10 MB y 30 páginas por archivo." under the drop zone, Excel and PDF in "Bancolombia: lo que ya leemos", and the password and the IP in "Cómo cuidamos tus datos".
@@ -1909,7 +1911,9 @@ It came out at about 570 lines of code (about 450 estimated), besides an 87-line
 
 **Done when:** every screen reads right, at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): PDF statements across the app`
+It came out at about 160 changed lines of code, besides the upload result's copy, about 40 lines moved to a file of its own so the upload's constants stay under 300 lines, in two commits of one pull request: the design rules, then the app.
+
+**Commits:** `docs(rules): PDFs across the app`, then `feat(web): PDF statements across the app`
 
 ### Stage 10 — Monthly use and retention _(outline)_
 

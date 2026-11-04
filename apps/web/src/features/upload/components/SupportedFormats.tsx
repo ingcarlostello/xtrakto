@@ -1,14 +1,18 @@
 import { CircleCheck, List } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { FORMATS_COPY as COPY, UPLOAD_COPY } from "../upload.constants";
+import { FILE_TYPE } from "@/utils/statement-label.constants";
+import { FORMATS_COPY as COPY } from "../upload.constants";
 
 const FORMATS = [
   { icon: CircleCheck, copy: COPY.quarterly },
   { icon: List, copy: COPY.movements },
 ] as const;
 
-// The formats read today: the Excel files of a Bancolombia savings account
-// (docs/ui/v8-07, without the ones later stages bring).
+// Each format comes in either file.
+const FILE_TYPES = [FILE_TYPE.EXCEL, FILE_TYPE.PDF] as const;
+
+// The formats read today, those of a Bancolombia savings account, in Excel or
+// PDF (docs/ui/v8-07, without "¿Otro banco?", which Stage 11 brings).
 export function SupportedFormats() {
   return (
     <section className="flex flex-col gap-3">
@@ -24,7 +28,13 @@ export function SupportedFormats() {
               {copy.title}
             </p>
             <p className="text-caption text-ink-muted">{copy.detail}</p>
-            <Badge variant="tag">{UPLOAD_COPY.excel}</Badge>
+            <div className="flex flex-wrap gap-1.5">
+              {FILE_TYPES.map((type) => (
+                <Badge key={type} variant="tag">
+                  {type}
+                </Badge>
+              ))}
+            </div>
           </li>
         ))}
       </ul>

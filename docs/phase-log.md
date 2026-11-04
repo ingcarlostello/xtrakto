@@ -1033,3 +1033,52 @@ The upload screen reads PDFs. The picker and the drop zone take `.pdf` beside `.
 30 new tests in the app (1,083 there): reading a PDF by its bytes with its password, and its request for one passed on; the worker's password, and a rejected reading answered; `.pdf` accepted by name; the queue asking for a password and reading again with the one typed, saying a typed one was wrong, trying the one that opened a PDF on the others once each, also on one still being read, forgetting it once its file is removed or no file waits, and never sending it up; the rows' views (locked, opening, the quiet try, the icon by name then by format); the new problems; the events of a scanned or long PDF and none for a password; "PDF ·" in "Archivos subidos"; and the field's focus. Checked: twenty-four deliberate bugs each fail a test, two only after their tests were added or reordered (the same password tried again; a password kept once no file waits). In a local browser, with a fresh Clerk test user deleted afterwards, every synthetic PDF reads or explains itself, at desktop, 390px and 360px and with the keyboard; one password opens both PDFs that share it while the third asks for its own; and no request, console message or server log carries a password, in development and in a production build, where pdf.js stays in the worker's chunks, out of the server and the page.
 
 **Deviations and follow-ups:** v8-09 draws the password for one file, so its form sits under its file's row, the row's whole width on phones and the text's from `sm`, with the file's chip and "Quitar" by its title; the account choice of an export moved to that same line. v8-09's card subtitle ("Los extractos trimestrales en PDF tienen contraseña…") stays out, as the stage's plan decided. `generate:xlsx` had failed since 9.3 on the PDF fixtures (a fix of its own). The screen's subtitle, its formats and privacy panels still say Excel only until 9.4b. **Pending for the human:** uploading a real PDF in a throwaway account (Done when). About 570 lines of code without tests, comments and blank lines (about 450 estimated), besides the 87-line `generate:pdf`: four commits of one pull request, and `CLAUDE.md`'s command in one of its own.
+
+## 9.4b PDFs across the app
+
+_2026-11-04_
+
+Every screen that names the files says Excel or PDF. On the upload screen:
+
+- the subtitle ("en Excel o PDF");
+- the drop zone's caption ("Hasta 10 MB y 30 páginas por archivo."), which the welcome's last step shares;
+- "Bancolombia: lo que ya leemos", with the Excel and PDF tags on both formats;
+- "Cómo cuidamos tus datos", with "La contraseña del PDF no sale de tu equipo" and the IP some PDFs print among what's discarded.
+
+A PDF's upload result starts with what the page read, while it holds it: "2 páginas · 17 filas. Unimos 5 descripciones partidas en dos líneas.". The counts come from the preview the worker now posts with a PDF's reading, counts only: its pages as the file has them, and the descriptions its parser joined (9.3b's warnings). After a reload, the step counts the movements again. A quarterly PDF that doesn't reconcile shows a PDF's chip in its result: the result reuses `FileIcon`.
+
+The rest of the app says it too:
+
+- the empty summary's download step;
+- the welcome's three steps: the subtitles, "Descarga el Excel o el PDF" with "Si el PDF pide contraseña, suele ser tu número de documento.", and "Elige las fechas y descarga el Excel o el PDF";
+- the profile: "Y hasta 30 páginas por PDF." under the file size, and the IP among what's never kept.
+
+The design rules follow.
+
+5 new tests in the app (1,088 there):
+
+- a PDF's preview carries its pages and joined descriptions;
+- only the joined descriptions are counted when its parser also skipped a row;
+- the result's first step with pages, rows and joined descriptions;
+- the same step without joined descriptions, and in the singular;
+- the movements once the page no longer holds the reading.
+
+Five deliberate bugs each fail a test.
+
+In a local browser, with a fresh Clerk test user deleted afterwards (the local counts as before):
+
+- the summary, the welcome's three steps, the upload screen and the profile say Excel or PDF at 1280, 390 and 360px, without overflowing;
+- the keyboard reaches each screen's action at phone widths;
+- the synthetic movements and quarterly PDFs show their first steps ("2 páginas · 17 filas. Unimos 5…", "2 páginas · 33 filas"), and their movements after a reload;
+- the profile takes the holder's name from the movements PDF.
+
+**Deviations and follow-ups:**
+
+- **Rows:** v8-08's rows are the movements the file has (48 in both its tile and its step), so the step counts them as rows.
+- **Holder's name:** the movements PDF prints it (9.3b), so the welcome's and the profile's lines on where it comes from name that PDF too, beyond the phase's tasks.
+- **Privacy panel:** it keeps five facts, v8's four and the references' (5.3b).
+- **v8-17:** its drop zone names CSV, which isn't read. The quarterly statement's fourth step takes v8's password hint without promising a password (Stage 9's plan).
+- **Upload constants:** `RESULT_COPY` moved, unchanged but for the PDF's words, to `upload-result.constants.ts` beside its helpers, since the upload's constants passed the 300 lines the lint allows.
+- **Stage 9 is done:** Stage 10 is an outline, to be expanded and approved before its first phase (roadmap §1).
+
+About 160 changed lines of code without tests, comments and blank lines, besides about 40 lines of copy moved: two commits of one pull request.
