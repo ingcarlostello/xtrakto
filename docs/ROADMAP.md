@@ -24,7 +24,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Conflicts:** if this roadmap contradicts the project rules, the rules win. Point out the conflict and propose an update to this file.
 
-**Outlined stages:** stages 10 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
+**Outlined stages:** stages 11 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
 **Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
@@ -239,13 +239,19 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 9.4a PDFs on the upload screen
 - [x] 9.4b PDFs across the app
 
-**Stage 10 — Monthly use and retention** _(outline)_
+**Stage 10 — Monthly use and retention**
 
-- [ ] 10.1 Cross-format deduplication
-- [ ] 10.2 Coverage and gaps
-- [ ] 10.3 Optional current balance
-- [ ] 10.4 [HUMAN] Email with Resend and monthly reminder
-- [ ] 10.5 Monthly summary email
+- [ ] 10.1a Match movements across formats
+- [ ] 10.1b Matches in the upload result
+- [ ] 10.1c Matches in Movimientos
+- [ ] 10.2a Coverage timeline
+- [ ] 10.2b A year in Movimientos and Categorías
+- [ ] 10.2c A year in Resumen and Pagos fijos
+- [ ] 10.2d Gaps and which file to download
+- [ ] 10.3 Today's balance as a check
+- [ ] 10.4a [HUMAN] Email with Resend and the upload notice
+- [ ] 10.4b Review and fixed-payment notices
+- [ ] 10.5 Monthly email
 
 **Stage 11 — Unknown formats: ingestion agent** _(outline)_
 
@@ -1915,13 +1921,199 @@ It came out at about 160 changed lines of code, besides the upload result's copy
 
 **Commits:** `docs(rules): PDFs across the app`, then `feat(web): PDF statements across the app`
 
-### Stage 10 — Monthly use and retention _(outline)_
+### Stage 10 — Monthly use and retention
 
-- **10.1 Cross-format deduplication:** match movements-export rows against existing quarterly rows by date, normalized description, amount and occurrence order, allowing one day of difference for `ABONO INTERESES AHORROS` (paid the next day except at a month's end) and a description the quarterly statement cut before an accented letter (Appendix A.2), also between two movements exports, since their dates depend on where each requested range ends. Never count a movement twice. A matched movement gains what the export brings (design v8, `docs/ui/v8-08` and `v8-03`): its reference ("12 referencias agregadas"), the export's way of writing it ("También aparece como") and the file as one more source; an export whose movements all match is "Verificado por tu extracto trimestral". Matching clears Stage 5's coverage (`covered_by_statement_id`) for the matched rows and carries their references over.
-- **10.2 Coverage and gaps:** date ranges with data per account, shown as the coverage timeline (`docs/ui/v8-07`, `v8-08`, `v8-11`) and as "Año" in the period selector with its coverage ("9 de 12 meses"); the missing periods ("Te falta abril a junio", `v8-13`) and which range to download (the bank allows the current month and the previous three). "Encadenado" was built in 5.6c.
-- **10.3 Optional current balance:** when uploading a movements export, the user can enter the current balance to rebuild balances backwards and verify them.
-- **10.4 [HUMAN] Email:** Resend with a sending subdomain (for example `mail.xtrakto.site`) and SPF, DKIM and DMARC records at Hostinger. Watch deliverability: some filters distrust the `.site` extension. Monthly reminder through an Inngest cron, with unsubscribe. The profile's email notices (`docs/ui/v8-11`): a file is ready, something to review, a recurring payment went up, the monthly summary; never amounts.
-- **10.5 Monthly summary email:** "Your summary is ready" with a link; no amounts or descriptions in the email.
+**Goal:** make each month's upload worth it: a movements file and its quarterly statement join movement by movement, each account shows the months it has and those it misses, the balance the bank shows today checks the days only movements files cover, and email says when the files are ready and, once a month, which file to download.
+
+Planned with the human on 2026-11-04: eleven sub-phases (about 3,500 lines of code), with these decisions.
+
+- **A movements file joins its quarterly statement movement by movement.** Its movements on a verified quarterly statement's days stay hidden, as Stage 5 left them, and each gains a link to the movement it repeats (`matched_transaction_id`), which takes its reference and keeps how the file wrote it. Coverage stays the only way a movement is hidden, so the predicate of what counts and its readers don't change: ADR 0018 had 10.1 clear the coverage of what it matched, and 10.1a amends it.
+- **Two movements files need no matching, once checked across a month's end.** The outline asked to match them too: 2.3 saw overlapping exports date the same interest differently, which 2.8 explained by the export dating each interest on the day it was paid, whatever the range. The human's five exports bear it out for ranges that end mid-month, whose last day holds one interest row, not two (counts only); none crosses a month's end, so 10.1a checks two that do. Two movements files that overlap then give the same fingerprints and already deduplicate, as a range's Excel and PDF do.
+- **"Fuente" names the files that saved a movement.** A movement that five movements files bring is saved once, by its fingerprint, so only the first of them is known: "Fuente" names the quarterly statement and that file, and v8's "×2" and five sources stay out.
+- **Today's balance is a check, never a source** (decided with the human). The days only movements files cover show their balance when the latest verified closing balance, plus the movements that count since, gives the balance the person typed; when it doesn't, they show none, and say by how much it's off and that a file may be missing. v8 doesn't draw it: 10.3 builds it from v8's pieces.
+- **"Año" on every page with a period** (decided with the human): Resumen, Movimientos, Pagos fijos, Categorías and a category's detail read a year, which adds up the quarters the person has; the quick review, its banner and its links stay by quarter.
+- **Email as v8's "Avisos" draws it** (decided with the human): "Cuando tu archivo esté listo", "Si hay algo por revisar" and "Si un pago fijo sube" on, in one email per batch of files, and "Resumen del mes" off. The outline's monthly reminder goes inside "Resumen del mes", the only monthly switch v8 draws: the month's summary is ready, or which file to download. No email carries an amount, a bank's text, a name, an account's digits or a file's name.
+- **Notices are the first preference the database keeps.** Analytics consent lives in the browser (ADR 0029), where a background function can't read it. The address comes from Clerk when an email goes and is never stored; it's asked outside `withUserContext`, which allows no network calls.
+- **One-click unsubscribe, without a session** (decided with the human): a link the server signs (HMAC), with `List-Unsubscribe` and `List-Unsubscribe-Post`, which only turns its notice off for its person and answers the same whatever it gets. It is the second exception to checking the session (rules §7), with an ADR; the profile turns the notice back on.
+- **Left out:** the bell v8 draws in the header belongs to no phase ("Avisos: Solo por correo"), and a day missing inside a month isn't a gap: the timeline reads months.
+
+#### 10.1 Cross-format deduplication
+
+Split in three when planned (about 850 lines), the last two with the human's approval: the matching, the upload result, then Movimientos.
+
+#### 10.1a Match movements across formats
+
+**Human:** add to `packages/parsers/fixtures/private/` two movements exports around a month's end: one that ends on its last day and one that crosses it.
+
+**Tasks**
+
+- `transactions.matched_transaction_id`: on a hidden movement, the movement that counts and that it repeats, which its keys keep in the statement that hides it, one hidden movement each. A migration, and ADR 0018 amended.
+- `matchMovements` in `@xtrakto/parsers`, since it's the bank's knowledge, pairs a movements file's movements with a verified quarterly statement's, on the days it covers, by:
+  - the date, as the export dates interest on the day it was paid (Appendix A.2);
+  - the normalized description, or the one the quarterly statement cut before an accented letter;
+  - the amount;
+  - and their order among equal ones.
+
+  The private comparison of the real files moves to it.
+
+- In `ingest`'s transaction, once the statement is saved, whichever came first: the account's hidden movements without a match meet the movements of the verified quarterly statement that hides them, so what was saved before 10.1 matches with the account's next upload. A match links them, and the movement that counts takes the file's reference (its HMAC, last 4 digits and kind) when it has none.
+- The reference changes a category only where it decides one: the user's rule for it, or the table's rule that asks for one, so a Nequi send with its number waits for the review and keeps that rule's id, which the review groups by. A guess the user answered "No sé" stays answered, and a category the user chose for that movement alone stays.
+- Uploaded the other way, a movements file before its quarterly statement, the answers given its movements one by one (a category for the bank's `0`, a "No sé") go to their twins, which had none.
+
+**Done when:**
+
+- Database tests prove both upload orders; interest a day apart and at a month's end; a cut description; identical movements in their order; a movement without a twin staying hidden; a quarterly statement that doesn't reconcile matching nothing; a "No sé" and a category chosen for one movement kept, in either order; a Nequi number marked as the user's reaching its twin; what was saved before matching with the next upload; and another user's movements never matching.
+- The private test matches the human's pairs one to one through `matchMovements`, against each quarterly statement's Excel and PDF; and the two exports around a month's end give the same fingerprints on the days they share, else 10.1a matches two movements files too (counts only).
+
+**Commits:** `feat(parsers): match movements across formats`, `feat(db): link matched movements and carry their references`, then `feat(web): match movements across formats when saving a statement`
+
+#### 10.1b Matches in the upload result
+
+**Tasks**
+
+- What a file matched, counted when read for each statement, as "Encadenado" is, so it holds in either upload order and for files saved before 10.1: its movements the quarterly statement had, those a day apart, and the references they brought (a phone's or a code's).
+- The upload result (`docs/ui/v8-08`):
+  - the tile "12 referencias agregadas";
+  - "Verificado por tu extracto trimestral" ("Este tipo de archivo no trae saldos; lo comparamos con jul–sep y coincide.") when verified quarterly statements cover every day of a movements file and every movement on those days has its twin, also for a file uploaded twice; a file only partly covered says how many of its movements its quarterly statement had;
+  - "Revisando duplicados" with how many the quarterly statement had, and that interest comes a day apart;
+  - "Clasificado" with the references added, and "Lo que sigue" with the review's groups waiting and "Revisar ahora".
+- "Este archivo no trae saldos" (`v8-13`): "Los verificamos cuando subas el extracto trimestral de ese periodo." and "Subir el trimestral".
+- "Archivos subidos" (`v8-07`): "12 referencias agregadas", and "Completado" for a file that added references and nothing new.
+- The design rules.
+
+**Done when:** every state reads right from synthetic files uploaded in both orders and twice, at 390px and 360px and with the keyboard.
+
+**Commits:** `docs(rules): matches in the upload result`, `feat(db): what a file matched, counted when read`, then `feat(web): matches in the upload result`
+
+#### 10.1c Matches in Movimientos
+
+**Tasks**
+
+- A movement's detail (`v8-03`): "También aparece como", with the texts its files wrote unlike its own, and "Fuente", with each file that saved it.
+- Movimientos's subtitle names the files it joined ("Juntamos tu extracto trimestral y 2 archivos de movimientos, sin duplicar.").
+- The design rules.
+
+**Done when:** the detail and the subtitle read right from synthetic files, and no text or file of another account's shows, at 390px and 360px and with the keyboard.
+
+**Commits:** `docs(rules): matches in Movimientos`, `feat(db): the files and texts of a movement`, then `feat(web): matches in Movimientos`
+
+#### 10.2 Coverage and gaps
+
+Split in four when planned (about 1,300 lines), the year in two with the human's approval: the timeline, a year as a period, then what's missing.
+
+#### 10.2a Coverage timeline
+
+**Tasks**
+
+- An account's months, worked out when read, each as the timeline shows it: a verified quarterly statement, also in movements files, without balance to verify, or missing.
+- The coverage timeline (design system §9): the account's months through this one, twelve at most, with its legend and a text alternative that says what it shows ("Enero a septiembre completo y verificado; octubre sin saldo").
+- Where v8 draws it:
+  - "Lo que tienes" on the upload screen (`v8-07`), with its sentence, "Encadenado" and the note on a month several overlapping movements files brought;
+  - "Lo que tienes ahora" in the upload result (`v8-08`);
+  - "Tus datos" in the profile (`v8-11`), with the files ("9 archivos: 3 trimestrales y 6 de movimientos.").
+
+**Done when:** each status reads right from synthetic files uploaded in both orders, at 390px, 360px and on desktop.
+
+**Commits:** `docs(rules): coverage timeline`, `feat(db): an account's months and what covers them`, then `feat(web): coverage timeline`
+
+#### 10.2b A year in Movimientos and Categorías
+
+**Tasks**
+
+- A year joins the URL's periods (`2026`), and the period selector lists it after the quarters with its coverage ("Año 2026" · "9 de 12 meses", `v8-18`), from 10.2a's months.
+- Movimientos, Categorías and a category's detail read a year.
+- The quick review stays by quarter: from a year, its links go to the year's latest quarter.
+- Decided when it starts: what the month row shows under a year, since v8 draws a quarter's months only.
+- The design rules.
+
+**Done when:** the three pages read a year from seeded data, at 390px and 360px and with the keyboard.
+
+**Commits:** `docs(rules): a year as a period`, then `feat(web): a year in Movimientos and Categorías`
+
+#### 10.2c A year in Resumen and Pagos fijos
+
+**Tasks**
+
+- The summary reads a year: "Tu año de un vistazo", the bank's figures added up from its quarterly statements, the chart, "Dónde se fue más" and "Tu extracto, traducido"; the review's banner points to the year's latest quarter.
+- Pagos fijos reads a year.
+- Decided when it starts: the account card's figures for a year, since the bank prints no yearly average balance.
+
+**Done when:** both pages read a year from seeded data, at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): a year in Resumen and Pagos fijos`
+
+#### 10.2d Gaps and which file to download
+
+**Tasks**
+
+- "Te falta abril a junio" in the summary (`v8-13`): the months that ended without movements since the account's first, with "Subir abr–jun".
+- Which file brings them: for a quarter that ended, its quarterly statement; for the dates the bank still gives as movements (this month and the previous three), those movements.
+- "Ver lo que tienes" beside "Ya tenías todo este archivo" (`v8-13`).
+
+**Done when:** tests cover which months are missing and which file each one gets (a quarter that ended, the bank's window, a new year), and the notice reads right at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): gaps and which file to download`
+
+#### 10.3 Today's balance as a check
+
+**Tasks**
+
+- In the upload result of a movements file that reaches today and that no verified quarterly statement covers, when one comes before it, an optional field for the total balance ("saldo total", not "disponible") the person's bank shows today, built from v8's pieces and shown to the human before the phase closes.
+- The account keeps the latest balance typed and its day; the export of the person's data holds it, and deleting their data deletes it.
+- The check, worked out when read: when the latest verified closing balance plus the movements that count since gives it, Movimientos shows each day's balance, the summary's chart its balance line, and "Tu cuenta" the period's closing balance, each saying it adds up with the person's bank; when it doesn't, no balance shows, and the account says by how much and that a file may be missing.
+- `docs/data-flow.md`, the privacy page, and system design §4 and §5.
+
+**Done when:** tests cover a balance that adds up, one that doesn't, no quarterly statement before, a day missing, and a quarterly statement that arrives afterwards; the field works at 390px and 360px and with the keyboard.
+
+**Commits:** `docs(rules): today's balance`, `feat(db): today's balance`, then `feat(web): today's balance as a check`
+
+#### 10.4 Email with Resend
+
+Split in two when planned (about 700 lines): Resend with the first notice, then the other two of each batch.
+
+#### 10.4a [HUMAN] Email with Resend and the upload notice
+
+**Human:** create the Resend account and its sending domain, `mail.xtrakto.site`, with its records at Hostinger (SPF, DKIM, DMARC and the bounce MX), and put its key in Vercel's production environment.
+
+**Tasks**
+
+- `lib/email.ts`, server-only and the only module that imports Resend's SDK, as `lib/ai` is for the LLM's: off without its key, as the other services, and its errors turned into codes before a log sees them.
+- The person's notices: one row per user with v8's defaults, under forced Row-Level Security; "Avisos" in the profile (`v8-11`) with "Cuando tu archivo esté listo" alone, so its copy is true today.
+- One email per batch of files, once the person's files are done (Inngest's debounce by user): counts and a link, nothing else.
+- One-click unsubscribe (above), with its public route and its ADR.
+- An ADR for Resend: what it receives (the address and the email's words), why Resend, and the template with the brand's logo (`docs/brand.md`).
+- `docs/deployment.md`, `docs/data-flow.md`, the privacy page and its date, and system design §1, §2, §4, §9 and §10.
+
+**Done when:**
+
+- Tests cover one email for several files, the switch, an unsubscribe link that turns off only its notice for only its person while a forged one changes nothing, and that no amount, text or name reaches an email or a log. Tests never call Resend, as they never call DeepSeek.
+- An email with synthetic data reaches the human's inbox from `mail.xtrakto.site`, with SPF, DKIM and DMARC passing and outside spam, since some filters distrust `.site`.
+
+**Commits:** `feat(web): email with Resend and the upload notice`, then `docs: email only through lib/email`
+
+#### 10.4b Review and fixed-payment notices
+
+**Tasks**
+
+- "Si hay algo por revisar" (`v8-11`): when the batch leaves groups waiting, the email says so and links the review.
+- "Si un pago fijo sube": when the batch makes a fixed payment rise (6.6's insight), the email says so, without its amount or the bank's text.
+- Both switches join "Avisos".
+
+**Done when:** tests cover each notice on and off, and their emails carry no amount, text or name.
+
+**Commit:** `feat(web): notices of reviews and fixed payments`
+
+#### 10.5 Monthly email
+
+**Tasks**
+
+- An Inngest cron on the first day of each month in Bogotá, for each person with "Resumen del mes" on: when the month that ended has its movements, the email links its summary; when it doesn't, it says which file to download (10.2d).
+- Addresses asked from Clerk in batches; a failure for one person doesn't stop the others; steps return counts only; the example's user never gets one.
+- "Resumen del mes" joins "Avisos", off.
+
+**Done when:** tests cover who gets it (on, with and without the month's movements, never the example), the month's boundary in Bogotá, and a failure that doesn't stop the others.
+
+**Commit:** `feat(web): monthly email`
 
 ### Stage 11 — Unknown formats: ingestion agent _(outline)_
 
