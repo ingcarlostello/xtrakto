@@ -19,10 +19,12 @@ const MAX_ROWS = 10_000;
 const readFixture = (name) =>
   JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), "utf8"));
 
+// The spreadsheet fixtures: generate:pdf writes the PDF ones.
 const fixtureNames = () =>
   readdirSync(FIXTURES_DIR)
     .filter((file) => file.endsWith(".json"))
     .map((file) => file.slice(0, -".json".length))
+    .filter((name) => readFixture(name).type === "spreadsheet")
     .sort();
 
 const spreadsheet = (sheets) => ({ type: "spreadsheet", sheets });

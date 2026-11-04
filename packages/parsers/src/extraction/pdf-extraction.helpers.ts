@@ -78,7 +78,8 @@ const loadPdfjs = (): Promise<typeof Pdfjs> => {
   return pdfjsLoading;
 };
 
-const hasPdfHeader = (bytes: Uint8Array): boolean => {
+/** Whether a file's bytes are a PDF's, by the header pdf.js looks for. */
+export const isPdf = (bytes: Uint8Array): boolean => {
   const head = bytes.subarray(0, HEADER_SEARCH_BYTES + PDF_SIGNATURE.length);
   return head.some((_, start) =>
     PDF_SIGNATURE.every((byte, offset) => head[start + offset] === byte),
@@ -130,7 +131,7 @@ export const extractPdf = async (
   bytes: Uint8Array,
   { password }: PdfExtractionOptions = {},
 ): Promise<Result<PdfContent>> => {
-  if (!hasPdfHeader(bytes)) return unknownFileType;
+  if (!isPdf(bytes)) return unknownFileType;
   const pdfjs = await loadPdfjs();
   const task = pdfjs.getDocument({
     // pdf.js takes ownership of the bytes it gets; the caller keeps its own.

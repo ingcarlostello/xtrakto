@@ -8,6 +8,7 @@ import {
   sentJobIds,
   trackedJobIds,
 } from "../upload-jobs.helpers";
+import { isAskingForPassword } from "../upload-display.helpers";
 import { filesToSend } from "../upload-send.helpers";
 import { JOBS_PARAM } from "../upload.constants";
 import { takeHandedFiles } from "../upload.store";
@@ -16,6 +17,7 @@ import type {
   ExtractionWorker,
   FileToSend,
   UploadAccount,
+  UploadItem,
 } from "../upload.types";
 import { useUploadEvents } from "./use-upload-events";
 import { useUploadQueue } from "./use-upload-queue";
@@ -53,6 +55,21 @@ const usePickerFocusAfter = (
     if (wasBusy.current && !isBusy && isFocusLost) picker.current?.focus();
     wasBusy.current = isBusy;
   }, [isBusy, picker]);
+};
+
+// When a PDF opens, its password's form goes and the focus would fall to the
+// page: hand it to the picker, unless another PDF's field took it.
+const usePickerFocusWhenOpened = (
+  items: readonly UploadItem[],
+  picker: RefObject<HTMLButtonElement | null>,
+) => {
+  const asking = items.filter(isAskingForPassword).length;
+  const wasAsking = useRef(0);
+  useEffect(() => {
+    const isFocusLost = document.activeElement === document.body;
+    if (asking < wasAsking.current && isFocusLost) picker.current?.focus();
+    wasAsking.current = asking;
+  }, [asking, picker]);
 };
 
 // The URL's fragment keeps the jobs sent, so a reload shows them again. Not a
@@ -114,6 +131,18 @@ export type FileActions = {
   readonly onRemove: (id: string) => void;
   readonly onRetry: (id: string) => void;
   readonly onChooseAccount: (id: string, key: AccountKey) => void;
+  /** Tries the password the person typed for a PDF. */
+  readonly onOpenPdf: (id: string, password: string) => void;
+  /** Takes a PDF out, to choose another file instead. */
+  readonly onChooseAnother: (id: string) => void;
+};
+
+// The "Elegir archivos" button, where the focus goes when what had it goes.
+const usePicker = (isBusy: boolean, items: readonly UploadItem[]) => {
+  const picker = useRef<HTMLButtonElement>(null);
+  usePickerFocusAfter(isBusy, picker);
+  usePickerFocusWhenOpened(items, picker);
+  return picker;
 };
 
 /**
@@ -130,8 +159,7 @@ export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
   });
   const { sendFiles, isRefreshing } = useRefreshingSend(queue.send);
   const isBusy = queue.isSending || isRefreshing;
-  const picker = useRef<HTMLButtonElement>(null);
-  usePickerFocusAfter(isBusy, picker);
+  const picker = usePicker(isBusy, queue.items);
   const files = filesToSend(queue.items, accounts);
   const actions: FileActions = {
     // A removed row takes the focus with it: hand it back to the picker.
@@ -141,6 +169,13 @@ export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
     },
     onRetry: (id) => void sendFiles(files.filter((file) => file.id === id)),
     onChooseAccount: queue.chooseAccount,
+    onOpenPdf: queue.openPdf,
+    // Its row goes, and the picker opens, still within the person's click.
+    onChooseAnother: (id) => {
+      queue.remove(id);
+      picker.current?.focus();
+      picker.current?.click();
+    },
   };
   const sendAll = () => void sendFiles(files);
   const { restored, statuses } = useSentJobs(sentJobIds(queue.items));

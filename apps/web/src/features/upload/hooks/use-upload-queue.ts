@@ -4,7 +4,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import type { Dispatch } from "react";
 import { itemsToStart, uploadQueueReducer } from "../upload-queue.helpers";
 import type { UploadQueueAction } from "../upload-queue.helpers";
-import { FILE_PROBLEM, NO_ANSWER } from "../upload.constants";
+import { FILE_PROBLEM, NO_ANSWER, UPLOAD_STATUS } from "../upload.constants";
 import type {
   AccountKey,
   ExtractedStatement,
@@ -28,8 +28,11 @@ type Extraction = {
 };
 
 // Reads the file here and hands the worker only its bytes, transferred rather
-// than copied: the worker never sees the file's name.
+// than copied, and a PDF's password when there's one to try: the worker never
+// sees the file's name.
 const extractInWorker = ({ item, worker, dispatch }: Extraction): void => {
+  const password =
+    item.status === UPLOAD_STATUS.WAITING ? item.password?.value : undefined;
   const finish = (result: Result<ExtractedStatement>) => {
     worker.terminate();
     dispatch({ type: "finished", id: item.id, result });
@@ -41,7 +44,11 @@ const extractInWorker = ({ item, worker, dispatch }: Extraction): void => {
   worker.onerror = () => finish(unreadable);
   dispatch({ type: "started", id: item.id });
   item.file.arrayBuffer().then(
-    (bytes) => worker.postMessage({ bytes }, [bytes]),
+    (bytes) =>
+      worker.postMessage(
+        password === undefined ? { bytes } : { bytes, password },
+        [bytes],
+      ),
     () => finish(unreadable),
   );
 };
@@ -114,14 +121,15 @@ type UploadQueueOptions = {
 /**
  * The files chosen for upload, each read in its own worker, at most three at
  * a time, then sent one at a time. A worker ends when its file is read,
- * removed, or the screen closes.
+ * removed, or the screen closes. A PDF with a password waits for it, and the
+ * one that opened a PDF is tried on the others; it never leaves the browser.
  */
 export const useUploadQueue = ({
   createWorker,
   submit,
   takeHandedFiles,
 }: UploadQueueOptions) => {
-  const [items, dispatch] = useReducer(uploadQueueReducer, []);
+  const [{ items }, dispatch] = useReducer(uploadQueueReducer, { items: [] });
   const workers = useRef(new Map<string, ExtractionWorker>());
   const { send, isSending } = useSending(submit, dispatch);
   useHandedFiles(takeHandedFiles, dispatch);
@@ -153,5 +161,8 @@ export const useUploadQueue = ({
   const chooseAccount = (id: string, key: AccountKey) =>
     dispatch({ type: "accountChosen", id, key });
 
-  return { items, addFiles, remove, chooseAccount, send, isSending };
+  const openPdf = (id: string, password: string) =>
+    dispatch({ type: "passwordTyped", id, password });
+
+  return { items, addFiles, remove, chooseAccount, openPdf, send, isSending };
 };

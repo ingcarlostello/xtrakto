@@ -49,8 +49,26 @@ export type ExtractedStatement = {
   readonly preview: StatementPreview;
 };
 
-/** The one message a worker receives: the file's bytes, without its name. */
-export type ExtractRequest = { readonly bytes: ArrayBuffer };
+/**
+ * The one message a worker receives: the file's bytes, without its name, and
+ * the password to open a PDF with, when there's one to try.
+ */
+export type ExtractRequest = {
+  readonly bytes: ArrayBuffer;
+  readonly password?: string;
+};
+
+/** The kind of file a row shows, by its icon. */
+export type FileKind = "excel" | "pdf";
+
+/**
+ * A password to open a PDF with, which lives in the page's memory only: one
+ * the person typed for it, or one that opened another PDF of theirs.
+ */
+export type PasswordTry = {
+  readonly value: string;
+  readonly isTyped: boolean;
+};
 
 /** What a worker posts back: each stage as it starts, then the result. */
 export type ExtractionMessage =
@@ -106,10 +124,22 @@ export type MonthlyUsage = {
 };
 
 type UploadState =
-  | { readonly status: typeof UPLOAD_STATUS.WAITING }
+  | {
+      readonly status: typeof UPLOAD_STATUS.WAITING;
+      readonly password?: PasswordTry;
+    }
   | {
       readonly status: typeof UPLOAD_STATUS.EXTRACTING;
       readonly stage: ExtractionStage;
+      readonly password?: PasswordTry;
+    }
+  | {
+      // A PDF that opens only with its password.
+      readonly status: typeof UPLOAD_STATUS.LOCKED;
+      /** The last password that didn't open it, so it isn't tried again. */
+      readonly failedWith?: string;
+      /** Whether the person typed that password for this file. */
+      readonly isWrong: boolean;
     }
   | {
       readonly status: typeof UPLOAD_STATUS.READY;

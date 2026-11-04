@@ -1,6 +1,6 @@
 export type { FormatId } from "./bancolombia/bancolombia.constants";
 export { normalizeDescription } from "./descriptions/description.helpers";
-export { extractPdf } from "./extraction/pdf-extraction.helpers";
+export { extractPdf, isPdf } from "./extraction/pdf-extraction.helpers";
 export type { PdfExtractionOptions } from "./extraction/pdf-extraction.helpers";
 export { extractSpreadsheet } from "./extraction/spreadsheet-extraction.helpers";
 export type { BankParser, ParserRegistry } from "./registry/bank-parser.types";

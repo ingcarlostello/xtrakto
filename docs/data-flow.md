@@ -42,18 +42,18 @@ flowchart LR
 
 ## What stays in the browser
 
-| Data                                    | Why                                                                   | Kept for                                          |
-| --------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------- |
-| The statement file and its name         | Read by a Web Worker, which gets the bytes, never the name (ADR 0008) | While the upload page is open                     |
-| A PDF's password (Stage 9)              | Opens the file in the worker                                          | While the upload page is open                     |
-| The extracted content, unminimized      | Minimized before sending: only what the parser reads (ADR 0017)       | While the upload page is open                     |
-| Clerk's session cookies                 | Keep the person signed in                                             | Clerk's session lifetime                          |
-| The analytics consent, with its version | Asks once per browser (ADR 0029)                                      | Until the person changes it or clears the browser |
-| PostHog's random id (`localStorage`)    | Counts a browser once, only after a yes; withdrawing deletes it       | Until consent is withdrawn                        |
+| Data                                    | Why                                                                                         | Kept for                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| The statement file and its name         | Read by a Web Worker, which gets the bytes, never the name (ADR 0008)                       | While the upload page is open                                                            |
+| A PDF's password                        | Opens the file in its worker; the one that opened a PDF is tried on the others still locked | In the page's memory, until no file waits for it, its file is removed or the page closes |
+| The extracted content, unminimized      | Minimized before sending: only what the parser reads (ADR 0017)                             | While the upload page is open                                                            |
+| Clerk's session cookies                 | Keep the person signed in                                                                   | Clerk's session lifetime                                                                 |
+| The analytics consent, with its version | Asks once per browser (ADR 0029)                                                            | Until the person changes it or clears the browser                                        |
+| PostHog's random id (`localStorage`)    | Counts a browser once, only after a yes; withdrawing deletes it                             | Until consent is withdrawn                                                               |
 
 ## What reaches the server
 
-The server receives the minimized content: the rows the parser reads, the account's last 4 digits, long numbers in descriptions masked (ADR 0012), and references raw only so that it can hash them. It minimizes the content again, writes it to the job's row, and never keeps it anywhere else; Next.js's own logging of action arguments is off (`next.config.ts`), and errors are sanitized before any log sees them. Vercel keeps short-lived request logs (path, status, the client's IP) for its own operation.
+The server receives the minimized content: the rows the parser reads, the account's last 4 digits, long numbers in descriptions masked (ADR 0012), and references raw only so that it can hash them. From a PDF, the same parts as the text items the page prints them in, with their positions, which the parser rebuilds into rows; never the address, the city, the branch, or what a movements export's PDF adds: the date and time it was downloaded and the IP address each of its pages prints. It minimizes the content again, writes it to the job's row, and never keeps it anywhere else; Next.js's own logging of action arguments is off (`next.config.ts`), and errors are sanitized before any log sees them. Vercel keeps short-lived request logs (path, status, the client's IP) for its own operation.
 
 ## What the database keeps
 

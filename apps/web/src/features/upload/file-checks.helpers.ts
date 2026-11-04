@@ -1,7 +1,7 @@
 import { APP_ERROR_CODE } from "@xtrakto/core";
 import type { AppError, AppErrorCode } from "@xtrakto/core";
 import {
-  ACCEPTED_EXTENSION,
+  ACCEPTED_EXTENSIONS,
   FILE_PROBLEM,
   MAX_FILE_SIZE_BYTES,
 } from "./upload.constants";
@@ -14,16 +14,21 @@ const problem = (code: AppErrorCode, reason: string): AppError => ({
 const isSameFile = (a: File, b: File): boolean =>
   a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
 
+/** Whether a file's name says it's a PDF; its bytes decide how it's read. */
+export const isPdfName = (name: string): boolean =>
+  name.toLowerCase().endsWith(".pdf");
+
 /**
- * Why a chosen file is refused before it is read: it isn't an XLSX, it's over
- * 10 MB, or it's already among the chosen files. The worker then checks what
- * the file holds.
+ * Why a chosen file is refused before it is read: it isn't an XLSX or a PDF,
+ * it's over 10 MB, or it's already among the chosen files. The worker then
+ * checks what the file holds.
  */
 export const fileProblem = (
   file: File,
   chosen: readonly File[],
 ): AppError | undefined => {
-  if (!file.name.toLowerCase().endsWith(ACCEPTED_EXTENSION)) {
+  const name = file.name.toLowerCase();
+  if (!ACCEPTED_EXTENSIONS.some((extension) => name.endsWith(extension))) {
     return problem(APP_ERROR_CODE.UNKNOWN_FORMAT, FILE_PROBLEM.TYPE);
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {

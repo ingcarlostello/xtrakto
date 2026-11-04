@@ -1,4 +1,5 @@
 import { countText } from "@/utils/count-text.utils";
+import { fileTypeOf } from "@/utils/statement-label.helpers";
 import { jobLabel } from "./upload-display.helpers";
 import { offBy } from "./upload-result.helpers";
 import {
@@ -59,12 +60,20 @@ const summaryOf = (outcome: JobOutcome): Summary => {
   };
 };
 
+// The file its format comes in, "Excel" or "PDF", when the job knows it.
+const fileTypeFacts = ({ formatId }: UploadJob): readonly string[] =>
+  formatId === undefined ? [] : [fileTypeOf(formatId)];
+
 /** A file sent, named by its format and period (docs/ui/v8-07). */
 export const uploadedFileView = (job: UploadJob): UploadedFileView => {
   const title = jobLabel(job);
   if (job.outcome) {
     const { badge, facts } = summaryOf(job.outcome);
-    return { title, detail: [UPLOAD_COPY.excel, ...facts].join(" · "), badge };
+    return {
+      title,
+      detail: [...fileTypeFacts(job), ...facts].join(" · "),
+      badge,
+    };
   }
   if (job.status === JOB_STATUS.FAILED) {
     const problem = job.errorCode
@@ -78,7 +87,7 @@ export const uploadedFileView = (job: UploadJob): UploadedFileView => {
   }
   return {
     title,
-    detail: UPLOAD_COPY.excel,
+    detail: fileTypeFacts(job).join(" · "),
     badge: { label: COPY.badge.processing, variant: "neutral" },
   };
 };

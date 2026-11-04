@@ -45,8 +45,8 @@ It writes into `fixtures/xlsx/`, which git ignores:
 | `quarterly-basic-account-2.xlsx`, `quarterly-previous-account-2.xlsx`, `quarterly-broken-balance-account-3.xlsx` | The same statements under other account numbers, so they don't land on the seeded account. The two of account 2 are chained, in either upload order. |
 | `not-a-statement.xlsx`                                                                                           | A shopping list: no parser recognizes it.                                                                                                            |
 | `damaged.xlsx`                                                                                                   | Half of an XLSX file: extraction fails.                                                                                                              |
-| `renamed-pdf.xlsx`, `extracto.pdf`                                                                               | PDF bytes, under an XLSX name and under their own.                                                                                                   |
-| `movements.csv`                                                                                                  | `movements-basic` as Excel saves it to CSV in Colombia (`;`, `d/mm/yyyy`, decimal commas, Windows-1252): recognized, but not read.                   |
+| `renamed-pdf.xlsx`, `extracto.pdf`                                                                               | Bytes of a PDF that doesn't open, under an XLSX name and under their own: both read as a damaged PDF, since the bytes decide.                        |
+| `movements.csv`                                                                                                  | `movements-basic` as Excel saves it to CSV in Colombia (`;`, `d/mm/yyyy`, decimal commas, Windows-1252): neither an Excel nor a PDF.                 |
 | `too-many-rows.xlsx`                                                                                             | 10,001 rows, over the extraction's bounds.                                                                                                           |
 | `quarterly-10mb.xlsx`                                                                                            | `quarterly-large` plus sheets of random text: about 9.2 MB, under the 10 MB limit, and 36 KB of content once minimized (ADR 0017).                   |
 | `oversize-11mb.xlsx`                                                                                             | The same with one more sheet: about 11.5 MB, over the limit.                                                                                         |
@@ -58,6 +58,26 @@ It writes into `fixtures/xlsx/`, which git ignores:
 `movements-basic-pdf.json` and `movements-overlap-pdf.json` are `movements-basic` and `movements-overlap` as the online banking prints them in PDF (Appendix A.2b), two pages each (Phase 9.3b). `scripts/movements-pdf-layout.mjs` lays them out: the first page opens with its titles, the date and time it was downloaded, the holder's name and the account's type and number (`Ahorros 123 - 456789 - 01`); every page holds the table, newest movement first, with one item per line of a cell, as pdf.js reads the bank's; a description or a reference too wide for its column wraps to a second line, a reference starting half a line above its row's date; a transfer from another bank prints its missing reference as `null`; and each page ends with an IP address of the range kept for documentation (`203.0.113.7`). One space stands where the spreadsheet's description has two. Their parser reads each as its spreadsheet twin, naming the account and the holder besides.
 
 `pdf-writer.mjs` turns extracted PDF content back into a letter-size PDF with pdfkit: each text item at its position, in Courier at its height, encrypted with AES-256 when given a password. `scannedPdf` writes pages that hold only an image, as a scanner leaves them. The extraction's tests build their PDFs with it (Phase 9.1), and a statement's PDF fixture written with it reads back the same (9.3, 9.3b).
+
+## PDF files for manual checks
+
+To get PDFs to upload by hand (Phase 9.4a):
+
+```bash
+pnpm --filter @xtrakto/parsers generate:pdf
+```
+
+It writes into `fixtures/pdf/`, which git ignores:
+
+| File                                                         | What it's for                                                                                                  |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `<fixture>.pdf`                                              | Each PDF fixture above as a real file: two quarterly statements and two movements exports.                     |
+| `quarterly-basic-locked.pdf`, `movements-overlap-locked.pdf` | Locked with the same invented password, `1020304050`: the one that opens the first opens the other on its own. |
+| `quarterly-large-other-password.pdf`                         | Locked with another one, `5060708090`: the first doesn't open it, so it asks for its own.                      |
+| `scanned.pdf`                                                | Two pages that hold only an image: no text to read.                                                            |
+| `too-many-pages.pdf`                                         | 31 pages, over the limit of 30.                                                                                |
+| `damaged.pdf`                                                | Half of a PDF file: it doesn't open.                                                                           |
+| `not-a-statement.pdf`                                        | A shopping list: no parser recognizes it.                                                                      |
 
 ## Confirmed on real files
 

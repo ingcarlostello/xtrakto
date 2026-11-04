@@ -7,8 +7,13 @@ import {
   queueEvents,
 } from "./upload-events.helpers";
 import { uploadQueueReducer } from "./upload-queue.helpers";
+import type { UploadQueueAction } from "./upload-queue.helpers";
 import { JOB_STATUS, NO_ANSWER, UPLOAD_STATUS } from "./upload.constants";
 import type { SendOutcome, UploadItem, UploadJob } from "./upload.types";
+
+// The queue's files after an action, as the page has them.
+const step = (items: readonly UploadItem[], action: UploadQueueAction) =>
+  uploadQueueReducer({ items }, action).items;
 
 // Invented values that must never reach PostHog: the file's name, its period
 // and its account's digits.
@@ -37,13 +42,22 @@ const ready: UploadItem = {
   },
 };
 
-const sending = uploadQueueReducer([ready], { type: "sendStarted", id: "q" });
+const sending = step([ready], { type: "sendStarted", id: "q" });
 
 const afterSend = (outcome: SendOutcome) =>
   queueEvents(
     sending,
-    uploadQueueReducer(sending, { type: "sendFinished", id: "q", outcome }),
+    step(sending, { type: "sendFinished", id: "q", outcome }),
   );
+
+// A file read in the browser, from the moment it starts.
+const reading = step([{ id: "u", file: FILE, status: UPLOAD_STATUS.WAITING }], {
+  type: "started",
+  id: "u",
+});
+
+const readAs = (items: readonly UploadItem[], error: AppError) =>
+  step(items, { type: "finished", id: "u", result: { ok: false, error } });
 
 const refused = (code: AppError["code"]): SendOutcome => ({
   ok: false,
@@ -105,9 +119,9 @@ describe("queueEvents", () => {
   });
 
   it("tells a file the browser's checks refused, by which check", () => {
-    const added = uploadQueueReducer([], {
+    const added = step([], {
       type: "added",
-      files: [{ id: "p", file: new File([], "extracto.pdf") }],
+      files: [{ id: "c", file: new File([], "movimientos.csv") }],
     });
 
     expect(queueEvents([], added)).toEqual([
@@ -119,15 +133,7 @@ describe("queueEvents", () => {
   });
 
   it("tells a file the browser couldn't read, by its code", () => {
-    const reading = uploadQueueReducer(
-      [{ id: "u", file: FILE, status: UPLOAD_STATUS.WAITING }],
-      { type: "started", id: "u" },
-    );
-    const read = uploadQueueReducer(reading, {
-      type: "finished",
-      id: "u",
-      result: { ok: false, error: { code: APP_ERROR_CODE.UNKNOWN_FORMAT } },
-    });
+    const read = readAs(reading, { code: APP_ERROR_CODE.UNKNOWN_FORMAT });
 
     expect(queueEvents(reading, read)).toEqual([
       {
@@ -140,8 +146,50 @@ describe("queueEvents", () => {
     ]);
   });
 
+  it.each(["no_text", "too_many_pages"])(
+    "tells a PDF its reading refused by its reason, %s",
+    (reason) => {
+      const read = readAs(reading, {
+        code: APP_ERROR_CODE.INVALID_INPUT,
+        details: { reason },
+      });
+
+      expect(queueEvents(reading, read)).toEqual([
+        {
+          event: "ingestion_failed",
+          properties: { stage: "browser", error_code: reason },
+        },
+      ]);
+    },
+  );
+
+  it("tells nothing of a PDF that asks for its password, nor of a wrong one", () => {
+    const locked = readAs(reading, {
+      code: APP_ERROR_CODE.INVALID_INPUT,
+      details: { reason: "password_required" },
+    });
+    const typed = step(locked, {
+      type: "passwordTyped",
+      id: "u",
+      password: "clave-inventada",
+    });
+    const retried = step(typed, { type: "started", id: "u" });
+    const wrong = readAs(retried, {
+      code: APP_ERROR_CODE.INVALID_INPUT,
+      details: { reason: "password_incorrect" },
+    });
+
+    expect(wrong[0]?.status).toBe(UPLOAD_STATUS.LOCKED);
+    expect([
+      ...queueEvents(reading, locked),
+      ...queueEvents(locked, typed),
+      ...queueEvents(typed, retried),
+      ...queueEvents(retried, wrong),
+    ]).toEqual([]);
+  });
+
   it("tells nothing when no file changed how it goes", () => {
-    const sent = uploadQueueReducer(sending, {
+    const sent = step(sending, {
       type: "sendFinished",
       id: "q",
       outcome: { ok: true, value: { jobId: "job-1" } },

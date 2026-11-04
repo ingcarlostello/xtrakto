@@ -8,6 +8,7 @@ import type { AppError, Period } from "@xtrakto/core";
 import type { IngestionJobError } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import {
+  fileKindOf,
   fileRowView,
   jobLabel,
   jobView,
@@ -56,6 +57,20 @@ describe("previewTags", () => {
         movementCount: 48,
       }),
     ).toEqual(["Bancolombia", "Movimientos", "Excel", "1–15 ago 2026"]);
+  });
+
+  it("names a PDF's file type", () => {
+    expect(
+      previewTags({
+        bankId: "bancolombia",
+        formatId: "bancolombia-movements-export-pdf",
+        accountType: "savings",
+        accountLast4: "8901",
+        period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
+        periodSource: PERIOD_SOURCE.ROWS,
+        movementCount: 17,
+      }),
+    ).toEqual(["Bancolombia", "Movimientos", "PDF", "1–7 oct 2026"]);
   });
 });
 
@@ -126,6 +141,84 @@ describe("fileRowView", () => {
       kind: "problem",
       ...expected,
     });
+  });
+
+  const pdf = new File([], "extracto.pdf");
+  const typed = { value: "clave-inventada", isTyped: true };
+
+  it.each<[string, UploadItem, { isWrong: boolean; isOpening: boolean }]>([
+    [
+      "asks for a PDF's password",
+      { id: "2", file: pdf, status: UPLOAD_STATUS.LOCKED, isWrong: false },
+      { isWrong: false, isOpening: false },
+    ],
+    [
+      "says the password typed didn't open it",
+      {
+        id: "2",
+        file: pdf,
+        status: UPLOAD_STATUS.LOCKED,
+        failedWith: typed.value,
+        isWrong: true,
+      },
+      { isWrong: true, isOpening: false },
+    ],
+    [
+      "keeps asking while a typed password opens it",
+      { id: "2", file: pdf, status: UPLOAD_STATUS.WAITING, password: typed },
+      { isWrong: false, isOpening: true },
+    ],
+    [
+      "keeps asking while the PDF is read with it",
+      {
+        id: "2",
+        file: pdf,
+        status: UPLOAD_STATUS.EXTRACTING,
+        stage: "reading",
+        password: typed,
+      },
+      { isWrong: false, isOpening: true },
+    ],
+  ])("%s", (_case, item, expected) => {
+    expect(fileRowView(item)).toEqual({
+      kind: "locked",
+      title: UPLOAD_COPY.locked.title,
+      detail: UPLOAD_COPY.locked.detail,
+      ...expected,
+    });
+  });
+
+  it("reads a PDF quietly with another PDF's password", () => {
+    expect(
+      fileRowView({
+        id: "2",
+        file: pdf,
+        status: UPLOAD_STATUS.EXTRACTING,
+        stage: "reading",
+        password: { ...typed, isTyped: false },
+      }),
+    ).toEqual({ kind: "progress", text: UPLOAD_COPY.stage.reading });
+  });
+
+  it("shows a file as a PDF by its name until it's read, then by its format", () => {
+    const pdfStatement: ExtractedStatement = {
+      ...statement,
+      preview: { ...preview, formatId: "bancolombia-savings-quarterly-pdf" },
+    };
+
+    expect(
+      fileKindOf({ id: "2", file: pdf, status: UPLOAD_STATUS.WAITING }),
+    ).toBe("pdf");
+    expect(fileKindOf(readyItem())).toBe("excel");
+    // Its bytes decide: a PDF named as a spreadsheet is a PDF once read.
+    expect(
+      fileKindOf({
+        id: "3",
+        file,
+        status: UPLOAD_STATUS.READY,
+        statement: pdfStatement,
+      }),
+    ).toBe("pdf");
   });
 });
 
@@ -280,9 +373,19 @@ describe("problemText", () => {
 
   it.each([
     [
-      "a file that isn't a spreadsheet",
+      "a file that isn't a spreadsheet or a PDF",
       problem(APP_ERROR_CODE.UNKNOWN_FORMAT, "file_type"),
-      PROBLEM_COPY.notExcel,
+      PROBLEM_COPY.wrongType,
+    ],
+    [
+      "a scanned PDF",
+      problem(APP_ERROR_CODE.INVALID_INPUT, "no_text"),
+      PROBLEM_COPY.scanned,
+    ],
+    [
+      "a PDF of more than 30 pages",
+      problem(APP_ERROR_CODE.INVALID_INPUT, "too_many_pages"),
+      PROBLEM_COPY.tooManyPages,
     ],
     [
       "a spreadsheet no parser knows",
@@ -305,7 +408,7 @@ describe("problemText", () => {
       PROBLEM_COPY.tooLarge,
     ],
     [
-      "a file SheetJS can't open",
+      "a file SheetJS or pdf.js can't open",
       problem(APP_ERROR_CODE.PARSE_FAILED),
       PROBLEM_COPY.damaged,
     ],

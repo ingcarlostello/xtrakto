@@ -145,6 +145,20 @@ describe("uploadedFileView", () => {
     });
   });
 
+  it("says a PDF came as a PDF, done or still in process", () => {
+    const pdf: UploadJob = {
+      ...quarterly,
+      formatId: "bancolombia-savings-quarterly-pdf",
+    };
+
+    expect(uploadedFileView(done(pdf, {})).detail).toBe(
+      "PDF · 33 movimientos · cuadra al centavo",
+    );
+    expect(uploadedFileView({ ...pdf, status: "processing" }).detail).toBe(
+      "PDF",
+    );
+  });
+
   it("writes one movement already had in the singular", () => {
     expect(
       uploadedFileView(done(quarterly, { total: 1, added: 0, skipped: 1 }))

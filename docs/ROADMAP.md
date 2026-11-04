@@ -236,7 +236,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 9.2 Rows from text positions
 - [x] 9.3 Quarterly statement PDF parser
 - [x] 9.3b Movements export PDF parser _(design v8)_
-- [ ] 9.4a PDFs on the upload screen
+- [x] 9.4a PDFs on the upload screen
 - [ ] 9.4b PDFs across the app
 
 **Stage 10 — Monthly use and retention** _(outline)_
@@ -1873,6 +1873,8 @@ Split in two when planned (about 650 lines): the upload screen, then the rest of
 
 #### 9.4a PDFs on the upload screen
 
+Found while building it (2026-11-03): v8-09 draws the password for one file, and several can wait, so the form sits under its file's row, the row's whole width on phones, and stays while the password typed is tried, keeping its focus. A PDF that asks for its password is a state of its own, never a failure, so it's no event. The password that opened a PDF is remembered while any file waits, so a PDF still being read when it opened is tried too, and forgotten once none waits or its file is removed. `generate:xlsx` had failed since 9.3 on the PDF fixtures: it writes the spreadsheet ones only.
+
 **Tasks**
 
 - The picker and the drop zone take `.pdf` too. The extraction worker turns asynchronous, knows a PDF by its first bytes (`%PDF-`) and reads it with `extractPdf`, which downloads pdf.js only then; its messages carry the password.
@@ -1892,7 +1894,9 @@ Split in two when planned (about 650 lines): the upload screen, then the rest of
 - One password opens several PDFs, and it shows in no request, log or event.
 - **Human:** uploads a real PDF in a throwaway account.
 
-**Commit:** `feat(web): read PDF statements on the upload screen`
+It came out at about 570 lines of code (about 450 estimated), besides an 87-line `generate:pdf`, and lands in commits of one pull request: the design rules, `generate:xlsx`'s fix, telling a PDF by its bytes with the PDFs for manual checks, and the screen; `CLAUDE.md` gains `generate:pdf` in a commit of its own.
+
+**Commits:** `docs(rules): PDFs on the upload screen`, `fix(parsers): generate:xlsx writes the spreadsheet fixtures only`, `feat(parsers): tell a PDF by its bytes, and PDFs for manual checks`, then `feat(web): read PDF statements on the upload screen`
 
 #### 9.4b PDFs across the app
 

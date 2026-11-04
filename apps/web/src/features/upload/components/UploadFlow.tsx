@@ -1,20 +1,23 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { countText } from "@/utils/count-text.utils";
 import { exportDestination } from "../account-destination.helpers";
 import { type FileActions, useUploadFlow } from "../hooks/use-upload-flow";
 import {
+  fileKindOf,
   fileRowView,
   isLimitReached,
+  jobFileKind,
   jobLabel,
   jobView,
   limitText,
   previewTags,
 } from "../upload-display.helpers";
+import type { FileRowView } from "../upload-display.helpers";
 import type { PollingStop } from "../upload-jobs.helpers";
 import { resultView } from "../upload-result.helpers";
 import { batchPreviews } from "../upload-send.helpers";
@@ -33,6 +36,7 @@ import type {
 import { AccountChoice } from "./AccountChoice";
 import { DropZone } from "./DropZone";
 import { FileRow } from "./FileRow";
+import { PdfPasswordForm } from "./PdfPasswordForm";
 import { UploadResult } from "./UploadResult";
 
 type SubmitFilesProps = {
@@ -73,42 +77,64 @@ type QueuedFileProps = {
   batch: readonly StatementPreview[];
   isBusy: boolean;
   actions: FileActions;
+  /** The "Elegir archivos" button, whose focus a PDF's password may take. */
+  picker: RefObject<HTMLButtonElement | null>;
 };
 
-// A file going up, or gone up, can no longer be removed; one whose send got
-// no answer can be tried again.
-function QueuedFile({
+// What the person settles in a file's row, if anything: the password its PDF
+// asks for, or where a movements export goes. The form stays the same
+// element while the password typed is tried, so it keeps its focus.
+function rowChoice({
   item,
-  job,
+  view,
   accounts,
   batch,
   isBusy,
   actions,
-}: QueuedFileProps) {
+  picker,
+}: QueuedFileProps & { view: FileRowView }): ReactNode {
+  if (view.kind === "locked")
+    return (
+      <PdfPasswordForm
+        isWrong={view.isWrong}
+        isOpening={view.isOpening}
+        isBusy={isBusy}
+        picker={picker}
+        onOpen={(password) => actions.onOpenPdf(item.id, password)}
+        onChooseAnother={() => actions.onChooseAnother(item.id)}
+      />
+    );
+  if (item.status !== UPLOAD_STATUS.READY) return null;
+  const { preview } = item.statement;
+  return preview.accountLast4 === undefined ? (
+    <AccountChoice
+      destination={exportDestination(preview, accounts, batch)}
+      chosen={item.accountKey}
+      isBusy={isBusy}
+      onChoose={(key) => actions.onChooseAccount(item.id, key)}
+    />
+  ) : null;
+}
+
+// A file going up, or gone up, can no longer be removed; one whose send got
+// no answer can be tried again.
+function QueuedFile(props: QueuedFileProps) {
+  const { item, job, isBusy, actions } = props;
   const isOnItsWay =
     item.status === UPLOAD_STATUS.SENDING || item.status === UPLOAD_STATUS.SENT;
-  const isReady = item.status === UPLOAD_STATUS.READY;
-  const canRetry = isReady && item.sendProblem === NO_ANSWER;
+  const canRetry =
+    item.status === UPLOAD_STATUS.READY && item.sendProblem === NO_ANSWER;
+  const view = fileRowView(item, job);
   return (
     <FileRow
       name={item.file.name}
-      view={fileRowView(item, job)}
+      view={view}
+      kind={fileKindOf(item)}
       isBusy={isBusy}
       onRemove={isOnItsWay ? undefined : () => actions.onRemove(item.id)}
       onRetry={canRetry ? () => actions.onRetry(item.id) : undefined}
     >
-      {isReady && item.statement.preview.accountLast4 === undefined && (
-        <AccountChoice
-          destination={exportDestination(
-            item.statement.preview,
-            accounts,
-            batch,
-          )}
-          chosen={item.accountKey}
-          isBusy={isBusy}
-          onChoose={(key) => actions.onChooseAccount(item.id, key)}
-        />
-      )}
+      {rowChoice({ ...props, view })}
     </FileRow>
   );
 }
@@ -121,6 +147,7 @@ type FileListProps = {
   accounts: readonly UploadAccount[];
   isBusy: boolean;
   actions: FileActions;
+  picker: RefObject<HTMLButtonElement | null>;
 };
 
 type SentFileProps = {
@@ -134,7 +161,7 @@ function SentFile({ name, tags, job }: SentFileProps) {
   return job.outcome ? (
     <UploadResult name={name} tags={tags} view={resultView(job, job.outcome)} />
   ) : (
-    <FileRow name={name} view={jobView(job)} />
+    <FileRow name={name} view={jobView(job)} kind={jobFileKind(job)} />
   );
 }
 
@@ -225,7 +252,7 @@ export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
       </CardHeader>
       <DropZone ref={picker} onFiles={addFiles} />
       <FileList
-        {...{ items, restored, accounts, isBusy, actions }}
+        {...{ items, restored, accounts, isBusy, actions, picker }}
         jobs={statuses.jobs}
       />
       <StatusCheck

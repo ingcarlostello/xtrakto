@@ -17,8 +17,8 @@ export const MAX_PARALLEL_EXTRACTIONS = 3;
 /** The largest file accepted, as the free tier allows (roadmap §2). */
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-/** The only file type read today: the bank's Excel export. */
-export const ACCEPTED_EXTENSION = ".xlsx";
+/** The file types read: the bank's Excel export and its PDF. */
+export const ACCEPTED_EXTENSIONS = [".xlsx", ".pdf"] as const;
 
 /**
  * Most bytes of minimized content one file may send, as JSON: under the
@@ -58,6 +58,7 @@ export const EXTRACTION_STAGE = {
 export const UPLOAD_STATUS = {
   WAITING: "waiting",
   EXTRACTING: "extracting",
+  LOCKED: "locked",
   READY: "ready",
   SENDING: "sending",
   SENT: "sent",
@@ -95,13 +96,24 @@ export const STATEMENT_BALANCE = {
   NONE: "none",
 } as const satisfies Record<Uppercase<StatementBalance>, StatementBalance>;
 
-/** Reasons of the problems found in the browser, next to the extraction's. */
+/**
+ * Reasons of the problems found in the browser, as the page's checks and a
+ * PDF's extraction give them: analytics counts each one by its reason.
+ */
 export const FILE_PROBLEM = {
   TYPE: "file_type",
   SIZE: "file_size",
   DUPLICATE: "duplicate",
   UNREADABLE: "unreadable",
+  SCANNED: "no_text",
+  TOO_MANY_PAGES: "too_many_pages",
 } as const;
+
+/** Why a PDF didn't open, as its extraction says: it asks for its password. */
+export const PDF_PASSWORD_REASONS: ReadonlySet<unknown> = new Set([
+  "password_required",
+  "password_incorrect",
+]);
 
 // Keyed by the parsers' format ids, as the formats' labels are
 // (`utils/statement-label.constants.ts`).
@@ -131,6 +143,18 @@ export const UPLOAD_COPY = {
     preparing: "Preparando la vista previa…",
   },
   excel: "Excel",
+  // A PDF that opens only with its password (docs/ui/v8-09).
+  locked: {
+    title: "Este PDF tiene contraseña",
+    detail: "Escríbela para abrirlo; no sale de tu navegador.",
+    label: "Contraseña del PDF",
+    hint: "En Bancolombia suele ser tu número de documento, sin puntos ni espacios. No la guardamos.",
+    wrong: "Esa contraseña no abre este PDF. Revísala y escríbela de nuevo.",
+    show: "Mostrar la contraseña",
+    open: "Abrir PDF",
+    opening: "Abriendo…",
+    chooseAnother: "Elegir otro archivo",
+  },
   movements: { one: "movimiento", other: "movimientos" },
   remove: "Quitar",
   submit: "Subir",
@@ -214,9 +238,10 @@ export const HOW_IT_WORKS_COPY = {
 
 // What happened and what to do, without apologizing (design-system.md §11).
 export const PROBLEM_COPY = {
-  notExcel: {
-    title: "Este archivo no es un Excel",
-    detail: "Descárgalo del banco en Excel (.xlsx), el formato que leemos.",
+  wrongType: {
+    title: "Este archivo no es un Excel ni un PDF",
+    detail:
+      "Descárgalo del banco en Excel (.xlsx) o en PDF, los formatos que leemos.",
   },
   tooHeavy: {
     title: "Pesa más de 10 MB",
@@ -230,7 +255,7 @@ export const PROBLEM_COPY = {
   notAStatement: {
     title: "No pudimos leer este archivo",
     detail:
-      "No parece un extracto de Bancolombia. Revisa que sea el Excel que descargaste del banco, sin editar.",
+      "No parece un extracto de Bancolombia. Revisa que sea el Excel o PDF que descargaste del banco, sin editar.",
   },
   incomplete: {
     title: "No pudimos leer este extracto completo",
@@ -239,8 +264,17 @@ export const PROBLEM_COPY = {
   },
   damaged: {
     title: "No pudimos abrir este archivo",
+    detail: "Puede estar dañado. Descárgalo de nuevo del banco.",
+  },
+  scanned: {
+    title: "Este PDF no trae texto",
     detail:
-      "Puede estar dañado o protegido con contraseña. Descárgalo de nuevo del banco.",
+      "Parece escaneado o una foto. Descárgalo de nuevo del banco, que lo entrega con el texto que leemos.",
+  },
+  tooManyPages: {
+    title: "Este PDF tiene más de 30 páginas",
+    detail:
+      "Un extracto del banco tiene muchas menos. Revisa que sea el archivo que descargaste.",
   },
   tooLarge: {
     title: "Este archivo es demasiado grande",
