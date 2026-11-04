@@ -290,12 +290,28 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     });
   });
 
-  it("counts July once when its export comes after the quarterly statement", async () => {
-    const alone = await summaryOf(["quarterly-basic"]);
+  it("counts July once when its export comes after the quarterly statement, which takes the export's references", async () => {
+    const { movements: alone, ...figures } = await summaryOf([
+      "quarterly-basic",
+    ]);
+    const { movements, ...withExport } = await summaryOf([
+      "quarterly-basic",
+      "movements-overlap",
+    ]);
+    const counted = (list: typeof movements) =>
+      list.map(({ date, descriptionRaw, amountMinor, categoryId }) => ({
+        date,
+        descriptionRaw,
+        amountMinor,
+        categoryId,
+      }));
+    const referenced = (list: typeof movements) =>
+      list.filter(({ referenceHash }) => referenceHash !== null).length;
 
-    expect(await summaryOf(["quarterly-basic", "movements-overlap"])).toEqual(
-      alone,
-    );
+    expect(withExport).toEqual(figures);
+    expect(counted(movements)).toEqual(counted(alone));
+    // July's Nequi send, PSE payment, withdrawal and QR payment (10.1a).
+    expect([referenced(alone), referenced(movements)]).toEqual([0, 4]);
   });
 
   it("counts only the export on the days of a quarterly statement that doesn't reconcile", async () => {

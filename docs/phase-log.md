@@ -1082,3 +1082,37 @@ In a local browser, with a fresh Clerk test user deleted afterwards (the local c
 - **Stage 9 is done:** Stage 10 is an outline, to be expanded and approved before its first phase (roadmap §1).
 
 About 160 changed lines of code without tests, comments and blank lines, besides about 40 lines of copy moved: two commits of one pull request.
+
+## 10.1a Match movements across formats
+
+_2026-11-04_
+
+Stage 10 was planned with the human first (`docs: plan Stage 10, monthly use and retention`), in eleven sub-phases. A movements export's movements on a verified quarterly statement's days stay hidden, as Stage 5 left them, and each one now points at the statement's movement it repeats (`transactions.matched_transaction_id`), which takes the reference only the export carries. Coverage stays the only way a movement is hidden, so `countedMovement` and its readers don't change; ADR 0018 is amended.
+
+- **The key:** `transactions_matched_fk` ties `(matched_transaction_id, covered_by_statement_id, account_id, user_id)` to `(id, statement_id, account_id, user_id)`, which a new unique constraint names, so a hidden movement repeats one of the statement that hides it, in its account and user. A CHECK allows the link only on a hidden movement, and a partial unique index allows one hidden movement for each that counts. No action on delete, checked at the transaction's end as the coverage key, so deleting a user works in any cascade order.
+- **`matchMovements`** (`@xtrakto/parsers`, the bank's knowledge) pairs a movements export's movements with the statement's: the same amount; the same text in NFC, or the statement's cut before an accented letter; and the day the statement gives it, the day before for interest (the export dates it on the day it was paid) and also the same day on a month's last day. Equal movements pair in the bank's order, each statement movement once.
+- **`matchedUpdate`** (`@xtrakto/core`) says what the movement that counts takes:
+  - the hidden one's reference (HMAC, last 4 digits and kind) when it has none;
+  - the category that reference decides: the user's rule for it, else the table's rule that asks for one (a Nequi send with its number goes to `nequi_out_number`, to review), the rule's id written either way;
+  - a category the user chose for that movement alone stays, and so does a guess answered "No sé" when the reference changes no rule;
+  - then what the user answered for the hidden movement alone, while it counted before its quarterly statement arrived: a category of theirs, or "No sé" on the guess the other one makes too.
+- **`listMatchCandidates` and `saveMatches`** (`@xtrakto/db`) read an account's hidden movements without a match, with the movements of the statements hiding them that no hidden one repeats yet. They save the links and the updates in one statement each (`update … from (values …)`), in chunks of 1,000.
+- **`matchAccountMovements`** (web) runs them in `ingest`'s transaction after every save, whichever file came first, with the holder's name and the user's rules ingestion already read. So files saved before 10.1a match with the account's next upload of any file.
+- **The private comparison** of the real files moved to `real-matches.private.test.ts`, through `matchMovements`, against each quarterly statement in Excel and in PDF. It also compares two exports that share a month's last day, once the human adds them.
+
+35 new tests:
+
+- 8 in the parsers (397 there): interest a day apart and both of a month's last day, interest only and never two days, a cut letter, a letter written in two parts, texts and amounts told apart, and identical movements in order.
+- 11 in core (831): a Nequi send's number and its review, the user's rule for the number, the user's rule for its text, a category chosen for one movement, a "No sé" kept, a reference kept, nothing to change, and, the other way round, the export's own category, its "No sé", the user's answer for the one that counts, and a "No sé" on another rule.
+- 7 in the database (248): the candidates; none for another user; links and updates; and the CHECK, the key and the unique index, each by its error code, and a user's deletion.
+- 9 in the app (1,097), through ingestion and the test database: both upload orders with every July movement matched; nothing with a quarterly statement that doesn't reconcile; a cut text, identical sends each with its number, and a purchase without a twin left hidden; the holder's name read for a key payment to it; a "No sé" and a chosen category kept; the export's answers carried; a number marked as the user's; and files saved before matched with the next upload.
+- The summary's test of July counted once now compares the figures and the movements, July's four with the export's references.
+
+Checked: seventeen deliberate bugs, each in a file of its own. Fifteen fail a test, and a sixteenth after its test was added: the holder's name left out of the matching, which turned a key payment to the holder into a payment to a person. One survives: leaving the user's rules out of the matching changes nothing with real data. The user's rules reach hidden movements too, so a hidden movement already carries what they say; core's tests pin that path. The private tests match 18 pairs of an export and a quarterly statement, in Excel or PDF, 1,134 movements one to one (counts only).
+
+**Deviations and follow-ups:**
+
+- **Migrations:** drizzle-kit wrote the key before the unique constraint it needs, which PostgreSQL refuses. The generated migration was discarded and the change generated in two (`0020_matched-movements`, `0021_matched-key`), then deferred by hand (`0022_matched-deferred`). `CLAUDE.md` says so.
+- **Stats:** the job's stats gain nothing. What a file matched and the references it added are counted when read, in 10.1b, so they hold in either upload order.
+- **Pending for the human:** two movements exports around a month's end in `fixtures/private/`, one ending on its last day and one crossing it. Their comparison is skipped until then.
+- **Size:** about 550 lines of code without tests, comments and blank lines (350 to 400 estimated), past the 400 a phase should hold: four commits of one pull request, core, the parsers, the database and the app; `CLAUDE.md`'s gotcha in one of its own.

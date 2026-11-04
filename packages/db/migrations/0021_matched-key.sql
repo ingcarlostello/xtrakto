@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_matched_fk" FOREIGN KEY ("matched_transaction_id","covered_by_statement_id","account_id","user_id") REFERENCES "public"."transactions"("id","statement_id","account_id","user_id") ON DELETE no action ON UPDATE no action;

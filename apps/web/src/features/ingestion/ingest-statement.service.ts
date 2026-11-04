@@ -31,6 +31,7 @@ import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { balanceCheckOf } from "@/utils/balance-check.helpers";
+import { matchAccountMovements } from "./movement-matching.service";
 
 /** The job a `statement/submitted` event names, and its user. */
 export type JobRef = { readonly jobId: string; readonly userId: string };
@@ -132,6 +133,8 @@ const ingestOpenJob = async (
     balance: balanceCheckOf(parsed.value),
   });
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");
+  // Any upload matches what the account has hidden, saved before or now.
+  await matchAccountMovements(ctx, account.value, { holderName, userRules });
   const { statementId, ...stats } = saved.value;
   await finishIngestionJob(ctx, jobId, { statementId, stats });
   return { status: "done", stats };
@@ -147,7 +150,8 @@ export const claimJob = (job: JobRef): Promise<boolean> =>
  * Ingests a job's statement in one transaction: parses it again on the
  * server, resolves its account, reconciles, prepares its movements
  * (fingerprints, HMAC), categorizes them by the rules (ADR 0023) and saves
- * them, then finishes the job and deletes its content. A statement the
+ * them, matches the account's movements across formats (10.1a), then
+ * finishes the job and deletes its content. A statement the
  * parser can't read, or an export whose account the user has to choose,
  * fails the job with its code. Unexpected errors are thrown without their
  * message, for Inngest to retry.

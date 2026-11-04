@@ -146,6 +146,12 @@ export const ATM_REFERENCE_PREFIX = "ATM ";
 /** How the export writes some of the references it doesn't have, in Excel and in PDF. */
 export const EXPORT_NO_REFERENCE = "null";
 
+/**
+ * The daily interest, which the quarterly statement dates on the day it was
+ * earned and the export on the day it was paid (Appendix A.2).
+ */
+export const INTEREST_DESCRIPTION = "ABONO INTERESES AHORROS";
+
 // The movements export's PDF (Appendix A.2b).
 
 /** What a failure calls the PDF's first page: by its title. */
