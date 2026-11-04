@@ -53,6 +53,10 @@ export {
 } from "./statements/statement-breaks.queries";
 export { saveStatement } from "./statements/statement.queries";
 export {
+  listStatementMatches,
+  type StatementMatches,
+} from "./statements/statement-matches.queries";
+export {
   type BankFigures,
   listBankFigures,
 } from "./statements/statement-figures.queries";
