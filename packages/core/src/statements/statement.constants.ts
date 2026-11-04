@@ -17,7 +17,12 @@ export const REFERENCE_KIND = {
   NONE: "none",
 } as const;
 
-/** Non-fatal problems a parser reports; never with descriptions or amounts. */
+/**
+ * What a parser reports beside the movements, a row it skipped or text it
+ * joined; never with descriptions or amounts.
+ */
 export const PARSE_WARNING_CODE = {
   UNEXPECTED_ROW: "UNEXPECTED_ROW",
+  /** A description a PDF wrapped over two lines, joined again. */
+  WRAPPED_DESCRIPTION: "WRAPPED_DESCRIPTION",
 } as const;

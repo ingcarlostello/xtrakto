@@ -3,7 +3,9 @@ import { APP_ERROR_CODE, err } from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { fixtureContent, fixtureRows } from "../../fixtures/fixture.utils";
 import movementsBasic from "../../fixtures/movements-basic.json";
+import movementsBasicPdf from "../../fixtures/movements-basic-pdf.json";
 import movementsOverlap from "../../fixtures/movements-overlap.json";
+import movementsOverlapPdf from "../../fixtures/movements-overlap-pdf.json";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
@@ -17,6 +19,7 @@ import { DEFAULT_PARSERS, findParser } from "./default-registry.helpers";
 const QUARTERLY = "bancolombia-savings-quarterly";
 const QUARTERLY_PDF = "bancolombia-savings-quarterly-pdf";
 const EXPORT = "bancolombia-movements-export";
+const EXPORT_PDF = "bancolombia-movements-export-pdf";
 
 const spreadsheet = (rows: SpreadsheetCell[][]): ExtractedContent => ({
   type: "spreadsheet",
@@ -95,6 +98,16 @@ const FIXTURES = [
   },
   { name: "movements-basic", fixture: movementsBasic, id: EXPORT },
   { name: "movements-overlap", fixture: movementsOverlap, id: EXPORT },
+  {
+    name: "movements-basic-pdf",
+    fixture: movementsBasicPdf,
+    id: EXPORT_PDF,
+  },
+  {
+    name: "movements-overlap-pdf",
+    fixture: movementsOverlapPdf,
+    id: EXPORT_PDF,
+  },
 ];
 
 describe("format detection", () => {

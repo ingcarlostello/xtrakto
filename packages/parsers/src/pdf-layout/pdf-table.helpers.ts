@@ -1,11 +1,11 @@
 import { hasText } from "../sheets/sheet.utils";
-import type { SheetRows } from "../sheets/sheet.utils";
 import type {
   PdfLine,
   PdfSegment,
   PdfTable,
   PdfTableLayout,
   PdfTableLine,
+  PdfTableRow,
 } from "./pdf-layout.types";
 
 type Span = { readonly left: number; readonly right: number };
@@ -27,6 +27,9 @@ type PageTable = {
 };
 
 type Cells = (string | null)[];
+
+/** A row being assembled: its cells, and the columns it joined lines into. */
+type Row = { readonly cells: Cells; readonly wrapped: Set<number> };
 
 // Two cells in one column cost more than any distance on a page, so a line's
 // cells share a column only when it has more of them than the table has.
@@ -210,6 +213,21 @@ export const pdfTables = (
   });
 };
 
+/**
+ * The lines above a PDF's first table: what its first page prints before the
+ * movements, such as the statement's header. All of them without a table.
+ */
+export const linesAboveTable = (
+  lines: readonly PdfLine[],
+  tables: readonly PdfTable[],
+): readonly PdfLine[] => {
+  const firstTitle = tables[0]?.header[0];
+  const tableStart = lines.findIndex(
+    ({ segments }) => firstTitle !== undefined && segments.includes(firstTitle),
+  );
+  return lines.slice(0, tableStart === -1 ? lines.length : tableStart);
+};
+
 const toCells = ({ line, columns }: PdfTableLine, width: number): Cells => {
   const cells: Cells = Array.from({ length: width }, () => null);
   line.segments.forEach(({ text }, index) => {
@@ -220,11 +238,15 @@ const toCells = ({ line, columns }: PdfTableLine, width: number): Cells => {
   return cells;
 };
 
-const append = (row: Cells, cells: Cells): void => {
+const rowOf = (cells: Cells): Row => ({ cells, wrapped: new Set() });
+
+// A line's cells into a row: a cell where the row has one goes on its line.
+const append = (row: Row, cells: Cells): void => {
   cells.forEach((cell, index) => {
     if (cell === null) return;
-    const before = row[index] ?? null;
-    row[index] = before === null ? cell : `${before} ${cell}`;
+    const before = row.cells[index] ?? null;
+    if (before !== null) row.wrapped.add(index);
+    row.cells[index] = before === null ? cell : `${before} ${cell}`;
   });
 };
 
@@ -238,10 +260,10 @@ type PageCells = {
 };
 
 /** The rows so far, the last one with the anchor, and lines waiting for it. */
-type Assembly = { readonly rows: Cells[]; anchoredRow?: Cells; early?: Cells };
+type Assembly = { readonly rows: Row[]; anchoredRow?: Row; early?: Row };
 
-const joined = (first: Cells, second: Cells): Cells => {
-  const row = [...first];
+const joined = (first: Row, second: Cells): Row => {
+  const row = { cells: [...first.cells], wrapped: new Set(first.wrapped) };
   append(row, second);
   return row;
 };
@@ -279,17 +301,21 @@ const placeLine = (
 ): void => {
   if (placement === "below") {
     assembly.early =
-      assembly.early === undefined ? cells : joined(assembly.early, cells);
+      assembly.early === undefined
+        ? rowOf(cells)
+        : joined(assembly.early, cells);
   } else if (placement === "above" && assembly.anchoredRow !== undefined) {
     append(assembly.anchoredRow, cells);
   } else if (placement === "anchored") {
     const row =
-      assembly.early === undefined ? cells : joined(assembly.early, cells);
+      assembly.early === undefined
+        ? rowOf(cells)
+        : joined(assembly.early, cells);
     assembly.early = undefined;
     assembly.rows.push(row);
     assembly.anchoredRow = row;
   } else {
-    assembly.rows.push(cells);
+    assembly.rows.push(rowOf(cells));
   }
 };
 
@@ -298,17 +324,17 @@ const placeLine = (
  * after page, the page's header as printed, then a row of text cells (`null`
  * when empty) for each line under it, its segments in the columns
  * `pdfTables` gives them. With an anchor, a line without it belongs to a cell
- * wrapped over several lines, which joins its row, also across a page break;
- * a page's footer stays a row of its own.
+ * wrapped over several lines, which joins its row, also across a page break,
+ * and the row says which; a page's footer stays a row of its own.
  */
 export const pdfTableRows = (
   lines: readonly PdfLine[],
   { columns: names, anchor }: PdfTableLayout,
-): SheetRows => {
+): readonly PdfTableRow[] => {
   const anchorIndex = anchor === undefined ? -1 : names.indexOf(anchor);
   const assembly: Assembly = { rows: [] };
   for (const table of pdfTables(lines, names)) {
-    assembly.rows.push(table.header.map(({ text }) => text));
+    assembly.rows.push(rowOf(table.header.map(({ text }) => text)));
     const page: PageCells = {
       lines: table.lines.map(({ line }) => line),
       cells: table.lines.map((placed) => toCells(placed, names.length)),
@@ -318,5 +344,8 @@ export const pdfTableRows = (
       placeLine(assembly, cells, placementOf(page, index)),
     );
   }
-  return assembly.rows;
+  return assembly.rows.map(({ cells, wrapped }) => ({
+    cells,
+    wrapped: [...wrapped].toSorted((a, b) => a - b),
+  }));
 };

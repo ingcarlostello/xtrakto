@@ -1,8 +1,8 @@
 // Generates the synthetic Bancolombia fixtures in fixtures/: the content
 // extractSpreadsheet returns for each export, and extractPdf for the PDFs of
-// two quarterly statements, following Appendix A of docs/ROADMAP.md, from the
-// invented data in fixture-data.mjs. Balances and
-// totals are computed here, so every statement reconciles except
+// two quarterly statements and two movements exports, following Appendix A
+// of docs/ROADMAP.md, from the invented data in fixture-data.mjs. Balances
+// and totals are computed here, so every statement reconciles except
 // quarterly-broken-balance, and a fixed seed makes quarterly-large repeatable.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -16,6 +16,7 @@ import {
   PREVIOUS_MOVEMENTS,
   ROLLOVER_MOVEMENTS,
 } from "./fixture-data.mjs";
+import { movementsPdfPages } from "./movements-pdf-layout.mjs";
 import { quarterlyPdfPages, renderPdf } from "./quarterly-pdf-layout.mjs";
 
 const FIXTURES_DIR = join(import.meta.dirname, "..", "fixtures");
@@ -174,20 +175,33 @@ const quarterlyPdf = ({ period, opening, movements }) => {
 };
 
 // Newest first, as the bank lists them; within a day, the latest row first.
-const movementsExport = (movements) => [
-  ["Fecha", "Descripción", "Referencia", "Valor"],
-  ...movements
+const newestFirst = (movements) =>
+  movements
     .map((movement, index) => ({ movement, index }))
     .sort(
       (a, b) => b.movement[0].localeCompare(a.movement[0]) || b.index - a.index,
     )
-    .map(({ movement: [date, description, amount, extra = {}] }) => [
-      { excelSerial: excelSerial(date) },
-      description,
-      extra.reference ?? null,
-      amount / 100,
-    ]),
+    .map(({ movement }) => movement);
+
+const movementsExport = (movements) => [
+  ["Fecha", "Descripción", "Referencia", "Valor"],
+  ...newestFirst(movements).map(([date, description, amount, extra = {}]) => [
+    { excelSerial: excelSerial(date) },
+    description,
+    extra.reference ?? null,
+    amount / 100,
+  ]),
 ];
+
+// The same export as its PDF prints it (movements-pdf-layout.mjs), which
+// names the account and the holder.
+const movementsPdf = (movements, downloadedAt) =>
+  movementsPdfPages({
+    holder: HOLDER[0],
+    account: ACCOUNT[1],
+    downloadedAt,
+    movements: newestFirst(movements),
+  });
 
 // The export dates interest rows one day later than the quarterly statement,
 // but never after the last day of the requested range.
@@ -271,6 +285,11 @@ const basic = {
   opening: 245_000_000,
   movements: BASIC_MOVEMENTS,
 };
+// A week in October, and July of the basic quarter, as exports show them.
+const OCTOBER_EXPORT = OCTOBER_MOVEMENTS.map(asExported("2026-10-07"));
+const JULY_EXPORT = BASIC_MOVEMENTS.filter(([date]) =>
+  date.startsWith("2026-07"),
+).map(asExported("2026-07-31"));
 const fixtures = {
   "quarterly-basic": quarterlyStatement(basic),
   // Closes on the balance quarterly-basic opens with: the two are chained.
@@ -300,17 +319,12 @@ const fixtures = {
     movements: largeMovements(500_000_000),
     pageSize: 50,
   }),
-  "movements-basic": movementsExport(
-    OCTOBER_MOVEMENTS.map(asExported("2026-10-07")),
-  ),
-  "movements-overlap": movementsExport(
-    BASIC_MOVEMENTS.filter(([date]) => date.startsWith("2026-07")).map(
-      asExported("2026-07-31"),
-    ),
-  ),
+  "movements-basic": movementsExport(OCTOBER_EXPORT),
+  "movements-overlap": movementsExport(JULY_EXPORT),
 };
 
-// The PDFs of two statements above: one over two pages, one over eight.
+// The PDFs of four files above: a quarterly statement over two pages and one
+// over eight, and both movements exports, over two pages each.
 const pdfFixtures = {
   "quarterly-basic-pdf": quarterlyPdf(basic),
   "quarterly-large-pdf": quarterlyPdf({
@@ -318,6 +332,14 @@ const pdfFixtures = {
     opening: 500_000_000,
     movements: largeMovements(500_000_000),
   }),
+  "movements-basic-pdf": movementsPdf(
+    OCTOBER_EXPORT,
+    "Miércoles, 7 de octubre de 2026, 9:15 a. m.",
+  ),
+  "movements-overlap-pdf": movementsPdf(
+    JULY_EXPORT,
+    "Sábado, 1 de agosto de 2026, 10:42 a. m.",
+  ),
 };
 
 mkdirSync(FIXTURES_DIR, { recursive: true });

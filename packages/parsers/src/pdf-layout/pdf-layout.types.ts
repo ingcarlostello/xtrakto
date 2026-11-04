@@ -33,6 +33,15 @@ export type PdfTable = {
   readonly lines: readonly PdfTableLine[];
 };
 
+/**
+ * A table's row as a spreadsheet would hold it: its text cells, `null` when
+ * empty, and the columns whose cell the PDF wrapped over several lines.
+ */
+export type PdfTableRow = {
+  readonly cells: readonly (string | null)[];
+  readonly wrapped: readonly number[];
+};
+
 /** How a format's table reads: its columns and, if it wraps cells, its anchor. */
 export type PdfTableLayout = {
   /** The column names, as the header prints them, left to right. */

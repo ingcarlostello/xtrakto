@@ -103,7 +103,8 @@ const findNumbered = async (
   return found?.id;
 };
 
-// A movements export processed before any quarterly statement created it.
+// A movements export in Excel, processed before any statement that names the
+// account, created it.
 const adoptUnnumbered = async (
   { tx, userId }: UserContext,
   account: IdentifiedAccount,

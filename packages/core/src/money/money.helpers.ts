@@ -10,6 +10,9 @@ const PLAIN_DECIMAL_PATTERN = /^(-)?(\d+)(?:\.(\d{1,2}))?$/;
 // As people in Colombia write it: "$90.000", "1.234,56", "90000", maybe signed.
 const TYPED_AMOUNT_PATTERN =
   /^[-\u2212+]?\s*\$?\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/;
+// As a bank prints it in Colombia: "-$ 45.900,00", "$ 31,07".
+const PESO_AMOUNT_TEXT_PATTERN =
+  /^(-)?\s*\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/;
 const HAS_SUB_CENT_DIGITS_PATTERN = /\.\d{3,}|e/i;
 // A double keeps 15 significant decimal digits; beyond that is binary noise.
 const DOUBLE_SIGNIFICANT_DIGITS = 15;
@@ -67,6 +70,22 @@ export const parseTypedAmount = (text: string): Result<AmountMinor> => {
   if (!match) return parseError("format");
   const [, integer = "", fraction = ""] = match;
   return digitsToAmount(false, integer.replaceAll(".", ""), fraction);
+};
+
+/**
+ * Parses an amount as a bank prints it in Colombia, such as the movements
+ * export's PDF: `"-$ 45.900,00"`, `"$ 31,07"`. Its sign comes before the
+ * `$`, dots group thousands and a comma marks the cents.
+ */
+export const parsePesoAmountText = (text: string): Result<AmountMinor> => {
+  const match = PESO_AMOUNT_TEXT_PATTERN.exec(text.trim());
+  if (!match) return parseError("format");
+  const [, minus, integer = "", fraction = ""] = match;
+  return digitsToAmount(
+    minus !== undefined,
+    integer.replaceAll(".", ""),
+    fraction,
+  );
 };
 
 /**

@@ -28,6 +28,7 @@ import {
   EXPORT_COLUMN,
   EXPORT_DATE_TIME_ZONES,
   EXPORT_HEADER_ROW,
+  EXPORT_NO_REFERENCE,
 } from "./bancolombia.constants";
 import { parseFailed } from "./parse-failure.helpers";
 
@@ -36,8 +37,15 @@ type ExportKey = keyof typeof EXPORT_COLUMN;
 export type ExportColumns = Readonly<Record<ExportKey, number>>;
 type FilledCell = Exclude<SpreadsheetCell, null>;
 
+/** How a format writes a movement's date and amount in its cells. */
+export type MovementCellReaders = {
+  readonly date: (cell: FilledCell) => Result<LocalDate>;
+  readonly amount: (cell: FilledCell) => Result<AmountMinor>;
+};
+
 type RowContext = {
   readonly columns: ExportColumns;
+  readonly readers: MovementCellReaders;
   readonly sourceRow: number;
 };
 
@@ -58,18 +66,24 @@ export const detectReferenceKind = (reference: string): ReferenceKind => {
 const wrongType = (): Result<never> =>
   err({ code: APP_ERROR_CODE.PARSE_FAILED, details: { reason: "type" } });
 
-// Dates are date cells and amounts numbers: a CSV saved from Excel, with
-// both as text, fails here.
-const readDate = (cell: FilledCell): Result<LocalDate> =>
-  typeof cell === "object"
-    ? localDateFromExcelSerial(cell.excelSerial, EXPORT_DATE_TIME_ZONES)
-    : wrongType();
+/** A cell's reader from a text's: a cell that isn't text is the wrong type. */
+export const fromText =
+  <T>(read: (text: string) => Result<T>) =>
+  (cell: FilledCell): Result<T> =>
+    typeof cell === "string" ? read(cell) : wrongType();
 
-const readAmount = (cell: FilledCell): Result<AmountMinor> =>
-  typeof cell === "number" ? amountFromNumber(cell) : wrongType();
+// In the spreadsheet, dates are date cells and amounts numbers: a CSV saved
+// from Excel, with both as text, fails here.
+const SPREADSHEET_READERS: MovementCellReaders = {
+  date: (cell) =>
+    typeof cell === "object"
+      ? localDateFromExcelSerial(cell.excelSerial, EXPORT_DATE_TIME_ZONES)
+      : wrongType(),
+  amount: (cell) =>
+    typeof cell === "number" ? amountFromNumber(cell) : wrongType(),
+};
 
-const readText = (cell: FilledCell): Result<string> =>
-  typeof cell === "string" ? ok(cell.trim()) : wrongType();
+const readText = fromText((text) => ok(text.trim()));
 
 // Reads one cell of a movement row, failing with the cell's column and row.
 const cellReader =
@@ -86,11 +100,12 @@ const cellReader =
     return parseFailed({ reason: "invalid_value", ...location, cause });
   };
 
-// The raw reference is kept until persistence, which hashes it.
+// The raw reference is kept until persistence, which hashes it. The bank
+// writes "null" for some movements without one.
 const referenceOf = (
   reference: string | undefined,
 ): Pick<ParsedTransaction, "referenceRaw" | "referenceKind"> =>
-  reference === undefined
+  reference === undefined || reference === EXPORT_NO_REFERENCE
     ? { referenceKind: REFERENCE_KIND.NONE }
     : {
         referenceRaw: reference,
@@ -102,11 +117,11 @@ const readMovement = (
   context: RowContext,
 ): Result<ParsedTransaction> => {
   const readCell = cellReader(row, context);
-  const date = readCell("DATE", readDate);
+  const date = readCell("DATE", context.readers.date);
   if (!date.ok) return date;
   const description = readCell("DESCRIPTION", readText);
   if (!description.ok) return description;
-  const amount = readCell("AMOUNT", readAmount);
+  const amount = readCell("AMOUNT", context.readers.amount);
   if (!amount.ok) return amount;
   // Many movements have no reference.
   const reference = isBlankCell(row[context.columns.REFERENCE])
@@ -141,10 +156,12 @@ export const findExportColumns = (rows: SheetRows): Result<ExportColumns> => {
 
 /**
  * Reads the movements under the export's header row, oldest first. Every row
- * that isn't blank must be a whole movement.
+ * that isn't blank must be a whole movement, its date and amount as `readers`
+ * read them: the spreadsheet's cells by default.
  */
 export const readExportMovements = (
   rows: SheetRows,
+  readers: MovementCellReaders = SPREADSHEET_READERS,
 ): Result<ParsedTransaction[]> => {
   const header = findExportColumns(rows);
   if (!header.ok) return header;
@@ -152,7 +169,7 @@ export const readExportMovements = (
   const transactions: ParsedTransaction[] = [];
   for (const [index, row] of rows.entries()) {
     if (index === EXPORT_HEADER_ROW || isBlankRow(row)) continue;
-    const movement = readMovement(row, { columns, sourceRow: index });
+    const movement = readMovement(row, { columns, readers, sourceRow: index });
     if (!movement.ok) return movement;
     transactions.push(movement.value);
   }

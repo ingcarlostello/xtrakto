@@ -22,11 +22,11 @@ const ACCOUNT_NOT_EXPECTED: Result<never> = err({
 
 /**
  * Where a submitted statement goes, as far as it's known before processing.
- * A quarterly statement names its account, found by its digits then. A
- * movements export goes to the account chosen on the upload screen, which
- * must be one of the user's of its kind; without a choice, to the user's only
- * account of its kind, or to none yet if they have none. With several, the
- * user has to choose.
+ * A quarterly statement or a movements export's PDF names its account, found
+ * by its digits then. A movements export in Excel goes to the account chosen
+ * on the upload screen, which must be one of the user's of its kind; without
+ * a choice, to the user's only account of its kind, or to none yet if they
+ * have none. With several, the user has to choose.
  */
 export const pinAccount = (
   format: FormatAccount,

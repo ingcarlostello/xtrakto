@@ -7,7 +7,11 @@ import {
 } from "@xtrakto/core";
 import type { ExtractedContent, ParsedStatement, Result } from "@xtrakto/core";
 import { pdfLines } from "../pdf-layout/pdf-lines.helpers";
-import { pdfTableRows, pdfTables } from "../pdf-layout/pdf-table.helpers";
+import {
+  linesAboveTable,
+  pdfTableRows,
+  pdfTables,
+} from "../pdf-layout/pdf-table.helpers";
 import type { BankParser } from "../registry/bank-parser.types";
 import {
   BANCOLOMBIA_BANK_ID,
@@ -17,7 +21,6 @@ import {
 import { parseFailed } from "./parse-failure.helpers";
 import {
   findQuarterlyPdfHeader,
-  quarterlyPdfHeaderLines,
   readQuarterlyPdfHeader,
 } from "./quarterly-pdf-header.helpers";
 import { minimizeQuarterlyPdf } from "./quarterly-pdf-minimize.helpers";
@@ -30,11 +33,11 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
   const lines = pdfLines(content);
   const tables = pdfTables(lines, QUARTERLY_PDF_COLUMNS);
   const header = readQuarterlyPdfHeader(
-    findQuarterlyPdfHeader(quarterlyPdfHeaderLines(lines, tables)),
+    findQuarterlyPdfHeader(linesAboveTable(lines, tables)),
   );
   if (!header.ok) return header;
   const movements = readQuarterlyPdfMovements(
-    pdfTableRows(lines, LAYOUT),
+    pdfTableRows(lines, LAYOUT).map(({ cells }) => cells),
     header.value.period,
   );
   if (!movements.ok) return movements;

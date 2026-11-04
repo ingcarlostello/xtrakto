@@ -12,6 +12,7 @@ import {
   localDateFromInstant,
   monthBoundsInTimeZone,
   monthPeriod,
+  parseShortMonthDate,
   parseSlashDate,
   quarterOfMonth,
   quarterPeriod,
@@ -319,6 +320,40 @@ describe("parseSlashDate", () => {
     "DESDE",
   ])("rejects %j", (text) => {
     expect(parseSlashDate(text)).toEqual(parseFailure("format"));
+  });
+});
+
+describe("parseShortMonthDate", () => {
+  it.each([
+    { text: "3 sep 2026", expected: "2026-09-03" },
+    { text: "03 ago 2026", expected: "2026-08-03" },
+    { text: "3 sept 2026", expected: "2026-09-03" },
+    { text: "3 sep. 2026", expected: "2026-09-03" },
+    { text: "3 sept. 2026", expected: "2026-09-03" },
+    { text: "1 ene 2027", expected: "2027-01-01" },
+    { text: "31 dic 2026", expected: "2026-12-31" },
+    { text: "29 feb 2028", expected: "2028-02-29" },
+    { text: "15 MAY 2026", expected: "2026-05-15" },
+    { text: " 7 oct  2026 ", expected: "2026-10-07" },
+  ])("parses $text", ({ text, expected }) => {
+    expect(parseShortMonthDate(text)).toEqual(ok(expected));
+  });
+
+  it.each([
+    "31 sep 2026",
+    "29 feb 2027",
+    "0 ago 2026",
+    "3 sepx 2026",
+    "3 septiembre 2026",
+    "3 de sep de 2026",
+    "3 sep 26",
+    "sep 2026",
+    "2026-09-03",
+    "3/09/2026",
+    "",
+    "Fecha",
+  ])("rejects %j", (text) => {
+    expect(parseShortMonthDate(text)).toEqual(parseFailure("format"));
   });
 });
 

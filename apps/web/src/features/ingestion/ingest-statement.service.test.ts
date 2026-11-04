@@ -92,10 +92,13 @@ const QUARTERLY_PDF = fixture("quarterly-basic-pdf");
 const PREVIOUS_QUARTERLY = fixture("quarterly-previous");
 const BROKEN_QUARTERLY = fixture("quarterly-broken-balance");
 const JULY_EXPORT = fixture("movements-overlap");
+const JULY_EXPORT_PDF = fixture("movements-overlap-pdf");
 const OCTOBER_EXPORT = fixture("movements-basic");
+const OCTOBER_EXPORT_PDF = fixture("movements-basic-pdf");
 const QUARTERLY_MOVEMENTS = parse(QUARTERLY).transactions.length;
 const QUARTERLY_LAST4 = parse(QUARTERLY).accountLast4;
 const JULY_MOVEMENTS = parse(JULY_EXPORT).transactions.length;
+const OCTOBER_MOVEMENTS = parse(OCTOBER_EXPORT).transactions.length;
 
 const SAVINGS = {
   bankId: "bancolombia",
@@ -329,6 +332,76 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
     );
 
     expect(outcome).toEqual({
+      status: "done",
+      stats: { ...allNew(JULY_MOVEMENTS), added: 0, covered: JULY_MOVEMENTS },
+    });
+  });
+
+  it("saves a movements PDF in the account its digits name among several, which keeps the holder's name it prints", async () => {
+    const userId = await newUser();
+    await withUserContext(app.db, userId, async (ctx) => {
+      for (const last4 of ["1111", QUARTERLY_LAST4 ?? "8901"])
+        await resolveIdentifiedAccount(ctx, { ...SAVINGS, last4 });
+    });
+
+    expect(await run(await submit(userId, JULY_EXPORT_PDF))).toEqual({
+      status: "done",
+      stats: allNew(JULY_MOVEMENTS),
+    });
+    const named = (await accountsOf(userId)).find(
+      ({ last4 }) => last4 === QUARTERLY_LAST4,
+    );
+    const { items } = await withUserContext(app.db, userId, (ctx) =>
+      listTransactions(ctx, {
+        accountId: named?.id ?? "",
+        limit: 100,
+        offset: 0,
+      }),
+    );
+    expect(items).toHaveLength(JULY_MOVEMENTS);
+    // A transfer to the holder's name, which the bank cut, counts as moved.
+    expect(
+      items.find(({ descriptionRaw }) => descriptionRaw.startsWith("TRANSF A")),
+    ).toMatchObject({
+      categoryId: "own_account_transfer",
+      isPendingReview: true,
+    });
+  });
+
+  it.each([
+    { first: "spreadsheet", contents: [OCTOBER_EXPORT, OCTOBER_EXPORT_PDF] },
+    { first: "PDF", contents: [OCTOBER_EXPORT_PDF, OCTOBER_EXPORT] },
+  ])(
+    "adds nothing for a movements export's other file after its $first, in the same account",
+    async ({ contents: [first, second] }) => {
+      const userId = await newUser();
+      await run(await submit(userId, first ?? OCTOBER_EXPORT));
+
+      expect(await run(await submit(userId, second ?? OCTOBER_EXPORT))).toEqual(
+        {
+          status: "done",
+          stats: {
+            ...allNew(OCTOBER_MOVEMENTS),
+            added: 0,
+            skipped: OCTOBER_MOVEMENTS,
+          },
+        },
+      );
+      expect(await accountsOf(userId)).toMatchObject([
+        { last4: QUARTERLY_LAST4 },
+      ]);
+      expect(await slotsUsedBy(userId)).toBe(1);
+    },
+  );
+
+  it("hides a movements PDF's movements on a verified quarterly statement's days, unpinned among several accounts", async () => {
+    const userId = await newUser();
+    await run(await submit(userId, QUARTERLY));
+    await withUserContext(app.db, userId, (ctx) =>
+      resolveIdentifiedAccount(ctx, { ...SAVINGS, last4: "1111" }),
+    );
+
+    expect(await run(await submit(userId, JULY_EXPORT_PDF))).toEqual({
       status: "done",
       stats: { ...allNew(JULY_MOVEMENTS), added: 0, covered: JULY_MOVEMENTS },
     });
