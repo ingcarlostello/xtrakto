@@ -1,0 +1,4 @@
+ALTER TABLE "transactions" ADD COLUMN "matched_transaction_id" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_matched_key" ON "transactions" USING btree ("matched_transaction_id") WHERE "transactions"."matched_transaction_id" is not null;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_statement_account_key" UNIQUE("id","statement_id","account_id","user_id");--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_matched_check" CHECK ("transactions"."matched_transaction_id" is null or "transactions"."covered_by_statement_id" is not null);

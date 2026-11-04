@@ -66,6 +66,13 @@ export {
   countCountedMovements,
 } from "./coverage/coverage.queries";
 export {
+  listMatchCandidates,
+  type MatchCandidate,
+  type MatchCandidates,
+  saveMatches,
+  type SavedMatch,
+} from "./coverage/movement-match.queries";
+export {
   listMovementAccounts,
   listMovementQuarters,
   listTransactions,

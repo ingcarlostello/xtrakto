@@ -17,6 +17,7 @@ import {
   pgTable,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { isOneOf, isSha256Hex, safeIntegerCheck } from "../columns/check.utils";
@@ -122,6 +123,42 @@ const coverageConstraints = (t: CoverageColumns) => [
     .where(sql`${t.coveredByStatementId} is not null`),
 ];
 
+type MatchColumns = CoverageColumns & {
+  readonly id: AnyPgColumn;
+  readonly statementId: AnyPgColumn;
+  readonly matchedTransactionId: AnyPgColumn;
+};
+
+// A hidden movement repeats one that counts in the statement that hides it,
+// of its account and user (10.1a), and each one that counts is repeated by
+// one hidden movement at most. No action on delete, checked when the
+// transaction ends (migration 0022), as the coverage key.
+const matchConstraints = (t: MatchColumns) => [
+  unique("transactions_statement_account_key").on(
+    t.id,
+    t.statementId,
+    t.accountId,
+    t.userId,
+  ),
+  foreignKey({
+    name: "transactions_matched_fk",
+    columns: [
+      t.matchedTransactionId,
+      t.coveredByStatementId,
+      t.accountId,
+      t.userId,
+    ],
+    foreignColumns: [t.id, t.statementId, t.accountId, t.userId],
+  }),
+  uniqueIndex("transactions_matched_key")
+    .on(t.matchedTransactionId)
+    .where(sql`${t.matchedTransactionId} is not null`),
+  check(
+    "transactions_matched_check",
+    sql`${t.matchedTransactionId} is null or ${t.coveredByStatementId} is not null`,
+  ),
+];
+
 export const transactions = pgTable(
   "transactions",
   {
@@ -156,8 +193,11 @@ export const transactions = pgTable(
     // Order within its statement, oldest first: the bank's order within a day.
     position: integer("position").notNull(),
     // The verified quarterly statement that holds this movement of another
-    // format on its days: hidden, and never counted, until 10.1 matches them.
+    // format on its days: hidden, and never counted (ADR 0018).
     coveredByStatementId: uuid("covered_by_statement_id"),
+    // The statement's movement that this hidden one repeats, once matched
+    // (10.1a): it took this one's reference.
+    matchedTransactionId: uuid("matched_transaction_id"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -168,6 +208,7 @@ export const transactions = pgTable(
       foreignColumns: [statements.id, statements.accountId, statements.userId],
     }).onDelete("cascade"),
     ...coverageConstraints(t),
+    ...matchConstraints(t),
     unique("transactions_account_fingerprint_key").on(
       t.accountId,
       t.fingerprint,
