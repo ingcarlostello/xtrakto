@@ -23,6 +23,13 @@ const LOCAL_DATE_FORMAT = "yyyy-MM-dd";
 const LOCAL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SLASH_DATE_PATTERN = /^(\d{4})\/(\d{2})\/(\d{2})$/;
 const DAY_MONTH_PATTERN = /^(\d{1,2})\/(\d{1,2})$/;
+// A day, its month's short Spanish name with or without a dot, and a year.
+const SHORT_MONTH_DATE_PATTERN = /^(\d{1,2})\s+(\p{L}+)\.?\s+(\d{4})$/u;
+const SHORT_MONTHS = "ene feb mar abr may jun jul ago sep oct nov dic".split(
+  " ",
+);
+// September's short name is also written as Intl writes it.
+const SEPTEMBER_ALSO = "sept";
 // Every real day and month exists in a leap year such as 2000.
 const LEAP_YEAR = 2000;
 // Excel's 1900 date system counts days from 1899-12-30 from serial 61
@@ -160,6 +167,25 @@ export const parseSlashDate = (text: string): Result<LocalDate> => {
   if (!match) return parseError("format");
   const [, year, month, day] = match;
   const date = toLocalDate(Number(year), Number(month), Number(day));
+  return date === undefined ? parseError("format") : ok(date);
+};
+
+// The month a short Spanish name stands for, from 1, or 0 for none.
+const shortMonthNumber = (name: string): number => {
+  const lowered = name.toLowerCase();
+  return SHORT_MONTHS.indexOf(lowered === SEPTEMBER_ALSO ? "sep" : lowered) + 1;
+};
+
+/**
+ * Parses a date written with its month's short Spanish name, as the movements
+ * export's PDF prints it: `"3 sep 2026"` or `"03 ago 2026"`, with or without
+ * the name's dot, and September also as `"sept"`.
+ */
+export const parseShortMonthDate = (text: string): Result<LocalDate> => {
+  const match = SHORT_MONTH_DATE_PATTERN.exec(text.trim());
+  const month = shortMonthNumber(match?.[2] ?? "");
+  if (!match || month === 0) return parseError("format");
+  const date = toLocalDate(Number(match[3]), month, Number(match[1]));
   return date === undefined ? parseError("format") : ok(date);
 };
 

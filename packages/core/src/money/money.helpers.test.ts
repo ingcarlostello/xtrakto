@@ -9,6 +9,7 @@ import {
   formatSignedCompactAmount,
   isAmountMinor,
   parseAmountText,
+  parsePesoAmountText,
   parseTypedAmount,
   sumAmounts,
 } from "./money.helpers";
@@ -222,6 +223,51 @@ describe("parseTypedAmount", () => {
 
   it("refuses an amount beyond the safe integer range", () => {
     expect(parseTypedAmount("999.999.999.999.999.999")).toEqual(
+      parseFailure("range"),
+    );
+  });
+});
+
+describe("parsePesoAmountText", () => {
+  it.each([
+    ["-$ 45.900,00", -4_590_000],
+    ["$ 31,07", 3_107],
+    ["$ 0,93", 93],
+    ["$ 1.234.567,89", 123_456_789],
+    ["-$ 12.345.678,90", -1_234_567_890],
+    ["-$45.900,00", -4_590_000],
+    ["- $ 45.900,00", -4_590_000],
+    ["$ 900", 90_000],
+    ["$ 12,5", 1_250],
+    [" $ 31,07 ", 3_107],
+  ])("reads %s as %i minor units", (text, minor) => {
+    expect(parsePesoAmountText(text)).toEqual(ok(minor));
+  });
+
+  it("returns a negative zero as plain zero", () => {
+    const result = parsePesoAmountText("-$ 0,00");
+
+    expect(result.ok && Object.is(result.value, 0)).toBe(true);
+  });
+
+  it.each([
+    "45.900,00",
+    "-45.900,00",
+    "$ 45,900.00",
+    "$ 1.23.456",
+    "$ 31,071",
+    "+$ 31,07",
+    "−$ 31,07",
+    "$ -31,07",
+    "$",
+    "Dirección IP 203.0.113.7",
+    "",
+  ])("doesn't read %j as an amount", (text) => {
+    expect(parsePesoAmountText(text)).toEqual(parseFailure("format"));
+  });
+
+  it("refuses an amount beyond the safe integer range", () => {
+    expect(parsePesoAmountText("$ 999.999.999.999.999.999,00")).toEqual(
       parseFailure("range"),
     );
   });
