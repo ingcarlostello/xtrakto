@@ -41,10 +41,17 @@ export type {
 } from "./categorization/categorization.types";
 export {
   compileUserRules,
+  type CompiledUserRules,
   descriptionRuleFor,
   referenceRuleDirection,
   userRuleTextOf,
 } from "./categorization/user-rule.helpers";
+export {
+  type MatchContext,
+  type MatchedMovement,
+  type MatchedUpdate,
+  matchedUpdate,
+} from "./categorization/matched-movement.helpers";
 export {
   isPlainTitle,
   movementTitle,
