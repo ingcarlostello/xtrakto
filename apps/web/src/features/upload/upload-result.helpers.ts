@@ -12,12 +12,9 @@ import {
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import { recognizedText } from "./upload-display.helpers";
-import {
-  RESULT_COPY as COPY,
-  STATEMENT_BALANCE,
-  UPLOAD_COPY,
-} from "./upload.constants";
-import type { JobOutcome, UploadJob } from "./upload.types";
+import { RESULT_COPY as COPY } from "./upload-result.constants";
+import { STATEMENT_BALANCE, UPLOAD_COPY } from "./upload.constants";
+import type { JobOutcome, PdfReading, UploadJob } from "./upload.types";
 
 /** A step of the processing, as the result lists it. */
 export type ResultStep = {
@@ -137,13 +134,24 @@ const balanceStep = ({ balance }: JobOutcome): ResultStep => {
   };
 };
 
+// A PDF's pages and rows while the page holds its reading: "2 páginas · 48
+// filas. Unimos 3 descripciones partidas en dos líneas." (docs/ui/v8-08).
+// Otherwise, and after a reload, the movements in the file.
+const readText = (total: number, pdf: PdfReading | undefined): string => {
+  if (pdf === undefined) return countText(total, UPLOAD_COPY.movements);
+  const read = `${countText(pdf.pageCount, COPY.pages)} · ${countText(total, COPY.rows)}`;
+  if (pdf.joinedDescriptions === 0) return read;
+  return `${read}. ${COPY.joined} ${countText(pdf.joinedDescriptions, COPY.joinedDescriptions)}.`;
+};
+
 const stepsOf = (
   job: UploadJob,
   outcome: JobOutcome,
+  pdf: PdfReading | undefined,
 ): readonly ResultStep[] => [
   {
     title: COPY.stepRead,
-    detail: countText(outcome.stats.total, UPLOAD_COPY.movements),
+    detail: readText(outcome.stats.total, pdf),
     isOk: true,
   },
   {
@@ -155,8 +163,15 @@ const stepsOf = (
   balanceStep(outcome),
 ];
 
-/** A done job's result: what it came to, its balances and how it was processed. */
-export const resultView = (job: UploadJob, outcome: JobOutcome): ResultView => {
+/**
+ * A done job's result: what it came to, its balances and how it was
+ * processed, with what the page read of a PDF while it holds that.
+ */
+export const resultView = (
+  job: UploadJob,
+  outcome: JobOutcome,
+  pdf?: PdfReading,
+): ResultView => {
   const isOk = outcome.balance !== STATEMENT_BALANCE.UNVERIFIED;
   return {
     isOk,
@@ -164,7 +179,7 @@ export const resultView = (job: UploadJob, outcome: JobOutcome): ResultView => {
     ...(isOk ? {} : { note: COPY.notReconciledNote }),
     counts: countsOf(outcome),
     pill: pillOf(outcome),
-    steps: stepsOf(job, outcome),
+    steps: stepsOf(job, outcome, pdf),
     ...(isOk
       ? {
           movementsHref: transactionsHref({

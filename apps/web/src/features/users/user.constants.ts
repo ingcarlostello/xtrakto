@@ -13,7 +13,8 @@ export const BANK_NAME_COPY = {
     "Lo tomamos de tu extracto. Lo usamos para reconocer transferencias entre tus cuentas.",
   holder: "Titular",
   texts: "En tus transferencias aparece así",
-  none: "Lo tomamos de tu extracto trimestral, que trae tu nombre como lo escribe el banco. Cuando lo subas, aparece aquí.",
+  // The files that print the holder's name (6.2a, 9.3b).
+  none: "Lo tomamos de tu extracto trimestral o del PDF de tus movimientos, que traen tu nombre como lo escribe el banco. Cuando subas uno, aparece aquí.",
 } as const;
 
 // "Tus cuentas y lo que es tuyo" (docs/ui/v8-11), without adding a
@@ -52,7 +53,7 @@ export const ACCOUNT_COPY = {
 } as const;
 
 // "Tu plan" (docs/ui/v8-11): only what works today, without v8's questions
-// (Stage 13) or PDF pages (Stage 9).
+// (Stage 13).
 export const PLAN_COPY = {
   title: "Tu plan",
   free: "Gratis",
@@ -61,8 +62,10 @@ export const PLAN_COPY = {
   of: "de",
   // "Se reinicia el 1 de noviembre."
   resetsOn: "Se reinicia el",
-  // MAX_FILE_SIZE_BYTES, as the upload screen says it.
+  // MAX_FILE_SIZE_BYTES and core's MAX_PDF_PAGES, as the upload screen says
+  // them.
   fileSize: "Archivos de hasta 10 MB",
+  pdfPages: "Y hasta 30 páginas por PDF.",
   // Only when the month's LLM calls ran out (8.3): "… esperan hasta el 1 de
   // noviembre."
   aiUsedUp:
@@ -90,7 +93,7 @@ export const PRIVACY_AND_DATA_COPY = {
     files: {
       title: "No guardamos tus archivos",
       detail:
-        "Se leen en tu navegador. Tampoco tu dirección ni el número completo de tu cuenta.",
+        "Se leen en tu navegador. Tampoco tu dirección, el número completo de tu cuenta ni la IP que traen algunos PDF.",
     },
     phones: {
       title: "Teléfonos de terceros protegidos",

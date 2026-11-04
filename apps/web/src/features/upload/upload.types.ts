@@ -29,17 +29,26 @@ export type ExtractionStage =
 /** One of the user's accounts, as the upload screen offers it. */
 export type UploadAccount = AccountRow;
 
+/** What reading a PDF came to, in counts only: never its text. */
+export type PdfReading = {
+  readonly pageCount: number;
+  /** Descriptions the PDF wrapped over two lines, joined again. */
+  readonly joinedDescriptions: number;
+};
+
 /** What the screen shows of a file before sending it: never its movements. */
 export type StatementPreview = {
   readonly bankId: string;
   readonly formatId: string;
   readonly accountType: AccountType;
-  /** Only a quarterly statement names its account, by these digits. */
+  /** Only a format that names its account does, by these digits. */
   readonly accountLast4?: string;
   readonly period: Period;
   /** A statement's own period reads as months; one from its rows, as days. */
   readonly periodSource: PeriodSource;
   readonly movementCount: number;
+  /** A PDF's reading, which its upload result tells while the page holds it. */
+  readonly pdf?: PdfReading;
 };
 
 /** A file read in the browser: what will be sent, and its preview. */

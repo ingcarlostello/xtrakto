@@ -1,9 +1,10 @@
-import { EyeOff, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
+import { EyeOff, Lock, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PRIVACY_COPY as COPY } from "../upload.constants";
 
 const FACTS = [
   { icon: ShieldCheck, copy: COPY.reading },
+  { icon: Lock, copy: COPY.password },
   { icon: EyeOff, copy: COPY.header },
   { icon: Smartphone, copy: COPY.references },
   { icon: Trash2, copy: COPY.deletion },

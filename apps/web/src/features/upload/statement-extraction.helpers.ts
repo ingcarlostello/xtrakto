@@ -1,4 +1,4 @@
-import { err, ok } from "@xtrakto/core";
+import { err, ok, PARSE_WARNING_CODE } from "@xtrakto/core";
 import type { ExtractedContent, ParsedStatement, Result } from "@xtrakto/core";
 import {
   extractPdf,
@@ -11,6 +11,7 @@ import { CONTENT_TOO_LARGE, EXTRACTION_STAGE } from "./upload.constants";
 import type {
   ExtractedStatement,
   ExtractionStage,
+  PdfReading,
   StatementPreview,
 } from "./upload.types";
 
@@ -21,7 +22,25 @@ export type ExtractionOptions = {
   readonly password?: string;
 };
 
-const toPreview = (statement: ParsedStatement): StatementPreview => ({
+// A PDF's pages, as the file has them, and the descriptions its parser joined
+// from two lines (docs/ui/v8-08).
+const pdfReading = (
+  extracted: ExtractedContent,
+  { warnings }: ParsedStatement,
+): PdfReading | undefined =>
+  extracted.type === "pdf"
+    ? {
+        pageCount: extracted.pages.length,
+        joinedDescriptions: warnings.filter(
+          ({ code }) => code === PARSE_WARNING_CODE.WRAPPED_DESCRIPTION,
+        ).length,
+      }
+    : undefined;
+
+const toPreview = (
+  statement: ParsedStatement,
+  pdf: PdfReading | undefined,
+): StatementPreview => ({
   bankId: statement.bankId,
   formatId: statement.formatId,
   accountType: statement.accountType,
@@ -29,6 +48,7 @@ const toPreview = (statement: ParsedStatement): StatementPreview => ({
   period: statement.period,
   periodSource: statement.periodSource,
   movementCount: statement.transactions.length,
+  pdf,
 });
 
 // A PDF by its first bytes, whatever its name says; anything else is read as
@@ -64,5 +84,6 @@ export const extractStatement = async (
   if (!fitsInUpload(content)) return err(CONTENT_TOO_LARGE);
   const statement = parser.value.parse(content);
   if (!statement.ok) return statement;
-  return ok({ content, preview: toPreview(statement.value) });
+  const pdf = pdfReading(extracted.value, statement.value);
+  return ok({ content, preview: toPreview(statement.value, pdf) });
 };

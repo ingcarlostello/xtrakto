@@ -1,6 +1,6 @@
 // The welcome a new account sees right after sign-up (docs/ui/v8-15 to
-// v8-17), with only what works today: the Excel files of a Bancolombia
-// savings account. Later stages add their lines (roadmap 5.8).
+// v8-17), with only what works today: the files of a Bancolombia savings
+// account, in Excel or PDF. Later stages add their lines (roadmap 5.8).
 
 export const ONBOARDING_STEP_COUNT = 3;
 
@@ -26,7 +26,7 @@ export const WELCOME_COPY = {
   metaTitle: "Bienvenida",
   title: "Entiende tu extracto en minutos",
   subtitle:
-    "Sube el Excel de tu cuenta de ahorros Bancolombia y te lo mostramos en limpio.",
+    "Sube el Excel o el PDF de tu cuenta de ahorros Bancolombia y te lo mostramos en limpio.",
   features: {
     moved: {
       title: "Separa lo que gastaste de lo que solo moviste",
@@ -74,7 +74,7 @@ export const FIRST_FILE_COPY = {
   metaTitle: "Qué subir primero",
   title: "¿Qué vas a subir primero?",
   subtitle:
-    "De tu cuenta de ahorros Bancolombia, en Excel. Puedes subir los dos; se complementan.",
+    "De tu cuenta de ahorros Bancolombia, en Excel o PDF. Puedes subir los dos; se complementan.",
   quarterly: {
     title: "Extracto trimestral",
     badge: "Recomendado",
@@ -84,12 +84,14 @@ export const FIRST_FILE_COPY = {
     title: "Movimientos del mes",
     detail: "Sin saldos. Puedes bajar varios rangos: no se duplican.",
   },
-  name: "No te pedimos tu nombre: lo tomamos de tu extracto trimestral.",
+  // The files that print the holder's name (6.2a, 9.3b).
+  name: "No te pedimos tu nombre: lo tomamos de tu extracto trimestral o del PDF de tus movimientos.",
   back: "Atrás",
   next: "Continuar",
 } as const;
 
-// docs/ui/v8-17 without PDF (9.1) and the sample data (7.8).
+// docs/ui/v8-17: where each file is downloaded, in Excel or PDF. A PDF may
+// ask for its password, never promised: not every one does (Stage 9).
 export const DOWNLOAD_COPY = {
   metaTitle: "Trae tus archivos",
   title: "Trae tus archivos de Bancolombia",
@@ -109,8 +111,8 @@ export const DOWNLOAD_COPY = {
       { title: "Ve a Documentos → Extractos" },
       { title: "Elige tu cuenta de ahorros y el trimestre" },
       {
-        title: "Descarga el Excel",
-        detail: "No tienes que editarlo ni renombrarlo.",
+        title: "Descarga el Excel o el PDF",
+        detail: "Si el PDF pide contraseña, suele ser tu número de documento.",
       },
     ],
   },
@@ -120,7 +122,7 @@ export const DOWNLOAD_COPY = {
       { title: "Entra a la Sucursal Virtual Personas" },
       { title: "Ve a Movimientos: Cuentas" },
       {
-        title: "Elige las fechas y descarga el Excel",
+        title: "Elige las fechas y descarga el Excel o el PDF",
         detail: "Del mes actual o de los tres anteriores.",
       },
       {

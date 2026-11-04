@@ -1,12 +1,12 @@
 import { countText } from "@/utils/count-text.utils";
 import { fileTypeOf } from "@/utils/statement-label.helpers";
 import { jobLabel } from "./upload-display.helpers";
+import { RESULT_COPY } from "./upload-result.constants";
 import { offBy } from "./upload-result.helpers";
 import {
   JOB_PROBLEMS,
   JOB_STATUS,
   PROBLEM_COPY,
-  RESULT_COPY,
   STATEMENT_BALANCE,
   UPLOAD_COPY,
 } from "./upload.constants";

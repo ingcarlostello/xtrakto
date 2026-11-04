@@ -1,31 +1,24 @@
 import { cn } from "@/utils/cn.utils";
-import { Check, CircleCheck, FileSpreadsheet } from "lucide-react";
+import { Check, CircleCheck } from "lucide-react";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RESULT_COPY } from "../upload.constants";
+import { RESULT_COPY } from "../upload-result.constants";
 import type { ResultStep, ResultView } from "../upload-result.helpers";
+import type { FileKind } from "../upload.types";
+import { FileIcon } from "./FileRow";
 
-// A check on the soft green when it went well; on the attention surface, a
-// white chip with the orange dot (§3.5).
-function ResultIcon({ isOk }: { isOk: boolean }) {
+type ResultIconProps = { isOk: boolean; kind: FileKind };
+
+// A check on the soft green when it went well; on the attention surface, the
+// file's chip in white with the orange dot (§3.5).
+function ResultIcon({ isOk, kind }: ResultIconProps) {
+  if (!isOk) return <FileIcon kind={kind} isProblem />;
   return (
-    <span
-      className={cn(
-        "relative flex size-11 shrink-0 items-center justify-center rounded-full",
-        isOk ? "bg-income-soft text-income-on-soft" : "bg-surface text-ink",
-      )}
-    >
-      {isOk ? (
-        <CircleCheck className="size-5" strokeWidth={1.9} aria-hidden />
-      ) : (
-        <FileSpreadsheet className="size-5" strokeWidth={1.7} aria-hidden />
-      )}
-      {!isOk && (
-        <span className="absolute top-0.5 right-0.5 size-[9px] rounded-full bg-spending" />
-      )}
+    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-income-soft text-income-on-soft">
+      <CircleCheck className="size-5" strokeWidth={1.9} aria-hidden />
     </span>
   );
 }
@@ -125,12 +118,14 @@ function ResultLink({ view }: { view: ResultView }) {
 type UploadResultProps = {
   /** The file's name, which never leaves the browser, or its format and period. */
   name: string;
+  /** The file it came in, which its chip shows on the attention surface. */
+  kind: FileKind;
   tags: readonly string[];
   view: ResultView;
 };
 
 /** A processed file's result, in the list (docs/ui/v8-08, within Stage 5). */
-export function UploadResult({ name, tags, view }: UploadResultProps) {
+export function UploadResult({ name, kind, tags, view }: UploadResultProps) {
   return (
     <li
       className={cn(
@@ -141,7 +136,7 @@ export function UploadResult({ name, tags, view }: UploadResultProps) {
       )}
     >
       <div className="flex items-start gap-3.5" aria-live="polite">
-        <ResultIcon isOk={view.isOk} />
+        <ResultIcon isOk={view.isOk} kind={kind} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-body font-bold text-balance">{view.title}</p>
           <p className="truncate text-caption text-ink-muted">{name}</p>

@@ -127,14 +127,15 @@ export const FORMAT_BANKS = {
 export const UPLOAD_COPY = {
   title: "Subir extracto",
   subtitle:
-    "Trimestral o movimientos del mes de tu cuenta de ahorros Bancolombia, en Excel.",
+    "Trimestral o movimientos del mes de tu cuenta de ahorros Bancolombia, en Excel o PDF.",
   chooseTitle: "Elige uno o varios archivos",
   chooseDescription:
     "Del banco tal como los descargaste. No tienes que editarlos ni renombrarlos.",
   dropTitle: "Arrastra tus extractos aquí",
   choose: "Elegir archivos",
+  // MAX_FILE_SIZE_BYTES and core's MAX_PDF_PAGES.
   dropHint:
-    "Hasta 10 MB por archivo. Los leemos en tu navegador: el archivo no sale de tu equipo.",
+    "Hasta 10 MB y 30 páginas por archivo. Los leemos en tu navegador: el archivo no sale de tu equipo.",
   fileList: "Archivos elegidos",
   waiting: "En espera",
   stage: {
@@ -142,7 +143,6 @@ export const UPLOAD_COPY = {
     recognizing: "Reconociendo el formato…",
     preparing: "Preparando la vista previa…",
   },
-  excel: "Excel",
   // A PDF that opens only with its password (docs/ui/v8-09).
   locked: {
     title: "Este PDF tiene contraseña",
@@ -206,10 +206,14 @@ export const PRIVACY_COPY = {
     detail:
       "El archivo no sale de tu equipo: enviamos solo lo que leemos de él.",
   },
+  password: {
+    title: "La contraseña del PDF no sale de tu equipo",
+    detail: "La usamos para abrirlo aquí mismo y la olvidamos.",
+  },
   header: {
     title: "Del encabezado solo usamos tu nombre y tu cuenta",
     detail:
-      "Descartamos tu dirección, tu ciudad y la sucursal. Del número de cuenta enviamos solo los últimos 4 dígitos.",
+      "Descartamos tu dirección, tu ciudad, la sucursal y la IP que traen algunos PDF. Del número de cuenta enviamos solo los últimos 4 dígitos.",
   },
   references: {
     title: "De un celular guardamos solo un código",
@@ -226,7 +230,7 @@ export const PRIVACY_COPY = {
 export const HOW_IT_WORKS_COPY = {
   title: "Así funciona",
   download: {
-    title: "Descárgalo en Excel de la Sucursal Virtual",
+    title: "Descárgalo en Excel o PDF de la Sucursal Virtual",
     detail:
       "Documentos → Extractos (trimestral) o Movimientos: Cuentas (del mes).",
   },
@@ -324,48 +328,3 @@ export const JOB_PROBLEMS = {
   IngestionJobError,
   { readonly title: string; readonly detail: string }
 >;
-
-// A file's result once processed (docs/ui/v8-08, within Stage 5).
-export const RESULT_COPY = {
-  read: "Listo: leímos tu archivo",
-  // The movements of its account in its period (v8-08's "Lo que sigue").
-  viewMovements: "Ver movimientos",
-  // Where its balance breaks (v8-13), for a statement that doesn't reconcile.
-  viewBreaks: "Ver dónde no cuadra",
-  alreadyHad: "Ya tenías todo este archivo",
-  replaced: "Listo: reemplazamos el extracto que no cuadraba",
-  notReconciled: "El saldo final no cuadra",
-  notReconciledBy: "El saldo final no cuadra por",
-  notReconciledNote:
-    "Puede faltar una página o una fila. No mostramos sus números hasta que cuadre.",
-  inFile: {
-    one: "movimiento en el archivo",
-    other: "movimientos en el archivo",
-  },
-  had: {
-    one: "ya lo tenías: no se duplica",
-    other: "ya los tenías: no se duplican",
-  },
-  new: { one: "nuevo", other: "nuevos" },
-  verified: "Saldo verificado",
-  reconcile: { one: "cuadra", other: "cuadran" },
-  chained: "Encadenado",
-  chainedTo: "Empieza donde terminó",
-  notReconciledShort: "No cuadra",
-  notReconciledShortBy: "No cuadra por",
-  checkTheFile: "Revisa el archivo",
-  noBalance: "Sin saldo para verificar",
-  movementsFile: "Archivo de movimientos",
-  stepRead: "Leído en tu navegador",
-  stepRecognized: "Reconocido",
-  stepDuplicates: "Revisando duplicados",
-  noneHad: "Ninguno estaba en tu cuenta.",
-  hadIn: "ya estaban en tu cuenta: no se duplican.",
-  coveredNote: "Tu extracto trimestral ya los traía.",
-  hiddenNote: "Ahora cuentan los de este extracto, que trae saldos.",
-  keptApart: "Quedan guardados, pero no cuentan hasta que el saldo cuadre.",
-  verifiedDetail: "Cada movimiento cuadra con su saldo, al centavo.",
-  notReconciledDetail:
-    "Revisa que el archivo esté completo, o sube una versión que cuadre.",
-  noBalanceDetail: "Los movimientos de la Sucursal Virtual no traen saldos.",
-} as const;
