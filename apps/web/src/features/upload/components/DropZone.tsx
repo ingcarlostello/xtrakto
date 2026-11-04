@@ -4,7 +4,7 @@ import { useRef } from "react";
 import type { ChangeEvent, Ref } from "react";
 import { Button } from "@/components/ui/button";
 import { useFileDrop } from "../hooks/use-file-drop";
-import { ACCEPTED_EXTENSION, UPLOAD_COPY as COPY } from "../upload.constants";
+import { ACCEPTED_EXTENSIONS, UPLOAD_COPY as COPY } from "../upload.constants";
 
 type DropZoneProps = {
   /** The "Elegir archivos" button, so the focus can come back to it. */
@@ -42,7 +42,7 @@ export function DropZone({ ref, onFiles }: DropZoneProps) {
       <input
         ref={input}
         type="file"
-        accept={ACCEPTED_EXTENSION}
+        accept={ACCEPTED_EXTENSIONS.join(",")}
         multiple
         hidden
         onChange={choose}

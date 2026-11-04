@@ -1,10 +1,16 @@
-import { ok, PERIOD_SOURCE, periodSchema } from "@xtrakto/core";
-import { describe, expect, it, vi } from "vitest";
-import { EXTRACTION_STAGE } from "./upload.constants";
+import {
+  APP_ERROR_CODE,
+  err,
+  ok,
+  PERIOD_SOURCE,
+  periodSchema,
+} from "@xtrakto/core";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExtractionOptions } from "./statement-extraction.helpers";
+import { EXTRACTION_STAGE, FILE_PROBLEM } from "./upload.constants";
 import type {
   ExtractedStatement,
   ExtractionMessage,
-  ExtractionStage,
   ExtractRequest,
 } from "./upload.types";
 
@@ -36,26 +42,71 @@ const STATEMENT: ExtractedStatement = {
   },
 };
 
+const BYTES = new Uint8Array([80, 75, 3, 4]);
+
+// What the worker posts once it's done.
+const done = async () => {
+  await vi.waitFor(() =>
+    expect(posted.some(({ type }) => type === "done")).toBe(true),
+  );
+  return posted;
+};
+
+beforeEach(() => {
+  posted.length = 0;
+  mocks.extractStatement.mockReset();
+});
+
 describe("extract-statement worker", () => {
-  it("posts each stage as it starts, then the result of the bytes it got", () => {
+  it("posts each stage as it starts, then the result of the bytes it got", async () => {
     mocks.extractStatement.mockImplementation(
-      (_bytes: Uint8Array, onStage: (stage: ExtractionStage) => void) => {
+      (_bytes: Uint8Array, { onStage }: ExtractionOptions) => {
         onStage(EXTRACTION_STAGE.READING);
         onStage(EXTRACTION_STAGE.RECOGNIZING);
-        return ok(STATEMENT);
+        return Promise.resolve(ok(STATEMENT));
       },
     );
 
-    receive({ data: { bytes: new Uint8Array([80, 75, 3, 4]).buffer } });
+    receive({ data: { bytes: BYTES.slice().buffer } });
 
-    expect(mocks.extractStatement).toHaveBeenCalledWith(
-      new Uint8Array([80, 75, 3, 4]),
-      expect.any(Function),
-    );
-    expect(posted).toEqual([
+    expect(await done()).toEqual([
       { type: "stage", stage: EXTRACTION_STAGE.READING },
       { type: "stage", stage: EXTRACTION_STAGE.RECOGNIZING },
       { type: "done", result: ok(STATEMENT) },
+    ]);
+    expect(mocks.extractStatement).toHaveBeenCalledWith(BYTES, {
+      password: undefined,
+      onStage: expect.any(Function),
+    });
+  });
+
+  it("opens a PDF with the password it got", async () => {
+    mocks.extractStatement.mockResolvedValue(ok(STATEMENT));
+
+    receive({
+      data: { bytes: BYTES.slice().buffer, password: "clave-inventada" },
+    });
+
+    await done();
+    expect(mocks.extractStatement).toHaveBeenCalledWith(BYTES, {
+      password: "clave-inventada",
+      onStage: expect.any(Function),
+    });
+  });
+
+  it("says the file is unreadable when reading it fails unexpectedly", async () => {
+    mocks.extractStatement.mockRejectedValue(new Error("chunk failed"));
+
+    receive({ data: { bytes: BYTES.slice().buffer } });
+
+    expect(await done()).toEqual([
+      {
+        type: "done",
+        result: err({
+          code: APP_ERROR_CODE.PARSE_FAILED,
+          details: { reason: FILE_PROBLEM.UNREADABLE },
+        }),
+      },
     ]);
   });
 });

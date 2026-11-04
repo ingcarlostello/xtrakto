@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
+import { jobFileKind } from "../upload-display.helpers";
 import type { UploadJob } from "../upload.types";
 import {
   FIRST_FILES_SHOWN,
@@ -16,7 +17,7 @@ function UploadedFile({ job }: { job: UploadJob }) {
   return (
     <li className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 border-t border-divider py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
       <span className="row-span-2 sm:row-span-1">
-        <FileIcon isProblem={false} />
+        <FileIcon kind={jobFileKind(job)} isProblem={false} />
       </span>
       <div className="flex flex-col">
         <p className="text-body font-bold text-balance">{title}</p>

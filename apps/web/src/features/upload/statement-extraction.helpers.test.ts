@@ -1,20 +1,42 @@
-import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
+import { readFileSync } from "node:fs";
+import { APP_ERROR_CODE, err, extractedContentSchema, ok } from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { extractStatement } from "./statement-extraction.helpers";
 import { EXTRACTION_STAGE } from "./upload.constants";
 import type { ExtractionStage } from "./upload.types";
 
-const mocks = vi.hoisted(() => ({ extractSpreadsheet: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  extractSpreadsheet: vi.fn(),
+  extractPdf: vi.fn(),
+}));
 
-// Extraction is SheetJS reading the bytes, tested in @xtrakto/parsers: here
-// it hands over content directly, and the rest of the package runs for real.
+// Extraction is SheetJS or pdf.js reading the bytes, tested in
+// @xtrakto/parsers: here it hands over content directly, and the rest of the
+// package runs for real.
 vi.mock("@xtrakto/parsers", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@xtrakto/parsers")>()),
   extractSpreadsheet: mocks.extractSpreadsheet,
+  extractPdf: mocks.extractPdf,
 }));
 
+// An XLSX file starts as a zip does; a PDF, with "%PDF-".
 const BYTES = new Uint8Array([80, 75, 3, 4]);
+const PDF_BYTES = new TextEncoder().encode("%PDF-1.7\n");
+const PASSWORD = "clave-inventada";
+
+// The invented movements export in PDF, as pdf.js reads it.
+const MOVEMENTS_PDF = extractedContentSchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../../../packages/parsers/fixtures/movements-basic-pdf.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ),
+);
 const HEADER: SpreadsheetCell[] = [
   "Fecha",
   "Descripción",
@@ -31,18 +53,22 @@ const movementsExport = (rows: SpreadsheetCell[][]): ExtractedContent => ({
 });
 
 let stages: ExtractionStage[];
-const extract = () =>
-  extractStatement(BYTES, (stage) => {
-    stages.push(stage);
+const extract = (bytes = BYTES, password?: string) =>
+  extractStatement(bytes, {
+    password,
+    onStage: (stage) => {
+      stages.push(stage);
+    },
   });
 
 beforeEach(() => {
   stages = [];
   mocks.extractSpreadsheet.mockReset();
+  mocks.extractPdf.mockReset();
 });
 
 describe("extractStatement", () => {
-  it("returns only the minimized content and a preview, through every stage", () => {
+  it("returns only the minimized content and a preview, through every stage", async () => {
     mocks.extractSpreadsheet.mockReturnValue(
       ok(
         movementsExport([
@@ -52,7 +78,7 @@ describe("extractStatement", () => {
       ),
     );
 
-    expect(extract()).toEqual(
+    expect(await extract()).toEqual(
       ok({
         content: {
           type: "spreadsheet",
@@ -85,18 +111,18 @@ describe("extractStatement", () => {
     ]);
   });
 
-  it("stops at an extraction error, before recognizing anything", () => {
+  it("stops at an extraction error, before recognizing anything", async () => {
     const notASpreadsheet = err({
       code: APP_ERROR_CODE.UNKNOWN_FORMAT,
       details: { reason: "file_type" },
     });
     mocks.extractSpreadsheet.mockReturnValue(notASpreadsheet);
 
-    expect(extract()).toEqual(notASpreadsheet);
+    expect(await extract()).toEqual(notASpreadsheet);
     expect(stages).toEqual([EXTRACTION_STAGE.READING]);
   });
 
-  it("reports content that no parser recognizes", () => {
+  it("reports content that no parser recognizes", async () => {
     mocks.extractSpreadsheet.mockReturnValue(
       ok({
         type: "spreadsheet",
@@ -104,14 +130,16 @@ describe("extractStatement", () => {
       }),
     );
 
-    expect(extract()).toEqual(err({ code: APP_ERROR_CODE.UNKNOWN_FORMAT }));
+    expect(await extract()).toEqual(
+      err({ code: APP_ERROR_CODE.UNKNOWN_FORMAT }),
+    );
     expect(stages).toEqual([
       EXTRACTION_STAGE.READING,
       EXTRACTION_STAGE.RECOGNIZING,
     ]);
   });
 
-  it("rejects content too large to send", () => {
+  it("rejects content too large to send", async () => {
     // About 4 MB of minimized JSON, over the 3.5 MB a file may send.
     const description = "COMPRA EN TIENDA ".repeat(26);
     const rows = Array.from({ length: 8_000 }, () => [
@@ -122,7 +150,7 @@ describe("extractStatement", () => {
     ]);
     mocks.extractSpreadsheet.mockReturnValue(ok(movementsExport(rows)));
 
-    expect(extract()).toEqual(
+    expect(await extract()).toEqual(
       err({
         code: APP_ERROR_CODE.INVALID_INPUT,
         details: { reason: "too_large" },
@@ -130,14 +158,54 @@ describe("extractStatement", () => {
     );
   });
 
-  it("passes on the parse error of a file it recognized", () => {
+  it("passes on the parse error of a file it recognized", async () => {
     mocks.extractSpreadsheet.mockReturnValue(
       ok(movementsExport([[OCTOBER_1, "TRANSFERENCIAS A NEQUI", null, "abc"]])),
     );
 
-    const result = extract();
+    const result = await extract();
 
     expect(!result.ok && result.error.code).toBe(APP_ERROR_CODE.PARSE_FAILED);
     expect(stages).toHaveLength(3);
+  });
+
+  it("reads a PDF by its first bytes, with its password, into the same minimized content", async () => {
+    mocks.extractPdf.mockResolvedValue(ok(MOVEMENTS_PDF));
+
+    const result = await extract(PDF_BYTES, PASSWORD);
+
+    expect(mocks.extractPdf).toHaveBeenCalledWith(PDF_BYTES, {
+      password: PASSWORD,
+    });
+    expect(mocks.extractSpreadsheet).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        preview: {
+          formatId: "bancolombia-movements-export-pdf",
+          accountLast4: "8901",
+          movementCount: 17,
+        },
+      },
+    });
+    // Neither the page's IP address nor the time it was downloaded goes up.
+    expect(JSON.stringify(result)).not.toMatch(
+      /Dirección IP|203\.0\.113|a\. m\./,
+    );
+    expect(stages).toEqual(Object.values(EXTRACTION_STAGE));
+  });
+
+  it("passes on a PDF's request for its password, before recognizing anything", async () => {
+    const locked = err({
+      code: APP_ERROR_CODE.INVALID_INPUT,
+      details: { reason: "password_required" },
+    });
+    mocks.extractPdf.mockResolvedValue(locked);
+
+    expect(await extract(PDF_BYTES)).toEqual(locked);
+    expect(mocks.extractPdf).toHaveBeenCalledWith(PDF_BYTES, {
+      password: undefined,
+    });
+    expect(stages).toEqual([EXTRACTION_STAGE.READING]);
   });
 });

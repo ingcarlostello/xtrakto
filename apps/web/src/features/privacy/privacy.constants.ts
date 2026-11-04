@@ -21,7 +21,7 @@ export const PRIVACY_COPY = {
   title: "Cómo cuidamos tus datos",
   intro:
     "Qué datos usa Xtrakto, para qué, con quién los comparte y cómo decides sobre ellos.",
-  effective: "Vigente desde el 30 de octubre de 2026.",
+  effective: "Vigente desde el 3 de noviembre de 2026.",
   sections: [
     {
       id: "responsable",
@@ -39,7 +39,7 @@ export const PRIVACY_COPY = {
       ],
       items: [
         "Tu cuenta: tu nombre y tu correo, para que inicies sesión. Si entras con Google, Google nos da tu nombre y tu correo.",
-        "Tus extractos: tu navegador lee el archivo y nos envía solo lo que necesitamos para entenderlo: los movimientos (fecha, texto del banco, valor y saldo), el periodo, los saldos, el nombre del titular y los últimos 4 dígitos de la cuenta. Nunca nos llega el archivo, ni la contraseña de un PDF, ni tu dirección, ni el número completo de tu cuenta.",
+        "Tus extractos, en Excel o en PDF: tu navegador lee el archivo y nos envía solo lo que necesitamos para entenderlo: los movimientos (fecha, texto del banco, valor y saldo), el periodo, los saldos, el nombre del titular y los últimos 4 dígitos de la cuenta; de un PDF, ese mismo texto con su lugar en la página. Nunca nos llega el archivo, ni la contraseña de un PDF, ni tu dirección, ni el número completo de tu cuenta, ni la dirección IP o la hora de descarga que traen algunos PDF.",
         "El nombre del titular, para reconocer las transferencias entre tus propias cuentas.",
         "Los números de Nequi o de cuenta de otras personas que traen tus movimientos: los guardamos cifrados con una clave secreta, y solo vemos sus últimos 4 dígitos. Los textos del banco pueden nombrar a quién le transferiste; solo tú los ves.",
         "Tus respuestas en la revisión rápida y tus correcciones de categoría, para clasificar tus movimientos.",

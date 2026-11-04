@@ -246,7 +246,7 @@ describe("useUploadQueue", () => {
   it("never reads a file that fails the checks", () => {
     const statement = fileNamed("extracto.xlsx");
 
-    add(fileNamed("extracto.pdf"), statement, statement);
+    add(fileNamed("movimientos.csv"), statement, statement);
 
     expect(queue.items).toMatchObject([
       {
@@ -298,6 +298,143 @@ describe("useUploadQueue", () => {
       status: UPLOAD_STATUS.READY,
       accountKey: "account:a",
     });
+  });
+});
+
+describe("PDFs with a password in useUploadQueue", () => {
+  const PASSWORD = "clave-inventada";
+  const asksForPassword = err({
+    code: APP_ERROR_CODE.INVALID_INPUT,
+    details: { reason: "password_required" },
+  });
+  const wrongPassword = err({
+    code: APP_ERROR_CODE.INVALID_INPUT,
+    details: { reason: "password_incorrect" },
+  });
+
+  // A worker's answer, once it got its file.
+  const answer = async (
+    worker: FakeWorker | undefined,
+    result: Result<ExtractedStatement>,
+  ) => {
+    await bytesSentTo(worker);
+    worker?.post({ type: "done", result });
+  };
+
+  const idOf = (index: number) => queue.items[index]?.id ?? "";
+
+  const open = (index: number, password = PASSWORD) =>
+    act(() => queue.openPdf(idOf(index), password));
+
+  // What a worker was asked to open its file with, if anything.
+  const passwordSentTo = async (worker: FakeWorker | undefined) =>
+    (await bytesSentTo(worker))?.request.password;
+
+  it("asks for a PDF's password, and reads it again with the one typed", async () => {
+    add(fileNamed("trimestral.pdf"));
+    await answer(workers[0], asksForPassword);
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.LOCKED,
+      isWrong: false,
+    });
+
+    open(0);
+    expect(await passwordSentTo(workers[1])).toBe(PASSWORD);
+    workers[1]?.post({ type: "done", result: ok(STATEMENT) });
+
+    expect(queue.items[0]).toMatchObject({ status: UPLOAD_STATUS.READY });
+    expect(JSON.stringify(queue.items)).not.toContain(PASSWORD);
+  });
+
+  it("says a typed password didn't open the PDF, and asks again", async () => {
+    add(fileNamed("trimestral.pdf"));
+    await answer(workers[0], asksForPassword);
+
+    open(0, "otra-clave");
+    await answer(workers[1], wrongPassword);
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.LOCKED,
+      isWrong: true,
+    });
+  });
+
+  it("tries the password that opened one PDF on the others, once each", async () => {
+    add(...["a", "b", "c"].map((name) => fileNamed(`${name}.pdf`)));
+    for (const worker of workers.slice(0, 3))
+      await answer(worker, asksForPassword);
+
+    open(0);
+    await answer(workers[3], ok(STATEMENT));
+
+    expect(await passwordSentTo(workers[4])).toBe(PASSWORD);
+    expect(await passwordSentTo(workers[5])).toBe(PASSWORD);
+    // c doesn't open with it; b does after, which tries it again on the
+    // locked ones.
+    workers[5]?.post({ type: "done", result: wrongPassword });
+    workers[4]?.post({ type: "done", result: ok(STATEMENT) });
+
+    expect(statuses()).toEqual([
+      UPLOAD_STATUS.READY,
+      UPLOAD_STATUS.READY,
+      UPLOAD_STATUS.LOCKED,
+    ]);
+    // Not the person's try: it asks without saying it's wrong, and the same
+    // password isn't tried on it again.
+    expect(queue.items[2]).toMatchObject({ isWrong: false });
+    expect(workers).toHaveLength(6);
+  });
+
+  it("tries it on a PDF still being read when it opened another", async () => {
+    add(fileNamed("a.pdf"), fileNamed("b.pdf"));
+    await answer(workers[0], asksForPassword);
+    open(0);
+    await answer(workers[2], ok(STATEMENT));
+
+    await answer(workers[1], asksForPassword);
+
+    expect(await passwordSentTo(workers[3])).toBe(PASSWORD);
+  });
+
+  it("forgets it once the file it opened is removed", async () => {
+    add(fileNamed("a.pdf"), fileNamed("b.pdf"));
+    await answer(workers[0], asksForPassword);
+    open(0);
+    await answer(workers[2], ok(STATEMENT));
+
+    act(() => queue.remove(idOf(0)));
+    await answer(workers[1], asksForPassword);
+
+    expect(queue.items[0]).toMatchObject({ status: UPLOAD_STATUS.LOCKED });
+    expect(workers).toHaveLength(3);
+  });
+
+  it("forgets it once no file waits to be read or opened", async () => {
+    add(fileNamed("a.pdf"));
+    await answer(workers[0], asksForPassword);
+    open(0);
+    await answer(workers[1], ok(STATEMENT));
+
+    add(fileNamed("b.pdf"));
+    await answer(workers[2], asksForPassword);
+
+    expect(queue.items[1]).toMatchObject({ status: UPLOAD_STATUS.LOCKED });
+    expect(workers).toHaveLength(3);
+  });
+
+  it("never sends a PDF's password up with its content", async () => {
+    add(fileNamed("trimestral.pdf"));
+    await answer(workers[0], asksForPassword);
+    open(0);
+    await answer(workers[1], ok(STATEMENT));
+    submit.mockResolvedValue(ok({ jobId: "job-a" }));
+
+    await act(() =>
+      queue.send([{ id: idOf(0), input: { content: STATEMENT.content } }]),
+    );
+
+    expect(JSON.stringify(submit.mock.calls)).not.toContain(PASSWORD);
   });
 });
 
