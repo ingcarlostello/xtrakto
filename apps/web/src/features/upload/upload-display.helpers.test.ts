@@ -251,6 +251,7 @@ describe("a sent file's job", () => {
     },
     period,
     balance: "none",
+    matches: { matched: 0, dayApart: 0, references: 0, verifiedBy: [] },
   });
   const job = (status: UploadJob["status"], isSlow = false): UploadJob => ({
     jobId: "job",

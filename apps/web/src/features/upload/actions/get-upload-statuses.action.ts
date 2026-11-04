@@ -9,7 +9,7 @@ import {
 } from "@xtrakto/core";
 import { getSignedInClerkUserId } from "@/lib/auth";
 import { jobIdsSchema } from "../upload.schemas";
-import { listUploadJobs } from "../upload.service";
+import { listUploadJobs } from "../upload-results.service";
 import type { UploadJob } from "../upload.types";
 
 /**

@@ -14,6 +14,7 @@ import type {
   IngestionJobStatus,
   IngestionStats,
   StatementBalance,
+  StatementMatches,
 } from "@xtrakto/db";
 import type { z } from "zod";
 import type {
@@ -203,6 +204,10 @@ export type JobOutcome = {
   readonly differenceMinor?: AmountMinor;
   /** When it opens where the account's previous quarterly statement closed: that one's period. */
   readonly chainedTo?: Period;
+  /** What matching it with the other format came to (10.1a), counted when read. */
+  readonly matches: StatementMatches;
+  /** The movements of its quarter that wait for the quick review, while the screen follows the job. */
+  readonly toReview?: number;
 };
 
 /** The server action that reports how some jobs go, or a stand-in in tests. */

@@ -242,7 +242,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 10 — Monthly use and retention**
 
 - [x] 10.1a Match movements across formats
-- [ ] 10.1b Matches in the upload result
+- [x] 10.1b Matches in the upload result
 - [ ] 10.1c Matches in Movimientos
 - [ ] 10.2a Coverage timeline
 - [ ] 10.2b A year in Movimientos and Categorías
@@ -1984,6 +1984,10 @@ It came out at about 550 lines of code (350 to 400 estimated), past the 400 a ph
 - The design rules.
 
 **Done when:** every state reads right from synthetic files uploaded in both orders and twice, at 390px and 360px and with the keyboard.
+
+Found while building it (2026-11-04): counted when read, a reference would show in both files' rows, so each one is the later file's, the upload that carried it over, and a file uploaded again, which points at the statement saved before, shows none. A file that brought only references reads "Listo: leímos tu archivo", as v8-08 does, and a movements export its quarterly statement verified after it reads "Verificado" in "Archivos subidos". "Lo que sigue" counts the movements of the last file's quarter that wait for the review, since what's new isn't known once read, and sits under the upload card, where the results are; v8-13's "Subir el trimestral" stays out, since the drop zone is right above and this quarter's movements have no quarterly statement yet.
+
+It came out at about 450 lines of code (about 300 estimated), besides about 85 moved: the reads of the screen's jobs went to a service of their own, which kept the upload's under the 300 lines the lint allows.
 
 **Commits:** `docs(rules): matches in the upload result`, `feat(db): what a file matched, counted when read`, then `feat(web): matches in the upload result`
 

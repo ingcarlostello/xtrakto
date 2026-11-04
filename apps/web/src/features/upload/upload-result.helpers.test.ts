@@ -11,6 +11,7 @@ const PREVIOUS_QUARTER = periodSchema.parse({
   to: "2026-06-30",
 });
 const JULY = periodSchema.parse({ from: "2026-07-01", to: "2026-07-31" });
+const NO_MATCHES = { matched: 0, dayApart: 0, references: 0, verifiedBy: [] };
 
 const quarterly: UploadJob = {
   jobId: "job",
@@ -42,6 +43,7 @@ const outcome = (
   accountId: "a1",
   period: QUARTER,
   balance: "verified",
+  matches: NO_MATCHES,
   ...rest,
 });
 
@@ -156,8 +158,9 @@ describe("resultView", () => {
       `14 movimientos ${RESULT_COPY.hadIn} ${RESULT_COPY.coveredNote}`,
     );
     expect(view.steps.at(-1)).toEqual({
-      title: RESULT_COPY.noBalance,
-      detail: RESULT_COPY.noBalanceDetail,
+      title: "Este archivo no trae saldos",
+      detail:
+        "Los movimientos de la Sucursal Virtual no los incluyen. Los verificamos cuando subas el extracto trimestral de ese periodo.",
       isOk: true,
     });
   });
@@ -216,6 +219,138 @@ describe("resultView", () => {
 
     expect(view.title).toBe(RESULT_COPY.notReconciled);
     expect(view.pill.title).toBe(RESULT_COPY.notReconciledShort);
+  });
+
+  describe("what a movements export matched (10.1b)", () => {
+    const AUGUST_1_TO_15 = periodSchema.parse({
+      from: "2026-08-01",
+      to: "2026-08-15",
+    });
+    const OCTOBER_TO_DECEMBER = periodSchema.parse({
+      from: "2026-09-30",
+      to: "2026-12-31",
+    });
+    const exported = (
+      counts: Partial<IngestionStats>,
+      matches: Partial<JobOutcome["matches"]>,
+    ) =>
+      outcome(
+        { total: 48, added: 0, covered: 48, ...counts },
+        {
+          period: AUGUST_1_TO_15,
+          balance: "none",
+          matches: { ...NO_MATCHES, ...matches },
+        },
+      );
+
+    it("verifies a file its quarterly statement repeats, interest a day apart, and counts the references it added", () => {
+      const result = exported(
+        {},
+        { matched: 48, dayApart: 3, references: 12, verifiedBy: [QUARTER] },
+      );
+      const view = resultView(movements, result);
+
+      // Nothing new, but it brought references: v8-08's title.
+      expect(view.title).toBe(RESULT_COPY.read);
+      expect(view.counts.at(-1)).toEqual({
+        value: "12",
+        label: "referencias agregadas",
+        isInfo: true,
+      });
+      expect(view.pill).toEqual({
+        tone: "ok",
+        title: "Verificado por tu extracto trimestral",
+        detail:
+          "Este tipo de archivo no trae saldos; lo comparamos con jul–sep 2026 y coincide.",
+      });
+      expect(detailOf(movements, result, "Revisando duplicados")).toBe(
+        "48 movimientos ya estaban en tu extracto trimestral. Los intereses vienen con un día de diferencia entre archivos; igual los reconocimos.",
+      );
+      expect(view.steps.slice(-2)).toEqual([
+        {
+          title: "Verificado con tu extracto trimestral",
+          detail:
+            "Este archivo no trae saldos, pero todo coincide con jul–sep 2026.",
+          isOk: true,
+        },
+        {
+          title: "Clasificado",
+          detail: "12 referencias nuevas, como números de Nequi o de PSE.",
+          isOk: true,
+        },
+      ]);
+    });
+
+    it("names each quarterly statement that verifies a file across them", () => {
+      const result = exported(
+        {},
+        { matched: 48, verifiedBy: [QUARTER, OCTOBER_TO_DECEMBER] },
+      );
+
+      expect(resultView(movements, result).pill.detail).toBe(
+        "Este tipo de archivo no trae saldos; lo comparamos con jul–sep 2026 y oct–dic 2026 y coincide.",
+      );
+    });
+
+    it("says how many of a file only partly covered its quarterly statement had", () => {
+      const result = exported(
+        { total: 21, added: 6, covered: 15 },
+        { matched: 15 },
+      );
+      const view = resultView(movements, result);
+
+      expect(view.counts).toHaveLength(3);
+      expect(view.pill.title).toBe("Sin saldo para verificar");
+      expect(detailOf(movements, result, "Revisando duplicados")).toBe(
+        "15 movimientos ya estaban en tu extracto trimestral.",
+      );
+      expect(view.steps.at(-1)).toEqual({
+        title: "Este archivo no trae saldos",
+        detail:
+          "15 movimientos coinciden con tu extracto trimestral; los demás, cuando subas el de su periodo.",
+        isOk: true,
+      });
+    });
+
+    it("says which of a file's movements came in its quarterly statement when another file had the rest", () => {
+      const result = exported(
+        { covered: 28, skipped: 20 },
+        { matched: 28, verifiedBy: [QUARTER] },
+      );
+
+      expect(detailOf(movements, result, "Revisando duplicados")).toBe(
+        "48 movimientos ya estaban en tu cuenta: no se duplican. De ellos, 28 venían en tu extracto trimestral.",
+      );
+    });
+
+    it("counts the references a quarterly statement took from the files saved before it", () => {
+      const result = outcome(
+        { added: 19, hidden: 14 },
+        {
+          matches: {
+            matched: 14,
+            dayApart: 2,
+            references: 1,
+            verifiedBy: [],
+          },
+        },
+      );
+      const view = resultView(quarterly, result);
+
+      expect(view.counts.map(({ value }) => value)).toEqual([
+        "33",
+        "14",
+        "19",
+        "1",
+      ]);
+      expect(view.counts.at(-1)?.label).toBe("referencia agregada");
+      expect(detailOf(quarterly, result, "Revisando duplicados")).toBe(
+        `14 movimientos ${RESULT_COPY.hadIn} ${RESULT_COPY.hiddenNote} ${RESULT_COPY.interestDayApart}`,
+      );
+      expect(view.steps.at(-1)?.detail).toBe(
+        "1 referencia nueva, como números de Nequi o de PSE.",
+      );
+    });
   });
 
   it("writes one movement in the singular", () => {

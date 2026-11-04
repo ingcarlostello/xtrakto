@@ -19,12 +19,35 @@ export type UploadedFileView = {
   readonly detail: string;
   readonly badge: {
     readonly label: string;
-    readonly variant: "ok" | "neutral" | "attention";
+    readonly variant: "ok" | "neutral" | "attention" | "info";
   };
 };
 
 type Summary = Pick<UploadedFileView, "badge"> & {
   readonly facts: readonly string[];
+};
+
+// The references its movements gave or took (10.1b): "12 referencias
+// agregadas".
+const referenceFacts = ({ matches }: JobOutcome): readonly string[] =>
+  matches.references > 0
+    ? [countText(matches.references, RESULT_COPY.references)]
+    : [];
+
+// A file that added nothing new: complete when it brought references, or
+// with nothing to change (v8-07).
+const unchangedSummary = (outcome: JobOutcome): Summary => {
+  const references = referenceFacts(outcome);
+  const had = countText(outcome.stats.total, COPY.had);
+  return references.length > 0
+    ? {
+        badge: { label: COPY.badge.completed, variant: "info" },
+        facts: [had, ...references],
+      }
+    : {
+        badge: { label: COPY.badge.unchanged, variant: "neutral" },
+        facts: [had, COPY.nothingNew],
+      };
 };
 
 // What a done job came to, the first that applies: a statement that doesn't
@@ -41,22 +64,32 @@ const summaryOf = (outcome: JobOutcome): Summary => {
       ],
     };
   }
-  if (stats.added === 0)
-    return {
-      badge: { label: COPY.badge.unchanged, variant: "neutral" },
-      facts: [countText(stats.total, COPY.had), COPY.nothingNew],
-    };
+  if (stats.added === 0) return unchangedSummary(outcome);
   if (balance === STATEMENT_BALANCE.VERIFIED)
     return {
       badge: { label: COPY.badge.verified, variant: "ok" },
       facts: [
         countText(stats.total, UPLOAD_COPY.movements),
         outcome.chainedTo ? COPY.chained : COPY.reconciles,
+        ...referenceFacts(outcome),
       ],
     };
+  return exportSummary(outcome);
+};
+
+// A movements export with new movements: verified once its quarterly
+// statement covers its days and agrees with it (10.1b), else without balance.
+const exportSummary = (outcome: JobOutcome): Summary => {
+  const isVerified = outcome.matches.verifiedBy.length > 0;
   return {
-    badge: { label: COPY.badge.unverified, variant: "neutral" },
-    facts: [countText(stats.added, RESULT_COPY.new), COPY.noBalance],
+    badge: isVerified
+      ? { label: COPY.badge.verified, variant: "ok" }
+      : { label: COPY.badge.unverified, variant: "neutral" },
+    facts: [
+      countText(outcome.stats.added, RESULT_COPY.new),
+      ...referenceFacts(outcome),
+      isVerified ? COPY.verifiedByQuarterly : COPY.noBalance,
+    ],
   };
 };
 
