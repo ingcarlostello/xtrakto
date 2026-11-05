@@ -5,6 +5,17 @@ export const PROFILE_COPY = {
   subtitle: "Tus datos, tus cuentas y tu privacidad.",
 } as const;
 
+// "Tus datos" (docs/ui/v8-11, Phase 10.2a): the files the user keeps, and
+// each account's months: "9 archivos: 3 trimestrales y 6 de movimientos."
+export const YOUR_DATA_COPY = {
+  title: "Tus datos",
+  files: { one: "archivo", other: "archivos" },
+  quarterly: { one: "trimestral", other: "trimestrales" },
+  movements: "de movimientos",
+  and: "y",
+  none: "Aún no tienes archivos.",
+} as const;
+
 // "Cómo te escribe el banco" (docs/ui/v8-11), without adding another way the
 // name appears: a movement's detail does that (6.3g).
 export const BANK_NAME_COPY = {

@@ -87,3 +87,12 @@ export const NEXT_STEP_COPY = {
   moreFiles:
     "¿Tienes más archivos? Súbelos todos juntos; si se cruzan, no pasa nada.",
 } as const;
+
+// What the user has, by month (v8-07's "Lo que tienes", v8-08's "Lo que
+// tienes ahora", Phase 10.2a).
+export const WHAT_YOU_HAVE_COPY = {
+  title: "Lo que tienes",
+  titleNow: "Lo que tienes ahora",
+  chained: "Encadenado",
+  chainedDetail: "Cada trimestre empieza donde terminó el anterior",
+} as const;

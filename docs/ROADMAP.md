@@ -244,7 +244,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.1a Match movements across formats
 - [x] 10.1b Matches in the upload result
 - [x] 10.1c Matches in Movimientos
-- [ ] 10.2a Coverage timeline
+- [x] 10.2a Coverage timeline
 - [ ] 10.2b A year in Movimientos and Categorías
 - [ ] 10.2c A year in Resumen and Pagos fijos
 - [ ] 10.2d Gaps and which file to download
@@ -2023,6 +2023,10 @@ Split in four when planned (about 1,300 lines), the year in two with the human's
   - "Tus datos" in the profile (`v8-11`), with the files ("9 archivos: 3 trimestrales y 6 de movimientos.").
 
 **Done when:** each status reads right from synthetic files uploaded in both orders, at 390px, 360px and on desktop.
+
+Decided with the human when it started (2026-11-05): one phase, though estimated at about 530 lines; a month whose only file is a quarterly statement that doesn't reconcile reads as missing, since its movements count nowhere; one timeline per account, each under its label when there are several; and "Lo que tienes" goes under the upload card and "Lo que sigue", where the results are, reading "Lo que tienes ahora" once a file's result shows. Found while building it: a month a verified quarterly statement covers is verified by the statement's days, with movements or not, while the movements files of a month are those that saved its movements, as in Movimientos (10.1c), so the note on overlapping files names those.
+
+It came out at about 730 lines of code, past the 530 estimated and the 400 a phase should hold, in the commits planned.
 
 **Commits:** `docs(rules): coverage timeline`, `feat(db): an account's months and what covers them`, then `feat(web): coverage timeline`
 
