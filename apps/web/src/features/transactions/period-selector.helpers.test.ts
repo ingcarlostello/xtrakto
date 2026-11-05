@@ -32,6 +32,7 @@ const view = (
   accounts,
   account: ACCOUNT,
   quarters: [{ year: 2026, quarter: 3, status: "verified" }],
+  years: [{ year: 2026, months: 3 }],
   unreconciled: [],
   period,
   total: 0,

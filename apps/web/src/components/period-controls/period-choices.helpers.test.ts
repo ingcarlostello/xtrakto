@@ -2,7 +2,12 @@ import { periodSchema } from "@xtrakto/core";
 import type { UnreconciledStatement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
-import { quarterChoices, selectPeriod } from "./period-choices.helpers";
+import {
+  quarterChoices,
+  selectPagePeriod,
+  selectPeriod,
+  yearChoices,
+} from "./period-choices.helpers";
 import type { QuarterChoice } from "./period-controls.types";
 
 const QUARTERS: QuarterChoice[] = [
@@ -33,6 +38,43 @@ describe("selectPeriod", () => {
 
   it("shows nothing for an account without quarters", () => {
     expect(selectPeriod(AUGUST, [])).toBeUndefined();
+  });
+});
+
+describe("selectPagePeriod", () => {
+  it("shows a year the account has quarters in, or a quarter as selectPeriod does", () => {
+    expect(selectPagePeriod({ kind: "year", year: 2026 }, QUARTERS)).toEqual({
+      kind: "year",
+      year: 2026,
+    });
+    expect(selectPagePeriod(AUGUST, QUARTERS)).toEqual(AUGUST);
+  });
+
+  it("shows the latest quarter for a year without quarters", () => {
+    expect(selectPagePeriod({ kind: "year", year: 2025 }, QUARTERS)).toEqual({
+      kind: "quarter",
+      year: 2026,
+      quarter: 3,
+    });
+    expect(selectPagePeriod({ kind: "year", year: 2026 }, [])).toBeUndefined();
+  });
+});
+
+describe("yearChoices", () => {
+  it("gives the quarters' years, the latest first, each with the months the account has in it", () => {
+    expect(
+      yearChoices(
+        [
+          { year: 2026, quarter: 1 },
+          { year: 2025, quarter: 4 },
+          { year: 2026, quarter: 2 },
+        ],
+        new Set(["2025-10", "2025-12", "2026-01", "2026-02", "2026-06"]),
+      ),
+    ).toEqual([
+      { year: 2026, months: 3 },
+      { year: 2025, months: 2 },
+    ]);
   });
 });
 

@@ -6,11 +6,15 @@ import {
 } from "@xtrakto/core";
 import type { PeriodMovement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementPeriod,
+  PagePeriod,
+} from "@/utils/transactions-url.helpers";
 import { categoryWeeks, weeklyChart } from "./category-weeks.helpers";
 
 const QUARTER: MovementPeriod = { kind: "quarter", year: 2026, quarter: 3 };
 const AUGUST: MovementPeriod = { kind: "month", year: 2026, month: 8 };
+const YEAR: PagePeriod = { kind: "year", year: 2026 };
 
 type Row = readonly [
   date: string,
@@ -37,7 +41,7 @@ const movement = ([date, amount, [categoryId, rule] = FOOD]: Row) =>
     llmTitle: null,
   }) satisfies PeriodMovement;
 
-type Shown = { period?: MovementPeriod; categoryId?: CategoryId };
+type Shown = { period?: PagePeriod; categoryId?: CategoryId };
 
 const detailOf = (
   rows: readonly Row[],
@@ -169,6 +173,19 @@ describe("weeklyChart", () => {
       "29 ago",
     ]);
     expect(chart?.points).toHaveLength(5);
+  });
+
+  it("marks a year's quarters and its last day under its weeks", () => {
+    const chart = weeklyChart(detailOf(QUARTER_ROWS, { period: YEAR }));
+
+    expect(chart?.xTicks.map(({ label }) => label)).toEqual([
+      "1 ene",
+      "1 abr",
+      "1 jul",
+      "1 oct",
+      "31 dic",
+    ]);
+    expect(chart?.points).toHaveLength(39);
   });
 
   it("points out no week when every week took about the same", () => {

@@ -6,6 +6,7 @@ import {
 } from "@/utils/transactions-url.helpers";
 import type {
   HrefOf,
+  PagePeriodChoices,
   PeriodChoices,
   QuarterChoice,
 } from "./period-controls.types";
@@ -13,7 +14,10 @@ import {
   accountOptions,
   monthOptions,
   periodLinkOf,
+  pickerLabel,
   quarterOptions,
+  rowLabel,
+  yearOptions,
 } from "./period-options.helpers";
 
 const QUARTERS: QuarterChoice[] = [
@@ -111,5 +115,74 @@ describe("period options", () => {
         isCurrent: false,
       },
     ]);
+  });
+
+  it("offers no year where the page offers none", () => {
+    expect(yearOptions(choices(), hrefOf)).toEqual([]);
+  });
+});
+
+describe("a year's options (10.2b)", () => {
+  const YEAR_2026 = { kind: "year", year: 2026 } as const;
+  const withYears = (
+    period: PagePeriodChoices["period"] = YEAR_2026,
+  ): PagePeriodChoices => ({
+    accounts: [ACCOUNT],
+    account: ACCOUNT,
+    quarters: [...QUARTERS, { year: 2025, quarter: 4, status: "verified" }],
+    years: [
+      { year: 2026, months: 6 },
+      { year: 2025, months: 3 },
+    ],
+    period,
+  });
+
+  it("lists each year after the quarters, with its months, marking the shown one", () => {
+    expect(yearOptions(withYears(), hrefOf)).toEqual([
+      {
+        key: "2026",
+        label: "Año 2026",
+        href: { pathname: "/recurring", query: { period: "2026" } },
+        isCurrent: true,
+        badge: { label: "6 de 12 meses", variant: "info" },
+      },
+      {
+        key: "2025",
+        label: "Año 2025",
+        href: { pathname: "/recurring", query: { period: "2025" } },
+        isCurrent: false,
+        badge: { label: "3 de 12 meses", variant: "info" },
+      },
+    ]);
+    expect(
+      quarterOptions(withYears(), hrefOf).some(({ isCurrent }) => isCurrent),
+    ).toBe(false);
+  });
+
+  it("puts the year's quarters with movements, in order, then the whole year under it", () => {
+    expect(
+      monthOptions(withYears(), hrefOf).map(({ label, href, isCurrent }) => [
+        label,
+        href.query["period"],
+        isCurrent,
+      ]),
+    ).toEqual([
+      ["Abr–jun", "2026-q2", false],
+      ["Jul–sep", "2026-q3", false],
+      ["Año", "2026", true],
+    ]);
+    expect(rowLabel(withYears())).toBe("Trimestre del año");
+    expect(rowLabel(withYears(AUGUST))).toBe("Mes del trimestre");
+  });
+
+  it("names the picker by the year, or by the quarter", () => {
+    expect(pickerLabel(YEAR_2026)).toEqual({
+      label: "Año 2026",
+      ariaLabel: "Periodo: Año 2026",
+    });
+    expect(pickerLabel(AUGUST)).toEqual({
+      label: "Jul – sep 2026",
+      ariaLabel: "Trimestre: Jul – sep 2026",
+    });
   });
 });

@@ -143,6 +143,19 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     ).toEqual(["2026-09-02", "2026-07-20"]);
   });
 
+  it("reads a year: every movement of its quarters, and the months the account has in it", async () => {
+    const year = await getAccountTransactions(clerkUserId, {
+      period: { kind: "year", year: 2026 },
+      shown: 30,
+    });
+
+    expect(year).toMatchObject({
+      period: { kind: "year", year: 2026 },
+      total: 33,
+      years: [{ year: 2026, months: 3 }],
+    });
+  });
+
   it("names the files it joined, and both files of a movement July's export repeats", async () => {
     const joinedUser = await uploadAs(app, [
       "quarterly-basic",

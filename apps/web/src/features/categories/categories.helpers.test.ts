@@ -8,7 +8,10 @@ import {
 } from "@xtrakto/core";
 import type { PeriodMovement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementPeriod,
+  PagePeriod,
+} from "@/utils/transactions-url.helpers";
 import {
   gatewaysTile,
   movedView,
@@ -19,6 +22,7 @@ import {
 
 const QUARTER: MovementPeriod = { kind: "quarter", year: 2026, quarter: 3 };
 const AUGUST: MovementPeriod = { kind: "month", year: 2026, month: 8 };
+const YEAR: PagePeriod = { kind: "year", year: 2026 };
 
 type Row = readonly [
   amount: number,
@@ -119,6 +123,7 @@ describe("spendingSubtitle", () => {
       text: "$9,6M en el trimestre, de mayor a menor.",
     },
     { period: AUGUST, rows: ROWS, text: "$9,6M en agosto, de mayor a menor." },
+    { period: YEAR, rows: ROWS, text: "$9,6M en 2026, de mayor a menor." },
     {
       period: QUARTER,
       rows: ROWS.slice(6),

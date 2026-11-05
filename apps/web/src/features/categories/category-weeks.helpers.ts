@@ -26,10 +26,7 @@ import type {
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { boxAmount, compactSize } from "@/utils/money-text.utils";
-import {
-  type MovementPeriod,
-  periodDays,
-} from "@/utils/transactions-url.helpers";
+import { type PagePeriod, periodDays } from "@/utils/transactions-url.helpers";
 import { CATEGORIES_COPY, WEEK_NOUNS } from "./categories.constants";
 import type {
   CategoryDetail,
@@ -88,8 +85,16 @@ const peakOf = (weeks: readonly CategoryWeek[]) =>
   );
 
 // "1 jul", "1 ago", "1 sep", "30 sep": a quarter's months and its last
-// day; a month's weeks.
-const dayTicks = (period: MovementPeriod, { from, to }: Period) => {
+// day; a year's quarters and its last day (10.2b); a month's weeks.
+const dayTicks = (period: PagePeriod, { from, to }: Period) => {
+  if (period.kind === "year")
+    return [
+      from,
+      ...[4, 7, 10].map(
+        (month) => monthPeriod({ year: period.year, month }).from,
+      ),
+      to,
+    ];
   if (period.kind === "month")
     return Array.from(
       { length: Math.floor(daysBetween(from, to) / WEEK_DAYS) + 1 },

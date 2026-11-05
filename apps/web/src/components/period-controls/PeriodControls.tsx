@@ -1,31 +1,35 @@
-import { formatQuarter } from "@xtrakto/core";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { accountShortLabel } from "@/utils/account-label.helpers";
 import { cn } from "@/utils/cn.utils";
-import { quarterOf } from "@/utils/transactions-url.helpers";
 import { LinkMenu } from "./LinkMenu";
-import { PERIOD_COPY as COPY } from "./period-controls.constants";
-import type {
-  HrefOf,
-  PeriodChoices,
-  PeriodOption,
-} from "./period-controls.types";
+import type { HrefOf, PeriodOption } from "./period-controls.types";
 import {
   accountOptions,
+  type AnyPeriodChoices,
   monthOptions,
+  pickerLabel,
   quarterOptions,
+  rowLabel,
+  yearOptions,
 } from "./period-options.helpers";
 
-// The quarter's months and the whole quarter, as links that keep the
-// page's filters in the URL (design-system.md §9, months). On phones they
+// The quarter's months and the whole quarter, or a year's quarters and the
+// whole year, as links that keep the page's filters in the URL
+// (design-system.md §9, months). On phones they
 // share the width with little padding, so "Noviembre" and "Diciembre" fit
 // at 360px.
-function MonthLinks({ options }: { options: readonly PeriodOption[] }) {
+function MonthLinks({
+  label,
+  options,
+}: {
+  label: string;
+  options: readonly PeriodOption[];
+}) {
   return (
     <nav
-      aria-label={COPY.months}
+      aria-label={label}
       className="flex w-full rounded-full bg-surface/80 p-[5px] shadow-chip sm:w-auto"
     >
       {options.map((option) => (
@@ -48,8 +52,9 @@ function MonthLinks({ options }: { options: readonly PeriodOption[] }) {
 }
 
 /**
- * The account switch, when there are several, the quarter picker and the
- * months (docs/ui/v8-03), whose links are the page's own (`hrefOf`), then
+ * The account switch, when there are several, the quarter picker, with the
+ * years where the page offers them (10.2b), and the months or a year's
+ * quarters (docs/ui/v8-03, v8-18), whose links are the page's own (`hrefOf`), then
  * the page's action when it has one ("Subir extracto"); they stack at full
  * width on phones.
  */
@@ -58,11 +63,11 @@ export function PeriodControls({
   hrefOf,
   action,
 }: {
-  choices: PeriodChoices;
+  choices: AnyPeriodChoices;
   hrefOf: HrefOf;
   action?: ReactNode;
 }) {
-  const quarter = formatQuarter(quarterOf(choices.period));
+  const picker = pickerLabel(choices.period);
   return (
     <div className="flex flex-wrap items-center gap-3">
       {choices.accounts.length > 1 && (
@@ -72,12 +77,18 @@ export function PeriodControls({
         />
       )}
       <LinkMenu
-        label={quarter}
-        ariaLabel={`${COPY.quarter}: ${quarter}`}
+        label={picker.label}
+        ariaLabel={picker.ariaLabel}
         icon={<Calendar aria-hidden strokeWidth={1.7} />}
-        options={quarterOptions(choices, hrefOf)}
+        options={[
+          ...quarterOptions(choices, hrefOf),
+          ...yearOptions(choices, hrefOf),
+        ]}
       />
-      <MonthLinks options={monthOptions(choices, hrefOf)} />
+      <MonthLinks
+        label={rowLabel(choices)}
+        options={monthOptions(choices, hrefOf)}
+      />
       {action}
     </div>
   );

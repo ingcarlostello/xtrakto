@@ -12,11 +12,11 @@ import type {
   ChartPoint,
   ChartTick,
 } from "@/components/line-chart/line-chart.types";
-import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
+import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { transactionsHref } from "@/utils/transactions-url.helpers";
 
 /** An account's categories in a period, as the page reads them. */
-export type AccountCategories = PeriodChoices & {
+export type AccountCategories = PagePeriodChoices & {
   /** Its movements that count, the oldest first. */
   readonly movements: readonly PeriodMovement[];
   readonly summary: PeriodSummary;
@@ -72,7 +72,7 @@ export type RuleRow = {
 export type GatewaysTile = InsightTileProps;
 
 /** A category of real spending in an account's period, as its detail reads it (6.8b). */
-export type CategoryDetail = PeriodChoices & {
+export type CategoryDetail = PagePeriodChoices & {
   readonly categoryId: CategoryId;
   /** Every movement of the period that counts, the oldest first. */
   readonly movements: readonly PeriodMovement[];

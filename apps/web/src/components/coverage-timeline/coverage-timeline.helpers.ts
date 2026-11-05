@@ -71,6 +71,22 @@ const verifiedMonths = (quarters: readonly CoverageQuarter[]): Set<string> =>
     }),
   );
 
+/**
+ * The months an account has, as its timeline counts them (`"2026-08"`):
+ * those a verified quarterly statement covers, and those movements files
+ * saved movements in.
+ */
+export const monthsHad = ({
+  months,
+  quarters,
+}: AccountCoverage): ReadonlySet<string> =>
+  new Set([
+    ...verifiedMonths(quarters),
+    ...months
+      .filter(({ files }) => files.some(({ isQuarterly }) => !isQuarterly))
+      .map(({ month }) => month),
+  ]);
+
 // A month a verified quarterly statement covers, else one only movements
 // files brought, else one the user doesn't have.
 const statusOf = (

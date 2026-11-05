@@ -15,10 +15,10 @@ import type {
   UnreconciledStatement,
 } from "@xtrakto/db";
 import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
-import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
+import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 import type {
   MovementFilter,
-  MovementPeriod,
+  PagePeriod,
   reviewHref,
 } from "@/utils/transactions-url.helpers";
 import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
@@ -26,7 +26,7 @@ import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
 /** What the URL asks the movements list for. */
 export type TransactionsRequest = {
   readonly accountId?: string;
-  readonly period?: MovementPeriod;
+  readonly period?: PagePeriod;
   /** What to look for among the period's movements, as typed. */
   readonly search?: string;
   /** Which of them to show: a kind, or those to review. */
@@ -39,7 +39,7 @@ export type TransactionsRequest = {
 };
 
 /** An account's movements in a period, as the list reads them. */
-export type AccountTransactions = PeriodChoices & {
+export type AccountTransactions = PagePeriodChoices & {
   /** Its statements that don't reconcile on the period's days. */
   readonly unreconciled: readonly UnreconciledStatement[];
   /** What the list looks for, as typed. */

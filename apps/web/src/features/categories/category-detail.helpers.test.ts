@@ -12,7 +12,10 @@ import type {
   TransactionListItem,
 } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementPeriod,
+  PagePeriod,
+} from "@/utils/transactions-url.helpers";
 import {
   categorySettings,
   categoryTiles,
@@ -26,6 +29,7 @@ import {
 
 const QUARTER: MovementPeriod = { kind: "quarter", year: 2026, quarter: 3 };
 const AUGUST: MovementPeriod = { kind: "month", year: 2026, month: 8 };
+const YEAR: PagePeriod = { kind: "year", year: 2026 };
 
 type Row = readonly [
   date: string,
@@ -83,7 +87,7 @@ const ROWS: readonly Row[] = [
   COFFEE,
 ];
 
-type Shown = { period?: MovementPeriod; categoryId?: CategoryId };
+type Shown = { period?: PagePeriod; categoryId?: CategoryId };
 
 // A category's period as its detail reads it, without its newest movements.
 const detailOf = (
@@ -114,6 +118,7 @@ describe("detailSubtitle", () => {
       "Gasto real · julio a septiembre de 2026",
     );
     expect(detailSubtitle(AUGUST)).toBe("Gasto real · agosto de 2026");
+    expect(detailSubtitle(YEAR)).toBe("Gasto real · 2026");
   });
 });
 
@@ -218,6 +223,22 @@ describe("monthBoxes", () => {
     ]);
   });
 
+  it("gives a year each month it has movements in, and its total", () => {
+    const rows: readonly Row[] = [
+      ...ROWS,
+      ["2026-12-14", -30_000_000, "COMPRA EN  APP DOMICILIOS", FOOD],
+    ];
+    const detail = detailOf(rows, { period: YEAR });
+
+    expect(monthBoxes(detail).map(({ key, isMost }) => [key, isMost])).toEqual([
+      ["2026-07", false],
+      ["2026-08", false],
+      ["2026-09", false],
+      ["2026-12", true],
+    ]);
+    expect(categoryTiles(detail)?.total.label).toBe("Total del año");
+  });
+
   it("marks no month when there's only one", () => {
     const july = ROWS.filter(([date]) => date.startsWith("2026-07"));
 
@@ -259,6 +280,7 @@ const withLatest = (
   accounts,
   account: ACCOUNT,
   quarters: [{ year: 2026, quarter: 3, status: "verified" } as const],
+  years: [{ year: 2026, months: 3 }],
   latest,
 });
 

@@ -18,7 +18,7 @@ import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
 import {
   type MovementFilter,
-  type MovementPeriod,
+  type PagePeriod,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import {
@@ -274,7 +274,7 @@ export const shownText = (shown: number, total: number): string =>
 export type ListLink = {
   /** Only when the user has more than one account. */
   readonly accountId?: string;
-  readonly period: MovementPeriod;
+  readonly period: PagePeriod;
   readonly search?: string;
   readonly filter?: MovementFilter;
   /** A category's movements, instead of a filter's (6.8b). */

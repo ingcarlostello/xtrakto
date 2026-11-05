@@ -83,18 +83,20 @@ function MonthsTile({ months }: { months: readonly MonthBox[] }) {
 
 /**
  * What the category took in the period (docs/ui/v8-06): its total, its
- * average and largest movement, and each month of a quarter. Nothing when
- * it took nothing. The months go under the other two at full width until a
- * third of the row holds three boxes, from `xl`.
+ * average and largest movement, and each month of a quarter or a year.
+ * Nothing when it took nothing. The months go under the other two at full
+ * width until a third of the row holds three boxes, from `xl`; a year's
+ * more than three stay at full width (10.2b).
  */
 export function CategoryTiles({ detail }: { detail: CategoryDetail }) {
   const tiles = categoryTiles(detail);
   if (!tiles) return null;
   const hasMonths = tiles.months.length > 0;
+  const isOneRow = hasMonths && tiles.months.length <= 3;
   return (
     <ul
       aria-label={COPY.tilesLabel}
-      className={cn("grid gap-4 sm:grid-cols-2", hasMonths && "xl:grid-cols-3")}
+      className={cn("grid gap-4 sm:grid-cols-2", isOneRow && "xl:grid-cols-3")}
     >
       <li>
         <FigureTile
@@ -107,7 +109,7 @@ export function CategoryTiles({ detail }: { detail: CategoryDetail }) {
         <FigureTile chip={<NeutralChip icon={Tag} />} figure={tiles.average} />
       </li>
       {hasMonths && (
-        <li className="sm:col-span-2 xl:col-span-1">
+        <li className={cn("sm:col-span-2", isOneRow && "xl:col-span-1")}>
           <MonthsTile months={tiles.months} />
         </li>
       )}

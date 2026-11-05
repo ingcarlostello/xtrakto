@@ -18,7 +18,7 @@ import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { boxAmount, compactSize } from "@/utils/money-text.utils";
 import { percentOf } from "@/utils/percent.utils";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type { PagePeriod } from "@/utils/transactions-url.helpers";
 import {
   CATEGORIES_COPY as COPY,
   KIND_WORDS,
@@ -39,18 +39,22 @@ const capitalized = (text: string): string =>
 export const barOf = (amount: number, largest: number): number =>
   Math.max(1, percentOf(amount, largest));
 
+// "en el trimestre", "en agosto", "en 2026".
+const whenOf = (period: PagePeriod): string => {
+  if (period.kind === "year") return `${COPY.spending.inYear} ${period.year}`;
+  return period.kind === "quarter"
+    ? COPY.spending.inQuarter
+    : `${COPY.spending.inMonth} ${formatMonthName(period).toLowerCase()}`;
+};
+
 /** "$24,4M en el trimestre, de mayor a menor.", or that nothing was spent. */
 export const spendingSubtitle = (
-  period: MovementPeriod,
+  period: PagePeriod,
   { kinds }: PeriodSummary,
-): string => {
-  if (kinds.spending.count === 0) return COPY.spending.none;
-  const when =
-    period.kind === "quarter"
-      ? COPY.spending.inQuarter
-      : `${COPY.spending.inMonth} ${formatMonthName(period).toLowerCase()}`;
-  return `${compactSize(kinds.spending.amountMinor)} ${when}, ${COPY.spending.largestFirst}`;
-};
+): string =>
+  kinds.spending.count === 0
+    ? COPY.spending.none
+    : `${compactSize(kinds.spending.amountMinor)} ${whenOf(period)}, ${COPY.spending.largestFirst}`;
 
 /** A category's share of the real spending: "19%", or "menos del 1%". */
 export const shareText = (amount: number, spending: number): string => {

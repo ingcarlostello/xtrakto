@@ -19,7 +19,7 @@ import { TopPlaces } from "@/features/categories/components/TopPlaces";
 import { WeeklyChart } from "@/features/categories/components/WeeklyChart";
 import { ExampleBanner } from "@/features/example/components/ExampleBanner";
 import { requireViewer } from "@/lib/example-mode";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
+import { accountPagePeriodSearchSchema } from "@/utils/account-period.schemas";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { categoryHref } from "@/utils/transactions-url.helpers";
 
@@ -60,7 +60,7 @@ export default async function CategoryPage({
   const { clerkUserId, isExample } = await requireViewer();
   const categoryId = spendingCategoryOf((await params).category);
   if (categoryId === undefined) notFound();
-  const { account, period } = accountPeriodSearchSchema.parse(
+  const { account, period } = accountPagePeriodSearchSchema.parse(
     await searchParams,
   );
   const detail = await getCategoryDetail(clerkUserId, categoryId, {
