@@ -1,6 +1,7 @@
 import { FilterChips } from "@/components/filter-chips/FilterChips";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { accountLabel } from "@/utils/account-label.helpers";
+import { joinedFilesText } from "../joined-files.helpers";
 import { filterOptions } from "../kind-view.helpers";
 import { listLinkOf, periodText } from "../period-selector.helpers";
 import {
@@ -49,7 +50,8 @@ function ListBody({ transactions, link }: ListBodyProps) {
 
 /**
  * "Todos los movimientos": the account's movements in the period, by day,
- * the search among them and the filters by kind (docs/ui/v8-03).
+ * the files it joined, the search among them and the filters by kind
+ * (docs/ui/v8-03).
  */
 export function TransactionList({
   transactions,
@@ -58,6 +60,7 @@ export function TransactionList({
 }) {
   const { account, period } = transactions;
   const link = listLinkOf(transactions);
+  const joined = joinedFilesText(transactions.files);
   return (
     <Card variant="card" className="w-full min-w-0 gap-0">
       <CardHeader className="pb-4">
@@ -66,6 +69,7 @@ export function TransactionList({
         </h2>
         <CardDescription>
           {periodText(period)}. {accountLabel(account, account.last4)}.
+          {joined && ` ${joined}`}
         </CardDescription>
       </CardHeader>
       <SearchField link={link} />

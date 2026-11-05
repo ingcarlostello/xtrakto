@@ -30,16 +30,22 @@ import type { UserContext } from "../user-context/user-context.types";
 // belongs to the previous statement: its days start the next one.
 
 /**
+ * The statements whose movements can count: those whose balances reconcile,
+ * and those that print none (movements files). Use it on `statements`.
+ */
+export const countingStatement = or(
+  eq(statements.balanceVerified, true),
+  isNull(statements.openingBalanceMinor),
+);
+
+/**
  * The movements that count, for every reader: none that a verified quarterly
  * statement hides, and none of a statement with balances that don't
  * reconcile. Use it on `transactions` joined with their `statements`.
  */
 export const countedMovement = and(
   isNull(transactions.coveredByStatementId),
-  or(
-    eq(statements.balanceVerified, true),
-    isNull(statements.openingBalanceMinor),
-  ),
+  countingStatement,
 );
 
 /** Which movements to count: an account's, a period's, or every one. */

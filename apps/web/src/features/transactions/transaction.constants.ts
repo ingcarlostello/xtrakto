@@ -149,12 +149,30 @@ export const TRANSACTIONS_COPY = {
     to: "al",
     ofYear: "de",
   },
+  // The files the list joined (10.1c): "Juntamos tu extracto trimestral y
+  // 2 archivos de movimientos, sin duplicar."
+  joined: {
+    before: "Juntamos",
+    yourQuarterly: "tu extracto trimestral",
+    quarterlies: {
+      one: "extracto trimestral",
+      other: "extractos trimestrales",
+    },
+    movements: {
+      one: "archivo de movimientos",
+      other: "archivos de movimientos",
+    },
+    after: "sin duplicar.",
+  },
   // A movement's detail (docs/ui/v8-03), and what its column says before
   // one is chosen. Its reasons follow "Por qué:" in lowercase, as the rules
   // write theirs.
   detail: {
     close: "Cerrar el detalle",
     bankText: "Así lo escribe el banco",
+    // How another file wrote it (10.1c), and "Fuente" with both files:
+    // "Extracto trimestral jul–sep 2026 y movimientos 15–31 ago 2026".
+    alsoWrittenAs: "También aparece como",
     channel: "Canal",
     reference: "Referencia",
     referenceDots: "•••",

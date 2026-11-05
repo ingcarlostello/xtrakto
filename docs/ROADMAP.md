@@ -243,7 +243,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 10.1a Match movements across formats
 - [x] 10.1b Matches in the upload result
-- [ ] 10.1c Matches in Movimientos
+- [x] 10.1c Matches in Movimientos
 - [ ] 10.2a Coverage timeline
 - [ ] 10.2b A year in Movimientos and Categorías
 - [ ] 10.2c A year in Resumen and Pagos fijos
@@ -2001,7 +2001,11 @@ It came out at about 450 lines of code (about 300 estimated), besides about 85 m
 
 **Done when:** the detail and the subtitle read right from synthetic files, and no text or file of another account's shows, at 390px and 360px and with the keyboard.
 
-**Commits:** `docs(rules): matches in Movimientos`, `feat(db): the files and texts of a movement`, then `feat(web): matches in Movimientos`
+Found while building it (2026-11-04): a text that differs only in its spaces (a PDF prints one where the Excel prints two) or in how a letter is encoded isn't another way the bank wrote it, so "También aparece como" shows only a text that reads otherwise, as one the quarterly statement cut before an accented letter. The files the list joined are those that saved the period's movements, counted or hidden: a file whose movements another saved before saved none and isn't named. The sentence ends the list's line, where v8 draws it, and stays over a search or a filter.
+
+It came out at about 210 lines of code (180 net), in two commits of one pull request: the design rules, then the database and the app together, since the database's commit alone fails the type check of the app's tests that build a movement's detail.
+
+**Commits:** `docs(rules): matches in Movimientos`, then `feat: matches in Movimientos`
 
 #### 10.2 Coverage and gaps
 

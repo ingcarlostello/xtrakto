@@ -11,6 +11,10 @@ import { requireTestDatabase, testDatabase } from "../../test/test-database";
 import { resolveIdentifiedAccount } from "../accounts/account.queries";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
+import {
+  listMatchCandidates,
+  saveMatches,
+} from "../coverage/movement-match.queries";
 import { saveStatement } from "../statements/statement.queries";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
@@ -25,12 +29,19 @@ const NEQUI_SEND = "TRANSFERENCIAS A NEQUI";
 const COVERED = "COMPRA EN TIENDA CUBIERTA";
 // In a quarterly statement that doesn't reconcile: it counts nowhere.
 const UNRECONCILED = "COMPRA EN TIENDA SIN CUADRAR";
+// The quarterly statement can cut a text before an accented letter that a
+// movements file keeps (Appendix A.2).
+const CUT = "PAGO LLAVE COMIDAS R";
+const WHOLE = "PAGO LLAVE COMIDAS RÁ";
 
 describe.skipIf(!testDatabase)("movement detail", () => {
   let app: DbClient;
   let userId: UserId;
   let accountId: string;
   let otherAccountId: string;
+  // An account whose quarterly statement and movements file repeat a payment.
+  let matchedAccountId: string;
+  let repeatedId: string;
   const ids = new Map<string, string>();
 
   const inContext = <T>(read: Parameters<typeof withUserContext<T>>[2]) =>
@@ -91,12 +102,42 @@ describe.skipIf(!testDatabase)("movement detail", () => {
     return id;
   };
 
+  // The quarterly statement's payment, and the movements file's that repeats
+  // it, matched as ingestion does (10.1a). Returns the one that counts.
+  const saveMatched = () =>
+    inContext(async (ctx) => {
+      const payment = { date: "2026-08-05", amount: -45_000 };
+      await saveStatement(ctx, {
+        accountId: matchedAccountId,
+        balance: VERIFIED,
+        statement: await preparedQuarterly([{ ...payment, description: CUT }]),
+      });
+      await saveStatement(ctx, {
+        accountId: matchedAccountId,
+        balance: UNCHECKED,
+        statement: await preparedExport([{ ...payment, description: WHOLE }]),
+      });
+      const { hidden, counted } = await listMatchCandidates(
+        ctx,
+        matchedAccountId,
+      );
+      const [exported] = hidden;
+      const [quarterly] = counted;
+      if (!exported || !quarterly) throw new Error("Expected a pair.");
+      await saveMatches(ctx, [
+        { hiddenId: exported.id, countedId: quarterly.id },
+      ]);
+      return quarterly.id;
+    });
+
   beforeAll(async () => {
     app = createDb({ connectionString: requireTestDatabase().appUrl });
     userId = await findOrCreateUser(app.db, `test_${crypto.randomUUID()}`);
     accountId = await accountOf("8901");
     otherAccountId = await accountOf("2109");
+    matchedAccountId = await accountOf("4321");
     await saveAndRemember();
+    repeatedId = await saveMatched();
   });
 
   afterAll(async () => {
@@ -126,6 +167,32 @@ describe.skipIf(!testDatabase)("movement detail", () => {
       statement: {
         formatId: "bancolombia-savings-quarterly",
         period: { from: "2026-06-30", to: "2026-09-30" },
+      },
+      twin: null,
+    });
+  });
+
+  it("reads how the movements file that repeats a movement wrote it, and the file", async () => {
+    const detail = await inContext((ctx) =>
+      findMovementDetail(ctx, {
+        accountId: matchedAccountId,
+        movementId: repeatedId,
+      }),
+    );
+
+    expect(detail).toMatchObject({
+      descriptionRaw: CUT,
+      statement: {
+        formatId: "bancolombia-savings-quarterly",
+        period: { from: "2026-06-30", to: "2026-09-30" },
+      },
+      twin: {
+        descriptionRaw: WHOLE,
+        descriptionNormalized: WHOLE,
+        statement: {
+          formatId: "bancolombia-movements-export",
+          period: { from: "2026-08-05", to: "2026-08-05" },
+        },
       },
     });
   });
@@ -158,15 +225,18 @@ describe.skipIf(!testDatabase)("movement detail", () => {
     expect(found).toEqual([undefined, undefined]);
   });
 
-  it("opens no movement of another account", async () => {
-    const detail = await inContext((ctx) =>
-      findMovementDetail(ctx, {
-        accountId: otherAccountId,
-        movementId: idOf(KEY_PAYMENT),
-      }),
+  it("opens no movement of another account, nor its files and texts", async () => {
+    const found = await inContext((ctx) =>
+      Promise.all([
+        findMovementDetail(ctx, {
+          accountId: otherAccountId,
+          movementId: idOf(KEY_PAYMENT),
+        }),
+        findMovementDetail(ctx, { accountId, movementId: repeatedId }),
+      ]),
     );
 
-    expect(detail).toBeUndefined();
+    expect(found).toEqual([undefined, undefined]);
   });
 
   it("opens no movement of another user", async () => {
@@ -175,11 +245,17 @@ describe.skipIf(!testDatabase)("movement detail", () => {
       `test_${crypto.randomUUID()}`,
     );
 
-    const detail = await withUserContext(app.db, intruder, (ctx) =>
-      findMovementDetail(ctx, { accountId, movementId: idOf(KEY_PAYMENT) }),
+    const found = await withUserContext(app.db, intruder, (ctx) =>
+      Promise.all([
+        findMovementDetail(ctx, { accountId, movementId: idOf(KEY_PAYMENT) }),
+        findMovementDetail(ctx, {
+          accountId: matchedAccountId,
+          movementId: repeatedId,
+        }),
+      ]),
     );
 
-    expect(detail).toBeUndefined();
+    expect(found).toEqual([undefined, undefined]);
   });
 
   it("lists the same movement it details", async () => {

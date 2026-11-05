@@ -1167,3 +1167,54 @@ In a local browser, with two fresh Clerk test users deleted afterwards (the loca
 - **"Subir el trimestral":** v8-13's button stays out. The drop zone is right above, and this quarter's movements have no quarterly statement yet.
 - **Reference kinds:** an ATM's reference is carried over with the others, but doesn't count among those "agregadas", which name Nequi's and PSE's.
 - **Size:** about 450 lines of code without tests, comments and blank lines (about 300 estimated), besides about 85 moved. Three commits of one pull request; the moved reads land with the app's, since they changed too.
+
+## 10.1c Matches in Movimientos
+
+_2026-11-04_
+
+What matching across formats (10.1a) joined now shows in Movimientos, read when the page loads, so it holds in either upload order:
+
+- **A movement's detail:**
+  - `findMovementDetail` (`@xtrakto/db`) reads, beside its statement, the movement of a movements file that repeats it, hidden behind it (its `twin`): how that file wrote it, and the file.
+  - "Fuente" names both files, the movements file's mid-sentence: "Extracto trimestral jul–sep 2026 y movimientos 1–31 jul 2026".
+  - When the twin's text reads otherwise, as one the quarterly statement cut before an accented letter ("PAGO LLAVE COMIDAS R" and "PAGO LLAVE COMIDAS RÁ"), "También aparece como" follows the bank's text, with its raw-text chip.
+- **The list:** `countPeriodFiles` counts the account's files that saved the period's movements, counted or hidden, leaving out a statement that doesn't reconcile. The list's line ends with what it joined when a movements file is among several: "Juntamos tu extracto trimestral y 1 archivo de movimientos, sin duplicar.", or "Juntamos 3 archivos de movimientos, sin duplicar." without a quarterly statement.
+- **Code:** `countingStatement`, the half of `countedMovement` that says which statements' movements can count, is exported for the files' count.
+
+The design rules and system design §3 say so.
+
+20 new tests:
+
+- 7 in the database (262 there), and two extended so another account's and another user's matched movement opens nothing:
+  - a movement's twin, with its text and file;
+  - the files of a quarter and a month;
+  - movements files alone;
+  - a file whose movements another saved before;
+  - the next quarter's statement, which opens on the period's last day;
+  - a quarterly statement that doesn't reconcile;
+  - another account's and user's files.
+- 13 in the app:
+  - the sentence for each mix of files, and nothing for one file or quarterly statements alone (8);
+  - both files and the other text;
+  - no other text for spaces either way, or an accented letter in two parts (3);
+  - and, through ingestion and the test database, the quarterly statement and July's export: the list's files, and a July movement's twin.
+
+Checked: eighteen deliberate bugs, each in a file of its own. Seventeen fail a test, one after its test gained a case: a text the export wrote with two spaces. One survives: reading another user's twin changes nothing, since row-level security and the key already keep it to its own.
+
+In a local browser, with a fresh Clerk test user deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The files:** the quarterly statement with its July payment renamed "PAGO LLAVE COMIDAS R", July's export with "PAGO LLAVE COMIDAS RÁ" (both written in the scratchpad from the fixtures, invented data), and `quarterly-basic-account-2`.
+- **Account ••••8901:** the quarter and July name the files they joined, also over a search; September doesn't.
+- **The cut payment's detail:** both files, and "También aparece como PAGO LLAVE COMIDAS RÁ".
+- **Other details:** a July payment both files wrote alike names both files without another text, and a September one only its quarterly statement.
+- **Account ••••2109:** it names no joined files, and its payment only its quarterly statement. The first account's movement doesn't open there.
+- **Phone widths:** at 390px and 360px, nothing overflows. The keyboard reaches the cut payment and Enter opens its sheet, with the focus on its title. Escape gives the focus back. No page error.
+
+**Deviations and follow-ups:**
+
+- **Spaces:** a text that differs only in its spaces (a PDF prints one where the Excel prints two) or in how a letter is encoded isn't another way the bank wrote it: "También aparece como" would show a twin that reads the same.
+- **The files joined:** they are those that saved the period's movements. A file whose movements another saved before, by their fingerprints, saved none and isn't named, as "Fuente" names only the first file that brought a movement. v8's "×2" stays out (Stage 10's plan).
+- **Where it goes:** the sentence ends the list's line, after the period and the account, where v8 draws it, rather than the page's subtitle; it stays over a search or a filter, since the files are the period's.
+- **The example:** its quarter has no movements file, so it shows neither.
+- **Size:** about 210 lines of code without tests, comments and blank lines (180 net).
+- **Commits:** two of one pull request instead of the three planned: the design rules, then the database and the app together. A movement's detail gains a field the app's tests build it with, so the database's commit alone fails their type check.

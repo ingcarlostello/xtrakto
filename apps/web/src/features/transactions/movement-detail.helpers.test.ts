@@ -30,6 +30,7 @@ const detail = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
   categorySource: "rule",
   categoryRuleId: "utility_payment",
   statement: QUARTER,
+  twin: null,
   ...changes,
 });
 
@@ -44,6 +45,7 @@ describe("movementDetailView", () => {
       amount: "−$182.000",
       tone: "spending",
       categoryId: "utilities",
+      alsoWrittenAs: [],
       facts: [
         { label: "Canal", value: "PSE" },
         { label: "Fuente", value: "Extracto trimestral jul–sep 2026" },
@@ -54,6 +56,82 @@ describe("movementDetailView", () => {
         "los pagos de luz, agua, gas, internet o celular son servicios del hogar. Regla del sistema, sin IA.",
     });
   });
+
+  it("names both files that saved it, and how the movements file wrote a text the quarterly statement cut", () => {
+    const cut = detail({
+      descriptionRaw: "PAGO PSE EMPRESA DE ENERGI",
+      descriptionNormalized: "PAGO PSE EMPRESA DE ENERGI",
+      twin: {
+        descriptionRaw: "PAGO PSE EMPRESA DE ENERGÍA",
+        descriptionNormalized: "PAGO PSE EMPRESA DE ENERGÍA",
+        statement: {
+          formatId: "bancolombia-movements-export-pdf",
+          period: periodSchema.parse({ from: "2026-09-15", to: "2026-09-30" }),
+        },
+      },
+    });
+
+    expect(movementDetailView(cut, "a1")).toMatchObject({
+      bankText: "PAGO PSE EMPRESA DE ENERGI",
+      alsoWrittenAs: ["PAGO PSE EMPRESA DE ENERGÍA"],
+      facts: [
+        { label: "Canal", value: "PSE" },
+        {
+          label: "Fuente",
+          value:
+            "Extracto trimestral jul–sep 2026 y movimientos 15–30 sep 2026",
+        },
+        { label: "Saldo después", value: "$8.793.890" },
+      ],
+    });
+  });
+
+  it.each([
+    {
+      name: "with one space where the quarterly statement printed two",
+      own: "PAGO PSE EMPRESA  DE ENERGIA",
+      other: "PAGO PSE EMPRESA DE ENERGIA",
+    },
+    {
+      name: "with two spaces where the quarterly statement printed one",
+      own: "PAGO PSE EMPRESA DE ENERGIA",
+      other: "PAGO PSE EMPRESA  DE ENERGIA",
+    },
+    {
+      name: "with an accented letter in two parts",
+      own: "PAGO PSE EMPRESA DE ENERGÍA",
+      other: "PAGO PSE EMPRESA DE ENERGÍA",
+    },
+  ])(
+    "shows no other text when the movements file wrote it $name",
+    ({ own, other }) => {
+      // Spaces collapsed, as the parsers normalize a text.
+      const normalized = (text: string) => text.replace(/ +/g, " ");
+      const repeated = detail({
+        descriptionRaw: own,
+        descriptionNormalized: normalized(own),
+        twin: {
+          descriptionRaw: other,
+          descriptionNormalized: normalized(other),
+          statement: {
+            formatId: "bancolombia-movements-export",
+            period: periodSchema.parse({
+              from: "2026-09-01",
+              to: "2026-09-30",
+            }),
+          },
+        },
+      });
+
+      const view = movementDetailView(repeated, "a1");
+
+      expect(view.alsoWrittenAs).toEqual([]);
+      expect(view.facts).toContainEqual({
+        label: "Fuente",
+        value: "Extracto trimestral jul–sep 2026 y movimientos 1–30 sep 2026",
+      });
+    },
+  );
 
   it("shows a best guess in ink, with its reference's digits and the way to the review of its quarter", () => {
     const send = detail({

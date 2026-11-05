@@ -57,6 +57,10 @@ export {
   type StatementMatches,
 } from "./statements/statement-matches.queries";
 export {
+  countPeriodFiles,
+  type PeriodFiles,
+} from "./statements/statement-files.queries";
+export {
   type BankFigures,
   listBankFigures,
 } from "./statements/statement-figures.queries";

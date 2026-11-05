@@ -10,6 +10,7 @@ import type {
 } from "@xtrakto/core";
 import type {
   MovementDetail,
+  PeriodFiles,
   TransactionListItem,
   UnreconciledStatement,
 } from "@xtrakto/db";
@@ -50,6 +51,8 @@ export type AccountTransactions = PeriodChoices & {
   readonly kindTotals: KindTotals;
   /** How many of the period's movements wait for review. */
   readonly pendingReview: number;
+  /** The files that saved the period's movements, which the list joined (10.1c). */
+  readonly files: PeriodFiles;
   /** Every movement of the account in the period that counts and matches. */
   readonly total: number;
   /** What the list shows of them. */
@@ -217,6 +220,8 @@ export type MovementDetailView = {
   readonly isBankText: boolean;
   /** Its text exactly as printed, for "Así lo escribe el banco". */
   readonly bankText: string;
+  /** How another file wrote it, when that reads otherwise (10.1c). */
+  readonly alsoWrittenAs: readonly string[];
   /** `"Domingo 27 de septiembre de 2026"`. */
   readonly date: string;
   /** `"−$182.000"`. */
