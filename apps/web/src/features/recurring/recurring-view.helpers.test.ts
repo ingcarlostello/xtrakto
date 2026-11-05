@@ -114,6 +114,24 @@ describe("the page's texts", () => {
     );
   });
 
+  it("shows a year's months from January to the page's, from and to (10.2c)", () => {
+    const october = month(10);
+
+    expect(barMonths(october, true)).toEqual(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => month(value)),
+    );
+    expect(listSubtitle(october, "active", true)).toBe(
+      "Ordenados por monto. Las barras muestran de enero a octubre.",
+    );
+    // January and February are no more than three months.
+    expect(listSubtitle(month(2), "active", true)).toBe(
+      "Ordenados por monto. Las barras muestran enero y febrero.",
+    );
+    expect(listSubtitle(month(1), "stopped", true)).toBe(
+      "Se repetían cada mes, pero no aparecen en enero. Las barras muestran enero.",
+    );
+  });
+
   it("adds up the month's fixed payments", () => {
     expect(monthTotal([LOAN, ENERGY], SEPTEMBER)).toEqual({
       label: "Total en septiembre",
@@ -160,6 +178,29 @@ describe("monthBars", () => {
     expect(
       monthBars(CARD, SEPTEMBER).map(({ heightPercent }) => heightPercent),
     ).toEqual([2, 100, 57]);
+  });
+
+  it("draws a year's months from January, against the most of them, naming each quarter's first", () => {
+    const bars = monthBars(CARD, SEPTEMBER, true);
+
+    expect(bars.map(({ label }) => label)).toEqual([
+      "ene",
+      "",
+      "",
+      "abr",
+      "",
+      "",
+      "jul",
+      "",
+      "",
+    ]);
+    expect(bars.map(({ heightPercent }) => heightPercent)).toEqual([
+      0, 0, 0, 0, 0, 0, 2, 100, 57,
+    ]);
+    // Each month is heard, named or not.
+    expect(bars[1]?.text).toBe("Febrero sin pago");
+    expect(bars.map(({ isShown }) => isShown).lastIndexOf(true)).toBe(8);
+    expect(bars.filter(({ isShown }) => isShown)).toHaveLength(1);
   });
 });
 
@@ -305,6 +346,7 @@ describe("the list's chips", () => {
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    years: [],
     period: THIRD_QUARTER,
     month: SEPTEMBER,
     payments: { spending: [LOAN, ENERGY], moved: [CARD] },

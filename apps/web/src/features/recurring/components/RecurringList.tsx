@@ -26,8 +26,11 @@ function ListHeader({
   month,
   view,
   filters,
+  isYear,
 }: {
   month: CalendarMonth;
+  /** The bars show the year's months (10.2c). */
+  isYear: boolean;
   view: RecurringView;
   filters: readonly FilterChip[];
 }) {
@@ -38,7 +41,7 @@ function ListHeader({
           {COPY.listTitle}
         </h2>
         <p className="text-caption text-ink-muted">
-          {listSubtitle(month, view)}
+          {listSubtitle(month, view, isYear)}
         </p>
       </div>
       {filters.length > 0 && (
@@ -72,12 +75,14 @@ function MonthTotal({
 function FixedPayments({ recurring, month, view }: RecurringListProps) {
   const shown =
     view === "stopped" ? recurring.stopped : recurring.payments.spending;
+  const isYear = recurring.period.kind === "year";
   return (
     <section aria-labelledby="fixed-payments" className="flex flex-col">
       <ListHeader
         month={month}
         view={view}
         filters={listFilters(recurring, view)}
+        isYear={isYear}
       />
       {shown.length > 0 ? (
         <ul>
@@ -88,7 +93,7 @@ function FixedPayments({ recurring, month, view }: RecurringListProps) {
                 key={row.key}
                 row={row}
                 tone="spending"
-                bars={monthBars(payment, month)}
+                bars={monthBars(payment, month, isYear)}
               />
             );
           })}

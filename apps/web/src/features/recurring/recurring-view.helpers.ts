@@ -73,9 +73,26 @@ export const foundText = ({
 export const pageSubtitle = (payments: RecurringPayments): string =>
   [COPY.subtitle, foundText(payments)].filter(Boolean).join(" ");
 
-/** The three months the bars show, the page's the last. */
-export const barMonths = (month: CalendarMonth): readonly CalendarMonth[] =>
-  [2, 1, 0].map((back) => monthBefore(month, back));
+/**
+ * The months the bars show, the page's the last: three, or for a year
+ * (10.2c) its months from January (decided with the human).
+ */
+export const barMonths = (
+  month: CalendarMonth,
+  isYear = false,
+): readonly CalendarMonth[] =>
+  (isYear ? [...Array(month.month).keys()].reverse() : [2, 1, 0]).map((back) =>
+    monthBefore(month, back),
+  );
+
+// "julio, agosto y septiembre", or a year's "de enero a octubre".
+const barsWords = (months: readonly CalendarMonth[]): string => {
+  const [first] = months;
+  const last = months.at(-1);
+  return months.length > 3 && first && last
+    ? `${COPY.barsFrom} ${monthWord(first)} ${COPY.barsTo} ${monthWord(last)}`
+    : joined(months.map(monthWord));
+};
 
 /**
  * "Ordenados por monto. Las barras muestran julio, agosto y septiembre.", or
@@ -85,12 +102,13 @@ export const barMonths = (month: CalendarMonth): readonly CalendarMonth[] =>
 export const listSubtitle = (
   month: CalendarMonth,
   view: RecurringView = "active",
+  isYear = false,
 ): string => {
   const first =
     view === "active"
       ? COPY.sorted
       : `${COPY.stoppedSubtitle} ${monthWord(month)}.`;
-  return `${first} ${COPY.barsShow} ${joined(barMonths(month).map(monthWord))}.`;
+  return `${first} ${COPY.barsShow} ${barsWords(barMonths(month, isYear))}.`;
 };
 
 /** "No hay pagos fijos en septiembre." */
@@ -113,12 +131,15 @@ export const monthTotal = (
   ),
 });
 
-/** A payment's bars for the page's three months, against the most of them. */
+/** A payment's bars for the page's months, three or a year's, against the most of them. */
 export const monthBars = (
   payment: RecurringPayment,
   month: CalendarMonth,
+  isYear = false,
 ): readonly MonthBar[] => {
-  const months = barMonths(month);
+  const months = barMonths(month, isYear);
+  // A year's many bars name only each quarter's first month.
+  const isNamed = (m: CalendarMonth) => months.length <= 3 || m.month % 3 === 1;
   const sizes = months.map((m) =>
     Math.abs(paidMonth(payment, m)?.amountMinor ?? 0),
   );
@@ -127,7 +148,7 @@ export const monthBars = (
     const paid = paidMonth(payment, m);
     return {
       key: `${m.year}-${m.month}`,
-      label: formatShortMonth(m),
+      label: isNamed(m) ? formatShortMonth(m) : "",
       text: `${formatMonthName(m)} ${paid ? withoutSign(paid.amountMinor) : COPY.unpaid}`,
       heightPercent: Math.round(((sizes[index] ?? 0) * 100) / most),
       isShown: isSameMonth(m, month),

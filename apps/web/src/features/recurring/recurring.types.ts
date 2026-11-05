@@ -5,7 +5,7 @@ import type {
   RecurringPayment,
   RecurringPayments,
 } from "@xtrakto/core";
-import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
+import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 
 /** The payments a page shows in its month. */
 export type PagePayments = {
@@ -16,7 +16,7 @@ export type PagePayments = {
 };
 
 /** An account's payments that repeat, as the page reads them. */
-export type AccountRecurring = PeriodChoices &
+export type AccountRecurring = PagePeriodChoices &
   PagePayments & {
     /** The period's last month with movements: the payments it expects show. */
     readonly month: CalendarMonth | undefined;
@@ -47,7 +47,7 @@ export type RecurringTile = (
 /** A month's bar: what was paid in it, against the most of the three. */
 export type MonthBar = {
   readonly key: string;
-  /** "jul". */
+  /** "jul"; empty for a year's month that isn't a quarter's first (10.2c). */
   readonly label: string;
   /** What a screen reader hears: "Julio $162.300". */
   readonly text: string;

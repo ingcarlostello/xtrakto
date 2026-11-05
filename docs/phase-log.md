@@ -1324,3 +1324,76 @@ In a local browser, with a fresh Clerk test user deleted afterwards (the local c
 - **Links to Resumen and Pagos fijos:** they take a year already (`summaryHref`, `recurringHref`), since the controls' links share one type; until 10.2c, their schema reads it as no period.
 - **The quick review:** no link of these pages to it depends on the page's period. A movement's detail opens its own quarter's review; the summary's banner comes with 10.2c.
 - **Size:** about 305 lines of code added and 108 deleted, without tests, comments and blank lines, in the two commits planned.
+
+## 10.2c A year in Resumen and Pagos fijos
+
+_2026-11-05_
+
+Resumen and Pagos fijos now read a whole year too, so every page with a period offers one; the quick review stays by quarter.
+
+- **The controls:** both pages take `?period=2026` (`accountPagePeriodSearchSchema`, `locatePagePeriod`), with the picker's years and the row "Abr–jun Jul–sep Oct–dic Año".
+- **"Tu año de un vistazo":** "En 2026 salieron $13,7M, pero no todo fue gasto.", with the year's tiles.
+- **"Tu cuenta"** (decided with the human):
+  - one box, the year's quarterly statements' interest added up: "Intereses del año" with the four, "Intereses de 2 trimestres" without them;
+  - no average balance, which the bank prints for a quarter only;
+  - its pill counts the movements that reconcile in all of them ("Saldo verificado" · "45 movimientos cuadran"), without the chain.
+- **The chart:**
+  - the days under it are the quarters' last days ("31 mar", "30 jun", "30 sep", "31 dic");
+  - the event says "Fue el día con más ingresos del año.";
+  - its lines start at the opening of the year's first quarter with movements, on the axis that starts at 31 December.
+- **"Dónde se fue más" and "Tu extracto, traducido"** read the year's movements, and "Ver los 63 movimientos" opens the year in Movimientos.
+- **Pagos fijos** (decided with the human): the payments its last month with movements expects, with a bar per month from January ("Las barras muestran de enero a abril."), 8px wide from `xl`, each quarter's first month named. Up to March, they keep the quarter's bars.
+- **A year's fixed payments,** on Pagos fijos and in the summary, are found in the year that ends with its last month with movements (`historyRead`, `periodPayments`), as that month's page finds them.
+
+The design rules and system design §11 say so.
+
+16 new tests in the app (1,181 there):
+
+- a year's glance title and sentence;
+- its account card's box and pill, also without quarterly statements;
+- its chart's days, where its lines start (in July, and in January), its event and its label;
+- a year's bars, their names and heights, and the card's line, January and February included;
+- what a page reads for a year's payments, the year that ends with a day's month, and a period without movements;
+- the year in Pagos fijos's URL;
+- and, through ingestion and the test database:
+  - a year's summary as its quarters added up, with its quarterly statements' figures, its fixed payments and its balances;
+  - a year whose payments began the year before;
+  - a year that leaves out payments from more than a year before its last month.
+
+Checked: twenty-six deliberate bugs, each in a file of its own, all fail a test. One of them, a period's last day taken from the whole history, survived until a test of a period without movements was added; that logic predates the phase.
+
+In a local browser, with two fresh Clerk test users deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The uploads:**
+  - the first user: `quarterly-previous`, `quarterly-basic`, `movements-basic` and `quarterly-year-rollover`, plus an April 2027 movements export with invented payments, written by the check itself;
+  - the second user: `quarterly-basic` alone.
+- **Resumen on 2026:**
+  - the picker's years: "Año 2027 · 4 de 12 meses" and "Año 2026 · 7 de 12 meses";
+  - "Periodo: Año 2026", and the row with "Año" current;
+  - "Tu año de un vistazo";
+  - "Intereses de 2 trimestres" without the average balance, and "45 movimientos cuadran" without the chain;
+  - the spending's chart, since October's export prints no balances, with the quarters' last days;
+  - both cards;
+  - the banner, on the review's own quarter: the second of 2027.
+- **The keyboard** reaches "Año 2026" in the open picker, and Enter opens it.
+- **Pagos fijos on 2027:**
+  - "Ene–mar Abr–jun Año" and "Las barras muestran de enero a abril.";
+  - four bars named "ene" and "abr", heard month by month, shown at 1280px and hidden at 1100px;
+  - the gym in "Ya no aparecen".
+
+  On 2026, "No hay pagos fijos en este periodo".
+
+- **A year that starts in July** (the second user):
+  - "Tu saldo pasó de $2,5M el 30 de junio a $7,8M el 30 de septiembre, y tu gasto real llegó a $1,5M.";
+  - the lines from 30 June;
+  - "Intereses de 1 trimestre" and "33 movimientos cuadran".
+- **Widths:** nothing overflows at 390px and 360px; no page error.
+
+**Deviations and follow-ups:**
+
+- **Decided with the human:** the account card's box and pill for a year; Pagos fijos's bars from January.
+- **The review's banner:** it keeps the review's own quarter, the account's latest, whatever the page's period, as it has on a quarter since 6.3c. The roadmap had it point to the year's latest quarter; the two differ only on an earlier year.
+- **Where a year's chart starts:** at its first quarter with movements, not 31 December. Drawn from 31 December, a year whose files begin in July read "Tu saldo pasó de $13,8M el 31 de diciembre", a balance no file printed for that day.
+- **A year's fixed payments:** found by its last month with movements, not by its calendar year. By the calendar year, in February a year found none of the payments its quarter found. The summary's fixed payments follow the same rule.
+- **For 10.2d:** a year with a quarter missing in the middle holds the balance flat over it, and its tiles add up only the quarters it has. 10.2d's notice says which months are missing; whether the chart also breaks its line there is decided when 10.2d starts.
+- **Size:** about 310 lines of code added and 110 deleted, without tests, in two commits.

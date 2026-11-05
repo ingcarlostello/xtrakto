@@ -8,9 +8,12 @@ export const SUMMARY_COPY = {
   glanceTitle: {
     quarter: "Tu trimestre de un vistazo",
     month: "Tu mes de un vistazo",
+    year: "Tu año de un vistazo",
   },
   // "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto."
   wentOut: "Salieron",
+  // A year's sentence: "En 2026 salieron $54,2M, pero no todo fue gasto."
+  inYear: "En",
   notAllSpending: "pero no todo fue gasto",
   nothingOut: "No salió plata de tu cuenta.",
   income: {
@@ -53,6 +56,11 @@ export const SUMMARY_COPY = {
       quarter: "Intereses pagados",
       month: "Intereses del trimestre",
     },
+    // A year's, added up from its quarterly statements (10.2c): "Intereses
+    // del año", or "Intereses de 3 trimestres" without the four.
+    interestOfYear: "Intereses del año",
+    interestOf: "Intereses de",
+    quarters: { one: "trimestre", other: "trimestres" },
     verified: "Saldo verificado",
     // "312 movimientos cuadran", "Encadenado con abr–jun 2026 · 312 cuadran".
     movements: { one: "movimiento", other: "movimientos" },
@@ -84,6 +92,7 @@ export const SUMMARY_COPY = {
     mostIncome: {
       quarter: "Fue el día con más ingresos del trimestre.",
       month: "Fue el día con más ingresos del mes.",
+      year: "Fue el día con más ingresos del año.",
     },
     // "Tu saldo pasó de $13,8M el 30 de junio a $6,5M el 30 de septiembre,
     // y tu gasto real llegó a $24,4M."

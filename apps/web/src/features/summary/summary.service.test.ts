@@ -12,7 +12,10 @@ import {
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementPeriod,
+  PagePeriod,
+} from "@/utils/transactions-url.helpers";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
 import { getSummary } from "./summary.service";
 
@@ -378,6 +381,47 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
       movedByCategory: [],
     });
     expect(bankFigures).toEqual([]);
+  });
+
+  it("adds up a year from its quarters, with its quarterly statements' figures (10.2c)", async () => {
+    const { clerkUserId, accountId } = await userWith([
+      "quarterly-previous",
+      "quarterly-basic",
+      "movements-basic",
+    ]);
+    const inPeriod = async (period: PagePeriod) => {
+      const result = await getSummary(clerkUserId, { accountId, period });
+      if (!result) throw new Error("No summary.");
+      return result;
+    };
+    const sum = (amounts: readonly number[]) =>
+      amounts.reduce((all, each) => all + each, 0);
+
+    const year = await inPeriod({ kind: "year", year: 2026 });
+    // April to June, July to September, and October's week.
+    const quarters = [];
+    for (const quarter of [2, 3, 4])
+      quarters.push(await inPeriod({ kind: "quarter", year: 2026, quarter }));
+    const outflows = quarters.map(({ summary }) => summary.outflows);
+
+    expect(year.period).toEqual({ kind: "year", year: 2026 });
+    expect(year.movements).toEqual(quarters.flatMap((q) => q.movements));
+    expect(year.summary.outflows).toEqual(
+      total(
+        sum(outflows.map(({ amountMinor }) => amountMinor)),
+        sum(outflows.map(({ count }) => count)),
+      ),
+    );
+    expect(year.bankFigures).toEqual(quarters.flatMap((q) => q.bankFigures));
+    expect(year.bankFigures).toHaveLength(2);
+    expect(year.fixedPayments).toEqual(quarters.at(-1)?.fixedPayments);
+    // October's export prints no balances, so the year's can't be followed
+    // day by day; its last is September's.
+    expect(year.balances).toBeNull();
+    expect(year.balance).toEqual({
+      date: "2026-09-30",
+      amountMinor: 781_851_882,
+    });
   });
 
   it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {

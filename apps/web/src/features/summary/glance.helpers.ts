@@ -8,7 +8,7 @@ import { percentOf } from "@/utils/percent.utils";
 import { periodWords } from "@/utils/period-words.helpers";
 import {
   type MovementFilter,
-  type MovementPeriod,
+  type PagePeriod,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import {
@@ -21,20 +21,35 @@ import type { GlanceTile } from "./summary.types";
 // A note names the categories that weigh most, up to four (v8-01).
 const NAMED_CATEGORIES = 4;
 
-/** "Tu trimestre de un vistazo", "Tu mes de un vistazo". */
-export const glanceTitle = ({ kind }: MovementPeriod): string =>
+/** "Tu trimestre de un vistazo", "Tu mes de un vistazo", "Tu año de un vistazo". */
+export const glanceTitle = ({ kind }: PagePeriod): string =>
   COPY.glanceTitle[kind];
 
-/** "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto." */
-export const glanceSubtitle = (
-  period: MovementPeriod,
-  { outflows, kinds }: PeriodSummary,
-): string => {
-  if (outflows.count === 0) return `${periodWords(period)}. ${COPY.nothingOut}`;
+const lowerFirst = (text: string): string =>
+  `${text.charAt(0).toLocaleLowerCase("es-CO")}${text.slice(1)}`;
+
+// What went out: "Salieron $54,2M, pero no todo fue gasto.", or that
+// nothing did.
+const outText = ({ outflows, kinds }: PeriodSummary): string => {
+  if (outflows.count === 0) return COPY.nothingOut;
   const wentOut = `${COPY.wentOut} ${compactSize(outflows.amountMinor)}`;
   return kinds.moved.out.count > 0
-    ? `${periodWords(period)}. ${wentOut}, ${COPY.notAllSpending}.`
-    : `${periodWords(period)}. ${wentOut}.`;
+    ? `${wentOut}, ${COPY.notAllSpending}.`
+    : `${wentOut}.`;
+};
+
+/**
+ * "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto.",
+ * or for a year (10.2c): "En 2026 salieron $54,2M, pero no todo fue gasto."
+ */
+export const glanceSubtitle = (
+  period: PagePeriod,
+  summary: PeriodSummary,
+): string => {
+  const sentence = outText(summary);
+  return period.kind === "year"
+    ? `${COPY.inYear} ${period.year} ${lowerFirst(sentence)}`
+    : `${periodWords(period)}. ${sentence}`;
 };
 
 // "El 85% llegó en 2 transferencias. No incluye $2,8M que volvió de tus cuentas."

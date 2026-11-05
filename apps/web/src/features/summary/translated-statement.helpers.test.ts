@@ -57,6 +57,7 @@ const summaryOf = (
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    years: [],
     period: QUARTER,
     movements,
     summary: summarizeMovements(movements),

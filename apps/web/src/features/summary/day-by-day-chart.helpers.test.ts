@@ -8,7 +8,10 @@ import {
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
-import type { MovementPeriod } from "@/utils/transactions-url.helpers";
+import type {
+  MovementPeriod,
+  PagePeriod,
+} from "@/utils/transactions-url.helpers";
 import { dayByDayChart } from "./day-by-day-chart.helpers";
 import type { AccountSummary } from "./summary.types";
 
@@ -31,7 +34,7 @@ type Row = {
 
 // A period's summary as `getSummary` reads it from its movements.
 const summaryOf = (
-  period: MovementPeriod,
+  period: PagePeriod,
   rows: readonly Row[],
 ): AccountSummary => {
   const movements = rows.map(({ date, amount, as, balance }) => ({
@@ -47,6 +50,7 @@ const summaryOf = (
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    years: [],
     period,
     movements: [],
     summary: summarizeMovements(movements),
@@ -181,6 +185,65 @@ describe("dayByDayChart", () => {
     ]);
     expect(august?.event?.detail).toBe("Fue el día con más ingresos del mes.");
     expect(pointsOf(august?.balance?.line)).toHaveLength(21);
+  });
+
+  it("draws a year from its first quarter with movements, over its quarters' last days, and calls its largest income the year's", () => {
+    const year = dayByDayChart(
+      summaryOf({ kind: "year", year: 2026 }, [
+        {
+          date: "2026-08-04",
+          amount: 3_154_020_000,
+          as: SALARY,
+          balance: 4_534_020_000,
+        },
+        {
+          date: "2026-08-20",
+          amount: -100_000_000,
+          as: GROCERIES,
+          balance: 4_434_020_000,
+        },
+      ]),
+    );
+    // From 30 June, the third quarter's opening, through 20 August.
+    const balance = pointsOf(year?.balance?.line);
+    const spending = pointsOf(year?.spending);
+
+    expect(year?.xTicks).toEqual([
+      { label: "31 mar", at: 24.66 },
+      { label: "30 jun", at: 49.59 },
+      { label: "30 sep", at: 74.79 },
+      { label: "31 dic", at: 100 },
+    ]);
+    expect(balance).toHaveLength(52);
+    expect(balance[0]).toMatch(/^49\.59,/);
+    expect(spending[0]).toBe("49.59,100");
+    expect(year?.balance?.area).toMatch(/^49\.59,100 /);
+    expect(year?.event).toMatchObject({
+      x: 59.18,
+      detail: "Fue el día con más ingresos del año.",
+    });
+    expect(year?.event?.y).toBe(Number(balance[35]?.split(",")[1]));
+    expect(year?.label).toBe(
+      "Tu saldo pasó de $13,8M el 30 de junio a $44,3M el 20 de agosto, y tu gasto real llegó a $1,0M.",
+    );
+  });
+
+  it("draws a year that starts in January from the year's opening", () => {
+    const year = dayByDayChart(
+      summaryOf({ kind: "year", year: 2026 }, [
+        {
+          date: "2026-01-10",
+          amount: -100_000_000,
+          as: GROCERIES,
+          balance: 1_280_000_000,
+        },
+      ]),
+    );
+
+    expect(pointsOf(year?.balance?.line)[0]).toMatch(/^0,/);
+    expect(year?.label).toMatch(
+      /^Tu saldo pasó de \$13,8M el 31 de diciembre /,
+    );
   });
 
   it("splits a scale in round steps of $2,5M", () => {

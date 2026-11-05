@@ -49,6 +49,7 @@ const summaryWith = (changes: Partial<AccountSummary>): AccountSummary => ({
   accounts: [ACCOUNT],
   account: ACCOUNT,
   quarters: [],
+  years: [],
   period: { kind: "quarter", year: 2026, quarter: 3 },
   movements: [],
   summary: EMPTY_SUMMARY,
@@ -94,6 +95,53 @@ describe("accountCardView", () => {
       ).toBe(detail);
     },
   );
+
+  it("adds up a year's interest from its quarterly statements, without an average balance", () => {
+    const april: BankFigures = {
+      ...FIGURES,
+      period: period("2026-03-31", "2026-06-30"),
+      interestMinor: amount(118_000),
+      movementCount: 280,
+      chainedTo: null,
+    };
+    const year = { kind: "year", year: 2026 } as const;
+
+    const two = accountCardView(
+      summaryWith({ period: year, bankFigures: [april, FIGURES] }),
+    );
+    const four = accountCardView(
+      summaryWith({
+        period: year,
+        bankFigures: [
+          april,
+          FIGURES,
+          FIGURES,
+          { ...april, interestMinor: null },
+        ],
+      }),
+    );
+
+    expect(two.figures).toEqual([
+      { label: "Intereses de 2 trimestres", value: "$2.500" },
+    ]);
+    expect(two.status).toEqual({
+      tone: "ok",
+      title: "Saldo verificado",
+      detail: "592 movimientos cuadran",
+    });
+    expect(four.figures).toEqual([
+      { label: "Intereses del año", value: "$3.820" },
+    ]);
+  });
+
+  it("reads a year without quarterly statements as files without balances", () => {
+    const view = accountCardView(
+      summaryWith({ period: { kind: "year", year: 2026 }, bankFigures: [] }),
+    );
+
+    expect(view.figures).toEqual([]);
+    expect(view.status.title).toBe("Sin saldo para verificar");
+  });
 
   it("says a month's figures are its quarter's", () => {
     const view = accountCardView(

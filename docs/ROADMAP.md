@@ -246,7 +246,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.1c Matches in Movimientos
 - [x] 10.2a Coverage timeline
 - [x] 10.2b A year in Movimientos and Categorías
-- [ ] 10.2c A year in Resumen and Pagos fijos
+- [x] 10.2c A year in Resumen and Pagos fijos
 - [ ] 10.2d Gaps and which file to download
 - [ ] 10.3 Today's balance as a check
 - [ ] 10.4a [HUMAN] Email with Resend and the upload notice
@@ -2058,7 +2058,11 @@ It came out at about 305 lines of code added and 108 deleted, in the commits pla
 
 **Done when:** both pages read a year from seeded data, at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): a year in Resumen and Pagos fijos`
+Decided with the human when it started (2026-11-05): a year's account card has one box, its quarterly statements' interest added up ("Intereses del año" with the four, "Intereses de 2 trimestres" without them), since the bank prints an average balance for a quarter only, and its pill counts their movements, without the chain; and Pagos fijos's bars are the year's months from January through the page's, thinner and from `xl`, each quarter's first one named. Found while building it: a year's chart starts at the opening of its first quarter with movements, on the axis that starts at 31 December, since a balance isn't known before its quarterly statement opens. A year finds its fixed payments, on Pagos fijos and in the summary, in the year that ends with its last month with movements, as that month's page does: its calendar year alone found none in February that its quarter found. And the summary's banner keeps the review's own quarter (6.3c), whatever the page's period, as it always did on a quarter, rather than the year's latest quarter.
+
+It came out at about 310 lines of code added and 110 deleted, in two commits of one pull request: the design rules, then the pages.
+
+**Commits:** `docs(rules): a year in Resumen and Pagos fijos`, then `feat(web): a year in Resumen and Pagos fijos`
 
 #### 10.2d Gaps and which file to download
 
