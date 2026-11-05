@@ -51,3 +51,30 @@ export const countPeriodFiles = async (
     );
   return { quarterly: row?.quarterly ?? 0, movements: row?.movements ?? 0 };
 };
+
+/** The files the user keeps, of every account (10.2a). */
+export type UserFiles = PeriodFiles;
+
+/**
+ * How many statements the user keeps, of each kind: every file saved, also
+ * one that doesn't reconcile or whose movements another saved before.
+ */
+export const countUserFiles = async ({
+  tx,
+  userId,
+}: UserContext): Promise<UserFiles> => {
+  const [row] = await tx
+    .select({
+      quarterly:
+        sql<number>`count(*) filter (where ${isNotNull(statements.openingBalanceMinor)})`.mapWith(
+          Number,
+        ),
+      movements:
+        sql<number>`count(*) filter (where ${isNull(statements.openingBalanceMinor)})`.mapWith(
+          Number,
+        ),
+    })
+    .from(statements)
+    .where(eq(statements.userId, userId));
+  return { quarterly: row?.quarterly ?? 0, movements: row?.movements ?? 0 };
+};

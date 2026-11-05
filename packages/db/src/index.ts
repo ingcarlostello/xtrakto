@@ -58,8 +58,17 @@ export {
 } from "./statements/statement-matches.queries";
 export {
   countPeriodFiles,
+  countUserFiles,
   type PeriodFiles,
+  type UserFiles,
 } from "./statements/statement-files.queries";
+export {
+  type AccountCoverage,
+  type CoverageMonth,
+  type CoverageQuarter,
+  listAccountCoverage,
+  type MonthFile,
+} from "./statements/account-coverage.queries";
 export {
   type BankFigures,
   listBankFigures,

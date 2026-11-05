@@ -48,7 +48,8 @@ type MatchCounts = Omit<StatementMatches, "verifiedBy">;
 
 const NO_COUNTS: MatchCounts = { matched: 0, dayApart: 0, references: 0 };
 
-const CARRIED_REFERENCES = [REFERENCE_KIND.PHONE, REFERENCE_KIND.CODE];
+/** The references a movements file carries over to its twin: a phone's or a code's. */
+export const CARRIED_REFERENCES = [REFERENCE_KIND.PHONE, REFERENCE_KIND.CODE];
 
 // The matches of each statement, on the side it takes: a movements export's
 // own hidden movements, or the quarterly statement's that they repeat. A
