@@ -7,8 +7,8 @@ import {
   listUserCategoryRules,
   withUserContext,
 } from "@xtrakto/db";
-import type { PeriodRequest } from "@/components/period-controls/period-controls.types";
-import { locateAccountPeriod } from "@/components/period-controls/period-location.service";
+import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
+import { locatePagePeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import { LATEST_MOVEMENTS } from "./categories.constants";
@@ -25,13 +25,13 @@ import type { CategoryDetail } from "./categories.types";
 export const getCategoryDetail = async (
   clerkUserId: string,
   categoryId: CategoryId,
-  request: PeriodRequest,
+  request: PagePeriodRequest,
 ): Promise<CategoryDetail | null> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
   if (!userId) return null;
   return withUserContext(db, userId, async (ctx) => {
-    const located = await locateAccountPeriod(ctx, request);
+    const located = await locatePagePeriod(ctx, request);
     if (!located) return null;
     const shownPeriod = {
       accountId: located.account.id,

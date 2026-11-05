@@ -100,6 +100,28 @@ describe.skipIf(!testDatabase)("an account's categories", () => {
     expect(categories?.rules).toEqual([rule]);
   });
 
+  it("reads a year: its quarters' movements, and the months the account has in it", async () => {
+    const { clerkUserId } = await newUser();
+
+    const categories = await getCategories(clerkUserId, {
+      period: { kind: "year", year: 2026 },
+    });
+
+    expect(categories?.period).toEqual({ kind: "year", year: 2026 });
+    expect(categories?.movements).toHaveLength(33);
+    expect(categories?.years).toEqual([{ year: 2026, months: 3 }]);
+  });
+
+  it("opens on the latest quarter for a year the account has no quarter in", async () => {
+    const { clerkUserId } = await newUser();
+
+    const categories = await getCategories(clerkUserId, {
+      period: { kind: "year", year: 2025 },
+    });
+
+    expect(categories?.period).toEqual(THIRD_QUARTER);
+  });
+
   it("reads nothing for a user without movements", async () => {
     const clerkUserId = `test_${randomUUID()}`;
     await findOrCreateUser(app.db, clerkUserId);

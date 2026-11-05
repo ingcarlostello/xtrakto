@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   categoryHref,
   type MovementPeriod,
+  parsePagePeriodParam,
   parsePeriodParam,
   periodDays,
   periodOfStatement,
@@ -30,6 +31,21 @@ describe("period params", () => {
       expect(parsePeriodParam(param)).toBeUndefined();
     },
   );
+
+  it("writes a year as its number and reads it back where a page offers years", () => {
+    expect(periodParam({ kind: "year", year: 2026 })).toBe("2026");
+    expect(parsePagePeriodParam("2026")).toEqual({ kind: "year", year: 2026 });
+    expect(parsePagePeriodParam("2026-q3")).toEqual(QUARTER);
+    expect(parsePagePeriodParam("26")).toBeUndefined();
+    expect(parsePeriodParam("2026")).toBeUndefined();
+  });
+
+  it("gives a year its days, from 1 January to 31 December", () => {
+    expect(periodDays({ kind: "year", year: 2028 })).toEqual({
+      from: "2028-01-01",
+      to: "2028-12-31",
+    });
+  });
 
   it("gives a period its days", () => {
     expect(periodDays(QUARTER)).toEqual({

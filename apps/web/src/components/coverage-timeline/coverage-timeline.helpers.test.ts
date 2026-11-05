@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   coverageViewOf,
   coverageViews,
+  monthsHad,
   timelineMonths,
 } from "./coverage-timeline.helpers";
 
@@ -168,6 +169,38 @@ describe("coverageViewOf", () => {
 
     expect(view.segments[0]?.month).toEqual({ year: 2026, month: 6 });
     expect(view.isChained).toBe(true);
+  });
+});
+
+describe("monthsHad", () => {
+  it("counts the months verified quarterly statements cover and those movements files brought", () => {
+    const quiet = {
+      ...ANA,
+      months: ANA.months.filter(({ month: key }) => key !== "2026-05"),
+    };
+
+    expect([...monthsHad(quiet)].sort()).toEqual([
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07",
+      "2026-08",
+      "2026-09",
+      "2026-10",
+    ]);
+  });
+
+  it("leaves out a month only a quarterly statement's movements brought, without its days", () => {
+    expect(
+      monthsHad({
+        accountId: "a1",
+        months: [month("2026-04", [Q2])],
+        quarters: [],
+      }),
+    ).toEqual(new Set());
   });
 });
 

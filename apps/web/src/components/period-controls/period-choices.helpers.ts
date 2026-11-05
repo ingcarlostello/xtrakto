@@ -2,15 +2,17 @@ import { type CalendarQuarter, quarterOfMonth } from "@xtrakto/core";
 import type { MovementQuarter, UnreconciledStatement } from "@xtrakto/db";
 import {
   type MovementPeriod,
+  type PagePeriod,
   quarterOf,
 } from "@/utils/transactions-url.helpers";
-import type { QuarterChoice } from "./period-controls.types";
+import type { QuarterChoice, YearChoice } from "./period-controls.types";
 
-/** Whether a period is a quarter, or falls in it. */
+/** Whether a period is a quarter, or falls in it; a year is neither. */
 export const isSameQuarter = (
-  period: MovementPeriod,
+  period: PagePeriod,
   quarter: CalendarQuarter,
 ): boolean => {
+  if (period.kind === "year") return false;
   const { year, quarter: number } = quarterOf(period);
   return year === quarter.year && number === quarter.quarter;
 };
@@ -31,6 +33,34 @@ export const selectPeriod = (
     latest && { kind: "quarter", year: latest.year, quarter: latest.quarter }
   );
 };
+
+/**
+ * The period a page that offers years shows (10.2b): a year the URL asks
+ * when the account has quarters in it, else as `selectPeriod` chooses.
+ */
+export const selectPagePeriod = (
+  requested: PagePeriod | undefined,
+  quarters: readonly CalendarQuarter[],
+): PagePeriod | undefined => {
+  if (requested?.kind !== "year") return selectPeriod(requested, quarters);
+  const hasYear = quarters.some(({ year }) => year === requested.year);
+  return hasYear ? requested : selectPeriod(undefined, quarters);
+};
+
+/**
+ * The years to choose from, the latest first: those of the quarters, each
+ * with how many of its months the account has (`"2026-08"` keys).
+ */
+export const yearChoices = (
+  quarters: readonly CalendarQuarter[],
+  months: ReadonlySet<string>,
+): readonly YearChoice[] =>
+  [...new Set(quarters.map(({ year }) => year))]
+    .sort((a, b) => b - a)
+    .map((year) => ({
+      year,
+      months: [...months].filter((key) => key.startsWith(`${year}-`)).length,
+    }));
 
 const quarterOfDate = (date: string): CalendarQuarter => ({
   year: Number(date.slice(0, 4)),

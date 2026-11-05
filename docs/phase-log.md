@@ -1275,3 +1275,52 @@ In a local browser, with a fresh Clerk test user deleted afterwards (the local c
 - **Verified months:** they come from the quarterly statement's days, with movements or not. The other statuses come from the movements saved, so a movements file whose movements another saved before isn't in a month's note, as in Movimientos (10.1c).
 - **The legend:** all four statuses always, as v8 draws them.
 - **Size:** about 730 lines of code without tests, comments and blank lines (about 530 estimated), past the 400 a phase should hold: three commits of one pull request, the design rules, the database and the app.
+
+## 10.2b A year in Movimientos and Categorías
+
+_2026-11-05_
+
+Movimientos, Categorías and a category's detail now read a whole year. A year is a period of its own in the code, `PagePeriod` (a quarter, a month or a year), which only the pages that offer it read. Resumen and Pagos fijos keep quarters and months until 10.2c, and the quick review stays by quarter; a year in their URL opens the latest quarter.
+
+- **The URL:** `?period=2026` (`parsePagePeriodParam`, `accountPagePeriodSearchSchema`), from 1 January to 31 December.
+- **The controls:**
+  - After the quarters, the picker lists each of their years, the latest first, with the months the account has in it as its coverage timeline counts them (10.2a's `monthsHad`): "Año 2026" · "7 de 12 meses" (`info`).
+  - With a year shown, the picker reads "Año 2026" (named "Periodo: Año 2026"), and the row under it holds the year's quarters with movements, in order, then "Año", in a `<nav>` named "Trimestre del año" (decided with the human).
+  - `locatePagePeriod` and Movimientos's own `locate` read the years; `locateAccountPeriod` stays as it was for the other pages.
+- **Movimientos** reads the whole year: "Del 1 de enero al 31 de diciembre de 2026.", its tiles, its lines with each month's interest in one, and "Juntamos 3 extractos trimestrales y 1 archivo de movimientos, sin duplicar." (10.1c's plural).
+- **Categorías:** "$2,5M en 2026, de mayor a menor.".
+- **A category's detail** (decided with the human):
+  - "Gasto real · 2026" and "Total del año";
+  - "Por mes" with the year's months that have movements, at the row's whole width when more than three;
+  - "Semana a semana" with its weeks, the days under it at each quarter's start and the year's last ("1 ene", "1 abr", "1 jul", "1 oct", "31 dic").
+
+The design rules and system design §11 say so.
+
+18 new tests in the app (1,165 there):
+
+- the year's param and days, read only where the page offers years;
+- a year shown when the account has quarters in it, else the latest quarter;
+- the years the latest first with their months;
+- the picker's years with their badge and the shown one, no year where a page offers none, the year's row and its name, and the picker's label;
+- the months the account has, verified or brought by movements files;
+- Categorías's subtitle, a category's title, total and months of a year, and its weeks' days;
+- and, through ingestion and the test database, Movimientos and Categorías on 2026 (33 movements, "3 de 12 meses"), and on a year without quarters.
+
+Checked: twenty-five deliberate bugs, each in a file of its own, all fail a test.
+
+In a local browser, with a fresh Clerk test user deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The uploads:** `quarterly-previous`, `quarterly-basic`, `movements-basic` and `quarterly-year-rollover`.
+- **The picker:** "Ene – mar 2027", "Oct – dic 2026", "Jul – sep 2026", "Abr – jun 2026", then "Año 2027 · 3 de 12 meses" and "Año 2026 · 7 de 12 meses".
+- **Movimientos on 2026:** `?period=2026`, "Periodo: Año 2026", the row "Abr–jun Jul–sep Oct–dic Año" with "Año" current, and the whole year's line. "Jul–sep" opens the quarter with its months.
+- **The keyboard** reaches "Año 2026" in the open picker, and Enter opens it.
+- **Categorías on 2026,** and the "Efectivo" detail: "Gasto real · 2026", "Total del año", eight months in "Por mes" (December too: `quarterly-year-rollover` has a movement on 31 December 2026), and the year's days under the weeks.
+- **The other pages:** Resumen with `?period=2026` opens the latest quarter, and neither its picker nor Pagos fijos's offers a year.
+- **Widths:** nothing overflows at 390px and 360px; no page error.
+
+**Deviations and follow-ups:**
+
+- **Decided with the human:** the year's quarters under it; a year's months and weeks in a category's detail.
+- **Links to Resumen and Pagos fijos:** they take a year already (`summaryHref`, `recurringHref`), since the controls' links share one type; until 10.2c, their schema reads it as no period.
+- **The quick review:** no link of these pages to it depends on the page's period. A movement's detail opens its own quarter's review; the summary's banner comes with 10.2c.
+- **Size:** about 305 lines of code added and 108 deleted, without tests, comments and blank lines, in the two commits planned.

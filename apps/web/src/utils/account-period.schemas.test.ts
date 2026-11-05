@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { accountPeriodSearchSchema } from "./account-period.schemas";
+import {
+  accountPagePeriodSearchSchema,
+  accountPeriodSearchSchema,
+} from "./account-period.schemas";
 
 const ACCOUNT_ID = "3f8a1c2e-1234-4abc-9def-0123456789ab";
 
@@ -17,5 +20,19 @@ describe("accountPeriodSearchSchema", () => {
     expect(
       accountPeriodSearchSchema.parse({ account: "8901", period: ["2026-q3"] }),
     ).toEqual({ account: undefined, period: undefined });
+  });
+
+  it("reads a year only where the page offers years", () => {
+    expect(accountPeriodSearchSchema.parse({ period: "2026" })).toEqual({
+      account: undefined,
+      period: undefined,
+    });
+    expect(accountPagePeriodSearchSchema.parse({ period: "2026" })).toEqual({
+      account: undefined,
+      period: { kind: "year", year: 2026 },
+    });
+    expect(
+      accountPagePeriodSearchSchema.parse({ period: "2026-08" }).period,
+    ).toEqual({ kind: "month", year: 2026, month: 8 });
   });
 });

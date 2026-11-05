@@ -39,19 +39,28 @@ export const RECURRING_FILTERS = ["stopped"] as const;
 
 export type RecurringFilter = (typeof RECURRING_FILTERS)[number];
 
-/** What the movements list shows: a quarter, or one of its months. */
+/** What every page with a period shows: a quarter, or one of its months. */
 export type MovementPeriod =
   | ({ readonly kind: "quarter" } & CalendarQuarter)
   | ({ readonly kind: "month" } & CalendarMonth);
 
-// "2026-q3" names a quarter, "2026-08" a month.
-const PERIOD_PARAM_PATTERN = /^(\d{4})-(?:q([1-4])|(0[1-9]|1[0-2]))$/;
+/** A whole year, which Movimientos and Categorías read too (10.2b). */
+export type YearPeriod = { readonly kind: "year"; readonly year: number };
 
-/** A period as the URL writes it: `"2026-q3"`, `"2026-08"`. */
-export const periodParam = (period: MovementPeriod): string =>
-  period.kind === "quarter"
+/** What a page whose controls offer a year shows: a quarter, a month or a year. */
+export type PagePeriod = MovementPeriod | YearPeriod;
+
+// "2026-q3" names a quarter, "2026-08" a month, and "2026" a year.
+const PERIOD_PARAM_PATTERN = /^(\d{4})-(?:q([1-4])|(0[1-9]|1[0-2]))$/;
+const YEAR_PARAM_PATTERN = /^\d{4}$/;
+
+/** A period as the URL writes it: `"2026-q3"`, `"2026-08"`, `"2026"`. */
+export const periodParam = (period: PagePeriod): string => {
+  if (period.kind === "year") return String(period.year);
+  return period.kind === "quarter"
     ? `${period.year}-q${period.quarter}`
     : `${period.year}-${String(period.month).padStart(2, "0")}`;
+};
 
 /** The period a URL names, or `undefined` when it names none. */
 export const parsePeriodParam = (value: string): MovementPeriod | undefined => {
@@ -63,9 +72,23 @@ export const parsePeriodParam = (value: string): MovementPeriod | undefined => {
     : { kind: "quarter", year: Number(year), quarter: Number(quarter) };
 };
 
-/** The days a period covers. */
-export const periodDays = (period: MovementPeriod): Period =>
-  period.kind === "quarter" ? quarterPeriod(period) : monthPeriod(period);
+/** The period a URL names, a year too, or `undefined` when it names none (10.2b). */
+export const parsePagePeriodParam = (value: string): PagePeriod | undefined =>
+  YEAR_PARAM_PATTERN.test(value)
+    ? { kind: "year", year: Number(value) }
+    : parsePeriodParam(value);
+
+/** The days a period covers: a year's, from 1 January to 31 December. */
+export const periodDays = (period: PagePeriod): Period => {
+  if (period.kind === "year")
+    return {
+      from: monthPeriod({ year: period.year, month: 1 }).from,
+      to: monthPeriod({ year: period.year, month: 12 }).to,
+    };
+  return period.kind === "quarter"
+    ? quarterPeriod(period)
+    : monthPeriod(period);
+};
 
 /** The quarter a period is, or falls in. */
 export const quarterOf = (period: MovementPeriod): CalendarQuarter =>
@@ -99,7 +122,7 @@ type TransactionsLink = {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
-  readonly period?: MovementPeriod;
+  readonly period?: PagePeriod;
   /** What the list looks for, kept across periods. */
   readonly search?: string;
   /** Which movements it shows, kept across periods too. */
@@ -167,8 +190,8 @@ export const recurringHref = ({
 }: {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
-  /** Left out to open on the account's latest quarter. */
-  readonly period?: MovementPeriod;
+  /** Left out, or a year until 10.2c, to open on the account's latest quarter. */
+  readonly period?: PagePeriod;
   readonly filter?: RecurringFilter;
 }) => ({
   pathname: "/recurring" as const,
@@ -187,7 +210,7 @@ type CategoriesLink = {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
   /** Left out to open on the account's latest quarter. */
-  readonly period?: MovementPeriod;
+  readonly period?: PagePeriod;
 };
 
 /** The categories of an account's period, when given (6.8a). */
@@ -223,8 +246,8 @@ export const summaryHref = ({
 }: {
   /** Left out when the user has a single account. */
   readonly accountId?: string;
-  /** Left out to open on the account's latest quarter. */
-  readonly period?: MovementPeriod;
+  /** Left out, or a year until 10.2c, to open on the account's latest quarter. */
+  readonly period?: PagePeriod;
   readonly lines?: MovementFilter;
 }) => ({
   pathname: "/" as const,

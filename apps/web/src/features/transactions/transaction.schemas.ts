@@ -1,6 +1,6 @@
 import type { CategoryId } from "@xtrakto/core";
 import { z } from "zod";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
+import { accountPagePeriodSearchSchema } from "@/utils/account-period.schemas";
 import {
   MOVEMENT_FILTERS,
   TRANSACTIONS_PARAMS,
@@ -25,11 +25,11 @@ export const shownCountSchema = z.coerce
   .catch(MOVEMENTS_STEP);
 
 /**
- * The movements list's filters, from the URL. A param that doesn't parse is
+ * The movements list's filters, from the URL, a year too (10.2b). A param that doesn't parse is
  * left out, so the list opens on its defaults; whether the account is the
  * user's, the service checks.
  */
-export const transactionsSearchSchema = accountPeriodSearchSchema.extend({
+export const transactionsSearchSchema = accountPagePeriodSearchSchema.extend({
   [TRANSACTIONS_PARAMS.search]: z
     .string()
     .trim()

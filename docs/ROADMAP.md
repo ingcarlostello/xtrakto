@@ -245,7 +245,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.1b Matches in the upload result
 - [x] 10.1c Matches in Movimientos
 - [x] 10.2a Coverage timeline
-- [ ] 10.2b A year in Movimientos and Categorías
+- [x] 10.2b A year in Movimientos and Categorías
 - [ ] 10.2c A year in Resumen and Pagos fijos
 - [ ] 10.2d Gaps and which file to download
 - [ ] 10.3 Today's balance as a check
@@ -2041,6 +2041,10 @@ It came out at about 730 lines of code, past the 530 estimated and the 400 a pha
 - The design rules.
 
 **Done when:** the three pages read a year from seeded data, at 390px and 360px and with the keyboard.
+
+Decided with the human when it started (2026-11-05): under a year, the row shows the year's quarters with movements, then "Año" ("Abr–jun · Jul–sep · Oct–dic · Año"), as a quarter shows its months; and a category's detail shows a year's months with movements in "Por mes", at the row's whole width when more than three, and "Semana a semana" keeps its weeks, marked at each quarter's start. Found while building it: the year is a period of its own in the code (`PagePeriod`), which only the pages that offer it read, so Resumen and Pagos fijos, until 10.2c, and the quick review keep quarters and months; a year in their URL opens the latest quarter. No link of Movimientos or Categorías to the quick review depends on the page's period: a movement's detail opens its own quarter's review.
+
+It came out at about 305 lines of code added and 108 deleted, in the commits planned.
 
 **Commits:** `docs(rules): a year as a period`, then `feat(web): a year in Movimientos and Categorías`
 

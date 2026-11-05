@@ -28,8 +28,9 @@ import {
 } from "@xtrakto/db";
 import {
   quarterChoices,
-  selectPeriod,
+  selectPagePeriod,
 } from "@/components/period-controls/period-choices.helpers";
+import { listYearChoices } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
@@ -56,7 +57,7 @@ type ListRequest = Omit<TransactionsRequest, "shown" | "movementId">;
 
 type Located = Pick<
   AccountTransactions,
-  "accounts" | "account" | "quarters" | "period" | "unreconciled"
+  "accounts" | "account" | "quarters" | "years" | "period" | "unreconciled"
 >;
 
 // The accounts with something to show: movements that count, the latest
@@ -74,9 +75,10 @@ const listShownAccounts = async (
   return [...withMovements, ...others];
 };
 
-// The account and the period to show: those the URL asks when they're the
-// user's and have something to show, else the latest; and the account's
-// statements that don't reconcile on the period's days.
+// The account and the period to show, a year too (10.2b): those the URL
+// asks when they're the user's and have something to show, else the
+// latest; and the account's statements that don't reconcile on the
+// period's days.
 const locate = async (
   ctx: UserContext,
   request: ListRequest,
@@ -91,13 +93,14 @@ const locate = async (
   );
   const counted = await listMovementQuarters(ctx, account.id);
   const quarters = quarterChoices(counted, unreconciled);
-  const period = selectPeriod(request.period, quarters);
+  const period = selectPagePeriod(request.period, quarters);
   if (!period) return undefined;
   const days = periodDays(period);
   return {
     accounts,
     account,
     quarters,
+    years: await listYearChoices(ctx, account.id, quarters),
     period,
     unreconciled: unreconciled.filter((s) => meetsPeriod(s.period, days)),
   };

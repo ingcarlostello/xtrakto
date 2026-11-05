@@ -13,7 +13,7 @@ import { SpendingByCategory } from "@/features/categories/components/SpendingByC
 import { YourRules } from "@/features/categories/components/YourRules";
 import { ExampleBanner } from "@/features/example/components/ExampleBanner";
 import { requireViewer } from "@/lib/example-mode";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
+import { accountPagePeriodSearchSchema } from "@/utils/account-period.schemas";
 import { categoriesHref } from "@/utils/transactions-url.helpers";
 
 const COPY = PAGE_COPY.categories;
@@ -42,7 +42,7 @@ export default async function CategoriesPage({
   searchParams,
 }: PageProps<"/categories">) {
   const { clerkUserId, isExample } = await requireViewer();
-  const { account, period } = accountPeriodSearchSchema.parse(
+  const { account, period } = accountPagePeriodSearchSchema.parse(
     await searchParams,
   );
   const categories = await getCategories(clerkUserId, {

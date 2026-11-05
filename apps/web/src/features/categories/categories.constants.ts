@@ -9,6 +9,8 @@ export const CATEGORIES_COPY = {
     // "$24,4M en el trimestre, de mayor a menor."
     inQuarter: "en el trimestre",
     inMonth: "en",
+    // "en 2026" (10.2b).
+    inYear: "en",
     largestFirst: "de mayor a menor.",
     none: "No hubo gasto real en este periodo.",
     // "19% de tu gasto real · 3 movimientos · PSE".
@@ -26,6 +28,7 @@ export const CATEGORIES_COPY = {
     kind: "Gasto real",
     tilesLabel: "Lo que se fue en esta categoría",
     totalQuarter: "Total del trimestre",
+    totalYear: "Total del año",
     // "Total de agosto".
     totalOf: "Total de",
     average: "Promedio por movimiento",

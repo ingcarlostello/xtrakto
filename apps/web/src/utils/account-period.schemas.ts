@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  parsePagePeriodParam,
   parsePeriodParam,
   TRANSACTIONS_PARAMS,
 } from "./transactions-url.helpers";
@@ -14,6 +15,18 @@ export const accountPeriodSearchSchema = z.object({
   [TRANSACTIONS_PARAMS.period]: z
     .string()
     .transform(parsePeriodParam)
+    .optional()
+    .catch(undefined),
+});
+
+/**
+ * The same, for a page whose controls offer a year too (10.2b): `"2026"`
+ * reads as that year.
+ */
+export const accountPagePeriodSearchSchema = accountPeriodSearchSchema.extend({
+  [TRANSACTIONS_PARAMS.period]: z
+    .string()
+    .transform(parsePagePeriodParam)
     .optional()
     .catch(undefined),
 });

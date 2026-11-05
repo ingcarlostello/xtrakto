@@ -1,7 +1,7 @@
 import { formatDayInWords, type Period } from "@xtrakto/core";
 import type { HrefOf } from "@/components/period-controls/period-controls.types";
 import {
-  type MovementPeriod,
+  type PagePeriod,
   periodDays,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
@@ -48,7 +48,7 @@ export const listHrefOf =
     transactionsHref({ ...link, search, filter, category });
 
 /** `"Del 1 de julio al 30 de septiembre de 2026"`. */
-export const periodText = (period: MovementPeriod): string => {
+export const periodText = (period: PagePeriod): string => {
   const { from, to } = periodDays(period);
   return `${COPY.from} ${formatDayInWords(from)} ${COPY.to} ${formatDayInWords(to)} ${COPY.ofYear} ${to.slice(0, 4)}`;
 };

@@ -2,7 +2,6 @@ import {
   type AmountMinor,
   amountMinorSchema,
   type CalendarMonth,
-  type CalendarQuarter,
   CATEGORIES,
   type CategoryId,
   channelOf,
@@ -14,7 +13,7 @@ import {
 } from "@xtrakto/core";
 import type { PeriodMovement, TransactionListItem } from "@xtrakto/db";
 import { descriptionView } from "@/components/movement-row/movement-row.helpers";
-import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
+import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText, formatCount } from "@/utils/count-text.utils";
@@ -22,7 +21,7 @@ import { joined } from "@/utils/list-text.utils";
 import { boxAmount, compactSize } from "@/utils/money-text.utils";
 import { periodWords } from "@/utils/period-words.helpers";
 import {
-  type MovementPeriod,
+  type PagePeriod,
   periodParam,
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
@@ -50,8 +49,8 @@ const MINOR_PER_PESO = 100;
 export const spendingCategoryOf = (param: string): CategoryId | undefined =>
   CATEGORIES.find(({ id, kind }) => id === param && kind === "spending")?.id;
 
-/** "Gasto real · julio a septiembre de 2026". */
-export const detailSubtitle = (period: MovementPeriod): string =>
+/** "Gasto real · julio a septiembre de 2026", or "Gasto real · 2026". */
+export const detailSubtitle = (period: PagePeriod): string =>
   `${COPY.detail.kind} · ${periodWords(period).toLowerCase()}`;
 
 type Movements = Pick<CategoryDetail, "categoryId" | "movements">;
@@ -63,6 +62,14 @@ export const categoryMovements = ({ categoryId, movements }: Movements) =>
 const totalOf = (movements: readonly PeriodMovement[]): AmountMinor =>
   sumAmounts(movements.map(({ amountMinor }) => amountMinor));
 
+// "Total del trimestre", "Total de agosto" or "Total del año".
+const totalLabel = (period: PagePeriod): string => {
+  if (period.kind === "year") return COPY.detail.totalYear;
+  return period.kind === "quarter"
+    ? COPY.detail.totalQuarter
+    : `${COPY.detail.totalOf} ${formatMonthName(period).toLowerCase()}`;
+};
+
 // "Total del trimestre": what the category took, how many movements and its
 // share of the real spending, as Categorías counts it.
 const totalFigure = (
@@ -72,10 +79,7 @@ const totalFigure = (
   const total = totalOf(movements);
   const share = shareText(total, summary.kinds.spending.amountMinor);
   return {
-    label:
-      period.kind === "quarter"
-        ? COPY.detail.totalQuarter
-        : `${COPY.detail.totalOf} ${formatMonthName(period).toLowerCase()}`,
+    label: totalLabel(period),
     amount: boxAmount(total),
     note: `${countText(movements.length, COPY.spending.movements)} · ${share} ${COPY.spending.ofSpending}.`,
   };
@@ -113,17 +117,20 @@ const averageFigure = (
   };
 };
 
-// A quarter's months, each with its key in dates: "2026-07".
-const monthsOf = ({ year, quarter }: CalendarQuarter) =>
-  [1, 2, 3].map((nth) => {
-    const month: CalendarMonth = { year, month: quarter * 3 - 3 + nth };
+// A quarter's or a year's months, each with its key in dates: "2026-07".
+const monthsOf = (period: Exclude<PagePeriod, { kind: "month" }>) => {
+  const [first, count] =
+    period.kind === "year" ? [1, 12] : [period.quarter * 3 - 2, 3];
+  return Array.from({ length: count }, (_, index) => {
+    const month: CalendarMonth = { year: period.year, month: first + index };
     return { month, key: periodParam({ kind: "month", ...month }) };
   });
+};
 
 /**
- * What the category took each month of a quarter, those the account has
- * movements in, the one it took the most marked when there are several.
- * None for a month.
+ * What the category took each month of a quarter or a year (10.2b), those
+ * the account has movements in, the one it took the most marked when there
+ * are several. None for a month.
  */
 export const monthBoxes = (
   detail: Pick<CategoryDetail, "period" | "categoryId" | "movements">,
@@ -176,7 +183,7 @@ export const latestSubtitle = (detail: Movements): string =>
     ? `${COPY.detail.noneIn} «${categoryLabel(detail.categoryId)}» ${COPY.detail.inPeriod}`
     : COPY.latest.subtitle;
 
-type Links = PeriodChoices & Pick<CategoryDetail, "categoryId">;
+type Links = PagePeriodChoices & Pick<CategoryDetail, "categoryId">;
 
 // Movimientos, with the category's movements and their detail.
 const movementsHref = (detail: Links, movementId?: string) =>
