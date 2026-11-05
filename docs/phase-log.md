@@ -1218,3 +1218,60 @@ In a local browser, with a fresh Clerk test user deleted afterwards (the local c
 - **The example:** its quarter has no movements file, so it shows neither.
 - **Size:** about 210 lines of code without tests, comments and blank lines (180 net).
 - **Commits:** two of one pull request instead of the three planned: the design rules, then the database and the app together. A movement's detail gains a field the app's tests build it with, so the database's commit alone fails their type check.
+
+## 10.2a Coverage timeline
+
+_2026-11-05_
+
+Each account's months now show where the files go up and in the profile, worked out when read so the upload order doesn't matter.
+
+- **The data:** `listAccountCoverage` (`@xtrakto/db`) reads, for each of the user's accounts:
+  - its months with the files that saved their movements, counted or hidden behind a verified quarterly statement, leaving out a statement that doesn't reconcile;
+  - the references movements files carried over in each month (10.1a);
+  - its verified quarterly statements, each with whether it chains on to the one before (5.6c's `chainedFrom`).
+    `countUserFiles` counts the statements the user keeps, of each kind.
+- **The view** (`components/coverage-timeline/`):
+  - The months run from the account's first through this one in Bogotá, twelve at most. A month is verified where a verified quarterly statement covers its days, "also in movements" where movements files saved movements in it too, without balance where only they did, and missing otherwise.
+  - A sentence says it by runs ("Abril a septiembre de 2026 completo y verificado. Octubre está en movimientos, sin saldo para verificar. Noviembre no lo tienes todavía.") and names the timeline for screen readers.
+  - "Encadenado" shows when two or more quarters in the months chain.
+  - The note names the latest month two or more movements files with days in common brought ("Julio lo subiste también en 2 archivos de movimientos con fechas que se cruzan (1–15 y 10–31). Los juntamos sin duplicar y les agregamos 3 referencias.").
+- **"Lo que tienes"** (`WhatYouHave`) sits under the upload card and "Lo que sigue": per account, its sentence, "Encadenado", the timeline; then the legend and the note. It reads "Lo que tienes ahora" once the screen shows a file's result, and the page reads it again when the last job ends.
+- **"Tus datos"** (`YourData`) in the profile: "5 archivos: 2 trimestrales y 3 de movimientos.", each account's timeline and the legend.
+
+The design rules (with the `layers` icon) and system design §3 say so.
+
+28 new tests:
+
+- 5 in the database (267 there):
+  - each month's files, the references carried over and the quarter's days;
+  - a statement that doesn't reconcile and a file whose movements another saved before, left out;
+  - a chained quarter;
+  - each account apart and nothing of another user's;
+  - every file the user keeps, of each kind.
+- 23 in the app:
+  - the months, twelve at most, across a year, through a later month;
+  - v8's months with their sentence, chain and note;
+  - a covered month without movements, verified;
+  - chains that break, one quarter, and quarters outside the months;
+  - accounts in order, named only when several;
+  - the sentence's runs, years, plural and "todavía";
+  - the note's days within the month, files that only meet, the latest month, and its year;
+  - the profile's count of files (6);
+  - and, through ingestion and the test database, the coverage and the profile's data after the quarterly statement and July's export, and nothing before the user's first file.
+
+Checked: twenty-six deliberate bugs, each in a file of its own, all fail a test, one after a test gained a case: a movements file's own reference, which no quarterly statement took, counted as carried over.
+
+In a local browser, with a fresh Clerk test user deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The uploads:** `quarterly-previous`, `quarterly-basic`, July's movements in two downloads that overlap (1–15 and 10–31, written in the scratchpad from `movements-overlap`, invented data), and `movements-basic`.
+- **Subir:** none before the first file; "Lo que tienes ahora" after each result, with "Encadenado" once the second quarter came; on a later visit "Lo que tienes", the sentence above, only July underlined, the legend and July's note.
+- **The profile:** "5 archivos: 2 trimestrales y 3 de movimientos.", its timeline named by the sentence.
+- **Twelve months and a second account:** then `quarterly-year-rollover` (to March 2027, twelve months) and `quarterly-basic-account-2`. Each account under its label, "Noviembre y diciembre no los tienes. Enero a marzo de 2027 completo y verificado.", the note under its account's label, and the profile's "7 archivos: 4 trimestrales y 3 de movimientos.".
+- **Widths:** at 390px and 360px nothing overflows and the twelve months' names don't touch; no page error.
+
+**Deviations and follow-ups:**
+
+- **Decided with the human:** one phase rather than two; a quarterly statement that doesn't reconcile leaves its months missing; one timeline per account; the card under the upload card, "ahora" after a result.
+- **Verified months:** they come from the quarterly statement's days, with movements or not. The other statuses come from the movements saved, so a movements file whose movements another saved before isn't in a month's note, as in Movimientos (10.1c).
+- **The legend:** all four statuses always, as v8 draws them.
+- **Size:** about 730 lines of code without tests, comments and blank lines (about 530 estimated), past the 400 a phase should hold: three commits of one pull request, the design rules, the database and the app.

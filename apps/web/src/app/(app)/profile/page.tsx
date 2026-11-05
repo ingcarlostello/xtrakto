@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getYourData } from "@/components/coverage-timeline/coverage.service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AnalyticsSetting } from "@/features/analytics/components/AnalyticsSetting";
 import { hasUsedUpAiMonth } from "@/features/llm-usage/llm-usage.service";
@@ -9,6 +10,7 @@ import { ProfilePlan } from "@/features/users/components/ProfilePlan";
 import { ProfileSession } from "@/features/users/components/ProfileSession";
 import { XtraktoAccount } from "@/features/users/components/XtraktoAccount";
 import { YourAccounts } from "@/features/users/components/YourAccounts";
+import { YourData } from "@/features/users/components/YourData";
 import { PROFILE_COPY } from "@/features/users/user.constants";
 import {
   getProfileAccount,
@@ -22,9 +24,10 @@ export const metadata: Metadata = { title: PROFILE_COPY.title };
 // phones stack.
 export default async function ProfilePage() {
   const clerkUserId = await requireSignedIn();
-  const [account, yours, usage, isAiUsedUp] = await Promise.all([
+  const [account, yours, data, usage, isAiUsedUp] = await Promise.all([
     getProfileAccount(clerkUserId),
     getYourAccounts(clerkUserId),
+    getYourData(clerkUserId),
     getMonthlyUsage(clerkUserId),
     hasUsedUpAiMonth(clerkUserId),
   ]);
@@ -36,6 +39,7 @@ export default async function ProfilePage() {
           <XtraktoAccount account={account} />
           <BankName {...yours} />
           <YourAccounts {...yours} />
+          <YourData {...data} />
           <PrivacyAndData />
         </div>
         <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-5.5">

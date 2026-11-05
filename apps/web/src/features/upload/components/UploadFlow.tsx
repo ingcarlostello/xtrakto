@@ -2,6 +2,7 @@
 
 import { Upload } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
+import type { CoverageView } from "@/components/coverage-timeline/coverage-timeline.types";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { countText } from "@/utils/count-text.utils";
@@ -40,6 +41,7 @@ import { FileRow } from "./FileRow";
 import { NextStep } from "./NextStep";
 import { PdfPasswordForm } from "./PdfPasswordForm";
 import { UploadResult } from "./UploadResult";
+import { WhatYouHave } from "./WhatYouHave";
 
 type SubmitFilesProps = {
   count: number;
@@ -242,6 +244,8 @@ type UploadFlowProps = {
   accounts: readonly UploadAccount[];
   /** The month's statements, counted on the server. */
   usage: MonthlyUsage;
+  /** Each account's months, read again when the last job ends (10.2a). */
+  coverage: readonly CoverageView[];
   /** Shown at the end of the card: the formats read today. */
   children?: ReactNode;
 };
@@ -263,12 +267,34 @@ const shownJobs = (
     return job ? [job] : [];
   });
 
-export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
+type UnderTheCardProps = {
+  jobs: readonly UploadJob[];
+  coverage: readonly CoverageView[];
+};
+
+// Under the upload card: what follows once a file's quarter has movements
+// to review, and the months the user has, "now" once a file's result shows
+// (v8-08).
+function UnderTheCard({ jobs, coverage }: UnderTheCardProps) {
+  const nextStep = nextStepOf(jobs);
+  return (
+    <>
+      {nextStep && <NextStep step={nextStep} />}
+      {coverage.length > 0 && (
+        <WhatYouHave
+          views={coverage}
+          isNow={jobs.some(({ outcome }) => outcome !== undefined)}
+        />
+      )}
+    </>
+  );
+}
+
+export function UploadFlow(props: UploadFlowProps) {
+  const { accounts, usage, coverage, children } = props;
   const { items, restored, statuses, files, isBusy, ...flow } =
     useUploadFlow(accounts);
   const { picker, addFiles, actions, sendAll } = flow;
-  // What follows once a file's quarter has movements to review (v8-08).
-  const nextStep = nextStepOf(shownJobs(items, restored, statuses.jobs));
   return (
     <>
       <Card variant="card">
@@ -297,7 +323,10 @@ export function UploadFlow({ accounts, usage, children }: UploadFlowProps) {
         )}
         {children}
       </Card>
-      {nextStep && <NextStep step={nextStep} />}
+      <UnderTheCard
+        jobs={shownJobs(items, restored, statuses.jobs)}
+        coverage={coverage}
+      />
     </>
   );
 }
