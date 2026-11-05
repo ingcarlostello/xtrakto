@@ -11,6 +11,13 @@ describe("recurringSearchSchema", () => {
     });
   });
 
+  it("reads a year (10.2c)", () => {
+    expect(recurringSearchSchema.parse({ period: "2026" }).period).toEqual({
+      kind: "year",
+      year: 2026,
+    });
+  });
+
   it.each([
     ["a kind of Movimientos", "moved"],
     ["a repeated param", ["stopped", "stopped"]],

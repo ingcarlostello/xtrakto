@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { accountPeriodSearchSchema } from "@/utils/account-period.schemas";
+import { accountPagePeriodSearchSchema } from "@/utils/account-period.schemas";
 import {
   RECURRING_FILTERS,
   TRANSACTIONS_PARAMS,
@@ -9,7 +9,7 @@ import {
  * Pagos fijos's account, period and list, from the URL. A param that doesn't
  * parse is left out, so the page opens on the payments its month expects.
  */
-export const recurringSearchSchema = accountPeriodSearchSchema.extend({
+export const recurringSearchSchema = accountPagePeriodSearchSchema.extend({
   [TRANSACTIONS_PARAMS.filter]: z
     .enum(RECURRING_FILTERS)
     .optional()

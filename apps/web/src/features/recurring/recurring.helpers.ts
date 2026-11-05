@@ -1,12 +1,15 @@
 import {
   type CalendarMonth,
+  findRecurringPayments,
   type LocalDate,
   monthPeriod,
   type Period,
   type RecurringMonth,
+  type RecurringMovement,
   type RecurringPayment,
   type RecurringPayments,
 } from "@xtrakto/core";
+import type { PagePeriod } from "@/utils/transactions-url.helpers";
 import type { PagePayments } from "./recurring.types";
 
 const MONTHS_A_YEAR = 12;
@@ -39,6 +42,47 @@ export const historyOf = ({ to }: Period): Period => ({
   from: monthPeriod(monthBefore(calendarMonthOf(to), HISTORY_MONTHS - 1)).from,
   to,
 });
+
+/**
+ * The days a page reads for a period's payments that repeat: the year that
+ * ends with it, or for a year (10.2c) the year that ends with any of its
+ * months, since a year finds them by its last month with movements
+ * (`periodPayments`), as that month's page does.
+ */
+export const historyRead = (period: PagePeriod, days: Period): Period =>
+  period.kind === "year"
+    ? {
+        from: historyOf(monthPeriod({ year: period.year, month: 1 })).from,
+        to: days.to,
+      }
+    : historyOf(days);
+
+/** The movements of the year that ends with a day's month, which find its payments. */
+export const historyUpTo = <T extends { readonly date: LocalDate }>(
+  movements: readonly T[],
+  last: LocalDate,
+): T[] => {
+  const { from } = historyOf(monthPeriod(calendarMonthOf(last)));
+  return movements.filter(({ date }) => date >= from);
+};
+
+/**
+ * A period's payments that repeat, found in the year that ends with its
+ * last month with movements, and its last day with them; `undefined`
+ * without movements in it. The history comes as `historyRead` reads it,
+ * the oldest first.
+ */
+export const periodPayments = (
+  history: readonly RecurringMovement[],
+  { from }: Period,
+):
+  | { readonly last: LocalDate; readonly payments: RecurringPayments }
+  | undefined => {
+  const last = history.findLast(({ date }) => date >= from)?.date;
+  return last === undefined
+    ? undefined
+    : { last, payments: findRecurringPayments(historyUpTo(history, last)) };
+};
 
 /** What a payment added up to in a month, when it was paid in it. */
 export const paidMonth = (

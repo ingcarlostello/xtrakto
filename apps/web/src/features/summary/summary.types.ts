@@ -17,7 +17,7 @@ import type {
 } from "@/components/line-chart/line-chart.types";
 import type { FilterChip } from "@/components/filter-chips/filter-chips.types";
 import type { MovementTone } from "@/components/movement-icon/movement-icon.types";
-import type { PeriodChoices } from "@/components/period-controls/period-controls.types";
+import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import type {
   breaksHref,
@@ -25,7 +25,7 @@ import type {
 } from "@/utils/transactions-url.helpers";
 
 /** An account's summary for a period: its movements' figures, and the bank's. */
-export type AccountSummary = PeriodChoices & {
+export type AccountSummary = PagePeriodChoices & {
   /** Its movements that count, the oldest first. */
   readonly movements: readonly PeriodMovement[];
   readonly summary: PeriodSummary;

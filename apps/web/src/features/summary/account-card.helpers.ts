@@ -3,6 +3,7 @@ import {
   formatAmount,
   formatDayInWords,
   formatMonthRange,
+  sumAmounts,
 } from "@xtrakto/core";
 import type { BankFigures } from "@xtrakto/db";
 import { accountLabel } from "@/utils/account-label.helpers";
@@ -14,12 +15,32 @@ import type { AccountCardView, AccountSummary } from "./summary.types";
 
 const COPY = SUMMARY_COPY.account;
 
+const QUARTERS_A_YEAR = 4;
+
+// A year's interest, added up from its quarterly statements, without an
+// average balance: the bank prints one for a quarter only (decided with
+// the human, 10.2c).
+const yearFiguresOf = (
+  bankFigures: readonly BankFigures[],
+): AccountCardView["figures"] => {
+  const interests = bankFigures.flatMap(({ interestMinor }) =>
+    interestMinor === null ? [] : [interestMinor],
+  );
+  if (interests.length === 0) return [];
+  const label =
+    bankFigures.length === QUARTERS_A_YEAR
+      ? COPY.interestOfYear
+      : `${COPY.interestOf} ${countText(bankFigures.length, COPY.quarters)}`;
+  return [{ label, value: boxAmount(sumAmounts(interests)) }];
+};
+
 // The bank's own figures of the statement the period shows; a month's are
-// its quarter's, and say so.
+// its quarter's, and say so; a year's, its interest added up.
 const figuresOf = ({
   bankFigures,
   period,
 }: AccountSummary): AccountCardView["figures"] => {
+  if (period.kind === "year") return yearFiguresOf(bankFigures);
   const figures = bankFigures.at(-1);
   if (figures === undefined) return [];
   const { averageBalanceMinor, interestMinor } = figures;
@@ -43,20 +64,35 @@ const figuresOf = ({
   ];
 };
 
+type Verified = Pick<BankFigures, "movementCount" | "chainedTo">;
+
 // "312 movimientos cuadran", or "Encadenado con abr–jun 2026 · 312 cuadran".
-const verifiedDetail = ({ movementCount, chainedTo }: BankFigures): string => {
+const verifiedDetail = ({ movementCount, chainedTo }: Verified): string => {
   const reconcile = wordFor(movementCount, COPY.reconcile);
   return chainedTo === null
     ? `${countText(movementCount, COPY.movements)} ${reconcile}`
     : `${COPY.chainedTo} ${formatMonthRange(chainedTo)} · ${formatCount(movementCount)} ${reconcile}`;
 };
 
+// What verified a period's balances: its latest quarterly statement, or a
+// year's, their movements added up (10.2c).
+const verifiedOf = ({
+  bankFigures,
+  period,
+}: AccountSummary): Verified | undefined => {
+  if (period.kind !== "year") return bankFigures.at(-1);
+  if (bankFigures.length === 0) return undefined;
+  const movementCount = bankFigures.reduce(
+    (sum, figures) => sum + figures.movementCount,
+    0,
+  );
+  return { movementCount, chainedTo: null };
+};
+
 // A statement of the period that doesn't reconcile comes first: none of its
 // numbers count. Then a verified one, else only files without balances.
-const statusOf = ({
-  unreconciled,
-  bankFigures,
-}: AccountSummary): AccountCardView["status"] => {
+const statusOf = (summary: AccountSummary): AccountCardView["status"] => {
+  const { unreconciled } = summary;
   const [broken] = unreconciled;
   if (broken)
     return {
@@ -67,7 +103,7 @@ const statusOf = ({
           : `${COPY.doesNotReconcile} ${COPY.by} ${exactSize(broken.differenceMinor)}`,
       detail: COPY.checkFile,
     };
-  const verified = bankFigures.at(-1);
+  const verified = verifiedOf(summary);
   return verified
     ? { tone: "ok", title: COPY.verified, detail: verifiedDetail(verified) }
     : { tone: "none", title: COPY.noBalance, detail: COPY.movementsFile };

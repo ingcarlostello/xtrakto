@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { type ExtractedContent, extractedContentSchema } from "@xtrakto/core";
+import {
+  type CalendarMonth,
+  type ExtractedContent,
+  extractedContentSchema,
+} from "@xtrakto/core";
 import {
   createDb,
   createIngestionJobWithinLimit,
@@ -61,11 +65,14 @@ const fixture = (name: string) =>
     ),
   );
 
-type AprilRow = readonly [day: number, description: string, pesos: number];
+type ExportRow = readonly [day: number, description: string, pesos: number];
 
-// The month after quarterly-year-rollover, as the movements export writes
-// it: each day's midnight in Bogotá stored as 05:00 UTC, amounts in pesos.
-const aprilExport = (rows: readonly AprilRow[]) =>
+// A month's movements, as the movements export writes them: each day's
+// midnight in Bogotá stored as 05:00 UTC, amounts in pesos.
+const monthExport = (
+  { year, month }: CalendarMonth,
+  rows: readonly ExportRow[],
+) =>
   minimized(
     extractedContentSchema.parse({
       type: "spreadsheet",
@@ -77,7 +84,8 @@ const aprilExport = (rows: readonly AprilRow[]) =>
             ...rows.map(([day, description, pesos]) => [
               {
                 excelSerial:
-                  (Date.UTC(2027, 3, day) - EXCEL_EPOCH) / DAY_MS + 5 / 24,
+                  (Date.UTC(year, month - 1, day) - EXCEL_EPOCH) / DAY_MS +
+                  5 / 24,
               },
               description,
               null,
@@ -89,8 +97,12 @@ const aprilExport = (rows: readonly AprilRow[]) =>
     }),
   );
 
+// The month after quarterly-year-rollover.
+const aprilExport = (rows: readonly ExportRow[]) =>
+  monthExport({ year: 2027, month: 4 }, rows);
+
 // April's fixed payments to the 6th: internet, due on the 5th, didn't come.
-const APRIL_TO_THE_6TH: readonly AprilRow[] = [
+const APRIL_TO_THE_6TH: readonly ExportRow[] = [
   [2, "PAGO PSE Financiera Andes S", -1_540_000],
   [3, "PAGO PSE EMPRESA DE ENERGIA", -170_000],
   [4, "PAGO PSE Financiera Andes S", -311_000],
@@ -99,7 +111,7 @@ const APRIL_TO_THE_6TH: readonly AprilRow[] = [
 ];
 
 // The rest of April, to its last day: all but the gym.
-const REST_OF_APRIL: readonly AprilRow[] = [
+const REST_OF_APRIL: readonly ExportRow[] = [
   [5, "PAGO PSE HOGAR CONECTADO SA", -129_900],
   [11, "PAGO PSE GAS NATURAL CIUDAD", -30_990],
   [19, "PAGO PSE Acueducto Municipa", -97_000],
@@ -216,6 +228,58 @@ describe.skipIf(!testDatabase)("an account's payments that repeat", () => {
     expect(recurring?.month).toEqual({ year: 2027, month: 4 });
     expect(labels(recurring?.payments.spending ?? [])).toEqual(SPENDING);
     expect(recurring?.stopped).toEqual([]);
+  });
+
+  it("finds a year's payments by its last month, with the months before the year (10.2c)", async () => {
+    // A loan paid from November to January.
+    const loan: readonly ExportRow[] = [
+      [2, "PAGO PSE Financiera Andes S", -1_540_000],
+    ];
+    const { clerkUserId } = await userWith(
+      monthExport({ year: 2026, month: 11 }, loan),
+      monthExport({ year: 2026, month: 12 }, loan),
+      monthExport({ year: 2027, month: 1 }, loan),
+    );
+    const inYear = (year: number) =>
+      getRecurringPayments(clerkUserId, { period: { kind: "year", year } });
+
+    const january = await inYear(2027);
+    // By December, two months only.
+    const december = await inYear(2026);
+
+    expect(january?.period).toEqual({ kind: "year", year: 2027 });
+    expect(january?.month).toEqual({ year: 2027, month: 1 });
+    expect(labels(january?.payments.spending ?? [])).toEqual([
+      "Financiera Andes S",
+    ]);
+    expect(december?.month).toEqual({ year: 2026, month: 12 });
+    expect(december?.payments).toEqual({ spending: [], moved: [] });
+  });
+
+  it("leaves out of a year what came before the year that ends with its last month", async () => {
+    // A gym paid from February to April 2026, a year before March 2027.
+    const gym: readonly ExportRow[] = [
+      [10, "COMPRA EN  GIMNASIO FIT", -110_000],
+    ];
+    const { clerkUserId } = await userWith(
+      monthExport({ year: 2026, month: 2 }, gym),
+      monthExport({ year: 2026, month: 3 }, gym),
+      monthExport({ year: 2026, month: 4 }, gym),
+      monthExport({ year: 2027, month: 3 }, [
+        [2, "PAGO PSE Financiera Andes S", -1_540_000],
+      ]),
+    );
+
+    const year = await getRecurringPayments(clerkUserId, {
+      period: { kind: "year", year: 2027 },
+    });
+    const quarter = await getRecurringPayments(clerkUserId, {
+      period: { kind: "quarter", year: 2027, quarter: 1 },
+    });
+
+    expect(year?.month).toEqual({ year: 2027, month: 3 });
+    expect(year?.stopped).toEqual([]);
+    expect(year?.stopped).toEqual(quarter?.stopped);
   });
 
   it("finds none in a quarter whose payments don't repeat, and keeps its last month", async () => {

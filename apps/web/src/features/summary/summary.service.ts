@@ -1,9 +1,5 @@
 import "server-only";
-import {
-  dailyBalances,
-  findRecurringPayments,
-  summarizeMovements,
-} from "@xtrakto/core";
+import { dailyBalances, summarizeMovements } from "@xtrakto/core";
 import {
   findUserId,
   listBankFigures,
@@ -11,9 +7,12 @@ import {
   listUnreconciledStatements,
   withUserContext,
 } from "@xtrakto/db";
-import type { PeriodRequest } from "@/components/period-controls/period-controls.types";
-import { locateAccountPeriod } from "@/components/period-controls/period-location.service";
-import { historyOf } from "@/features/recurring/recurring.helpers";
+import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
+import { locatePagePeriod } from "@/components/period-controls/period-location.service";
+import {
+  historyRead,
+  periodPayments,
+} from "@/features/recurring/recurring.helpers";
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
 import type { AccountSummary } from "./summary.types";
@@ -21,30 +20,30 @@ import type { AccountSummary } from "./summary.types";
 /**
  * The signed-in user's summary, in the account and period the URL asks, or
  * the latest: its movements that count and what they add up to
- * (`summarizeMovements`), the fixed payments found in the year it ends, the
- * balance after the last movement that printed one and day by day, the
- * bank's own figures from its quarterly statements there, and those of its
- * statements that don't reconcile. `null` until a movement counts; reading
- * never creates the user's row. The Clerk id must come from the session.
+ * (`summarizeMovements`), the fixed payments found in the year that ends
+ * with its last month with movements, as on Pagos fijos, the balance after
+ * the last movement that printed one and day by day, the bank's own figures
+ * from its quarterly statements there, and those of its statements that
+ * don't reconcile. `null` until a movement counts; reading never creates
+ * the user's row. The Clerk id must come from the session.
  */
 export const getSummary = async (
   clerkUserId: string,
-  request: PeriodRequest,
+  request: PagePeriodRequest,
 ): Promise<AccountSummary | null> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
   if (!userId) return null;
   return withUserContext(db, userId, async (ctx) => {
-    const located = await locateAccountPeriod(ctx, request);
+    const located = await locatePagePeriod(ctx, request);
     if (!located) return null;
     const scope = {
       accountId: located.account.id,
       period: periodDays(located.period),
     };
-    // The year that ends with the period finds its fixed payments.
     const history = await listSummaryMovements(ctx, {
       ...scope,
-      period: historyOf(scope.period),
+      period: historyRead(located.period, scope.period),
     });
     const movements = history.filter(({ date }) => date >= scope.period.from);
     const last = movements.findLast((m) => m.balanceAfterMinor !== null);
@@ -52,7 +51,8 @@ export const getSummary = async (
       ...located,
       movements,
       summary: summarizeMovements(movements),
-      fixedPayments: findRecurringPayments(history).spending,
+      fixedPayments:
+        periodPayments(history, scope.period)?.payments.spending ?? [],
       balance:
         last && last.balanceAfterMinor !== null
           ? { date: last.date, amountMinor: last.balanceAfterMinor }

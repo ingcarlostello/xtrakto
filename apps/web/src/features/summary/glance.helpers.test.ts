@@ -103,6 +103,18 @@ describe("the glance's texts", () => {
       "Julio a septiembre de 2026. No salió plata de tu cuenta.",
     );
   });
+
+  it("names a year's glance and says what went out in it", () => {
+    const year = { kind: "year", year: 2026 } as const;
+
+    expect(glanceTitle(year)).toBe("Tu año de un vistazo");
+    expect(glanceSubtitle(year, SUMMARY)).toBe(
+      "En 2026 salieron $54,2M, pero no todo fue gasto.",
+    );
+    expect(glanceSubtitle(year, ONLY_IN)).toBe(
+      "En 2026 no salió plata de tu cuenta.",
+    );
+  });
 });
 
 describe("glanceTiles", () => {

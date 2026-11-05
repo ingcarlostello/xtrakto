@@ -25,6 +25,9 @@ export const RECURRING_COPY = {
   listTitle: "Tus pagos fijos",
   sorted: "Ordenados por monto.",
   barsShow: "Las barras muestran",
+  // A year's months (10.2c): "Las barras muestran de enero a octubre."
+  barsFrom: "de",
+  barsTo: "a",
   // "Activos · 7 / Ya no aparecen · 1".
   filtersLabel: "Mostrar",
   active: "Activos",
