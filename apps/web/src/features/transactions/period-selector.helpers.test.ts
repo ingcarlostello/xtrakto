@@ -49,6 +49,7 @@ const view = (
     moved: { out: NOTHING, back: NOTHING },
   },
   pendingReview: 0,
+  files: { quarterly: 1, movements: 0 },
   currentYear: "2026",
 });
 

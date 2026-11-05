@@ -65,6 +65,25 @@ function DetailHeading({
   );
 }
 
+// The bank's text as printed and, when another file wrote it otherwise, how
+// (10.1c).
+function BankTexts({ view }: { view: MovementDetailView }) {
+  return (
+    <div className="flex flex-col items-start gap-2 rounded-md bg-surface-muted p-4">
+      <p className="text-meta font-bold">{COPY.bankText}</p>
+      <RawTextChip text={view.bankText} />
+      {view.alsoWrittenAs.length > 0 && (
+        <>
+          <p className="mt-1.5 text-meta font-bold">{COPY.alsoWrittenAs}</p>
+          {view.alsoWrittenAs.map((text) => (
+            <RawTextChip key={text} text={text} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 // Its channel, reference, source and balance after, those it has.
 function DetailFacts({ view }: { view: MovementDetailView }) {
   return (
@@ -137,11 +156,11 @@ function DetailChanges({ view, correction, own, readOnlyNote }: ChangesProps) {
 }
 
 /**
- * A movement's detail (docs/ui/v8-03): its real fields, its Nequi number
- * and the user's rules for it, and its kind and category with why, which
- * the user can change. Beside the list from `lg`, a sheet on phones. With a
- * read-only note, as the example has (7.8), its controls stay in sight but
- * disabled, under the note.
+ * A movement's detail (docs/ui/v8-03): its real fields, with the files that
+ * saved it and how each wrote it, its Nequi number and the user's rules for
+ * it, and its kind and category with why, which the user can change. Beside
+ * the list from `lg`, a sheet on phones. With a read-only note, as the
+ * example has (7.8), its controls stay in sight but disabled, under the note.
  */
 export function MovementDetailPanel({
   closeHref,
@@ -165,10 +184,7 @@ export function MovementDetailPanel({
         >
           {view.amount}
         </p>
-        <div className="flex flex-col items-start gap-2 rounded-md bg-surface-muted p-4">
-          <p className="text-meta font-bold">{COPY.bankText}</p>
-          <RawTextChip text={view.bankText} />
-        </div>
+        <BankTexts view={view} />
         <DetailFacts view={view} />
         <DetailChanges {...changes} />
       </Card>

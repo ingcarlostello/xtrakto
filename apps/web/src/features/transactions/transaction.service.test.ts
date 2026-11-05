@@ -30,31 +30,27 @@ const FIXTURES = new URL(
 const HOUR_MS = 3_600_000;
 const THIRD_QUARTER = { kind: "quarter", year: 2026, quarter: 3 } as const;
 
-// quarterly-basic as the browser sends it: minimized by its parser.
-const quarterlyBasic = () => {
+// A fixture as the browser sends it: minimized by its parser.
+const fixtureJob = (name: string) => {
   const json: unknown = JSON.parse(
-    readFileSync(new URL("quarterly-basic.json", FIXTURES), "utf8"),
+    readFileSync(new URL(`${name}.json`, FIXTURES), "utf8"),
   );
   const content = extractedContentSchema.parse(json);
   const parser = findParser(content);
-  if (!parser.ok) throw new Error("No parser recognizes quarterly-basic.");
+  if (!parser.ok) throw new Error(`No parser recognizes ${name}.`);
   return {
     formatId: parser.value.id,
     extractedContent: parser.value.minimize(content),
   };
 };
 
-describe.skipIf(!testDatabase)("the movements list", () => {
-  let app: DbClient;
-  let clerkUserId: string;
-
-  beforeAll(async () => {
-    app = createDb({ connectionString: requireTestDatabase().appUrl });
-    database.current = app.db;
-    clerkUserId = `test_${randomUUID()}`;
-    const userId = await findOrCreateUser(app.db, clerkUserId);
+// A new user's files, uploaded in order as the function runs them.
+const uploadAs = async (app: DbClient, fixtures: readonly string[]) => {
+  const clerkUserId = `test_${randomUUID()}`;
+  const userId = await findOrCreateUser(app.db, clerkUserId);
+  for (const name of fixtures) {
     const created = await withUserContext(app.db, userId, (ctx) =>
-      createIngestionJobWithinLimit(ctx, quarterlyBasic(), {
+      createIngestionJobWithinLimit(ctx, fixtureJob(name), {
         limit: 100,
         month: {
           start: new Date(Date.now() - HOUR_MS),
@@ -65,6 +61,18 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     if (!created.ok) throw new Error("No job created.");
     await claimJob({ jobId: created.value, userId });
     await ingestJob({ jobId: created.value, userId });
+  }
+  return clerkUserId;
+};
+
+describe.skipIf(!testDatabase)("the movements list", () => {
+  let app: DbClient;
+  let clerkUserId: string;
+
+  beforeAll(async () => {
+    app = createDb({ connectionString: requireTestDatabase().appUrl });
+    database.current = app.db;
+    clerkUserId = await uploadAs(app, ["quarterly-basic"]);
   });
 
   afterAll(async () => {
@@ -133,5 +141,38 @@ describe.skipIf(!testDatabase)("the movements list", () => {
         lines.map((line) => line.kind === "movement" && line.item.date),
       ),
     ).toEqual(["2026-09-02", "2026-07-20"]);
+  });
+
+  it("names the files it joined, and both files of a movement July's export repeats", async () => {
+    const joinedUser = await uploadAs(app, [
+      "quarterly-basic",
+      "movements-overlap",
+    ]);
+    const joined = await getAccountTransactions(joinedUser, {
+      period: THIRD_QUARTER,
+      shown: 30,
+    });
+    const july = joined?.list.days
+      .flatMap(({ lines }) => lines)
+      .find(
+        (line) => line.kind === "movement" && line.item.date < "2026-08-01",
+      );
+    if (july?.kind !== "movement") throw new Error("No movement in July.");
+
+    const opened = await getAccountTransactions(joinedUser, {
+      period: THIRD_QUARTER,
+      shown: 30,
+      movementId: july.item.id,
+    });
+
+    // The export's movements are hidden behind the quarterly statement's.
+    expect(joined).toMatchObject({
+      total: 33,
+      files: { quarterly: 1, movements: 1 },
+    });
+    expect(opened?.detail?.movement).toMatchObject({
+      statement: { formatId: "bancolombia-savings-quarterly" },
+      twin: { statement: { formatId: "bancolombia-movements-export" } },
+    });
   });
 });

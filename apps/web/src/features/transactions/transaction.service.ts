@@ -9,6 +9,7 @@ import {
 import {
   countCountedMovements,
   countMovementsOfRule,
+  countPeriodFiles,
   findMovementDetail,
   findStatementBreaks,
   findUserId,
@@ -140,17 +141,20 @@ const listedIn = (
   };
 };
 
-// The tiles and "Por revisar · 24" add up the whole period, whatever the
-// list shows of it.
-const periodKinds = async (
+// The tiles, "Por revisar · 24" and the files the list joined take in the
+// whole period, whatever the list shows of it.
+const wholePeriod = async (
   ctx: UserContext,
   shownPeriod: { readonly accountId: string; readonly period: Period },
-): Promise<Pick<AccountTransactions, "kindTotals" | "pendingReview">> => ({
+): Promise<
+  Pick<AccountTransactions, "kindTotals" | "pendingReview" | "files">
+> => ({
   kindTotals: kindTotalsOf(await listCategoryTotals(ctx, shownPeriod)),
   pendingReview: await countCountedMovements(ctx, {
     ...shownPeriod,
     isPendingReview: true,
   }),
+  files: await countPeriodFiles(ctx, shownPeriod),
 });
 
 /**
@@ -189,7 +193,7 @@ export const getAccountTransactions = async (
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
       ...(category === undefined ? {} : { category }),
-      ...(await periodKinds(ctx, shownPeriod)),
+      ...(await wholePeriod(ctx, shownPeriod)),
       detail: await detailOf(ctx, located.account.id, request.movementId),
       currentYear,
     };

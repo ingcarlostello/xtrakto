@@ -37,6 +37,7 @@ const movement = (changes: Partial<MovementDetail> = {}): MovementDetail => ({
     formatId: "bancolombia-movements-export",
     period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-31" }),
   },
+  twin: null,
   ...changes,
 });
 

@@ -12,6 +12,7 @@ import {
 import type { MovementDetail } from "@xtrakto/db";
 import { descriptionView } from "@/components/movement-row/movement-row.helpers";
 import type { DescriptionView } from "@/components/movement-row/movement-row.types";
+import { joined } from "@/utils/list-text.utils";
 import { statementLabel } from "@/utils/statement-label.helpers";
 import { reviewHref } from "@/utils/transactions-url.helpers";
 import { movementTone } from "./kind-view.helpers";
@@ -25,11 +26,38 @@ const RULE_REASONS: ReadonlyMap<CategorizationRuleId, string> = new Map(
   CATEGORIZATION_RULES.map(({ id, reasonEs }) => [id, reasonEs]),
 );
 
-// Its channel, the digits its reference kept, the statement it came from
-// and its balance after: those it has. Its kind and category are choices
-// of their own (6.3g).
+// The files that saved it: its statement, then the movements file whose
+// movement repeats it (10.1c), whose label goes mid-sentence: "Extracto
+// trimestral jul–sep 2026 y movimientos 15–31 ago 2026".
+const sourceOf = ({ statement, twin }: MovementDetail): string => {
+  const own = statementLabel(statement.formatId, statement.period);
+  if (twin === null) return own;
+  const other = statementLabel(twin.statement.formatId, twin.statement.period);
+  return joined([
+    own,
+    `${other.charAt(0).toLocaleLowerCase("es-CO")}${other.slice(1)}`,
+  ]);
+};
+
+// How the movements file that repeats it wrote it, when that reads
+// otherwise: a quarterly statement can cut a text before an accented letter
+// (Appendix A.2). Spaces and how a letter is encoded don't count: a PDF
+// prints one space where the Excel prints two.
+const alsoWrittenAsOf = ({
+  descriptionNormalized,
+  twin,
+}: MovementDetail): string[] =>
+  twin !== null &&
+  twin.descriptionNormalized.normalize("NFC") !==
+    descriptionNormalized.normalize("NFC")
+    ? [twin.descriptionRaw]
+    : [];
+
+// Its channel, the digits its reference kept, the files it came from and
+// its balance after: those it has. Its kind and category are choices of
+// their own (6.3g).
 const factsOf = (detail: MovementDetail): DetailFact[] => {
-  const { descriptionRaw, referenceLast4, statement } = detail;
+  const { descriptionRaw, referenceLast4 } = detail;
   const channel = channelOf(descriptionRaw)?.labelEs;
   const facts: DetailFact[] = [];
   if (channel !== undefined)
@@ -39,10 +67,7 @@ const factsOf = (detail: MovementDetail): DetailFact[] => {
       label: COPY.reference,
       value: `${COPY.referenceDots} ${referenceLast4}`,
     });
-  facts.push({
-    label: COPY.source,
-    value: statementLabel(statement.formatId, statement.period),
-  });
+  facts.push({ label: COPY.source, value: sourceOf(detail) });
   if (detail.balanceAfterMinor !== null)
     facts.push({
       label: COPY.balanceAfter,
@@ -98,6 +123,7 @@ export const movementDetailView = (
     title: titleOf(description),
     isBankText: description.kind === "bank",
     bankText: detail.descriptionRaw,
+    alsoWrittenAs: alsoWrittenAsOf(detail),
     date: formatWeekdayInWords(detail.date, { withYear: true }),
     amount: amountText(detail.amountMinor),
     tone: movementTone(detail, true),
