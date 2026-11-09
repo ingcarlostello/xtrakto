@@ -1,0 +1,2 @@
+ALTER TABLE "notice_preferences" ADD COLUMN "review_waiting" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "notice_preferences" ADD COLUMN "fixed_payment_rose" boolean DEFAULT true NOT NULL;

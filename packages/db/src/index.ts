@@ -109,6 +109,7 @@ export {
 } from "./transactions/transaction.queries";
 export { listCategoryTotals } from "./transactions/transaction-totals.queries";
 export {
+  listMovementsOfStatements,
   listSummaryMovements,
   type PeriodMovement,
 } from "./transactions/transaction-summary.queries";

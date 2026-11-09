@@ -43,6 +43,20 @@ describe.skipIf(!testDatabase)("notice preferences", () => {
     ).toEqual([]);
   });
 
+  it("starts every notice on, and changes one at a time", async () => {
+    const userId = await newUser();
+
+    await asUser(userId, (ctx) =>
+      saveNoticePreference(ctx, "reviewWaiting", false),
+    );
+
+    expect(await asUser(userId, readNoticePreferences)).toEqual({
+      uploadReady: true,
+      reviewWaiting: false,
+      fixedPaymentRose: true,
+    });
+  });
+
   it("turns a notice off and on again, in one row", async () => {
     const userId = await newUser();
 

@@ -45,7 +45,7 @@ export const PRIVACY_COPY = {
         "Los números de Nequi o de cuenta de otras personas que traen tus movimientos: los guardamos cifrados con una clave secreta, y solo vemos sus últimos 4 dígitos. Los textos del banco pueden nombrar a quién le transferiste; solo tú los ves.",
         "Tus respuestas en la revisión rápida y tus correcciones de categoría, para clasificar tus movimientos.",
         "Los textos del banco que ninguna regla reconoce, como «COMPRA EN TIENDA XYZ», para clasificarlos y nombrarlos en palabras simples con inteligencia artificial (IA), sin tu nombre ni números de cuenta, celular o documento.",
-        "Tu correo, para avisarte cuando tus archivos estén listos. Ese aviso solo dice cuántos archivos y movimientos leímos; lo apagas desde el mismo correo o en tu perfil.",
+        "Tu correo, para avisarte cuando tus archivos estén listos, si hay algo por revisar o si un pago fijo sube. Esos avisos solo dicen cuántos archivos, movimientos, grupos o pagos son, nunca cuáles; los apagas desde el mismo correo o en tu perfil.",
         "La lista de espera: tu nombre y tu correo, solo para avisarte cuando Xtrakto esté disponible.",
       ],
     },

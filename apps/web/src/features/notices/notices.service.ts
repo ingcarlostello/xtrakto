@@ -24,7 +24,8 @@ import {
   readUnsubscribeToken,
   unsubscribeToken,
 } from "./unsubscribe-token.helpers";
-import { uploadNoticeEmail } from "./upload-notice-email.helpers";
+import { readUploadNoticeContent } from "./upload-notice-content.service";
+import { noticesOf, uploadNoticeEmail } from "./upload-notice-email.helpers";
 
 /**
  * Which notices a Clerk user receives. Someone who never uploaded a file has
@@ -55,9 +56,10 @@ export const setNoticePreference = async (
 };
 
 /**
- * Turns off the notice a link names, for the person it names: without a
+ * Turns off the notices a link names, for the person it names: without a
  * session, so only the link's signature counts (ADR 0036). A link the server
- * didn't sign, or of someone already gone, changes nothing.
+ * didn't sign, or of someone already gone, changes nothing. One after the
+ * other: they share the transaction.
  */
 export const turnNoticeOff = (token: string): Promise<void> =>
   withSanitizedErrors("NOTICE_NOT_TURNED_OFF", async () => {
@@ -67,26 +69,26 @@ export const turnNoticeOff = (token: string): Promise<void> =>
     );
     if (!target) return;
     await withUserContext(getDb(), toUserId(target.userId), async (ctx) => {
-      if (await findClerkUserId(ctx))
-        await saveNoticePreference(ctx, target.notice, false);
+      if (!(await findClerkUserId(ctx))) return;
+      for (const notice of target.notices)
+        await saveNoticePreference(ctx, notice, false);
     });
   });
 
 /**
  * Takes the user's ended files, once, for the notice of their upload: `null`
- * when a file is still open, nothing waits, or they turned the notice off.
- * Ids and counts only, since Inngest keeps a step's output.
+ * when a file is still open or nothing waits. Ids and counts only, since
+ * Inngest keeps a step's output.
  */
 export const claimUploadNotice = (
   userId: string,
 ): Promise<FinishedFiles | null> =>
   withSanitizedErrors("UPLOAD_NOTICE_NOT_CLAIMED", () =>
-    withUserContext(getDb(), toUserId(userId), async (ctx) => {
-      const finished = await claimFinishedFiles(ctx);
-      if (!finished) return null;
-      const { uploadReady } = await readNoticePreferences(ctx);
-      return uploadReady ? finished : null;
-    }),
+    withUserContext(
+      getDb(),
+      toUserId(userId),
+      async (ctx) => (await claimFinishedFiles(ctx)) ?? null,
+    ),
   );
 
 /** How sending a notice ended, in codes only. */
@@ -116,34 +118,42 @@ const outcomeOf = (error: EmailError): NoticeOutcome => {
 };
 
 /**
- * Emails a person that their upload's files ended. A failure that may pass
- * is thrown for Inngest to retry; Resend's idempotency key, the claimed
- * job's, keeps a retry from sending it twice.
+ * Emails a person what their upload brought, each part only with its notice
+ * on, and nothing with none to tell. A failure that may pass is thrown for
+ * Inngest to retry; Resend's idempotency key, the claimed job's, keeps a
+ * retry from sending it twice.
  */
 export const sendUploadNotice = (
   userId: string,
-  { jobId, files, failed, added }: FinishedFiles,
+  finished: FinishedFiles,
 ): Promise<NoticeOutcome> =>
   withSanitizedErrors("UPLOAD_NOTICE_NOT_SENT", async () => {
-    const clerkUserId = await withUserContext(
+    const { clerkUserId, content } = await withUserContext(
       getDb(),
       toUserId(userId),
-      findClerkUserId,
+      async (ctx) => ({
+        clerkUserId: await findClerkUserId(ctx),
+        content: await readUploadNoticeContent(ctx, finished),
+      }),
     );
+    const notices = noticesOf(content);
+    if (notices.length === 0)
+      return { status: "not-sent", code: "NOTHING_TO_SAY" };
     const address = clerkUserId && (await addressOf(clerkUserId));
     if (!address) return { status: "not-sent", code: "NO_ADDRESS" };
     const token = unsubscribeToken(
-      { userId, notice: "uploadReady" },
+      { userId, notices },
       getServerEnv().IDENTIFIER_HASH_KEY,
+    );
+    const email = uploadNoticeEmail(
+      content,
+      urlOf(UNSUBSCRIBE_ROUTES.confirm, token),
     );
     const sent = await sendEmail({
       to: address,
-      ...uploadNoticeEmail(
-        { files, failed, added },
-        urlOf(UNSUBSCRIBE_ROUTES.confirm, token),
-      ),
+      ...email,
       oneClickUrl: urlOf(UNSUBSCRIBE_ROUTES.oneClick, token),
-      idempotencyKey: `upload-notice/${jobId}`,
+      idempotencyKey: `upload-notice/${finished.jobId}`,
     });
     return sent.ok ? { status: "sent" } : outcomeOf(sent.error);
   });

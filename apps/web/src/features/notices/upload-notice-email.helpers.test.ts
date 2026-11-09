@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { uploadNoticeEmail } from "./upload-notice-email.helpers";
+import { noticesOf, uploadNoticeEmail } from "./upload-notice-email.helpers";
 
 const UNSUBSCRIBE = "https://xtrakto.site/unsubscribe?token=abc";
 const email = (files: number, failed: number, added: number) =>
-  uploadNoticeEmail({ files, failed, added }, UNSUBSCRIBE);
+  uploadNoticeEmail({ files: { files, failed, added } }, UNSUBSCRIBE);
 
 describe("uploadNoticeEmail", () => {
   it.each<[[number, number, number], string, string]>([
@@ -84,5 +84,83 @@ describe("uploadNoticeEmail", () => {
     const { text } = email(3, 1, 7);
 
     expect(text.match(/\d[\d.]*/g)).toEqual(["2", "7", "1"]);
+  });
+
+  describe("with what else the upload brought", () => {
+    const FILES = { files: 1, failed: 0, added: 3 };
+    const REVIEW = {
+      pending: { groups: 4, movements: 24 },
+      url: "https://xtrakto.site/review?account=a&period=2026-Q3",
+    };
+    const RISEN = { count: 1, url: "https://xtrakto.site/recurring?account=a" };
+
+    it("says what waits for review, with its way there", () => {
+      const { text, html } = uploadNoticeEmail(
+        { files: FILES, review: REVIEW },
+        UNSUBSCRIBE,
+      );
+
+      for (const body of [text, html]) {
+        expect(body).toContain("Tienes 4 grupos por revisar (24 movimientos)");
+        expect(body).toContain("Revisar ahora");
+        expect(body).toContain(REVIEW.url);
+      }
+    });
+
+    it.each([
+      [1, "Un pago fijo subió", "para ver cuál y cuánto"],
+      [2, "2 pagos fijos subieron", "para ver cuáles y cuánto"],
+    ])("says %i fixed payments rose, and no more", (count, title, line) => {
+      const { text } = uploadNoticeEmail(
+        { files: FILES, risen: { ...RISEN, count } },
+        UNSUBSCRIBE,
+      );
+
+      expect(text).toContain(title);
+      expect(text).toContain(line);
+      expect(text).toContain(RISEN.url);
+    });
+
+    it("leads with the files, when their notice is on", () => {
+      const { subject, html } = uploadNoticeEmail(
+        { files: FILES, review: REVIEW, risen: RISEN },
+        UNSUBSCRIBE,
+      );
+
+      expect(subject).toBe("Tu archivo está listo");
+      expect(html.match(/border-radius:999px/g)).toHaveLength(1);
+    });
+
+    it("leads with what it has, when the files' notice is off", () => {
+      expect(
+        uploadNoticeEmail({ review: REVIEW, risen: RISEN }, UNSUBSCRIBE)
+          .subject,
+      ).toBe("Tienes 4 grupos por revisar (24 movimientos)");
+      expect(uploadNoticeEmail({ risen: RISEN }, UNSUBSCRIBE).subject).toBe(
+        "Un pago fijo subió",
+      );
+    });
+
+    it("names one notice or several in its way out", () => {
+      expect(uploadNoticeEmail({ files: FILES }, UNSUBSCRIBE).text).toContain(
+        "Dejar de recibir este aviso",
+      );
+      expect(
+        uploadNoticeEmail({ files: FILES, risen: RISEN }, UNSUBSCRIBE).text,
+      ).toContain("Dejar de recibir estos avisos");
+    });
+
+    it("knows which notices it carries", () => {
+      expect(noticesOf({ files: FILES, risen: RISEN })).toEqual([
+        "uploadReady",
+        "fixedPaymentRose",
+      ]);
+      expect(noticesOf({ review: REVIEW })).toEqual(["reviewWaiting"]);
+      expect(noticesOf({})).toEqual([]);
+    });
+
+    it("refuses to be written with nothing to say", () => {
+      expect(() => uploadNoticeEmail({}, UNSUBSCRIBE)).toThrow(RangeError);
+    });
   });
 });

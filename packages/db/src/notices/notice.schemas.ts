@@ -12,4 +12,10 @@ export const noticePreferences = pgTable("notice_preferences", {
   uploadReady: boolean("upload_ready")
     .notNull()
     .default(NOTICE_DEFAULTS.uploadReady),
+  reviewWaiting: boolean("review_waiting")
+    .notNull()
+    .default(NOTICE_DEFAULTS.reviewWaiting),
+  fixedPaymentRose: boolean("fixed_payment_rose")
+    .notNull()
+    .default(NOTICE_DEFAULTS.fixedPaymentRose),
 });

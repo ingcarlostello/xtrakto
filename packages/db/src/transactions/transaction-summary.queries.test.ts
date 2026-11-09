@@ -16,7 +16,10 @@ import type { BalanceCheck } from "../statements/statement.types";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserContext, UserId } from "../user-context/user-context.types";
 import { findOrCreateUser } from "../users/user.queries";
-import { listSummaryMovements } from "./transaction-summary.queries";
+import {
+  listMovementsOfStatements,
+  listSummaryMovements,
+} from "./transaction-summary.queries";
 
 const THIRD_QUARTER = periodSchema.parse({
   from: "2026-07-01",
@@ -190,5 +193,107 @@ describe.skipIf(!testDatabase)("a period's movements for its summary", () => {
     );
 
     expect(movements).toEqual([]);
+  });
+});
+
+describe.skipIf(!testDatabase)("what some statements brought", () => {
+  let app: DbClient;
+  let userId: UserId;
+
+  const inContext = <T>(read: Parameters<typeof withUserContext<T>>[2]) =>
+    withUserContext(app.db, userId, read);
+
+  const save = async (
+    ctx: UserContext,
+    accountId: string,
+    balance: BalanceCheck,
+    statement: Promise<CategorizedStatement>,
+  ): Promise<string> => {
+    const saved = await saveStatement(ctx, {
+      accountId,
+      balance,
+      statement: await statement,
+    });
+    if (!saved.ok) throw new Error("Not saved.");
+    return saved.value.statementId;
+  };
+
+  beforeAll(async () => {
+    app = createDb({ connectionString: requireTestDatabase().appUrl });
+    userId = await findOrCreateUser(app.db, `test_${crypto.randomUUID()}`);
+  });
+
+  afterAll(async () => {
+    await app.pool.end();
+  });
+
+  it("reads the day and text of those statements' movements alone", async () => {
+    const found = await inContext(async (ctx) => {
+      const accountId = await newAccount(ctx, "2201");
+      const asked = await save(
+        ctx,
+        accountId,
+        UNCHECKED,
+        preparedExport([
+          { date: "2026-10-05", amount: -9_000, description: "PAGO QR CAFE" },
+        ]),
+      );
+      await save(
+        ctx,
+        accountId,
+        UNCHECKED,
+        preparedExport([{ date: "2026-10-06", amount: -1_000 }]),
+      );
+      return listMovementsOfStatements(ctx, [asked]);
+    });
+
+    expect(found).toEqual([
+      { date: "2026-10-05", descriptionRaw: "PAGO QR CAFE" },
+    ]);
+  });
+
+  it("leaves out what a verified quarterly statement hides", async () => {
+    const found = await inContext(async (ctx) => {
+      const accountId = await newAccount(ctx, "2202");
+      const hidden = await save(
+        ctx,
+        accountId,
+        UNCHECKED,
+        preparedExport([{ date: "2026-07-20", amount: -30_000 }]),
+      );
+      await save(
+        ctx,
+        accountId,
+        VERIFIED,
+        preparedQuarterly([{ date: "2026-08-20", amount: -50_000 }]),
+      );
+      return listMovementsOfStatements(ctx, [hidden]);
+    });
+
+    expect(found).toEqual([]);
+  });
+
+  it("reads nothing without statements, or of another user's", async () => {
+    const statementId = await inContext(async (ctx) =>
+      save(
+        ctx,
+        await newAccount(ctx, "2203"),
+        UNCHECKED,
+        preparedExport([{ date: "2026-09-01", amount: -2_000 }]),
+      ),
+    );
+    const stranger = await findOrCreateUser(
+      app.db,
+      `test_${crypto.randomUUID()}`,
+    );
+
+    expect(
+      await inContext((ctx) => listMovementsOfStatements(ctx, [])),
+    ).toEqual([]);
+    expect(
+      await withUserContext(app.db, stranger, (ctx) =>
+        listMovementsOfStatements(ctx, [statementId]),
+      ),
+    ).toEqual([]);
   });
 });
