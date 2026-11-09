@@ -191,6 +191,14 @@ export type {
   SavingsYieldInsight,
   StatementFigures,
 } from "./insights/insights.types";
+export {
+  checkReportedBalance,
+  withCheckedBalances,
+} from "./balance-check/balance-check.helpers";
+export type {
+  DatedBalance,
+  ReportedBalanceCheck,
+} from "./balance-check/balance-check.types";
 export { kindTotalsOf } from "./summary/kind-totals.helpers";
 export { dailyBalances, summarizeMovements } from "./summary/summary.helpers";
 export type {
