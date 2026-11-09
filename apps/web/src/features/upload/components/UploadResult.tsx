@@ -5,7 +5,10 @@ import type { ReactElement } from "react";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RESULT_COPY } from "../upload-result.constants";
+import {
+  RESULT_COPY,
+  WHAT_YOU_HAVE_TITLE_ID,
+} from "../upload-result.constants";
 import type { ResultStep, ResultView } from "../upload-result.helpers";
 import type { FileKind } from "../upload.types";
 import { FileIcon } from "./FileRow";
@@ -110,9 +113,22 @@ function ResultAction({ render, label }: ResultActionProps) {
   );
 }
 
-// Its account's movements in its period, once they count (5.7b), or where
-// its balance breaks, when it doesn't reconcile (5.7d).
+// What the account has, on this screen, when it had all of the file
+// (10.2d, v8-13): the focus goes to "Lo que tienes", which scrolls to it,
+// and the URL keeps its fragment, which holds the jobs. Else its account's
+// movements in its period, once they count (5.7b), or where its balance
+// breaks, when it doesn't reconcile (5.7d).
 function ResultLink({ view }: { view: ResultView }) {
+  if (view.showsWhatYouHave)
+    return (
+      <Button
+        variant="link"
+        className="self-start"
+        onClick={() => document.getElementById(WHAT_YOU_HAVE_TITLE_ID)?.focus()}
+      >
+        {RESULT_COPY.viewWhatYouHave}
+      </Button>
+    );
   if (view.movementsHref)
     return (
       <ResultAction

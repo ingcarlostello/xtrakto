@@ -61,6 +61,7 @@ const summaryWith = (changes: Partial<AccountSummary>): AccountSummary => ({
   balances: null,
   bankFigures: [FIGURES],
   unreconciled: [],
+  missingMonths: [],
   ...changes,
 });
 

@@ -5,6 +5,21 @@ import type { Noun } from "@/utils/count-text.utils";
 export const SUMMARY_COPY = {
   title: "Resumen de tu cuenta de ahorros",
   upload: "Subir extracto",
+  // What the account misses (10.2d, v8-13): "Te falta abril a junio",
+  // "Para ver el año completo, sube el extracto trimestral abr–jun." and
+  // "Subir abr–jun".
+  missing: {
+    title: "Te falta",
+    of: "de",
+    through: "a",
+    toSee: "Para ver el año completo, sube",
+    quarterly: {
+      one: "el extracto trimestral",
+      other: "los extractos trimestrales",
+    },
+    movements: "los movimientos de",
+    upload: "Subir",
+  },
   glanceTitle: {
     quarter: "Tu trimestre de un vistazo",
     month: "Tu mes de un vistazo",

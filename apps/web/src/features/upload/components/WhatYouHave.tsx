@@ -4,7 +4,10 @@ import { CoverageTimeline } from "@/components/coverage-timeline/CoverageTimelin
 import type { CoverageView } from "@/components/coverage-timeline/coverage-timeline.types";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
-import { WHAT_YOU_HAVE_COPY as COPY } from "../upload-result.constants";
+import {
+  WHAT_YOU_HAVE_COPY as COPY,
+  WHAT_YOU_HAVE_TITLE_ID,
+} from "../upload-result.constants";
 
 // An account's months: with several accounts, its label and sentence over
 // them; then "Encadenado" when its quarters chain, and the timeline, which
@@ -61,9 +64,13 @@ type WhatYouHaveProps = {
 export function WhatYouHave({ views, isNow }: WhatYouHaveProps) {
   const [only] = views.length === 1 ? views : [];
   return (
-    <Card variant="card" aria-labelledby="what-you-have-title">
+    <Card variant="card" aria-labelledby={WHAT_YOU_HAVE_TITLE_ID}>
       <CardHeader>
-        <h2 id="what-you-have-title" className="text-section font-bold">
+        <h2
+          id={WHAT_YOU_HAVE_TITLE_ID}
+          tabIndex={-1}
+          className="text-section font-bold"
+        >
           {isNow ? COPY.titleNow : COPY.title}
         </h2>
         {only && <CardDescription>{only.sentence}</CardDescription>}

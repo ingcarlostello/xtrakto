@@ -9,6 +9,8 @@ export const RESULT_COPY = {
   // Where its balance breaks (v8-13), for a statement that doesn't reconcile.
   viewBreaks: "Ver dónde no cuadra",
   alreadyHad: "Ya tenías todo este archivo",
+  // Beside it (10.2d, v8-13): to "Lo que tienes" on the same screen.
+  viewWhatYouHave: "Ver lo que tienes",
   replaced: "Listo: reemplazamos el extracto que no cuadraba",
   notReconciled: "El saldo final no cuadra",
   notReconciledBy: "El saldo final no cuadra por",
@@ -87,6 +89,9 @@ export const NEXT_STEP_COPY = {
   moreFiles:
     "¿Tienes más archivos? Súbelos todos juntos; si se cruzan, no pasa nada.",
 } as const;
+
+/** "Lo que tienes"'s title, where "Ver lo que tienes" takes the focus (10.2d). */
+export const WHAT_YOU_HAVE_TITLE_ID = "what-you-have-title";
 
 // What the user has, by month (v8-07's "Lo que tienes", v8-08's "Lo que
 // tienes ahora", Phase 10.2a).

@@ -59,6 +59,7 @@ const summaryOf = (
     balances: dailyBalances(movements),
     bankFigures: [],
     unreconciled: [],
+    missingMonths: [],
   };
 };
 
@@ -121,7 +122,7 @@ describe("dayByDayChart", () => {
   });
 
   it("draws the balance each day from the opening, the same over days without movements, over its area", () => {
-    const balance = pointsOf(chart?.balance?.line);
+    const balance = pointsOf(chart?.balance?.[0]?.line);
 
     expect(balance).toHaveLength(93);
     expect(balance[0]).toBe("0,54");
@@ -130,12 +131,14 @@ describe("dayByDayChart", () => {
     expect(balance[35]).toBe("38.04,25.53");
     expect(balance[60]).toBe("65.22,25.53");
     expect(balance[92]).toBe("100,78.33");
-    expect(chart?.balance?.area).toBe(`0,100 ${chart?.balance?.line} 100,100`);
+    expect(chart?.balance?.[0]?.area).toBe(
+      `0,100 ${chart?.balance?.[0]?.line} 100,100`,
+    );
     expect(chart?.note).toBeUndefined();
   });
 
   it("draws the real spending so far, from nothing at the opening", () => {
-    const spending = pointsOf(chart?.spending);
+    const spending = pointsOf(chart?.spending[0]);
 
     expect(spending).toHaveLength(93);
     expect(spending[0]).toBe("0,100");
@@ -184,7 +187,7 @@ describe("dayByDayChart", () => {
       { label: "31 ago", at: 100 },
     ]);
     expect(august?.event?.detail).toBe("Fue el día con más ingresos del mes.");
-    expect(pointsOf(august?.balance?.line)).toHaveLength(21);
+    expect(pointsOf(august?.balance?.[0]?.line)).toHaveLength(21);
   });
 
   it("draws a year from its first quarter with movements, over its quarters' last days, and calls its largest income the year's", () => {
@@ -205,8 +208,8 @@ describe("dayByDayChart", () => {
       ]),
     );
     // From 30 June, the third quarter's opening, through 20 August.
-    const balance = pointsOf(year?.balance?.line);
-    const spending = pointsOf(year?.spending);
+    const balance = pointsOf(year?.balance?.[0]?.line);
+    const spending = pointsOf(year?.spending[0]);
 
     expect(year?.xTicks).toEqual([
       { label: "31 mar", at: 24.66 },
@@ -217,7 +220,7 @@ describe("dayByDayChart", () => {
     expect(balance).toHaveLength(52);
     expect(balance[0]).toMatch(/^49\.59,/);
     expect(spending[0]).toBe("49.59,100");
-    expect(year?.balance?.area).toMatch(/^49\.59,100 /);
+    expect(year?.balance?.[0]?.area).toMatch(/^49\.59,100 /);
     expect(year?.event).toMatchObject({
       x: 59.18,
       detail: "Fue el día con más ingresos del año.",
@@ -226,6 +229,70 @@ describe("dayByDayChart", () => {
     expect(year?.label).toBe(
       "Tu saldo pasó de $13,8M el 30 de junio a $44,3M el 20 de agosto, y tu gasto real llegó a $1,0M.",
     );
+  });
+
+  it("breaks its lines over the months the account doesn't have, the balance picking up where the next statement opens (10.2d)", () => {
+    const year = dayByDayChart({
+      ...summaryOf({ kind: "year", year: 2026 }, [
+        {
+          date: "2026-01-10",
+          amount: -100_000_000,
+          as: GROCERIES,
+          balance: 1_280_000_000,
+        },
+        {
+          date: "2026-03-20",
+          amount: -50_000_000,
+          as: GROCERIES,
+          balance: 1_230_000_000,
+        },
+        // April to June missing: July's statement opens on $20,0M.
+        {
+          date: "2026-07-03",
+          amount: -100_000_000,
+          as: CASH,
+          balance: 1_900_000_000,
+        },
+      ]),
+      missingMonths: ["2026-04", "2026-05", "2026-06"],
+    });
+    const [march, july] = year?.balance ?? [];
+    const [spentToMarch, spentInJuly] = year?.spending ?? [];
+
+    // 31 December to 31 March, then 30 June to 3 July.
+    expect(pointsOf(march?.line)).toHaveLength(91);
+    expect(pointsOf(march?.line).at(-1)).toBe("24.66,38.5");
+    expect(pointsOf(july?.line)).toEqual([
+      "49.59,0",
+      "49.86,0",
+      "50.14,0",
+      "50.41,5",
+    ]);
+    expect(july?.area).toMatch(/^49\.59,100 /);
+    expect(pointsOf(spentToMarch).at(-1)).toBe("24.66,92.5");
+    expect(pointsOf(spentInJuly)[0]).toBe("49.59,92.5");
+    expect(year?.label).toBe(
+      "Tu saldo pasó de $13,8M el 31 de diciembre a $19,0M el 3 de julio, y tu gasto real llegó a $2,5M.",
+    );
+  });
+
+  it("draws nothing of a run without movements", () => {
+    // Movements exports from February, with December's coverage before a
+    // January the account doesn't have.
+    const year = dayByDayChart({
+      ...summaryOf({ kind: "year", year: 2026 }, [
+        {
+          date: "2026-02-10",
+          amount: -100_000_000,
+          as: GROCERIES,
+          balance: null,
+        },
+      ]),
+      missingMonths: ["2026-01"],
+    });
+
+    expect(year?.spending).toHaveLength(1);
+    expect(pointsOf(year?.spending[0])[0]).toBe("8.49,100");
   });
 
   it("draws a year that starts in January from the year's opening", () => {
@@ -240,7 +307,7 @@ describe("dayByDayChart", () => {
       ]),
     );
 
-    expect(pointsOf(year?.balance?.line)[0]).toMatch(/^0,/);
+    expect(pointsOf(year?.balance?.[0]?.line)[0]).toMatch(/^0,/);
     expect(year?.label).toMatch(
       /^Tu saldo pasó de \$13,8M el 31 de diciembre /,
     );
@@ -354,7 +421,7 @@ describe("dayByDayChart", () => {
       "Tu saldo pasó de $13,8M el 30 de junio a $45,3M el 4 de agosto. No hubo gasto real en este periodo.",
     );
     expect(
-      pointsOf(saved?.spending).every((point) => point.endsWith(",100")),
+      pointsOf(saved?.spending[0]).every((point) => point.endsWith(",100")),
     ).toBe(true);
   });
 
