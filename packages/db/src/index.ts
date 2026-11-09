@@ -36,6 +36,8 @@ export {
   expireStaleIngestionJobs,
   failIngestionJob,
   finishIngestionJob,
+  claimFinishedFiles,
+  type FinishedFiles,
   type IngestionJobResult,
   listIngestionJobResults,
   listRecentIngestionJobs,
@@ -142,9 +144,19 @@ export {
 } from "./user-category-rules/user-category-rule-own.queries";
 export {
   deleteAllUserData,
+  findClerkUserId,
   findOrCreateUser,
   findUserId,
 } from "./users/user.queries";
+export {
+  NOTICE_DEFAULTS,
+  type NoticeId,
+  type NoticePreferences,
+} from "./notices/notice.constants";
+export {
+  readNoticePreferences,
+  saveNoticePreference,
+} from "./notices/notice.queries";
 export { LLM_USAGE_OUTCOME } from "./llm-usage/llm-usage.constants";
 export {
   platformLlmCostThisMonth,

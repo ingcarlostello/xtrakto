@@ -81,6 +81,15 @@ export type IngestionJobResult = {
   } | null;
 };
 
+/** The files of an upload that ended, as its email counts them: counts only. */
+export type FinishedFiles = {
+  /** One of them, which names the notice however often it's retried. */
+  readonly jobId: string;
+  readonly files: number;
+  readonly failed: number;
+  readonly added: number;
+};
+
 /** How many statements a user may submit in a month, and that month's bounds. */
 export type SubmissionQuota = {
   readonly limit: number;
@@ -231,7 +240,12 @@ export const finishIngestionJob = async (
 ): Promise<void> => {
   await ctx.tx
     .update(ingestionJobs)
-    .set({ status: DONE, ...outcome, extractedContent: null })
+    .set({
+      status: DONE,
+      ...outcome,
+      extractedContent: null,
+      noticePending: true,
+    })
     .where(ownJob(ctx, jobId));
 };
 
@@ -246,10 +260,49 @@ export const failIngestionJob = async (
 ): Promise<boolean> => {
   const failed = await ctx.tx
     .update(ingestionJobs)
-    .set({ status: FAILED, errorCode, extractedContent: null })
+    .set({
+      status: FAILED,
+      errorCode,
+      extractedContent: null,
+      noticePending: true,
+    })
     .where(and(ownJob(ctx, jobId), inArray(ingestionJobs.status, OPEN)))
     .returning({ id: ingestionJobs.id });
   return failed.length > 0;
+};
+
+/**
+ * Takes the context user's ended files whose notice waits, so each is told
+ * once however many runs ask. None while a file of theirs is still open: the
+ * last one to end asks again, and the email covers them all (10.4a).
+ */
+export const claimFinishedFiles = async (
+  ctx: UserContext,
+): Promise<FinishedFiles | undefined> => {
+  const mine = eq(ingestionJobs.userId, ctx.userId);
+  const [open] = await ctx.tx
+    .select({ id: ingestionJobs.id })
+    .from(ingestionJobs)
+    .where(and(mine, inArray(ingestionJobs.status, OPEN)))
+    .limit(1);
+  if (open) return undefined;
+  const claimed = await ctx.tx
+    .update(ingestionJobs)
+    .set({ noticePending: false })
+    .where(and(mine, eq(ingestionJobs.noticePending, true)))
+    .returning({
+      id: ingestionJobs.id,
+      status: ingestionJobs.status,
+      stats: ingestionJobs.stats,
+    });
+  const [first] = claimed;
+  if (!first) return undefined;
+  return {
+    jobId: first.id,
+    files: claimed.length,
+    failed: claimed.filter(({ status }) => status === FAILED).length,
+    added: claimed.reduce((sum, { stats }) => sum + (stats.added ?? 0), 0),
+  };
 };
 
 /**

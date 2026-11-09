@@ -169,6 +169,20 @@
       "when": 1794238468673,
       "tag": "0023_reported-balance",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794247278229,
+      "tag": "0024_notices",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794247280481,
+      "tag": "0025_notices-rls",
+      "breakpoints": true
     }
   ]
 }

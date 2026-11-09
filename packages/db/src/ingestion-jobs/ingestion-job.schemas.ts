@@ -1,6 +1,7 @@
 import type { ExtractedContent } from "@xtrakto/core";
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -53,6 +54,9 @@ export const ingestionJobs = pgTable(
       .$type<Partial<IngestionStats>>()
       .notNull()
       .default({}),
+    // Ended and its user hasn't been told (10.4a). The daily cleanup's jobs
+    // never ask: nobody is waiting for them a day later.
+    noticePending: boolean("notice_pending").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

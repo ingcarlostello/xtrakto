@@ -19,6 +19,7 @@ import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserId } from "../user-context/user-context.types";
 import {
+  claimFinishedFiles,
   claimIngestionJob,
   countSlotsUsed,
   createIngestionJobWithinLimit,
@@ -601,6 +602,126 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
       const job = await upload(owned, QUARTER);
 
       expect(await chainOf(owned.userId, job)).toBeNull();
+    });
+  });
+
+  describe("the notice of an upload's files", () => {
+    const STATS = {
+      total: 10,
+      added: 7,
+      skipped: 3,
+      covered: 0,
+      hidden: 0,
+      replaced: 0,
+    };
+
+    const claim = (userId: UserId) =>
+      withUserContext(app.db, userId, claimFinishedFiles);
+
+    // A done job whose notice waits, or not, in the user's account.
+    const insertEnded = async (
+      userId: string,
+      accountId: string,
+      { added = STATS.added, noticePending = true } = {},
+    ) => {
+      const statementId = await insertStatement(owner.db, {
+        userId,
+        accountId,
+      });
+      await insertJob(userId, {
+        status: "done",
+        statementId,
+        stats: { ...STATS, added },
+        noticePending,
+      });
+    };
+
+    it("asks when a job finishes or fails, and not while it's open", async () => {
+      const userId = await newUser();
+      const quota = quotaOf(5);
+      const [first, second] = [
+        await submit(userId, quota),
+        await submit(userId, quota),
+      ];
+      if (!first.ok || !second.ok) throw new Error("Not submitted.");
+
+      const pendings = () =>
+        owner.db
+          .select({
+            id: ingestionJobs.id,
+            isPending: ingestionJobs.noticePending,
+          })
+          .from(ingestionJobs)
+          .where(eq(ingestionJobs.userId, userId));
+      expect((await pendings()).map(({ isPending }) => isPending)).toEqual([
+        false,
+        false,
+      ]);
+
+      const accountId = await insertAccount(owner.db, userId);
+      const statementId = await insertStatement(owner.db, {
+        userId,
+        accountId,
+      });
+      await withUserContext(app.db, userId, async (ctx) => {
+        await finishIngestionJob(ctx, first.value, {
+          statementId,
+          stats: STATS,
+        });
+        await failIngestionJob(ctx, second.value, "PARSE_FAILED");
+      });
+
+      expect((await pendings()).map(({ isPending }) => isPending)).toEqual([
+        true,
+        true,
+      ]);
+    });
+
+    it("counts an upload's files in one notice, once", async () => {
+      const userId = await newUser();
+      const accountId = await insertAccount(owner.db, userId);
+      await insertEnded(userId, accountId);
+      await insertEnded(userId, accountId, { added: 5 });
+      await insertJobId(userId, {
+        status: "failed",
+        errorCode: "PARSE_FAILED",
+        noticePending: true,
+      });
+
+      expect(await claim(userId)).toEqual({
+        jobId: expect.any(String),
+        files: 3,
+        failed: 1,
+        added: 12,
+      });
+      expect(await claim(userId)).toBeUndefined();
+    });
+
+    it("waits while one of the user's files is still open", async () => {
+      const userId = await newUser();
+      await insertEnded(userId, await insertAccount(owner.db, userId));
+      const open = await insertJobId(userId, {
+        status: "processing",
+        extractedContent: CONTENT,
+      });
+
+      expect(await claim(userId)).toBeUndefined();
+
+      await withUserContext(app.db, userId, (ctx) =>
+        failIngestionJob(ctx, open, "PARSE_FAILED"),
+      );
+      expect(await claim(userId)).toMatchObject({ files: 2, failed: 1 });
+    });
+
+    it("says nothing of files told before, or of another user's", async () => {
+      const [ana, bruno] = [await newUser(), await newUser()];
+      await insertEnded(ana, await insertAccount(owner.db, ana), {
+        noticePending: false,
+      });
+      await insertEnded(bruno, await insertAccount(owner.db, bruno));
+
+      expect(await claim(ana)).toBeUndefined();
+      expect(await claim(bruno)).toMatchObject({ files: 1 });
     });
   });
 
