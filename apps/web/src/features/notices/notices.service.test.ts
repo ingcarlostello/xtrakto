@@ -31,6 +31,7 @@ const HASH_KEY = "test-key-with-at-least-32-characters!";
 const ADDRESS = "ana.prueba@correo.test";
 const NOTICE = {
   jobId: "7d1e3c5a-2b4f-4e6a-8c9d-0e1f2a3b4c5d",
+  jobIds: [],
   files: 2,
   failed: 1,
   added: 7,
@@ -83,6 +84,8 @@ describe.skipIf(!testDatabase)("notices", () => {
     it("reads the defaults without creating the user", async () => {
       await expect(getNoticePreferences(clerkId())).resolves.toEqual({
         uploadReady: true,
+        reviewWaiting: true,
+        fixedPaymentRose: true,
       });
     });
 
@@ -92,7 +95,7 @@ describe.skipIf(!testDatabase)("notices", () => {
 
       await setNoticePreference(ana, "uploadReady", false);
 
-      await expect(getNoticePreferences(ana)).resolves.toEqual({
+      await expect(getNoticePreferences(ana)).resolves.toMatchObject({
         uploadReady: false,
       });
       expect(await isOn(bruno)).toBe(true);
@@ -101,7 +104,7 @@ describe.skipIf(!testDatabase)("notices", () => {
 
   describe("an unsubscribe link", () => {
     const tokenOf = (userId: string, secret = HASH_KEY) =>
-      unsubscribeToken({ userId, notice: "uploadReady" }, secret);
+      unsubscribeToken({ userId, notices: ["uploadReady"] }, secret);
 
     it("turns off only its notice, for only its person", async () => {
       const [ana, bruno] = [await newUser(), await newUser()];
@@ -142,15 +145,6 @@ describe.skipIf(!testDatabase)("notices", () => {
   describe("claiming an upload's notice", () => {
     it("has nothing to say without ended files", async () => {
       await expect(claimUploadNotice(await newUser())).resolves.toBeNull();
-    });
-
-    it("stays quiet when the person turned it off", async () => {
-      const userId = await newUser();
-      await withUserContext(app.db, userId, (ctx) =>
-        saveNoticePreference(ctx, "uploadReady", false),
-      );
-
-      await expect(claimUploadNotice(userId)).resolves.toBeNull();
     });
   });
 

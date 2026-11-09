@@ -1,5 +1,5 @@
 import type { Period, RecurringMovement } from "@xtrakto/core";
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { countedMovement } from "../coverage/coverage.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -51,3 +51,28 @@ export const listSummaryMovements = (
       asc(transactions.position),
       asc(transactions.id),
     );
+
+/**
+ * The day and the bank's text of the movements that count and that these
+ * statements saved, with no one else's: what an upload brought (10.4b).
+ */
+export const listMovementsOfStatements = async (
+  { tx, userId }: UserContext,
+  statementIds: readonly string[],
+): Promise<Pick<PeriodMovement, "date" | "descriptionRaw">[]> =>
+  statementIds.length === 0
+    ? []
+    : tx
+        .select({
+          date: transactions.date,
+          descriptionRaw: transactions.descriptionRaw,
+        })
+        .from(transactions)
+        .innerJoin(statements, eq(statements.id, transactions.statementId))
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            inArray(transactions.statementId, [...statementIds]),
+            countedMovement,
+          ),
+        );

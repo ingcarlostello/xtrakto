@@ -1,29 +1,33 @@
 "use client";
 
-import type { NoticePreferences } from "@xtrakto/db";
+import type { NoticeId, NoticePreferences } from "@xtrakto/db";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { NOTICES_COPY as COPY } from "../notices.constants";
 import { useNoticeSwitch } from "../hooks/use-notice-switch";
+import { NOTICES_COPY as COPY } from "../notices.constants";
 
-/** "Avisos" (docs/ui/v8-11), with the notices that exist today (10.4a). */
-export function NoticesSetting({ uploadReady }: NoticePreferences) {
-  const { isOn, hasFailed, change } = useNoticeSwitch(
-    "uploadReady",
-    uploadReady,
-  );
+// In v8-11's order.
+const NOTICES: readonly NoticeId[] = [
+  "uploadReady",
+  "reviewWaiting",
+  "fixedPaymentRose",
+];
+
+function NoticeRow({
+  notice,
+  initial,
+}: {
+  notice: NoticeId;
+  initial: boolean;
+}) {
+  const { isOn, hasFailed, change } = useNoticeSwitch(notice, initial);
+  const { label, line } = COPY[notice];
   return (
-    <Card variant="card">
-      <CardHeader>
-        <h2 className="text-section font-bold">{COPY.title}</h2>
-        <CardDescription>{COPY.description}</CardDescription>
-      </CardHeader>
-      <label className="flex items-center justify-between gap-3 border-t border-divider pt-4">
+    <div className="flex flex-col gap-2 border-t border-divider pt-4">
+      <label className="flex items-center justify-between gap-3">
         <span className="flex flex-col gap-0.5">
-          <span className="text-sm font-bold">{COPY.uploadReady.label}</span>
-          <span className="text-caption text-ink-muted">
-            {COPY.uploadReady.line}
-          </span>
+          <span className="text-sm font-bold">{label}</span>
+          <span className="text-caption text-ink-muted">{line}</span>
         </span>
         <Switch checked={isOn} onCheckedChange={change} />
       </label>
@@ -32,6 +36,21 @@ export function NoticesSetting({ uploadReady }: NoticePreferences) {
           {COPY.failed}
         </p>
       )}
+    </div>
+  );
+}
+
+/** "Avisos" (docs/ui/v8-11), with the notices that exist today (10.4a, 10.4b). */
+export function NoticesSetting(preferences: NoticePreferences) {
+  return (
+    <Card variant="card">
+      <CardHeader>
+        <h2 className="text-section font-bold">{COPY.title}</h2>
+        <CardDescription>{COPY.description}</CardDescription>
+      </CardHeader>
+      {NOTICES.map((notice) => (
+        <NoticeRow key={notice} notice={notice} initial={preferences[notice]} />
+      ))}
     </Card>
   );
 }

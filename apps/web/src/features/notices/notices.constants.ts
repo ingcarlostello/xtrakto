@@ -8,25 +8,33 @@ export const NOTICES_COPY = {
     label: "Cuando tu archivo esté listo",
     line: "Un correo con el resumen.",
   },
+  reviewWaiting: {
+    label: "Si hay algo por revisar",
+    line: "Grupos nuevos de movimientos sin clasificar.",
+  },
+  fixedPaymentRose: {
+    label: "Si un pago fijo sube",
+    line: "Te avisamos al subir el extracto.",
+  },
   failed: "No pudimos guardar el cambio. Intenta de nuevo.",
 } as const;
 
 // The page a notice's link opens: it says the same whatever the link holds.
 export const UNSUBSCRIBE_COPY = {
-  metaTitle: "Dejar de recibir este aviso",
-  title: "¿Dejamos de enviarte este aviso?",
-  line: "Solo apagamos este correo. Tus datos siguen igual.",
-  action: "Dejar de recibirlo",
+  metaTitle: "Dejar de recibir estos avisos",
+  title: "¿Dejamos de enviarte estos avisos?",
+  line: "Solo apagamos los avisos de este correo. Tus datos siguen igual.",
+  action: "Dejar de recibirlos",
   done: {
-    metaTitle: "Aviso apagado",
-    title: "Listo, ya no te lo enviamos",
-    line: "Puedes volver a encenderlo cuando quieras en tu perfil.",
+    metaTitle: "Avisos apagados",
+    title: "Listo, ya no te los enviamos",
+    line: "Puedes volver a encenderlos cuando quieras en tu perfil.",
     action: "Ir a mi perfil",
   },
 } as const;
 
-// The email of an upload's files: counts and a link, never a text of the
-// bank, a name, an amount, an account's digits or a file's name.
+// The email of an upload: counts and links, never a text of the bank, a
+// name, an amount, an account's digits or a file's name.
 export const UPLOAD_EMAIL_COPY = {
   subject: {
     ready: { one: "Tu archivo está listo", other: "Tus archivos están listos" },
@@ -44,9 +52,21 @@ export const UPLOAD_EMAIL_COPY = {
   failed: { one: "no se pudo leer.", other: "no se pudieron leer." },
   whatHappened: "Entra a Xtrakto para ver qué pasó y qué puedes hacer.",
   action: "Ver el resultado",
+  // "2 pagos fijos subieron", without which or by how much.
+  risen: {
+    title: { one: "Un pago fijo subió", other: "pagos fijos subieron" },
+    line: {
+      one: "Entra a Pagos fijos para ver cuál y cuánto.",
+      other: "Entra a Pagos fijos para ver cuáles y cuánto.",
+    },
+    action: "Ver mis pagos fijos",
+  },
   footer:
     "Te escribimos porque subiste un archivo a Xtrakto. Este correo no incluye montos ni datos de tus movimientos.",
-  unsubscribe: "Dejar de recibir este aviso",
+  unsubscribe: {
+    one: "Dejar de recibir este aviso",
+    other: "Dejar de recibir estos avisos",
+  },
 } as const;
 
 // The email's own colors: an email client reads no stylesheet (docs/brand.md).
@@ -57,5 +77,6 @@ export const EMAIL_STYLE = {
   inkSecondary: "#3A4452",
   inkMuted: "#5F6B7A",
   primary: "#2563EB",
+  divider: "#EDF0F4",
   font: "Arial, Helvetica, sans-serif",
 } as const;

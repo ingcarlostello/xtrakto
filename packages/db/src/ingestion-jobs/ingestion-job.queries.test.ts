@@ -690,6 +690,7 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
 
       expect(await claim(userId)).toEqual({
         jobId: expect.any(String),
+        jobIds: expect.arrayContaining([expect.any(String)]),
         files: 3,
         failed: 1,
         added: 12,

@@ -13,7 +13,11 @@ export const readNoticePreferences = async ({
   userId,
 }: UserContext): Promise<NoticePreferences> => {
   const [row] = await tx
-    .select({ uploadReady: noticePreferences.uploadReady })
+    .select({
+      uploadReady: noticePreferences.uploadReady,
+      reviewWaiting: noticePreferences.reviewWaiting,
+      fixedPaymentRose: noticePreferences.fixedPaymentRose,
+    })
     .from(noticePreferences)
     .where(eq(noticePreferences.userId, userId));
   return row ?? NOTICE_DEFAULTS;

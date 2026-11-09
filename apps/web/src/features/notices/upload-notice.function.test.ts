@@ -11,6 +11,7 @@ vi.mock("./notices.service", () => mocks);
 const USER_ID = "0b6f1d2e-58c4-4c31-9a59-6a3f0f5c2e11";
 const NOTICE = {
   jobId: "7d1e3c5a-2b4f-4e6a-8c9d-0e1f2a3b4c5d",
+  jobIds: ["7d1e3c5a-2b4f-4e6a-8c9d-0e1f2a3b4c5d"],
   files: 2,
   failed: 0,
   added: 7,

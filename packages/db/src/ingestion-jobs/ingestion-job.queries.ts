@@ -85,6 +85,8 @@ export type IngestionJobResult = {
 export type FinishedFiles = {
   /** One of them, which names the notice however often it's retried. */
   readonly jobId: string;
+  /** All of them, whose statements say what the upload brought. */
+  readonly jobIds: readonly string[];
   readonly files: number;
   readonly failed: number;
   readonly added: number;
@@ -299,6 +301,7 @@ export const claimFinishedFiles = async (
   if (!first) return undefined;
   return {
     jobId: first.id,
+    jobIds: claimed.map(({ id }) => id),
     files: claimed.length,
     failed: claimed.filter(({ status }) => status === FAILED).length,
     added: claimed.reduce((sum, { stats }) => sum + (stats.added ?? 0), 0),
