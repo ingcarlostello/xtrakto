@@ -237,7 +237,7 @@ export type UploadStatementInput = z.infer<typeof uploadStatementSchema>;
 - **Always** add `import "server-only";` at the top of every `*.service.ts` and of modules in `lib/` that use secrets.
 - **Always** check the session and that the resource belongs to the user inside every action and every service. Never trust a `userId` coming from the client.
   - The one exception is an action a public page needs that touches no user's data: today `joinWaitlist` (ADR 0021). It still validates its input with Zod, answers the same whatever the database holds, and logs nothing of its input.
-  - The second is a notice's unsubscribe link (ADR 0036): its signature is the check, it can only turn that notice off, and it answers the same whatever it gets.
+  - The second is a notice's unsubscribe link (ADR 0036): its signature is the check, it can only turn off the notices its email carried, and it answers the same whatever it gets.
 - **Never** call the database from a component. Components call services.
 - **Prefer** server actions over route handlers for the app's own mutations.
 - **Never** import an external SDK (OpenAI, Anthropic, AWS) directly outside `lib/` or its service. The rest of the code depends on the abstraction.
