@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { CHART_LINE } from "@/components/line-chart/line-chart.constants";
 import { LineChartPlot } from "@/components/line-chart/LineChartPlot";
 import { Card } from "@/components/ui/card";
@@ -49,8 +50,13 @@ function ChartHeader({ chart }: { chart: DayByDayChartView }) {
   );
 }
 
-// The balance's line, over its area fading from 22% to nothing.
-function BalanceLine({ line, area }: { line: string; area: string }) {
+// The balance's line over its area fading from 22% to nothing, a piece
+// for each run of months the account has (10.2d).
+function BalanceLines({
+  pieces,
+}: {
+  pieces: NonNullable<DayByDayChartView["balance"]>;
+}) {
   return (
     <>
       <defs>
@@ -65,14 +71,18 @@ function BalanceLine({ line, area }: { line: string; area: string }) {
           />
         </linearGradient>
       </defs>
-      <polygon points={area} fill="url(#balance-area)" />
-      <polyline
-        points={line}
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-        className="stroke-moved"
-        {...CHART_LINE}
-      />
+      {pieces.map(({ line, area }) => (
+        <Fragment key={line}>
+          <polygon points={area} fill="url(#balance-area)" />
+          <polyline
+            points={line}
+            strokeWidth="2.6"
+            strokeLinejoin="round"
+            className="stroke-moved"
+            {...CHART_LINE}
+          />
+        </Fragment>
+      ))}
     </>
   );
 }
@@ -101,14 +111,17 @@ export function DayByDayChart({ summary }: { summary: AccountSummary }) {
           label={chart.label}
           event={chart.event}
         >
-          {chart.balance && <BalanceLine {...chart.balance} />}
-          <polyline
-            points={chart.spending}
-            strokeWidth="2.4"
-            strokeDasharray="7 6"
-            className="stroke-spending"
-            {...CHART_LINE}
-          />
+          {chart.balance && <BalanceLines pieces={chart.balance} />}
+          {chart.spending.map((line) => (
+            <polyline
+              key={line}
+              points={line}
+              strokeWidth="2.4"
+              strokeDasharray="7 6"
+              className="stroke-spending"
+              {...CHART_LINE}
+            />
+          ))}
         </LineChartPlot>
       </Card>
     </section>

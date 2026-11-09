@@ -21,21 +21,23 @@ import type {
 
 const MONTHS_A_YEAR = 12;
 
-// A month as a count of months, so ranges are plain arithmetic.
-const indexOf = ({ year, month }: CalendarMonth): number =>
+/** A month as a count of months, so ranges are plain arithmetic. */
+export const monthIndex = ({ year, month }: CalendarMonth): number =>
   year * MONTHS_A_YEAR + month - 1;
 
-const monthAt = (index: number): CalendarMonth => ({
+export const monthAtIndex = (index: number): CalendarMonth => ({
   year: Math.floor(index / MONTHS_A_YEAR),
   month: (index % MONTHS_A_YEAR) + 1,
 });
 
-const monthOfKey = (key: string): CalendarMonth => ({
+/** The month of a key or a day: `"2026-08"`, `"2026-08-15"`. */
+export const monthOfKey = (key: string): CalendarMonth => ({
   year: Number(key.slice(0, 4)),
   month: Number(key.slice(5, 7)),
 });
 
-const keyOf = ({ year, month }: CalendarMonth): string =>
+/** `"2026-08"`. */
+export const monthKey = ({ year, month }: CalendarMonth): string =>
   `${year}-${String(month).padStart(2, "0")}`;
 
 /**
@@ -49,13 +51,15 @@ export const timelineMonths = (
 ): CalendarMonth[] => {
   const [first] = known;
   if (first === undefined) return [];
-  const latest = indexOf(monthOfKey(known.at(-1) ?? first));
-  const last = Math.max(indexOf(monthOfKey(today)), latest);
+  const latest = monthIndex(monthOfKey(known.at(-1) ?? first));
+  const last = Math.max(monthIndex(monthOfKey(today)), latest);
   const start = Math.max(
-    indexOf(monthOfKey(first)),
+    monthIndex(monthOfKey(first)),
     last - TIMELINE_MONTHS + 1,
   );
-  return Array.from({ length: last - start + 1 }, (_, i) => monthAt(start + i));
+  return Array.from({ length: last - start + 1 }, (_, i) =>
+    monthAtIndex(start + i),
+  );
 };
 
 // The months verified quarterly statements cover: those of their days, after
@@ -63,10 +67,10 @@ export const timelineMonths = (
 const verifiedMonths = (quarters: readonly CoverageQuarter[]): Set<string> =>
   new Set(
     quarters.flatMap(({ period }) => {
-      const start = indexOf(monthOfKey(addDaysTo(period.from, 1)));
-      const end = indexOf(monthOfKey(period.to));
+      const start = monthIndex(monthOfKey(addDaysTo(period.from, 1)));
+      const end = monthIndex(monthOfKey(period.to));
       return Array.from({ length: end - start + 1 }, (_, i) =>
-        keyOf(monthAt(start + i)),
+        monthKey(monthAtIndex(start + i)),
       );
     }),
   );
@@ -106,7 +110,7 @@ const segmentOf = (
     verified,
   }: { months: readonly CoverageMonth[]; verified: Set<string> },
 ): CoverageSegment => {
-  const key = keyOf(month);
+  const key = monthKey(month);
   const saved = months.find((m) => m.month === key);
   const status = statusOf(verified.has(key), saved);
   return {
@@ -125,7 +129,7 @@ const isChainedIn = (
   { quarters }: AccountCoverage,
   shown: readonly CalendarMonth[],
 ): boolean => {
-  const keys = new Set(shown.map(keyOf));
+  const keys = new Set(shown.map(monthKey));
   const within = quarters.filter(({ period }) =>
     keys.has(period.to.slice(0, 7)),
   );
@@ -142,7 +146,7 @@ export const coverageViewOf = (
     ...new Set([...coverage.months.map(({ month }) => month), ...verified]),
   ].sort();
   const shown = timelineMonths(known, today);
-  const keys = new Set(shown.map(keyOf));
+  const keys = new Set(shown.map(monthKey));
   const current = monthOfKey(today);
   const segments = shown.map((month) =>
     segmentOf(month, { months: coverage.months, verified }),

@@ -44,6 +44,8 @@ export type ResultView = {
     readonly detail: string;
   };
   readonly steps: readonly ResultStep[];
+  /** A file the account had all of: the way to "Lo que tienes" (10.2d, v8-13). */
+  readonly showsWhatYouHave?: boolean;
   /** Its movements, when they count: not those of a statement that doesn't reconcile. */
   readonly movementsHref?: ReturnType<typeof transactionsHref>;
   /** Where its balance breaks, for a statement that doesn't reconcile. */
@@ -62,16 +64,35 @@ export const offBy = ({ differenceMinor }: JobOutcome): string | undefined => {
     : undefined;
 };
 
+// A file that brought nothing the account didn't have: neither a movement
+// nor a reference, which still brings something (v8-08).
+const isAlreadyHad = ({ stats, matches }: JobOutcome): boolean =>
+  stats.replaced === 0 && stats.added === 0 && matches.references === 0;
+
 const titleOf = (outcome: JobOutcome): string => {
   if (outcome.balance === STATEMENT_BALANCE.UNVERIFIED) {
     const amount = offBy(outcome);
     return amount ? `${COPY.notReconciledBy} ${amount}` : COPY.notReconciled;
   }
   if (outcome.stats.replaced > 0) return COPY.replaced;
-  // A file that only added references still brought something (v8-08).
-  const broughtNothing =
-    outcome.stats.added === 0 && outcome.matches.references === 0;
-  return broughtNothing ? COPY.alreadyHad : COPY.read;
+  return isAlreadyHad(outcome) ? COPY.alreadyHad : COPY.read;
+};
+
+// Where the result leads: what the account has, when it had all of the file
+// (10.2d, v8-13); else the file's movements, once they count (5.7b), or
+// where its balance breaks, when it doesn't reconcile (5.7d).
+const linkOf = (
+  outcome: JobOutcome,
+): Pick<ResultView, "showsWhatYouHave" | "movementsHref" | "breaksHref"> => {
+  if (outcome.balance === STATEMENT_BALANCE.UNVERIFIED)
+    return { breaksHref: breaksHref(outcome.statementId) };
+  if (isAlreadyHad(outcome)) return { showsWhatYouHave: true };
+  return {
+    movementsHref: transactionsHref({
+      accountId: outcome.accountId,
+      period: periodOfStatement(outcome.period),
+    }),
+  };
 };
 
 // A statement that doesn't reconcile counts nothing: only its size. The
@@ -268,13 +289,6 @@ export const resultView = (
     counts: countsOf(outcome),
     pill: pillOf(outcome),
     steps: stepsOf(job, outcome, pdf),
-    ...(isOk
-      ? {
-          movementsHref: transactionsHref({
-            accountId: outcome.accountId,
-            period: periodOfStatement(outcome.period),
-          }),
-        }
-      : { breaksHref: breaksHref(outcome.statementId) }),
+    ...linkOf(outcome),
   };
 };

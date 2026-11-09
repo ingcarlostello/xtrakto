@@ -15,6 +15,7 @@ import { PendingReviewBanner } from "@/features/review/components/PendingReviewB
 import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
 import { GlanceSection } from "@/features/summary/components/GlanceSection";
+import { MissingMonths } from "@/features/summary/components/MissingMonths";
 import { SummaryViewed } from "@/features/summary/components/SummaryViewed";
 import { TranslatedStatement } from "@/features/summary/components/TranslatedStatement";
 import { WhereItWent } from "@/features/summary/components/WhereItWent";
@@ -87,7 +88,8 @@ function UploadAction() {
 // docs/ui/v8-01: an account's quarter, or one of its months, at a glance
 // beside the account's card, over its balance and real spending day by day
 // beside where it went, then its statement translated, under the color
-// legend and the period controls, with the review banner while groups wait.
+// legend and the period controls, with the review banner while groups wait
+// and the months the account misses (10.2d), which the example never does.
 // The account, the period and the translated lines live in the URL; the
 // example's, while the browser explores it (7.8).
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
@@ -111,6 +113,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         action={<UploadAction />}
       />
       <PendingReviewBanner clerkUserId={clerkUserId} />
+      {!isExample && <MissingMonths summary={summary} />}
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <GlanceSection summary={summary} />
         <AccountCard summary={summary} />

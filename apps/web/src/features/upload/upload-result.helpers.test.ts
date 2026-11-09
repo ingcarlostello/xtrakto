@@ -150,7 +150,10 @@ describe("resultView", () => {
         title: "Sin saldo para verificar",
         detail: "Archivo de movimientos",
       },
+      // "Ver lo que tienes" instead of its movements (10.2d, v8-13).
+      showsWhatYouHave: true,
     });
+    expect(view.movementsHref).toBeUndefined();
     expect(detailOf(movements, covered, "Reconocido")).toBe(
       "Bancolombia · Movimientos · 1–31 jul 2026",
     );
@@ -175,6 +178,10 @@ describe("resultView", () => {
     expect(resultView(quarterly, outcome({ replaced: 1 })).title).toBe(
       RESULT_COPY.replaced,
     );
+    // A replacement shows its movements, even with nothing new.
+    expect(
+      resultView(quarterly, outcome({ replaced: 1, added: 0 })),
+    ).toMatchObject({ movementsHref: { pathname: "/transactions" } });
   });
 
   it("shows a statement that doesn't reconcile on the attention surface, counting nothing", () => {

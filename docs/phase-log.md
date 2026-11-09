@@ -1397,3 +1397,73 @@ In a local browser, with two fresh Clerk test users deleted afterwards (the loca
 - **A year's fixed payments:** found by its last month with movements, not by its calendar year. By the calendar year, in February a year found none of the payments its quarter found. The summary's fixed payments follow the same rule.
 - **For 10.2d:** a year with a quarter missing in the middle holds the balance flat over it, and its tiles add up only the quarters it has. 10.2d's notice says which months are missing; whether the chart also breaks its line there is decided when 10.2d starts.
 - **Size:** about 310 lines of code added and 110 deleted, without tests, in two commits.
+
+## 10.2d Gaps and which file to download
+
+_2026-11-05_
+
+The summary now says which months the account misses and which file brings them. A file the account had all of points to what the account has.
+
+- **Which months:** those of the account's coverage timeline (10.2a, from its first month, the last twelve at most) that ended without movements; this month isn't missing yet (`coverageGaps`).
+- **Which file:**
+  - a quarter that ended comes in its quarterly statement, one per quarter whatever months of it are missing;
+  - the months of the quarter that goes on come in movements. The bank gives those for this month and the three before, so it always has them.
+- **"Te falta julio a septiembre"** (`MissingMonths`, `v8-13`), decided with the human:
+  - a strip under the review banner, as wide as the page, on the normal surface, in every period of the account;
+  - one notice names every run with its file ("Te falta abril a junio y octubre", "Para ver el año completo, sube el extracto trimestral abr–jun y los movimientos de octubre."), with the year when it isn't this one;
+  - then the account's coverage timeline, named by its sentence;
+  - then "Subir jul–sep" ("Subir octubre", "Subir oct–nov"), or "Ir a Subir" for several files.
+  - Never on the example.
+- **The chart** (decided with the human, left open in 10.2c):
+  - its lines break over the months the account doesn't have between its first and its last (`monthsMissing`);
+  - a piece after them starts on their last day, with the balance its next statement opens with, which `dailyBalances` now keeps for each day (core);
+  - a piece without movements isn't drawn.
+- **"Ver lo que tienes"** takes the place of "Ver movimientos" beside "Ya tenías todo este archivo", as `v8-13` draws one action. It moves the focus to "Lo que tienes ahora" on the same screen, which scrolls there, without a link: the URL's fragment holds the jobs.
+
+The design rules and system design §3 say so.
+
+22 new tests, 21 in the app (1,202 there) and 1 in core:
+
+- each day's balance before its first movement, also after months the files miss;
+- the gaps:
+  - a quarter that ended;
+  - the quarter that goes on;
+  - several runs;
+  - one statement for months apart;
+  - December in January and January in February;
+  - nothing while only this month waits;
+- the months between the first and the last the account doesn't have;
+- the notice's words: one file or several, statements in plural, one or two months of movements, the year of another one, across a new year;
+- the page's account among several;
+- the chart:
+  - broken over April to June, its balance picking up at July's opening;
+  - a piece without movements left out;
+- through ingestion and the test database:
+  - what an account misses on 5 November;
+  - nothing at 22:00 on 31 October in Bogotá, already November in UTC.
+
+Checked: twenty-seven deliberate bugs, each in a file of its own, all fail a test. The two of the service were redone after shortening `getSummary`.
+
+In a local browser, with fresh Clerk test users deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The uploads:** `quarterly-previous` and `movements-basic`.
+- **Resumen:**
+  - "Te falta julio a septiembre" and "Para ver el año completo, sube el extracto trimestral jul–sep.";
+  - April to November in the timeline, named "Abril a junio de 2026 completo y verificado. Julio a septiembre no los tienes. Octubre está en movimientos, sin saldo para verificar. Noviembre no lo tienes todavía.";
+  - "Subir jul–sep" to `/upload`, under the review banner and over the glance;
+  - the keyboard reaches it, and Enter opens Subir.
+- **The year 2026:** the notice, and the spending's line in two pieces.
+- **Subir:** `movements-basic` again reads "Ya tenías todo este archivo" with "Ver lo que tienes" and no "Ver movimientos". Enter takes the focus to "Lo que tienes ahora", in view, and the URL keeps `#jobs=…`.
+- **Filling the gap:** after `quarterly-basic`, the summary shows no notice.
+- **Widths:**
+  - nothing overflows at 390px and 360px, and no page error;
+  - at 1024px the text first broke inside "jul–sep", so it now takes more of the row than the timeline and wraps with `text-pretty`; checked again at 360, 390, 1024, 1100 and 1280px.
+
+**Deviations and follow-ups:**
+
+- **Decided with the human:** the strip in every period; every run in one notice; the chart's breaks.
+- **"Ver lo que tienes"** replaces "Ver movimientos" for a file the account had all of. It moves the focus instead of linking, so the jobs stay in the URL.
+- **Core:** each day of `dailyBalances` keeps its opening balance, so the chart's balance resumes where the next statement opens.
+- **The example's notice:** the local database has no example user, so its absence was checked in the code (`!isExample`).
+- **For 10.5:** the monthly email's "which file to download" can reuse `coverageGaps`.
+- **Size:** about 590 lines of code added and 134 deleted, without tests, past the 400 a phase should hold. About 100 of them are the chart's breaks. They land in three commits.

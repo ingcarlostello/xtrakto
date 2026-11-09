@@ -199,10 +199,24 @@ describe("dailyBalances", () => {
     ).toEqual({
       openingMinor: 1_000_000,
       days: [
-        { date: "2026-07-01", closingMinor: 850_000 },
-        { date: "2026-07-03", closingMinor: 750_000 },
+        { date: "2026-07-01", openingMinor: 1_000_000, closingMinor: 850_000 },
+        { date: "2026-07-03", openingMinor: 850_000, closingMinor: 750_000 },
       ],
     });
+  });
+
+  it("finds each day's balance before its first movement, also after months the files miss", () => {
+    // March's statement closes on 500.000, and July's opens on 800.000.
+    expect(
+      dailyBalances([
+        printed("2026-03-30", -100_000, 500_000),
+        printed("2026-07-02", 100_000, 900_000),
+        printed("2026-07-02", -50_000, 850_000),
+      ])?.days,
+    ).toEqual([
+      { date: "2026-03-30", openingMinor: 600_000, closingMinor: 500_000 },
+      { date: "2026-07-02", openingMinor: 800_000, closingMinor: 850_000 },
+    ]);
   });
 
   it("finds none without movements", () => {

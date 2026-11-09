@@ -1,6 +1,6 @@
 import {
   addDaysTo,
-  type DailyBalances,
+  type DayBalance,
   type DayTotals,
   daysBetween,
   formatDayInWords,
@@ -60,45 +60,90 @@ const startOf = (
   return addDaysTo(quarter.from, -1);
 };
 
-// The days the lines draw, through the last with movements, and where each
-// falls on the period's axis, which starts at its opening.
-const drawnDays = (summary: AccountSummary, opening: LocalDate) => {
-  const { days } = summary.summary;
-  const start = startOf(summary.period, opening, days[0]?.date);
-  const drawn = { from: start, to: days.at(-1)?.date ?? start };
-  const dates = datesFrom(drawn);
-  return { drawn, dates, at: dates.map((date) => daysBetween(opening, date)) };
+// The days in runs, broken over the months the account doesn't have
+// (10.2d): a run after them starts on their last day, as a quarterly
+// statement opens on its previous quarter's last; a run without a day with
+// movements says nothing, so it isn't drawn.
+const runsOfDays = (
+  dates: readonly LocalDate[],
+  { missing, moved }: { missing: Set<string>; moved: Set<LocalDate> },
+): LocalDate[][] => {
+  const runs: LocalDate[][] = [[]];
+  dates.forEach((date, index) => {
+    if (!missing.has(date.slice(0, 7))) return runs.at(-1)?.push(date);
+    const next = dates[index + 1];
+    runs.push(next && !missing.has(next.slice(0, 7)) ? [date] : []);
+  });
+  return runs.filter((run) => run.some((date) => moved.has(date)));
 };
 
 // The real spending so far on each day, as money out: 0 at the opening.
 const spendingSoFar = (
   dates: readonly LocalDate[],
   days: readonly DayTotals[],
-): number[] => {
+): Map<LocalDate, number> => {
   const spentOn = new Map(
     days.map(({ date, kinds }) => [date, -kinds.spending.amountMinor]),
   );
   let total = 0;
-  return dates.map((date) => {
-    total += spentOn.get(date) ?? 0;
-    return total;
-  });
+  return new Map(
+    dates.map((date) => {
+      total += spentOn.get(date) ?? 0;
+      return [date, total];
+    }),
+  );
 };
 
-// The balance on each day, the opening's first, the same over a day
-// without movements.
-const balanceEachDay = (
-  dates: readonly LocalDate[],
-  { openingMinor, days }: DailyBalances,
+// A run's balance each day: before its first movement, as its statement
+// opened, then after each day's last, the same over a day without them.
+const balanceOfRun = (
+  run: readonly LocalDate[],
+  days: readonly DayBalance[],
 ): number[] => {
+  const [first = "", last = ""] = [run[0], run.at(-1)];
+  const within = days.filter(({ date }) => date >= first && date <= last);
   const closingOn = new Map(
-    days.map(({ date, closingMinor }) => [date, closingMinor]),
+    within.map(({ date, closingMinor }) => [date, closingMinor]),
   );
-  let balance: number = openingMinor;
-  return dates.map((date) => {
+  let balance: number = within[0]?.openingMinor ?? 0;
+  return run.map((date) => {
     balance = closingOn.get(date) ?? balance;
     return balance;
   });
+};
+
+/** A run of days the lines draw, where each falls, and its figures. */
+type LineRun = {
+  readonly dates: readonly LocalDate[];
+  readonly at: readonly number[];
+  readonly spending: readonly number[];
+  /** When every movement printed its balance. */
+  readonly balance: readonly number[] | null;
+};
+
+// The lines' runs, from where they start through the last day with
+// movements, on the period's axis, which starts at its opening.
+const lineRuns = (summary: AccountSummary, opening: LocalDate): LineRun[] => {
+  const { days } = summary.summary;
+  const start = startOf(summary.period, opening, days[0]?.date);
+  const dates = datesFrom({ from: start, to: days.at(-1)?.date ?? start });
+  const spent = spendingSoFar(dates, days);
+  const runs = runsOfDays(dates, {
+    missing: new Set(summary.missingMonths),
+    moved: new Set(days.map(({ date }) => date)),
+  });
+  return runs.map((run) => ({
+    dates: run,
+    at: run.map((date) => daysBetween(opening, date)),
+    spending: run.map((date) => spent.get(date) ?? 0),
+    balance: summary.balances && balanceOfRun(run, summary.balances.days),
+  }));
+};
+
+// The balance a run draws on a day.
+const balanceOn = (runs: readonly LineRun[], date: LocalDate): number => {
+  const run = runs.find(({ dates }) => dates.includes(date));
+  return run?.balance?.[run.dates.indexOf(date)] ?? 0;
 };
 
 // "30 jun", "31 jul", "31 ago", "30 sep": a quarter's opening and its
@@ -126,18 +171,12 @@ const dayTicks = (period: PagePeriod, { from, to }: Period) => {
 // where money moved that same day, which wasn't spending.
 const eventOf = (
   { summary, period }: AccountSummary,
-  balance: readonly number[],
+  runs: readonly LineRun[],
   {
     plot,
     opening,
-    start,
     scale,
-  }: {
-    plot: ChartPlot;
-    opening: LocalDate;
-    start: LocalDate;
-    scale: ChartScale;
-  },
+  }: { plot: ChartPlot; opening: LocalDate; scale: ChartScale },
 ): ChartEvent | undefined => {
   const peak = summary.days.reduce<DayTotals | undefined>(
     (best, day) =>
@@ -152,7 +191,7 @@ const eventOf = (
   const { out } = peak.kinds.moved;
   return {
     x: coordinate(plot.x(daysBetween(opening, peak.date))),
-    y: coordinate(plot.y(balance[daysBetween(start, peak.date)] ?? 0)),
+    y: coordinate(plot.y(balanceOn(runs, peak.date))),
     title: `${formatDayInWords(peak.date)}: ${COPY.cameIn} ${compactSize(peak.kinds.income.amountMinor)}`,
     detail:
       out.count > 0
@@ -164,60 +203,63 @@ const eventOf = (
 // What the chart says, for screen readers, over the days it draws: "Tu
 // saldo pasó de $13,8M el 30 de junio a $6,5M el 30 de septiembre, y tu
 // gasto real llegó a $24,4M."
-const conclusionOf = (
-  { from, to }: Period,
-  spending: readonly number[],
-  balance: readonly number[] | null,
-): string => {
-  const spent = spending.at(-1) ?? 0;
-  if (!balance)
+const conclusionOf = (runs: readonly LineRun[]): string => {
+  const [first] = runs;
+  const last = runs.at(-1);
+  const from = first?.dates[0];
+  const to = last?.dates.at(-1);
+  const spent = last?.spending.at(-1) ?? 0;
+  if (!from || !to) return "";
+  if (!first?.balance || !last?.balance)
     return `${COPY.spendingReached} ${money(spent)} ${COPY.on} ${formatDayInWords(to)}.`;
-  const change = `${COPY.balanceFrom} ${money(balance[0] ?? 0)} ${COPY.on} ${formatDayInWords(from)} ${COPY.to} ${money(balance.at(-1) ?? 0)} ${COPY.on} ${formatDayInWords(to)}`;
+  const change = `${COPY.balanceFrom} ${money(first.balance[0] ?? 0)} ${COPY.on} ${formatDayInWords(from)} ${COPY.to} ${money(last.balance.at(-1) ?? 0)} ${COPY.on} ${formatDayInWords(to)}`;
   return spent > 0
     ? `${change}, ${COPY.andSpending} ${money(spent)}.`
     : `${change}. ${SUMMARY_COPY.spending.none}`;
 };
 
+// The balance's line and area of each run.
+const balancePieces = (runs: readonly LineRun[], plot: ChartPlot) =>
+  runs.map(({ balance, at }) => ({
+    line: lineOf(balance ?? [], plot, at),
+    area: areaOf(balance ?? [], plot, at),
+  }));
+
 /**
  * "Tu saldo y tu gasto real, día a día" (docs/ui/v8-01): the balance each
  * day, when every movement printed it, and the real spending so far, from
  * the period's opening, or a year's first quarter with movements, through
- * its last day with movements, on a scale of round amounts; the day the
- * most income came in, and what the chart says. Without balances, only the
- * spending, and nothing without spending either.
+ * its last day with movements, broken over the months the account doesn't
+ * have (10.2d), on a scale of round amounts; the day the most income came
+ * in, and what the chart says. Without balances, only the spending, and
+ * nothing without spending either.
  */
 export const dayByDayChart = (
   summary: AccountSummary,
 ): DayByDayChartView | null => {
   const days = periodDays(summary.period);
   const opening = addDaysTo(days.from, -1);
-  const { drawn, dates, at } = drawnDays(summary, opening);
-  const spending = spendingSoFar(dates, summary.summary.days);
-  const balance = summary.balances && balanceEachDay(dates, summary.balances);
-  if (!balance && (spending.at(-1) ?? 0) <= 0) return null;
+  const runs = lineRuns(summary, opening);
+  const spending = runs.flatMap((run) => run.spending);
+  const balance = summary.balances && runs.flatMap((run) => run.balance ?? []);
+  if (runs.length === 0 || (!balance && (spending.at(-1) ?? 0) <= 0))
+    return null;
   const amounts = amountTicks([...spending, ...(balance ?? [])]);
   const scale = scaleOf(amounts);
   const plot = plotOf(daysBetween(opening, days.to), scale);
-  const event =
-    balance &&
-    eventOf(summary, balance, { plot, opening, start: drawn.from, scale });
+  const event = balance && eventOf(summary, runs, { plot, opening, scale });
   return {
     title: balance ? COPY.title : COPY.spendingTitle,
     ...(balance
-      ? {
-          balance: {
-            line: lineOf(balance, plot, at),
-            area: areaOf(balance, plot, at),
-          },
-        }
+      ? { balance: balancePieces(runs, plot) }
       : { note: COPY.noBalance }),
-    spending: lineOf(spending, plot, at),
+    spending: runs.map((run) => lineOf(run.spending, plot, run.at)),
     yTicks: yTicksOf(amounts, plot),
     xTicks: dayTicks(summary.period, days).map((date): ChartTick => ({
       label: formatShortDay(date),
       at: coordinate(plot.x(daysBetween(opening, date))),
     })),
     ...(event ? { event } : {}),
-    label: conclusionOf(drawn, spending, balance),
+    label: conclusionOf(runs),
   };
 };

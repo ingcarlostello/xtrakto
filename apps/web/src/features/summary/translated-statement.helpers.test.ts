@@ -66,6 +66,7 @@ const summaryOf = (
     balances: null,
     bankFigures: [],
     unreconciled: [],
+    missingMonths: [],
   };
 };
 

@@ -65,9 +65,11 @@ export type BalanceMovement = {
   readonly balanceAfterMinor: AmountMinor | null;
 };
 
-/** The balance after a day's last movement. */
+/** The balance before a day's first movement and after its last. */
 export type DayBalance = {
   readonly date: LocalDate;
+  /** Where the balance picks up after months its files miss (10.2d). */
+  readonly openingMinor: AmountMinor;
   readonly closingMinor: AmountMinor;
 };
 

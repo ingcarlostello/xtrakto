@@ -247,7 +247,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.2a Coverage timeline
 - [x] 10.2b A year in Movimientos and Categorías
 - [x] 10.2c A year in Resumen and Pagos fijos
-- [ ] 10.2d Gaps and which file to download
+- [x] 10.2d Gaps and which file to download
 - [ ] 10.3 Today's balance as a check
 - [ ] 10.4a [HUMAN] Email with Resend and the upload notice
 - [ ] 10.4b Review and fixed-payment notices
@@ -2074,7 +2074,11 @@ It came out at about 310 lines of code added and 110 deleted, in two commits of 
 
 **Done when:** tests cover which months are missing and which file each one gets (a quarter that ended, the bank's window, a new year), and the notice reads right at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): gaps and which file to download`
+Decided with the human when it started (2026-11-05): the notice is a strip under the review banner, as wide as the page, in every period of the account; one notice names every run of months missing with each file, and its button names the one file ("Subir abr–jun") or reads "Ir a Subir" for several; and the summary's chart breaks its lines over the months the account doesn't have, left open in 10.2c. Found while building it: the months are those of the account's coverage timeline (10.2a), the last twelve at most; the months of the quarter that goes on always fall in the bank's window, so the movements it gives always bring them. After a gap the balance picks up where the next statement opens, so `dailyBalances` keeps each day's opening balance too. "Ver lo que tienes" takes the place of "Ver movimientos", as v8-13 draws one action, and moves the focus to "Lo que tienes ahora" rather than linking to it, since the URL's fragment holds the jobs. The example never shows the notice.
+
+It came out at about 590 lines of code added and 134 deleted, past the 400 a phase should hold (about 100 of them the chart's breaks, decided with the human), in three commits of one pull request: the design rules, the coverage timeline's month helpers shared, and the feature.
+
+**Commits:** `docs(rules): gaps and which file to download`, `refactor(web): share the coverage timeline's month helpers`, then `feat: gaps and which file to download`
 
 #### 10.3 Today's balance as a check
 

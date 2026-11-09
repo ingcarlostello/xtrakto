@@ -11,6 +11,8 @@ import type {
   PeriodMovement,
   UnreconciledStatement,
 } from "@xtrakto/db";
+import type { CoverageGaps } from "@/components/coverage-timeline/coverage-gaps.helpers";
+import type { CoverageSegment } from "@/components/coverage-timeline/coverage-timeline.types";
 import type {
   ChartEvent,
   ChartTick,
@@ -42,6 +44,35 @@ export type AccountSummary = PagePeriodChoices & {
   readonly bankFigures: readonly BankFigures[];
   /** Its statements on the period's days that don't reconcile. */
   readonly unreconciled: readonly UnreconciledStatement[];
+  /**
+   * What the account misses (10.2d): its months as its coverage timeline
+   * shows them through today (10.2a), and those that ended without
+   * movements, with the files that bring them; none when it misses none.
+   */
+  readonly missing?: {
+    readonly segments: readonly CoverageSegment[];
+    /** What the timeline shows, in words. */
+    readonly sentence: string;
+    readonly gaps: CoverageGaps;
+    readonly today: LocalDate;
+  };
+  /**
+   * The months it doesn't have between its first and its last
+   * (`"2026-04"`), where the chart breaks its lines (10.2d).
+   */
+  readonly missingMonths: readonly string[];
+};
+
+/** "Te falta abril a junio" (docs/ui/v8-13), on the summary (10.2d). */
+export type MissingMonthsView = {
+  /** "Te falta abril a junio y octubre". */
+  readonly title: string;
+  /** "Para ver el año completo, sube el extracto trimestral abr–jun." */
+  readonly text: string;
+  /** "Subir abr–jun", or "Ir a Subir" for several files. */
+  readonly action: string;
+  readonly segments: readonly CoverageSegment[];
+  readonly timelineLabel: string;
 };
 
 /** A KPI tile of "Tu trimestre de un vistazo" (docs/ui/v8-01). */
@@ -138,9 +169,15 @@ export type DayByDayChartView = {
   readonly title: string;
   /** Without balances: "Tus archivos de movimientos no traen saldo." */
   readonly note?: string;
-  /** The lines as SVG points on a 100 × 100 plot, its top at 0. */
-  readonly balance?: { readonly line: string; readonly area: string };
-  readonly spending: string;
+  /**
+   * The lines as SVG points on a 100 × 100 plot, its top at 0, one piece
+   * for each run of months the account has (10.2d).
+   */
+  readonly balance?: readonly {
+    readonly line: string;
+    readonly area: string;
+  }[];
+  readonly spending: readonly string[];
   /** "$30M" down to "$0", evenly spaced. */
   readonly yTicks: readonly ChartTick[];
   /** "30 jun", "31 jul", "31 ago" and "30 sep". */

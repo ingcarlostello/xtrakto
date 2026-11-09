@@ -1,10 +1,17 @@
 import "server-only";
-import { dailyBalances, summarizeMovements } from "@xtrakto/core";
+import {
+  DEFAULT_TIME_ZONE,
+  dailyBalances,
+  localDateFromInstant,
+  summarizeMovements,
+} from "@xtrakto/core";
 import {
   findUserId,
+  listAccountCoverage,
   listBankFigures,
   listSummaryMovements,
   listUnreconciledStatements,
+  type UserContext,
   withUserContext,
 } from "@xtrakto/db";
 import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
@@ -15,7 +22,16 @@ import {
 } from "@/features/recurring/recurring.helpers";
 import { getDb } from "@/lib/db";
 import { periodDays } from "@/utils/transactions-url.helpers";
+import { missingOf } from "./missing-months.helpers";
 import type { AccountSummary } from "./summary.types";
+
+// What the account misses through today in Bogotá (10.2d).
+const missingToday = async (ctx: UserContext, accountId: string) =>
+  missingOf(
+    await listAccountCoverage(ctx),
+    accountId,
+    localDateFromInstant(new Date(), DEFAULT_TIME_ZONE),
+  );
 
 /**
  * The signed-in user's summary, in the account and period the URL asks, or
@@ -23,9 +39,10 @@ import type { AccountSummary } from "./summary.types";
  * (`summarizeMovements`), the fixed payments found in the year that ends
  * with its last month with movements, as on Pagos fijos, the balance after
  * the last movement that printed one and day by day, the bank's own figures
- * from its quarterly statements there, and those of its statements that
- * don't reconcile. `null` until a movement counts; reading never creates
- * the user's row. The Clerk id must come from the session.
+ * from its quarterly statements there, those of its statements that don't
+ * reconcile, and the months the account misses. `null` until a movement
+ * counts; reading never creates the user's row. The Clerk id must come
+ * from the session.
  */
 export const getSummary = async (
   clerkUserId: string,
@@ -60,6 +77,7 @@ export const getSummary = async (
       balances: dailyBalances(movements),
       bankFigures: await listBankFigures(ctx, scope),
       unreconciled: await listUnreconciledStatements(ctx, scope),
+      ...(await missingToday(ctx, located.account.id)),
     };
   });
 };

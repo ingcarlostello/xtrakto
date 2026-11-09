@@ -229,9 +229,10 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     expect(balances?.openingMinor).toBe(245_000_000);
     expect(balances?.days[0]).toEqual({
       date: "2026-07-01",
+      openingMinor: 245_000_000,
       closingMinor: 208_000_289,
     });
-    expect(balances?.days.at(-1)).toEqual({
+    expect(balances?.days.at(-1)).toMatchObject({
       date: "2026-09-30",
       closingMinor: 781_851_882,
     });
@@ -422,6 +423,54 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
       date: "2026-09-30",
       amountMinor: 781_851_882,
     });
+  });
+
+  it("names the months the account misses through today, and those the chart skips (10.2d)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-05T15:00:00Z"));
+    try {
+      // April to June, then October's first week: July to September missing.
+      const { clerkUserId, accountId } = await userWith([
+        "quarterly-previous",
+        "movements-basic",
+      ]);
+
+      const result = await getSummary(clerkUserId, { accountId });
+
+      expect(result?.missingMonths).toEqual(["2026-07", "2026-08", "2026-09"]);
+      expect(result?.missing?.today).toBe("2026-11-05");
+      expect(result?.missing?.gaps).toEqual({
+        runs: [[7, 8, 9].map((month) => ({ year: 2026, month }))],
+        files: [{ kind: "quarterly", quarter: { year: 2026, quarter: 3 } }],
+      });
+      // April to November, this month still going on.
+      expect(result?.missing?.segments.map(({ status }) => status)).toEqual([
+        ...["verified", "verified", "verified"],
+        ...["missing", "missing", "missing"],
+        ...["unverified", "missing"],
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("misses nothing while the month after the last file goes on in Bogotá", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 31 October at 22:00 in Bogotá, already 1 November in UTC.
+    vi.setSystemTime(new Date("2026-11-01T03:00:00Z"));
+    try {
+      const { clerkUserId, accountId } = await userWith([
+        "quarterly-previous",
+        "quarterly-basic",
+      ]);
+
+      const result = await getSummary(clerkUserId, { accountId });
+
+      expect(result?.missing).toBeUndefined();
+      expect(result?.missingMonths).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {

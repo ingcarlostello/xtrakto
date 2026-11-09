@@ -4,7 +4,6 @@ import { GMF_TAX_RULE_ID } from "../categorization/categorization.constants";
 import { compareLocalDates } from "../dates/date.helpers";
 import type { LocalDate } from "../dates/date.types";
 import { isAmountMinor, sumAmounts } from "../money/money.helpers";
-import type { AmountMinor } from "../money/money.types";
 import { kindTotalsOf, totalOf } from "./kind-totals.helpers";
 import type {
   BalanceMovement,
@@ -12,6 +11,7 @@ import type {
   CategoryTotal,
   CategoryTotals,
   DailyBalances,
+  DayBalance,
   DayTotals,
   MovementTotal,
   PeriodSummary,
@@ -125,26 +125,26 @@ export const summarizeMovements = (
 };
 
 /**
- * A period's balance day by day: before its first movement, and after each
- * day's last, as its statement printed them. The movements come the oldest
- * first, in the bank's order within a day, as `listSummaryMovements` reads
- * them. `null` without movements, or when one printed no balance, as a
- * movements export's don't: a day's balance can't be known then.
+ * A period's balance day by day: before its first movement, and before
+ * each day's first and after its last, as its statement printed them. The
+ * movements come the oldest first, in the bank's order within a day, as
+ * `listSummaryMovements` reads them. `null` without movements, or when one
+ * printed no balance, as a movements export's don't: a day's balance can't
+ * be known then.
  */
 export const dailyBalances = (
   movements: readonly BalanceMovement[],
 ): DailyBalances | null => {
-  const [first] = movements;
-  if (first === undefined || first.balanceAfterMinor === null) return null;
-  const opening = first.balanceAfterMinor - first.amountMinor;
-  if (!isAmountMinor(opening)) return null;
-  const closing = new Map<LocalDate, AmountMinor>();
-  for (const { date, balanceAfterMinor } of movements) {
+  const days = new Map<LocalDate, DayBalance>();
+  for (const { date, amountMinor, balanceAfterMinor } of movements) {
     if (balanceAfterMinor === null) return null;
-    closing.set(date, balanceAfterMinor);
+    const openingMinor =
+      days.get(date)?.openingMinor ?? balanceAfterMinor - amountMinor;
+    if (!isAmountMinor(openingMinor)) return null;
+    days.set(date, { date, openingMinor, closingMinor: balanceAfterMinor });
   }
-  return {
-    openingMinor: opening,
-    days: [...closing].map(([date, closingMinor]) => ({ date, closingMinor })),
-  };
+  const [first] = days.values();
+  return first
+    ? { openingMinor: first.openingMinor, days: [...days.values()] }
+    : null;
 };
