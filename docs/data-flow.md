@@ -23,6 +23,7 @@ flowchart LR
     PH["PostHog (US)"]
     DS["DeepSeek (China)"]
     LF["Langfuse (US)"]
+    RS["Resend (US)"]
     H["Forward Email:<br/>forwards hola@"]
 
     W -- "minimized content,<br/>no file name" --> S
@@ -32,6 +33,7 @@ flowchart LR
     J -- "parse, save,<br/>delete the content" --> DB
     J -- "redacted bank texts<br/>no rule names, direction" --> DS
     J -- "model, tokens, cost" --> LF
+    J -- "address, counts, links" --> RS
     Browser -- "sign-in" --> K
     K -- "user.deleted webhook" --> S
     Browser -- "scrubbed errors" --> SE
@@ -66,6 +68,7 @@ The server receives the minimized content: the rows the parser reads, the accoun
 | The person's category rules and review answers                                                                             | Until they're undone, or the account is deleted                         |
 | Each LLM call's prompt and version, model, outcome, tokens and cost; never its content                                     | Until the account is deleted                                            |
 | The LLM's answers by redacted bank text and direction, with category, title, confidence and model; no user's id (ADR 0033) | Kept, also after an account is deleted, since none is linked to it      |
+| Which email notices the person receives, once they change one (10.4a)                                                      | Until the account is deleted                                            |
 | `users`: the Clerk id                                                                                                      | Until the account is deleted                                            |
 | The waitlist: name, normalized email, consent version and time                                                             | Until the launch notice, or until the person asks (ADR 0021)            |
 
@@ -78,6 +81,7 @@ Every table forces Row-Level Security: a person's rows are readable only in thei
 | Vercel                    | The app's requests and responses; short-lived request logs                                                                  | The statement file, the PDF password                                                       | Vercel's log retention                               |
 | Neon                      | The database above, encrypted in transit (`sslmode=verify-full`)                                                            | Full account numbers, addresses, the PDF password                                          | As the database keeps it                             |
 | Clerk, and Google sign-in | Name, email, sign-in data (device, IP, sessions)                                                                            | Financial data                                                                             | Until the account is deleted                         |
+| Resend                    | The person's address and each notice's words: how many files and movements, and its links (ADR 0035)                        | Amounts, the bank's texts, names, account digits, file names                               | Resend's retention                                   |
 | Inngest Cloud             | Event names with the job's and the user's ids; step outputs and errors with ids, codes and counts (ADR 0019)                | Any financial content                                                                      | Inngest's run history                                |
 | Sentry                    | Errors and a tenth of the traces, through an allowlist (ADR 0028)                                                           | Request bodies, action arguments, cookies, queries, IPs, the city                          | Sentry's retention                                   |
 | PostHog                   | Only after consent: the app's events with format ids, ranges and error codes, a random id and the browser (ADR 0029)        | Amounts, descriptions, names, URLs, IPs, the city                                          | PostHog's retention                                  |

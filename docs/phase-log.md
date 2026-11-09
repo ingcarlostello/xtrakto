@@ -1512,3 +1512,45 @@ In a local browser, with a fresh Clerk test user deleted afterwards (the local c
 - **Size:** about 950 lines of code added and 34 deleted, without tests, past the 400 a phase should hold, by the human's choice, in four commits.
 - **Reaches today:** the bank doesn't say up to which day a file was asked for, and the human's five real PDFs were downloaded 40 to 64 days after their last movement, so they say nothing about it; only the last movement can be read.
 - **A day's balance, not a movement's:** a movement's detail and the CSV keep showing only printed balances.
+
+## 10.4a Email with Resend and the upload notice
+
+_2026-11-09_
+
+When a person's files end, one email tells them how many were read and how many movements are new, with a link to the result. It holds counts and links only, and the person can turn it off.
+
+- **Resend, on `mail.xtrakto.site`** (ADR 0035), through `lib/email.ts` alone: off without `RESEND_API_KEY`, required on Vercel's production, and its failures come back as codes. The human created the account, the key and the variable; the three DNS records went into Hostinger from the human's browser, at their request.
+- **One email per upload:** a job that ends waits for its notice (`notice_pending`), the ingestion function sends `uploads/finished` with the user's id, and a function debounced by user runs a minute after the last. While a file of theirs is open it does nothing, since the last to end asks again. Files that ended before this phase ask for nothing, and neither do the daily cleanup's.
+- **The address** comes from Clerk inside the step that sends, and is in no step's output.
+- **The way out** (ADR 0036): a signed link that can only turn its notice off. `List-Unsubscribe` and `List-Unsubscribe-Post` point at `/api/unsubscribe`; the email's own link opens `/unsubscribe`, which asks first.
+- **"Avisos" in the profile** (`v8-11`) with "Cuando tu archivo esté listo", on by default; a person gets a row in `notice_preferences`, under forced Row-Level Security, only once they change it.
+- The email (v8 doesn't draw it) follows the design rules' new section; the human approved how it looks.
+- The privacy page, `docs/data-flow.md`, `docs/deployment.md` and system design §1 to §5, §9, §10 and §12 say so.
+
+75 new tests: 67 in the app (1,324 there) and 8 in the database:
+
+- the notice's claim: each ended file once, in one notice for an upload; none while a file is open, of files told before or of another user's; the switch off;
+- the column and the preference: on by default without a row, another user's neither read nor written, gone with the person's data; the catalog's grants;
+- the email: its wording for each count, what failed, both links in HTML and text, and no figure but its counts;
+- `lib/email`: the headers and the idempotency key, no key, reserved addresses, failures by name and never by message;
+- the link: another person's or notice's signature, another key and malformed tokens refused; through the test database, only its notice for only its person, forged, someone already gone, followed twice;
+- the sending: the address never returned, no address, codes, and what may pass thrown for a retry;
+- the route, the action, the environment and the public paths.
+
+In a local browser, with a fresh Clerk test user on `example.com`, deleted afterwards (the local counts as before, 4|4|8|564|1):
+
+- two files gave one notice, after the debounce, for both at once;
+- "Avisos" fits at 390px and 360px, works with the keyboard, keeps its focus and holds after a reload;
+- without a session, a forged link changes nothing, opening a good one changes nothing, its button turns the notice off and reads the same as a forged one's; a provider's one-click answers 200.
+
+The real check, with the human's approval: one upload of an invented file reached the human's Gmail from `mail.xtrakto.site`, with SPF, DKIM and DMARC passing (read from Gmail's "Mostrar original" on the same domain, an hour before).
+
+**Deviations and follow-ups:**
+
+- **Open: the email lands in Gmail's spam,** so the phase's "outside spam" isn't met. The human closed the phase anyway, in no hurry to fix it. Gmail says it resembles spam, not that it can't verify it: a domain created today, on `.site`, without a history. Revisit before many people depend on it: a stricter DMARC policy, and how the domain's reputation grows, or another sender domain.
+- **The logo didn't show in that email,** which is what Gmail does in its spam folder; the PNG is served at its URL. Check it once an email reaches the inbox.
+- **Gmail's own unsubscribe button** didn't show either, also usual in spam or for a new sender. The header's POST is tested.
+- **Size:** about 880 lines of code added and 11 deleted, without tests, past the 400 a phase should hold, by the human's choice, in six commits.
+- **The key for the links** is drawn from `IDENTIFIER_HASH_KEY` instead of being one more secret (ADR 0036).
+- **With `RESEND_API_KEY` in `.env.local`,** a local upload emails the Clerk user's real address; `example.com` never receives anything, so test users use it.
+- **A job stuck open** keeps its user's notice waiting until it expires, and those files are told with the next upload.
