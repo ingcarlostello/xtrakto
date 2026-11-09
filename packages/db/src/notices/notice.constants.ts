@@ -6,6 +6,7 @@ export const NOTICE_DEFAULTS = {
   uploadReady: true,
   reviewWaiting: true,
   fixedPaymentRose: true,
+  monthlySummary: false,
 } as const;
 
 /** One of the email notices. */

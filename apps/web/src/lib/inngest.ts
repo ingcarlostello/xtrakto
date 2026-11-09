@@ -27,3 +27,15 @@ export const statementSubmitted = eventType("statement/submitted", {
 export const uploadsFinished = eventType("uploads/finished", {
   schema: z.strictObject({ userId: z.uuid() }),
 });
+
+/**
+ * The month ended: this person's monthly email is due (10.5). Their id and
+ * that month, the same for everyone; a run of its own for each person, so one
+ * failure stops no one else.
+ */
+export const monthlySummaryDue = eventType("monthly-summary/due", {
+  schema: z.strictObject({
+    userId: z.uuid(),
+    month: z.string().regex(/^\d{4}-\d{2}$/),
+  }),
+});

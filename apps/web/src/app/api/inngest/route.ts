@@ -1,6 +1,10 @@
 import { serve } from "inngest/next";
 import { ingestStatement } from "@/features/ingestion/ingest-statement.function";
 import { cleanUpStaleJobs } from "@/features/ingestion/stale-jobs.function";
+import {
+  queueMonthlySummaries,
+  sendMonthlySummaryEmail,
+} from "@/features/notices/monthly-summary.function";
 import { notifyUploadsFinished } from "@/features/notices/upload-notice.function";
 import { inngest } from "@/lib/inngest";
 
@@ -12,5 +16,11 @@ export const maxDuration = 60;
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [ingestStatement, cleanUpStaleJobs, notifyUploadsFinished],
+  functions: [
+    ingestStatement,
+    cleanUpStaleJobs,
+    notifyUploadsFinished,
+    queueMonthlySummaries,
+    sendMonthlySummaryEmail,
+  ],
 });

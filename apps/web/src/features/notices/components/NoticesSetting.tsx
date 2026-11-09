@@ -11,6 +11,7 @@ const NOTICES: readonly NoticeId[] = [
   "uploadReady",
   "reviewWaiting",
   "fixedPaymentRose",
+  "monthlySummary",
 ];
 
 function NoticeRow({
@@ -40,7 +41,7 @@ function NoticeRow({
   );
 }
 
-/** "Avisos" (docs/ui/v8-11), with the notices that exist today (10.4a, 10.4b). */
+/** "Avisos" (docs/ui/v8-11), with its four notices (10.4a to 10.5). */
 export function NoticesSetting(preferences: NoticePreferences) {
   return (
     <Card variant="card">

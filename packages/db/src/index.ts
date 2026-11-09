@@ -155,6 +155,7 @@ export {
   type NoticePreferences,
 } from "./notices/notice.constants";
 export {
+  listMonthlySummaryUserIds,
   readNoticePreferences,
   saveNoticePreference,
 } from "./notices/notice.queries";

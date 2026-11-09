@@ -251,7 +251,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.3 Today's balance as a check
 - [x] 10.4a [HUMAN] Email with Resend and the upload notice
 - [x] 10.4b Review and fixed-payment notices
-- [ ] 10.5 Monthly email
+- [x] 10.5 Monthly email
 
 **Stage 11 — Unknown formats: ingestion agent** _(outline)_
 
@@ -2151,7 +2151,11 @@ It came out at about 450 lines of code added and 97 deleted, in commits of one p
 
 **Done when:** tests cover who gets it (on, with and without the month's movements, never the example), the month's boundary in Bogotá, and a failure that doesn't stop the others.
 
-**Commit:** `feat(web): monthly email`
+Decided with the human when it started (2026-11-09): a month that no file reaches the last day of counts as incomplete, so the email asks for what's left. A deviation, said when it started: instead of asking Clerk for addresses in batches, a run of its own for each person, one at a time, which keeps one failure from stopping the others without code to isolate errors inside a batch; going one at a time keeps it under Clerk's and Resend's limits. Sent at 08:00 in Bogotá.
+
+It lands in commits of one pull request: the design rules, the email's layout shared, the code, since the database's change alone fails the type check of the app's "Avisos", and the documents.
+
+**Commits:** `docs(rules): monthly email`, `refactor(web): share the notices' email layout`, `feat: monthly email`, then `docs: monthly email`
 
 ### Stage 11 — Unknown formats: ingestion agent _(outline)_
 

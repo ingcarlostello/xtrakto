@@ -98,16 +98,18 @@ export type NoticeOutcome =
 
 // The address comes from Clerk when an email goes, outside the database's
 // transaction, and is never kept or returned.
-const addressOf = async (clerkUserId: string): Promise<string | undefined> => {
+export const addressOf = async (
+  clerkUserId: string,
+): Promise<string | undefined> => {
   const clerk = await clerkClient();
   const user = await clerk.users.getUser(clerkUserId);
   return user.primaryEmailAddress?.emailAddress;
 };
 
-const urlOf = (route: string, token: string): string =>
+export const urlOf = (route: string, token: string): string =>
   `${SITE_URL}${route}?token=${token}`;
 
-const outcomeOf = (error: EmailError): NoticeOutcome => {
+export const outcomeOf = (error: EmailError): NoticeOutcome => {
   // Thrown for Inngest to try again; the code names only what failed.
   if (error.code === "EMAIL_FAILED" && error.isTransient)
     throw new Error(`${error.code}: ${error.reason}`);

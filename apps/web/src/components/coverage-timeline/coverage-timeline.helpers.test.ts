@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   coverageViewOf,
   coverageViews,
+  hasWholeMonth,
   monthsHad,
   timelineMonths,
 } from "./coverage-timeline.helpers";
@@ -239,5 +240,64 @@ describe("coverageViews", () => {
     );
 
     expect(view?.accountLabel).toBeUndefined();
+  });
+});
+
+describe("hasWholeMonth", () => {
+  const OCTOBER = { year: 2026, month: 10 };
+  const of = (
+    months: readonly CoverageMonth[],
+    quarters: AccountCoverage["quarters"] = [],
+  ): AccountCoverage => ({ accountId: "a1", months, quarters });
+
+  it("takes a month a verified quarterly statement covers", () => {
+    const quarter = {
+      period: periodSchema.parse({ from: "2026-09-30", to: "2026-12-31" }),
+      isChained: false,
+    };
+
+    expect(hasWholeMonth(of([], [quarter]), OCTOBER)).toBe(true);
+  });
+
+  it("takes a month a movements file reaches the last day of", () => {
+    expect(
+      hasWholeMonth(
+        of([month("2026-10", [movements("2026-10-01", "2026-10-31")])]),
+        OCTOBER,
+      ),
+    ).toBe(true);
+  });
+
+  it("takes a file that goes on past the month", () => {
+    expect(
+      hasWholeMonth(
+        of([month("2026-10", [movements("2026-10-10", "2026-11-04")])]),
+        OCTOBER,
+      ),
+    ).toBe(true);
+  });
+
+  it("leaves out one that stops before it, and a month it doesn't have", () => {
+    expect(
+      hasWholeMonth(
+        of([month("2026-10", [movements("2026-10-01", "2026-10-15")])]),
+        OCTOBER,
+      ),
+    ).toBe(false);
+    expect(
+      hasWholeMonth(
+        of([month("2026-09", [movements("2026-09-01", "2026-09-30")])]),
+        OCTOBER,
+      ),
+    ).toBe(false);
+  });
+
+  it("leaves out a quarterly statement that doesn't reconcile, whatever its days", () => {
+    expect(
+      hasWholeMonth(
+        of([month("2026-10", [quarterly("2026-09-30", "2026-12-31")])]),
+        OCTOBER,
+      ),
+    ).toBe(false);
   });
 });

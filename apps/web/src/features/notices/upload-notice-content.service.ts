@@ -17,7 +17,6 @@ import { historyOf } from "@/features/recurring/recurring.helpers";
 import { pendingOf } from "@/features/review/review-display.helpers";
 import { reviewGroupsOf } from "@/features/review/review.helpers";
 import { reviewQuarterOf } from "@/features/upload/next-step.helpers";
-import { SITE_URL } from "@/lib/site";
 import {
   periodDays,
   recurringHref,
@@ -27,18 +26,10 @@ import {
   countRisenBy,
   statementsBrought,
 } from "./upload-notice-content.helpers";
+import { appUrlOf } from "./notice-email.helpers";
 import type { UploadEmailContent } from "./upload-notice-email.helpers";
 
 type Brought = ReturnType<typeof statementsBrought>;
-
-// Where a page's link leads, from the email.
-const urlOf = ({
-  pathname,
-  query,
-}: {
-  readonly pathname: string;
-  readonly query: Record<string, string>;
-}): string => `${SITE_URL}${pathname}?${new URLSearchParams(query)}`;
 
 // What waits for review in the latest quarter of the upload where something
 // does, which the link opens, as "Lo que sigue" counts it (10.1b). One after
@@ -57,7 +48,7 @@ const reviewOf = async (
     if (pending.groups > 0)
       return {
         pending,
-        url: urlOf(reviewHref({ accountId, period: quarter })),
+        url: appUrlOf(reviewHref({ accountId, period: quarter })),
       };
   }
   return undefined;
@@ -89,7 +80,7 @@ const risenOf = async (
   }
   return first === undefined
     ? undefined
-    : { count, url: urlOf(recurringHref({ accountId: first })) };
+    : { count, url: appUrlOf(recurringHref({ accountId: first })) };
 };
 
 /**
