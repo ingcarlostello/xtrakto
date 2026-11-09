@@ -18,4 +18,7 @@ export const noticePreferences = pgTable("notice_preferences", {
   fixedPaymentRose: boolean("fixed_payment_rose")
     .notNull()
     .default(NOTICE_DEFAULTS.fixedPaymentRose),
+  monthlySummary: boolean("monthly_summary")
+    .notNull()
+    .default(NOTICE_DEFAULTS.monthlySummary),
 });

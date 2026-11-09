@@ -50,7 +50,7 @@ const runsOf = (months: readonly CalendarMonth[]): CalendarMonth[][] =>
 // The file each month comes in: its quarter's statement once the quarter
 // ended; else the quarter's movements, which the bank gives for this month
 // and the three before, so for any month of the quarter that goes on.
-const filesFor = (
+export const filesFor = (
   months: readonly CalendarMonth[],
   current: CalendarMonth,
 ): GapFile[] =>

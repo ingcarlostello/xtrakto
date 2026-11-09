@@ -16,6 +16,10 @@ export const NOTICES_COPY = {
     label: "Si un pago fijo sube",
     line: "Te avisamos al subir el extracto.",
   },
+  monthlySummary: {
+    label: "Resumen del mes",
+    line: "El primer día de cada mes.",
+  },
   failed: "No pudimos guardar el cambio. Intenta de nuevo.",
 } as const;
 
@@ -67,6 +71,30 @@ export const UPLOAD_EMAIL_COPY = {
     one: "Dejar de recibir este aviso",
     other: "Dejar de recibir estos avisos",
   },
+} as const;
+
+// The first of the month's email (10.5): the month's summary, or which file
+// it needs. Never an amount, a bank's text or a name either.
+export const MONTHLY_EMAIL_COPY = {
+  ready: {
+    // "Tu resumen de octubre está listo".
+    title: "Tu resumen de",
+    isReady: "está listo",
+    line: "Mira en qué gastaste, qué solo moviste y cuánto entró.",
+    action: "Ver mi resumen",
+  },
+  // A month without movements: "Te falta octubre".
+  missing: {
+    title: "Te falta",
+    toSee: "Para ver tu resumen del mes, sube",
+  },
+  // A month that doesn't reach its last day.
+  partial: {
+    title: "Te falta parte de",
+    toSee: "Para ver el mes completo, sube",
+  },
+  footer:
+    "Te escribimos porque activaste el resumen del mes en Xtrakto. Este correo no incluye montos ni datos de tus movimientos.",
 } as const;
 
 // The email's own colors: an email client reads no stylesheet (docs/brand.md).

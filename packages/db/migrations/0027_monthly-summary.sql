@@ -1,0 +1,1 @@
+ALTER TABLE "notice_preferences" ADD COLUMN "monthly_summary" boolean DEFAULT false NOT NULL;

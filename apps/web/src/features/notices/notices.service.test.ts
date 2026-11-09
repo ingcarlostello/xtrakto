@@ -4,7 +4,6 @@ import {
   type DbClient,
   findOrCreateUser,
   readNoticePreferences,
-  saveNoticePreference,
   type UserId,
   withUserContext,
 } from "@xtrakto/db";
@@ -86,6 +85,7 @@ describe.skipIf(!testDatabase)("notices", () => {
         uploadReady: true,
         reviewWaiting: true,
         fixedPaymentRose: true,
+        monthlySummary: false,
       });
     });
 

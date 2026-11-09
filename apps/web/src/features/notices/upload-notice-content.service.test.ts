@@ -1,12 +1,7 @@
 import { randomUUID } from "node:crypto";
-import {
-  type CalendarMonth,
-  type ExtractedContent,
-  extractedContentSchema,
-} from "@xtrakto/core";
+import type { ExtractedContent } from "@xtrakto/core";
 import {
   createDb,
-  createIngestionJobWithinLimit,
   type DbClient,
   findOrCreateUser,
   type NoticeId,
@@ -16,7 +11,6 @@ import {
   withUserContext,
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
-import { findParser } from "@xtrakto/parsers";
 import {
   afterAll,
   beforeAll,
@@ -26,7 +20,11 @@ import {
   it,
   vi,
 } from "vitest";
-import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
+import {
+  type ExportRow,
+  monthExport,
+  uploadContent,
+} from "../../../test/month-exports";
 import {
   claimUploadNotice,
   sendUploadNotice,
@@ -35,9 +33,6 @@ import {
 import { readUnsubscribeToken } from "./unsubscribe-token.helpers";
 
 const HASH_KEY = "test-key-with-at-least-32-characters!";
-const HOUR_MS = 3_600_000;
-const DAY_MS = 86_400_000;
-const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
 const BILL = "PAGO PSE EMPRESA DE ENERGIA";
 const NEQUI_IN = "TRANSFERENCIA DESDE NEQUI";
 
@@ -62,42 +57,9 @@ vi.mock("@clerk/nextjs/server", () => ({
   }),
 }));
 
-type ExportRow = readonly [day: number, description: string, pesos: number];
-
 const AUGUST = { year: 2026, month: 8 };
 const SEPTEMBER = { year: 2026, month: 9 };
 const OCTOBER = { year: 2026, month: 10 };
-
-// A month's movements as the movements export writes them, then minimized.
-const monthExport = (
-  { year, month }: CalendarMonth,
-  rows: readonly ExportRow[],
-): ExtractedContent => {
-  const content = extractedContentSchema.parse({
-    type: "spreadsheet",
-    sheets: [
-      {
-        name: "Hoja1",
-        rows: [
-          ["Fecha", "Descripción", "Referencia", "Valor"],
-          ...rows.map(([day, description, pesos]) => [
-            {
-              excelSerial:
-                (Date.UTC(year, month - 1, day) - EXCEL_EPOCH) / DAY_MS +
-                5 / 24,
-            },
-            description,
-            null,
-            pesos,
-          ]),
-        ],
-      },
-    ],
-  });
-  const parser = findParser(content);
-  if (!parser.ok) throw new Error("No parser recognizes the export.");
-  return parser.value.minimize(content);
-};
 
 const withBill = (pesos: number): readonly ExportRow[] => [[5, BILL, -pesos]];
 
@@ -125,25 +87,8 @@ describe.skipIf(!testDatabase)("what an upload's email says", () => {
 
   const newUser = () => findOrCreateUser(app.db, `test_${randomUUID()}`);
 
-  const upload = async (userId: UserId, content: ExtractedContent) => {
-    const created = await withUserContext(app.db, userId, (ctx) =>
-      createIngestionJobWithinLimit(
-        ctx,
-        { formatId: "bancolombia-movements-export", extractedContent: content },
-        {
-          limit: 100,
-          month: {
-            start: new Date(Date.now() - HOUR_MS),
-            end: new Date(Date.now() + HOUR_MS),
-          },
-        },
-      ),
-    );
-    if (!created.ok) throw new Error("Not created.");
-    const job = { jobId: created.value, userId };
-    await claimJob(job);
-    await ingestJob(job);
-  };
+  const upload = (userId: UserId, content: ExtractedContent) =>
+    uploadContent(app.db, userId, content);
 
   // Their earlier months, already told.
   const userWithHistory = async () => {
@@ -396,6 +341,7 @@ describe.skipIf(!testDatabase)("what an upload's email says", () => {
         uploadReady: false,
         reviewWaiting: true,
         fixedPaymentRose: false,
+        monthlySummary: false,
       });
     });
   });

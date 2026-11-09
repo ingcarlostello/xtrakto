@@ -3,6 +3,7 @@ import {
   type CalendarMonth,
   formatShortMonth,
   type LocalDate,
+  monthPeriod,
 } from "@xtrakto/core";
 import type {
   AccountCoverage,
@@ -90,6 +91,26 @@ export const monthsHad = ({
       .filter(({ files }) => files.some(({ isQuarterly }) => !isQuarterly))
       .map(({ month }) => month),
   ]);
+
+/**
+ * Whether an account has a month through its last day (10.5): a verified
+ * quarterly statement covers it, or a movements file reaches that day.
+ */
+export const hasWholeMonth = (
+  { months, quarters }: AccountCoverage,
+  month: CalendarMonth,
+): boolean => {
+  const key = monthKey(month);
+  if (verifiedMonths(quarters).has(key)) return true;
+  const { to } = monthPeriod(month);
+  return (
+    months
+      .find((saved) => saved.month === key)
+      ?.files.some(
+        ({ isQuarterly, period }) => !isQuarterly && period.to >= to,
+      ) ?? false
+  );
+};
 
 // A month a verified quarterly statement covers, else one only movements
 // files brought, else one the user doesn't have.

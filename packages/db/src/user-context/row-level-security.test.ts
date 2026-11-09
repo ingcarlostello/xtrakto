@@ -149,10 +149,11 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
   });
 
   // A SECURITY DEFINER function runs with its owner's rights. Only the daily
-  // cleanup and the platform's LLM spend may: without parameters, with a
+  // cleanup, the platform's LLM spend and who asked for the monthly email
+  // may: without parameters, with a
   // fixed search_path, an owner that bypasses Row-Level Security (or they
   // would see nothing) and only the application allowed to run them.
-  it("has two SECURITY DEFINER functions, the daily cleanup and the platform's LLM spend", async () => {
+  it("has three SECURITY DEFINER functions: the daily cleanup, the platform's LLM spend and the monthly email's people", async () => {
     const functions = await rowsOf(sql`
       select p.proname as name, p.pronargs as parameters, p.proconfig as settings,
         (select r.rolsuper or r.rolbypassrls from pg_roles r where r.oid = p.proowner) as "ownerBypassesRls",
@@ -163,16 +164,18 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
       order by p.proname`);
 
     expect(functions).toEqual(
-      ["expire_stale_ingestion_jobs", "llm_platform_cost_this_month"].map(
-        (name) => ({
-          name,
-          parameters: 0,
-          settings: ["search_path=pg_catalog, pg_temp"],
-          ownerBypassesRls: true,
-          appRunsIt: true,
-          anyoneRunsIt: false,
-        }),
-      ),
+      [
+        "expire_stale_ingestion_jobs",
+        "llm_platform_cost_this_month",
+        "users_with_monthly_summary",
+      ].map((name) => ({
+        name,
+        parameters: 0,
+        settings: ["search_path=pg_catalog, pg_temp"],
+        ownerBypassesRls: true,
+        appRunsIt: true,
+        anyoneRunsIt: false,
+      })),
     );
   });
 });

@@ -5,6 +5,7 @@ export const noticeIdSchema = z.enum([
   "uploadReady",
   "reviewWaiting",
   "fixedPaymentRose",
+  "monthlySummary",
 ]);
 
 /** What the profile's switch sends. */

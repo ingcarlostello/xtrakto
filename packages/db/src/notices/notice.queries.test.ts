@@ -7,7 +7,11 @@ import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import type { UserContext, UserId } from "../user-context/user-context.types";
 import { deleteAllUserData } from "../users/user.queries";
-import { readNoticePreferences, saveNoticePreference } from "./notice.queries";
+import {
+  listMonthlySummaryUserIds,
+  readNoticePreferences,
+  saveNoticePreference,
+} from "./notice.queries";
 import { noticePreferences } from "./notice.schemas";
 
 describe.skipIf(!testDatabase)("notice preferences", () => {
@@ -54,6 +58,7 @@ describe.skipIf(!testDatabase)("notice preferences", () => {
       uploadReady: true,
       reviewWaiting: false,
       fixedPaymentRose: true,
+      monthlySummary: false,
     });
   });
 
@@ -83,6 +88,24 @@ describe.skipIf(!testDatabase)("notice preferences", () => {
     expect(
       await asUser(bruno, (ctx) => ctx.tx.select().from(noticePreferences)),
     ).toEqual([]);
+  });
+
+  it("lists who asked for the monthly email, with no user's context", async () => {
+    const [on, off, unset] = [
+      await newUser(),
+      await newUser(),
+      await newUser(),
+    ];
+    await asUser(on, (ctx) =>
+      saveNoticePreference(ctx, "monthlySummary", true),
+    );
+    await asUser(off, (ctx) => saveNoticePreference(ctx, "uploadReady", false));
+
+    const listed = await listMonthlySummaryUserIds(app.db);
+
+    expect(listed).toContain(on);
+    expect(listed).not.toContain(off);
+    expect(listed).not.toContain(unset);
   });
 
   it("goes with its user", async () => {

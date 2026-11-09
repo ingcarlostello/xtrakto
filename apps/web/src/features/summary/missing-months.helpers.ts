@@ -88,8 +88,11 @@ const fileWords = (file: GapFile, current: number): string => {
   return `${formatShortMonth(first)}–${formatShortMonth(last)}`;
 };
 
-// "el extracto trimestral abr–jun y los movimientos de octubre".
-const filesText = (files: readonly GapFile[], current: number): string => {
+/** `"el extracto trimestral abr–jun y los movimientos de octubre"`. */
+export const filesText = (
+  files: readonly GapFile[],
+  current: number,
+): string => {
   const quarters = files.flatMap((file) =>
     file.kind === "quarterly" ? [quarterWords(file.quarter, current)] : [],
   );
