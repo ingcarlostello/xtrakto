@@ -19,6 +19,18 @@ export const findUserId = async (
   return row ? toUserId(row.id) : undefined;
 };
 
+/** The context user's Clerk id, or `undefined` once they're gone. */
+export const findClerkUserId = async ({
+  tx,
+  userId,
+}: UserContext): Promise<string | undefined> => {
+  const [row] = await tx
+    .select({ clerkUserId: users.clerkUserId })
+    .from(users)
+    .where(eq(users.id, userId));
+  return row?.clerkUserId;
+};
+
 /**
  * Deletes the context's user. The foreign keys' cascades take every account,
  * statement, movement and ingestion job of theirs with it, and Row-Level

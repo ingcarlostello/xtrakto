@@ -249,7 +249,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.2c A year in Resumen and Pagos fijos
 - [x] 10.2d Gaps and which file to download
 - [x] 10.3 Today's balance as a check
-- [ ] 10.4a [HUMAN] Email with Resend and the upload notice
+- [x] 10.4a [HUMAN] Email with Resend and the upload notice
 - [ ] 10.4b Review and fixed-payment notices
 - [ ] 10.5 Monthly email
 
@@ -2119,7 +2119,11 @@ Split in two when planned (about 700 lines): Resend with the first notice, then 
 - Tests cover one email for several files, the switch, an unsubscribe link that turns off only its notice for only its person while a forged one changes nothing, and that no amount, text or name reaches an email or a log. Tests never call Resend, as they never call DeepSeek.
 - An email with synthetic data reaches the human's inbox from `mail.xtrakto.site`, with SPF, DKIM and DMARC passing and outside spam, since some filters distrust `.site`.
 
-**Commits:** `feat(web): email with Resend and the upload notice`, then `docs: email only through lib/email`
+Decided with the human when it started (2026-11-09): one phase, though estimated at about 750 lines; and when it closed, that the email landing in Gmail's spam doesn't hold it back, since the human is in no hurry to fix that (its authentication passes; see the phase log). Found while building it: only a POST turns a notice off, because mail scanners open every link, so the email's link opens a page that asks.
+
+It came out at about 880 lines of code added and 11 deleted, past the 400 a phase should hold, in commits of one pull request: the design rules, the database, the email and its way out, the profile, the system's documents, and `CLAUDE.md`.
+
+**Commits:** `docs(rules): email notices and the unsubscribe page`, `feat(db): notice preferences and files waiting for their notice`, `feat(web): email with Resend and the upload notice`, `feat(web): notices in the profile`, `docs: email with Resend and one-click unsubscribe`, then `docs: email only through lib/email`
 
 #### 10.4b Review and fixed-payment notices
 

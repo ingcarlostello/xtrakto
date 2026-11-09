@@ -19,3 +19,11 @@ export const inngest = new Inngest({
 export const statementSubmitted = eventType("statement/submitted", {
   schema: z.strictObject({ jobId: z.uuid(), userId: z.uuid() }),
 });
+
+/**
+ * A file of the user's ended, whether it went well or not: the notice of
+ * their upload waits for the last one (10.4a). Their id only.
+ */
+export const uploadsFinished = eventType("uploads/finished", {
+  schema: z.strictObject({ userId: z.uuid() }),
+});

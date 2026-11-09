@@ -1,6 +1,6 @@
 import { MAX_LLM_ROUNDS } from "@/features/llm-categories/llm-categories.constants";
 import { categorizeWaitingMovements } from "@/features/llm-categories/llm-categories.service";
-import { inngest, statementSubmitted } from "@/lib/inngest";
+import { inngest, statementSubmitted, uploadsFinished } from "@/lib/inngest";
 import { claimJob, failJob, ingestJob } from "./ingest-statement.service";
 
 /**
@@ -10,7 +10,8 @@ import { claimJob, failJob, ingestJob } from "./ingest-statement.service";
  * names (8.5b), never failing the job. Steps return ids, codes and counts
  * only, and their errors are sanitized, since Inngest stores and shows step
  * outputs, results and errors. After the last retry, the job fails, if still
- * open, and its content is deleted.
+ * open, and its content is deleted. However a job ends, its user's notice
+ * may go (10.4a).
  */
 export const ingestStatement = inngest.createFunction(
   {
@@ -23,20 +24,34 @@ export const ingestStatement = inngest.createFunction(
     // A round's two attempts take up to 40 seconds (lib/ai.ts), so it starts
     // only while a request is young enough to end within the route's 60.
     checkpointing: { maxRuntime: "15s" },
-    onFailure: ({ event, step }) =>
-      step.run("fail", () => failJob(event.data.event.data)),
+    onFailure: async ({ event, step }) => {
+      const job = event.data.event.data;
+      await step.run("fail", () => failJob(job));
+      await step.sendEvent(
+        "uploads-finished",
+        uploadsFinished.create({ userId: job.userId }),
+      );
+    },
   },
   async ({ event, step }) => {
     const isClaimed = await step.run("claim", () => claimJob(event.data));
     if (!isClaimed) return { status: "closed" } as const;
     const outcome = await step.run("ingest", () => ingestJob(event.data));
-    if (outcome.status !== "done") return outcome;
-    for (let round = 0; round < MAX_LLM_ROUNDS; round++) {
+    if (outcome.status === "closed") return outcome;
+    for (
+      let round = 0;
+      outcome.status === "done" && round < MAX_LLM_ROUNDS;
+      round++
+    ) {
       const categorized = await step.run(`categorize-${round}`, () =>
         categorizeWaitingMovements(event.data.userId),
       );
       if (!categorized.hasMore) break;
     }
+    await step.sendEvent(
+      "uploads-finished",
+      uploadsFinished.create({ userId: event.data.userId }),
+    );
     return outcome;
   },
 );

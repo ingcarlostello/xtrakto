@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { AnalyticsSetting } from "@/features/analytics/components/AnalyticsSetting";
 import { hasUsedUpAiMonth } from "@/features/llm-usage/llm-usage.service";
 import { getMonthlyUsage } from "@/features/upload/upload.service";
+import { NoticesSetting } from "@/features/notices/components/NoticesSetting";
+import { getNoticePreferences } from "@/features/notices/notices.service";
 import { BankName } from "@/features/users/components/BankName";
 import { PrivacyAndData } from "@/features/users/components/PrivacyAndData";
 import { ProfilePlan } from "@/features/users/components/ProfilePlan";
@@ -24,12 +26,13 @@ export const metadata: Metadata = { title: PROFILE_COPY.title };
 // phones stack.
 export default async function ProfilePage() {
   const clerkUserId = await requireSignedIn();
-  const [account, yours, data, usage, isAiUsedUp] = await Promise.all([
+  const [account, yours, data, usage, isAiUsedUp, notices] = await Promise.all([
     getProfileAccount(clerkUserId),
     getYourAccounts(clerkUserId),
     getYourData(clerkUserId),
     getMonthlyUsage(clerkUserId),
     hasUsedUpAiMonth(clerkUserId),
+    getNoticePreferences(clerkUserId),
   ]);
   return (
     <>
@@ -44,6 +47,7 @@ export default async function ProfilePage() {
         </div>
         <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-5.5">
           <ProfilePlan {...usage} isAiUsedUp={isAiUsedUp} />
+          <NoticesSetting {...notices} />
           <AnalyticsSetting />
           <ProfileSession lastSignIn={account.lastSignIn} />
         </div>

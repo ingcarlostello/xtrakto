@@ -4,16 +4,16 @@ How xtrakto.site runs and how it was set up. Since Phase 7.2, production serves 
 
 ## What runs where
 
-| Piece           | Where                                                                                                            |
-| --------------- | ---------------------------------------------------------------------------------------------------------------- |
-| App             | Vercel project `xtrakto` (team "ingcarlostello's projects"), from GitHub `ingcarlostello/xtrakto`, branch `main` |
-| Database        | Neon project `xtrakto`, branch `main`, database `neondb`, AWS us-east-1                                          |
-| Auth            | Clerk application "Xtrakto", its production instance on xtrakto.site                                             |
-| Background jobs | Inngest Cloud's production environment, through its Vercel integration                                           |
-| Errors          | Sentry, organization `carlos-a4`, project `xtrakto` (ADR 0028)                                                   |
-| Analytics       | PostHog Cloud US, project `xtrakto`, only after the person's consent (ADR 0029)                                  |
-| Domain          | xtrakto.site, registered and with its DNS at Hostinger; www.xtrakto.site redirects to it (308)                   |
-| Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; Forward Email forwards hola@ to the owner    |
+| Piece           | Where                                                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App             | Vercel project `xtrakto` (team "ingcarlostello's projects"), from GitHub `ingcarlostello/xtrakto`, branch `main`                                                          |
+| Database        | Neon project `xtrakto`, branch `main`, database `neondb`, AWS us-east-1                                                                                                   |
+| Auth            | Clerk application "Xtrakto", its production instance on xtrakto.site                                                                                                      |
+| Background jobs | Inngest Cloud's production environment, through its Vercel integration                                                                                                    |
+| Errors          | Sentry, organization `carlos-a4`, project `xtrakto` (ADR 0028)                                                                                                            |
+| Analytics       | PostHog Cloud US, project `xtrakto`, only after the person's consent (ADR 0029)                                                                                           |
+| Domain          | xtrakto.site, registered and with its DNS at Hostinger; www.xtrakto.site redirects to it (308)                                                                            |
+| Email           | Clerk sends its own (codes, invitations) from clkmail.xtrakto.site; Forward Email forwards hola@ to the owner; Resend sends the notices from mail.xtrakto.site (ADR 0035) |
 
 ## Vercel project
 
@@ -110,6 +110,14 @@ For Clerk's production instance, as its domain status lists them:
 | `clk2._domainkey` | CNAME | `dkim2.z56mdoxvt5fg.clerk.services` |
 
 The SPF, DKIM and DMARC records Hostinger created stay as they are. Vercel and Clerk issue their HTTPS certificates once the records resolve.
+
+For the notices (10.4a), Resend's domain `mail.xtrakto.site`, in us-east-1, verified with these records at Hostinger; receiving stays off, so no MX. The root's DMARC record covers it. Its key, with sending access to this domain only, is `RESEND_API_KEY` in Vercel's production, as a sensitive variable.
+
+| Name                     | Type  | Value                                      |
+| ------------------------ | ----- | ------------------------------------------ |
+| `resend._domainkey.mail` | TXT   | The public key Resend shows for the domain |
+| `rsend.mail`             | CNAME | `rsend.forge.rmta.net`                     |
+| `send.mail`              | CNAME | `send.forge.rmta.net`                      |
 
 For hola@xtrakto.site (7.5), through Forward Email's free plan, which reads its rule from DNS, without an account:
 

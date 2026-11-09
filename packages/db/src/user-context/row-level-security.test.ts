@@ -29,6 +29,8 @@ const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   user_category_rules: READ_WRITE,
   // Added and read; deleting the user takes it through the cascade.
   llm_usage: ["SELECT", "INSERT"],
+  // Turned on or off, never deleted: the user's deletion takes it.
+  notice_preferences: ["SELECT", "INSERT", "UPDATE"],
   // Shared answers, linked to no one: read and added, never changed.
   llm_category_answers: ["SELECT", "INSERT"],
 };

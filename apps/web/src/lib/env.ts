@@ -82,6 +82,9 @@ const serverEnvShape = z.object({
   LANGFUSE_SECRET_KEY: optional(
     z.string().regex(/^sk-lf-/, "must start with sk-lf-"),
   ),
+  // Resend's API key (lib/email.ts, ADR 0035). Unset in CI and previews, where
+  // no email leaves; Vercel's production needs it.
+  RESEND_API_KEY: optional(z.string().regex(/^re_/, "must start with re_")),
   // Set by Next.js: production for `next build`, `next start` and Vercel.
   NODE_ENV: z.string().optional(),
   // Set by Vercel on every deployment, previews included.
@@ -135,6 +138,13 @@ const aiIssues = (env: ServerEnvShape): EnvIssue[] =>
     ? [{ path: "DEEPSEEK_API_KEY", message: "required on Vercel's production" }]
     : [];
 
+// As DeepSeek's: on Vercel's production, a missing key would keep every
+// notice from leaving, unnoticed.
+const emailIssues = (env: ServerEnvShape): EnvIssue[] =>
+  env.VERCEL_ENV === "production" && !env.RESEND_API_KEY
+    ? [{ path: "RESEND_API_KEY", message: "required on Vercel's production" }]
+    : [];
+
 // One key without the other would turn tracing off unnoticed.
 const langfuseIssues = (
   env: Pick<ServerEnvShape, "LANGFUSE_PUBLIC_KEY" | "LANGFUSE_SECRET_KEY">,
@@ -152,6 +162,7 @@ const serverEnvSchema = serverEnvShape.superRefine((env, context) => {
     ...productionIssues(env),
     ...inngestIssues(env),
     ...aiIssues(env),
+    ...emailIssues(env),
     ...langfuseIssues(env),
   ])
     context.addIssue({ code: "custom", path: [path], message });
