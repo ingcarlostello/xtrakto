@@ -1586,3 +1586,38 @@ In a local browser, with a fresh Clerk test user on `example.com`, deleted after
 - **Whoever turned off the only notice of 10.4a** gets the two new ones on, as anyone does, until they turn those off.
 - **Size:** about 450 lines of code added and 97 deleted, without tests, a little past the 400 a phase should hold.
 - **Open from 10.4a:** the email lands in Gmail's spam.
+
+## 10.5 Monthly email
+
+_2026-11-09_
+
+"Resumen del mes" joins "Avisos", off by default. On the first of each month at 08:00 in Bogotá, whoever turned it on gets one email about the month that ended: its summary when it's whole, or which file it needs. Stage 10 closes with it.
+
+- **Who:** `users_with_monthly_summary()`, a third `SECURITY DEFINER` function without parameters (ADR 0014), gives the cron their ids. It queues one event per person, with their id and the month that ended in Bogotá, whose id keeps a retry from queueing twice.
+- **One run per person,** one at a time, with its own retries: a failure stops no one else. The address comes from Clerk inside its step. It reads the notice again when it sends, and the example's user never gets one.
+- **A whole month** (decided with the human): a verified quarterly statement covers it, or a movements file reaches its last day. "Tu resumen de octubre está listo" links that month's summary, of the first account that has it.
+- **Otherwise** it says which file brings it, as the summary's notice does (10.2d): "Te falta octubre", or "Te falta parte de octubre" with movements that stop before its last day, then its movements while its quarter goes on, or its quarterly statement once it ended. Someone with no file yet gets the same.
+- The notices' email layout became one module, which both emails use.
+- The privacy page, `docs/data-flow.md` and system design §1, §3, §4 and §5 say so.
+
+38 new tests: 37 in the app (1,394 there) and 1 in the database:
+
+- who it's queued for: those who asked, one event each with its id, never who turned it off; the month that ended read in Bogotá, at both sides of midnight and across a new year;
+- what it says: the summary of a month a file reaches the last day of or a verified quarterly statement covers, what's left of one that stops before, which file without the month or without any file, the movements or the quarterly statement by its quarter; no bank text or amount in the subject, the HTML or the text;
+- who never gets it: a notice turned off once queued, the example's user with the notice on, someone without an address;
+- a failure for one person that leaves the next one's email to go, and thrown without an address;
+- a whole month, among several accounts; the cron's schedule, that its step keeps a count only, and that the person's run keeps its code only; the function that lists who asked, across users, and the catalog's three `SECURITY DEFINER` functions.
+
+Checked: fourteen deliberate bugs, one at a time, each failing a test.
+
+In a local browser, with a fresh Clerk test user on `example.com`, deleted afterwards (the local counts as before, 4|4|8|564|1): "Resumen del mes" starts off, turns on with the keyboard and holds after a reload; nothing overflows at 390px and 360px; and in the local Inngest the cron ran and the person's own run ended. The email was rendered to an image; none was sent, since the phase doesn't ask for it.
+
+**Deviations and follow-ups:**
+
+- **No Clerk batches,** as the roadmap planned: a run per person, for the reasons above. Decided at the start and said to the human; Clerk's limits stay far off while it goes one at a time.
+- **Several accounts:** one with the month whole makes it ready, and another account's gap isn't mentioned.
+- **A file that ends a day or two early** because nothing moved then counts as incomplete, as the human chose knowingly.
+- **On the first of a month after a quarter,** the email asks for the quarterly statement, as 10.2d does; the bank may take some days to publish it.
+- **Size:** about 465 lines of code added and 98 deleted, without tests, about 90 of them moved to share the email's layout.
+- **Open from 10.4a:** the email lands in Gmail's spam.
+- **Open from 10.1a:** two movements exports around a month's end, from the human, to compare their fingerprints.
