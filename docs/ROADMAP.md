@@ -250,7 +250,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.2d Gaps and which file to download
 - [x] 10.3 Today's balance as a check
 - [x] 10.4a [HUMAN] Email with Resend and the upload notice
-- [ ] 10.4b Review and fixed-payment notices
+- [x] 10.4b Review and fixed-payment notices
 - [ ] 10.5 Monthly email
 
 **Stage 11 — Unknown formats: ingestion agent** _(outline)_
@@ -2135,7 +2135,11 @@ It came out at about 880 lines of code added and 11 deleted, past the 400 a phas
 
 **Done when:** tests cover each notice on and off, and their emails carry no amount, text or name.
 
-**Commit:** `feat(web): notices of reviews and fixed payments`
+Found while building it (2026-11-09): an email now carries several notices, and a provider's unsubscribe button means "stop this email", so a link turns off every notice its email carried, which amends ADR 0036; the links already sent name one and keep working. What waits for review is the upload's latest quarter where something does, as "Lo que sigue" counts it. A fixed payment's "rose" means its last month is its highest, so the upload made it rise when it brought that last payment, among the year through today.
+
+It came out at about 450 lines of code added and 97 deleted, in commits of one pull request: the design rules, the code, since the database's change alone fails the type check of the app's tests, and the documents.
+
+**Commits:** `docs(rules): notices of reviews and fixed payments`, `feat: notices of reviews and fixed payments`, then `docs: notices of reviews and fixed payments`
 
 #### 10.5 Monthly email
 

@@ -1554,3 +1554,35 @@ The real check, with the human's approval: one upload of an invented file reache
 - **The key for the links** is drawn from `IDENTIFIER_HASH_KEY` instead of being one more secret (ADR 0036).
 - **With `RESEND_API_KEY` in `.env.local`,** a local upload emails the Clerk user's real address; `example.com` never receives anything, so test users use it.
 - **A job stuck open** keeps its user's notice waiting until it expires, and those files are told with the next upload.
+
+## 10.4b Review and fixed-payment notices
+
+_2026-11-09_
+
+The email of an upload now also says what waits for review and which fixed payments rose, each part only when its notice is on, and "Avisos" gains their two switches, on by default as `v8-11` draws them.
+
+- **What waits for review** (`reviewWaiting`): the upload's latest quarter where something waits, as "Lo que sigue" counts it (10.1b), with `bannerTitle`'s counts and a link that opens that quarter. The same file again tells nothing.
+- **A fixed payment that rose** (`fixedPaymentRose`): a payment's "rose" means its last month is its highest (`AmountTrend`), so the upload made it rise when it brought that last payment (`listMovementsOfStatements`, by day and bank text), among the year through today. The email says how many, and a link to Pagos fijos: never which, or by how much.
+- **One email, several parts:** the first part on leads the subject and the pill; the others follow in the card under a line, with a link each. With every part empty, no email goes.
+- **What a notice's claim returns** gained the jobs' ids; what the email says is read in the step that sends it, so no step's output holds a period.
+- The privacy page, `docs/data-flow.md` and system design §1 to §5 say so.
+
+37 new tests: 33 in the app (1,357 there) and 4 in the database:
+
+- each notice on and off, alone and together; every notice off and nothing else to tell send nothing; the subject of what leads;
+- through ingestion and the test database, with the date fixed: a rise told, one that didn't rise, the same file again, a later file of its month, a year long gone; what waits told with its quarter, nothing waiting, the same file again, the latest quarter where something waits;
+- no bank text, name or amount in the subject, the HTML or the text;
+- the link: several notices, one as 10.4a wrote it, a signature moved to more notices, and every notice the email carried turned off with no other touched;
+- the movements some statements brought: those alone, without what a verified quarterly statement hides, nothing of another user's.
+
+Checked: fourteen deliberate bugs, one at a time, each failing a test. One survived at first: the test of a link's notices passed without checking them (its fixture's payment no longer rose), and now reads the preferences.
+
+In a local browser, with a fresh Clerk test user on `example.com`, deleted afterwards (the local counts as before, 4|4|8|564|1): the three switches read as `v8-11`, save one at a time with the keyboard and hold after a reload, nothing overflows at 390px and 360px, a link with two notices turns off those two without a session, and an upload's notice ran to its end in the local Inngest. The combined email was rendered to an image at 640px and 360px; none was sent, since the phase doesn't ask for it.
+
+**Deviations and follow-ups:**
+
+- **A link turns off every notice its email carried** instead of one (ADR 0036, amended). The links already sent name one and keep working.
+- **Told again once:** a rise a movements file told is told again when the quarterly statement covering it arrives, whose movement is saved anew. V8's line says "Te avisamos al subir el extracto", so it stands.
+- **Whoever turned off the only notice of 10.4a** gets the two new ones on, as anyone does, until they turn those off.
+- **Size:** about 450 lines of code added and 97 deleted, without tests, a little past the 400 a phase should hold.
+- **Open from 10.4a:** the email lands in Gmail's spam.

@@ -9,8 +9,8 @@ Every notice needs a way out that works from the email itself: Gmail and Yahoo a
 
 ## Decision
 
-- **A link the server signs.** Its token is the user's id, the notice and an HMAC-SHA-256 of both. The key is drawn with HKDF from `IDENTIFIER_HASH_KEY` for this purpose alone, so a signature can't stand for a reference's hash, and no new secret has to be kept. It doesn't expire: an old email must still work.
-- **It only turns its notice off, for its person.** It reads nothing back and turns nothing on; turning a notice on again takes the profile, with a session.
+- **A link the server signs.** Its token is the user's id, the notices its email carried and an HMAC-SHA-256 of both. The key is drawn with HKDF from `IDENTIFIER_HASH_KEY` for this purpose alone, so a signature can't stand for a reference's hash, and no new secret has to be kept. It doesn't expire: an old email must still work.
+- **It only turns off the notices its email carried, for its person.** An email can carry several (10.4b), and a provider's button means "stop this email": turning off only one part would keep the rest coming. It reads nothing back and turns nothing on; turning a notice on again takes the profile, with a session, where the person can also choose one by one.
 - **Only a POST changes anything.** `List-Unsubscribe` and `List-Unsubscribe-Post` point at `/api/unsubscribe`, which a mail provider posts to. The link in the email's body opens `/unsubscribe`, which asks and posts there with a button, because mail scanners open every link they find and would unsubscribe people who never asked.
 - **The same answer whatever it gets.** A forged, malformed or valid link reads and answers alike, so the route tells nothing about who exists.
 
@@ -22,5 +22,5 @@ Every notice needs a way out that works from the email itself: Gmail and Yahoo a
 
 ## Consequences
 
-- It is the second exception to checking the session. Whoever gets an email's link can turn that notice off for its person, which is what forwarding one can cost.
+- It is the second exception to checking the session. Whoever gets an email's link can turn its notices off for its person, which is what forwarding one can cost.
 - Changing `IDENTIFIER_HASH_KEY` would break the links already sent, as it would break the references' hashes.
