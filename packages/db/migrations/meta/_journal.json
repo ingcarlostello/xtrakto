@@ -162,6 +162,13 @@
       "when": 1793821281062,
       "tag": "0022_matched-deferred",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794238468673,
+      "tag": "0023_reported-balance",
+      "breakpoints": true
     }
   ]
 }

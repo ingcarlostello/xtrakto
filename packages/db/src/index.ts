@@ -19,6 +19,12 @@ export {
   resolveUnidentifiedAccount,
 } from "./accounts/account.queries";
 export {
+  type ExportReportedBalance,
+  findReportedBalance,
+  listReportedBalances,
+  saveReportedBalance,
+} from "./accounts/reported-balance.queries";
+export {
   INGESTION_JOB_ERROR,
   INGESTION_JOB_STATUS,
 } from "./ingestion-jobs/ingestion-job.constants";
@@ -71,6 +77,7 @@ export {
 } from "./statements/account-coverage.queries";
 export {
   type BankFigures,
+  findLatestVerifiedClosing,
   listBankFigures,
 } from "./statements/statement-figures.queries";
 export type {
