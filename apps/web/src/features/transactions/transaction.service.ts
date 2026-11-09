@@ -1,10 +1,13 @@
 import "server-only";
 import {
+  type AmountMinor,
   DEFAULT_TIME_ZONE,
   descriptionRuleFor,
   kindTotalsOf,
+  type LocalDate,
   localDateFromInstant,
   type Period,
+  type ReportedBalanceCheck,
 } from "@xtrakto/core";
 import {
   countCountedMovements,
@@ -22,6 +25,7 @@ import {
   listUnreconciledStatements,
   listUserCategoryRules,
   type StatementBreaks,
+  type TransactionListItem,
   type UnreconciledStatement,
   type UserContext,
   withUserContext,
@@ -31,6 +35,11 @@ import {
   selectPagePeriod,
 } from "@/components/period-controls/period-choices.helpers";
 import { listYearChoices } from "@/components/period-controls/period-location.service";
+import {
+  checkedDayBalances,
+  checkedNote,
+} from "@/features/todays-balance/todays-balance.helpers";
+import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
 import { periodDays } from "@/utils/transactions-url.helpers";
@@ -189,10 +198,13 @@ export const getAccountTransactions = async (
       ...selection,
       offset: 0,
     });
+    const check = await readBalanceCheck(ctx, located.account.id);
+    const checked = checkedDayBalances(check);
     return {
       ...located,
       total: items.length,
-      list: movementList(items, request.shown),
+      list: movementList(items, request.shown, checked),
+      ...checkedNoteOf(check, items, checked),
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
       ...(category === undefined ? {} : { category }),
@@ -201,6 +213,19 @@ export const getAccountTransactions = async (
       currentYear,
     };
   });
+};
+
+// That the days a balance typed worked out add up with the bank (10.3),
+// when the list shows one of them.
+const checkedNoteOf = (
+  check: ReportedBalanceCheck | undefined,
+  items: readonly TransactionListItem[],
+  checked: ReadonlyMap<LocalDate, AmountMinor>,
+) => {
+  const note = checkedNote(check);
+  return note !== undefined && items.some(({ date }) => checked.has(date))
+    ? { checkedNote: note }
+    : {};
 };
 
 /**

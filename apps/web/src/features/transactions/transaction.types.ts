@@ -57,6 +57,8 @@ export type AccountTransactions = PagePeriodChoices & {
   readonly total: number;
   /** What the list shows of them. */
   readonly list: MovementList;
+  /** That the days a balance typed worked out add up with the bank (10.3). */
+  readonly checkedNote?: string;
   /** The movement the URL details, when it's one of the account's that count. */
   readonly detail: OpenMovement | null;
   /** This year in Bogotá, which day headings leave out. */

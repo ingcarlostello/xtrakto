@@ -5,6 +5,7 @@ import type {
   LocalDate,
   PeriodSummary,
   RecurringPayment,
+  ReportedBalanceCheck,
 } from "@xtrakto/core";
 import type {
   BankFigures,
@@ -44,6 +45,8 @@ export type AccountSummary = PagePeriodChoices & {
   readonly bankFigures: readonly BankFigures[];
   /** Its statements on the period's days that don't reconcile. */
   readonly unreconciled: readonly UnreconciledStatement[];
+  /** What the balance typed says of the period's days only movements files cover (10.3). */
+  readonly balanceCheck?: ReportedBalanceCheck;
   /**
    * What the account misses (10.2d): its months as its coverage timeline
    * shows them through today (10.2a), and those that ended without
@@ -167,7 +170,10 @@ export type TranslatedStatementView = {
 export type DayByDayChartView = {
   /** "Tu gasto real, día a día" without balances. */
   readonly title: string;
-  /** Without balances: "Tus archivos de movimientos no traen saldo." */
+  /**
+   * Without balances: "Tus archivos de movimientos no traen saldo."; with
+   * those a balance typed worked out, that they add up with the bank (10.3).
+   */
   readonly note?: string;
   /**
    * The lines as SVG points on a 100 × 100 plot, its top at 0, one piece

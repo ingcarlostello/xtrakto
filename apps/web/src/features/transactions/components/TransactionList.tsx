@@ -70,6 +70,7 @@ export function TransactionList({
         <CardDescription>
           {periodText(period)}. {accountLabel(account, account.last4)}.
           {joined && ` ${joined}`}
+          {transactions.checkedNote && ` ${transactions.checkedNote}`}
         </CardDescription>
       </CardHeader>
       <SearchField link={link} />

@@ -3,6 +3,7 @@ import {
   localDateSchema,
   type PeriodSummary,
   periodSchema,
+  type ReportedBalanceCheck,
 } from "@xtrakto/core";
 import type { AccountRow, BankFigures } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
@@ -204,6 +205,62 @@ describe("accountCardView", () => {
           summaryWith({ unreconciled: [{ ...broken, differenceMinor }] }),
         ).status.title,
       ).toBe("No cuadra");
+  });
+
+  describe("what a balance typed says of the period (10.3)", () => {
+    const reported = {
+      date: localDateSchema.parse("2026-11-09"),
+      amountMinor: amount(648_231_000),
+    };
+    const closingDate = localDateSchema.parse("2026-09-30");
+    const addsUp: ReportedBalanceCheck = {
+      status: "adds_up",
+      reported,
+      closingDate,
+      days: [],
+    };
+    const off: ReportedBalanceCheck = {
+      status: "off",
+      reported,
+      closingDate,
+      differenceMinor: amount(-1_240_000),
+    };
+
+    it("says it adds up with the bank, over the files without balances", () => {
+      expect(
+        accountCardView(summaryWith({ bankFigures: [], balanceCheck: addsUp }))
+          .status,
+      ).toEqual({
+        tone: "ok",
+        title: "Cuadra con tu banco",
+        detail: "Con el saldo que escribiste el 9 de noviembre",
+      });
+    });
+
+    it("says by how much it's off and that a file may be missing, over a verified quarter too", () => {
+      expect(
+        accountCardView(summaryWith({ balanceCheck: off })).status,
+      ).toEqual({
+        tone: "attention",
+        title: "No cuadra con tu banco por $12.400",
+        detail: "Puede faltar un archivo de movimientos.",
+      });
+    });
+
+    it("comes after a statement of the period that doesn't reconcile", () => {
+      const broken = {
+        id: "s1",
+        accountId: "a1",
+        period: period("2026-09-30", "2026-12-31"),
+        differenceMinor: amount(-81_000),
+      };
+
+      expect(
+        accountCardView(
+          summaryWith({ unreconciled: [broken], balanceCheck: addsUp }),
+        ).status.title,
+      ).toBe("No cuadra por $810");
+    });
   });
 
   it("reads files without balances", () => {

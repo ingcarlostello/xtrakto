@@ -139,17 +139,19 @@ const movementsIn = (line: MovementLine): number =>
 
 /**
  * The newest `shown` lines of a period's movements, by day, each day with
- * the balance it closed with among all of them, and what they add up to.
+ * the balance it closed with among all of them, or the one a balance typed
+ * that adds up worked out (10.3), and what they add up to.
  */
 export const movementList = (
   items: readonly TransactionListItem[],
   shown: number,
+  checked: ReadonlyMap<LocalDate, AmountMinor> = new Map(),
 ): MovementList => {
   const lines = movementLines(items);
   const shownLines = lines.slice(0, shown);
   const grouped = lines.filter(({ kind }) => kind === "interest");
   return {
-    days: daysOf(shownLines, closingBalances(items)),
+    days: daysOf(shownLines, new Map([...checked, ...closingBalances(items)])),
     shownLines: shownLines.length,
     shownMovements: shownLines.reduce((sum, l) => sum + movementsIn(l), 0),
     lineCount: lines.length,

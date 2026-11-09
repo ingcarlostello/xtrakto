@@ -7,6 +7,7 @@ import {
 } from "@xtrakto/core";
 import type { StatementMatches } from "@xtrakto/db";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
+import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import { countText } from "@/utils/count-text.utils";
 import {
   breaksHref,
@@ -44,6 +45,8 @@ export type ResultView = {
     readonly detail: string;
   };
   readonly steps: readonly ResultStep[];
+  /** The field that checks today's balance (10.3), under its steps. */
+  readonly todaysBalance?: TodaysBalanceOffer;
   /** A file the account had all of: the way to "Lo que tienes" (10.2d, v8-13). */
   readonly showsWhatYouHave?: boolean;
   /** Its movements, when they count: not those of a statement that doesn't reconcile. */
@@ -289,6 +292,7 @@ export const resultView = (
     counts: countsOf(outcome),
     pill: pillOf(outcome),
     steps: stepsOf(job, outcome, pdf),
+    ...(outcome.todaysBalance ? { todaysBalance: outcome.todaysBalance } : {}),
     ...linkOf(outcome),
   };
 };

@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { extractedContentSchema } from "@xtrakto/core";
+import {
+  type AmountMinor,
+  amountMinorSchema,
+  extractedContentSchema,
+} from "@xtrakto/core";
 import {
   createDb,
   createIngestionJobWithinLimit,
@@ -11,7 +15,17 @@ import {
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { keepTodaysBalance } from "@/features/todays-balance/todays-balance.service";
 import type {
   MovementPeriod,
   PagePeriod,
@@ -471,6 +485,76 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe("with a balance typed (10.3)", () => {
+    // quarterly-basic's closing, 30 September, and movements-basic's week.
+    const ADDS_UP = amountMinorSchema.parse(781_851_882 + 255_150_967);
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-10-08T15:00:00Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const summaryWithBalance = async (typed: AmountMinor) => {
+      const { clerkUserId, accountId } = await userWith([
+        "quarterly-basic",
+        "movements-basic",
+      ]);
+      await keepTodaysBalance(clerkUserId, accountId, typed);
+      const result = await getSummary(clerkUserId, {
+        accountId,
+        period: FOURTH_QUARTER,
+      });
+      if (!result) throw new Error("No summary.");
+      return result;
+    };
+
+    it("works out the days only movements files cover when it adds up", async () => {
+      const { balance, balances, balanceCheck, bankFigures } =
+        await summaryWithBalance(ADDS_UP);
+
+      expect(balanceCheck?.status).toBe("adds_up");
+      expect(balance).toEqual({ date: "2026-10-07", amountMinor: ADDS_UP });
+      expect(balances?.openingMinor).toBe(781_851_882);
+      expect(balances?.days.at(-1)).toMatchObject({
+        date: "2026-10-07",
+        closingMinor: ADDS_UP,
+      });
+      expect(bankFigures).toEqual([]);
+    });
+
+    it("shows no balance when it's off, and says by how much", async () => {
+      const { balance, balances, balanceCheck } = await summaryWithBalance(
+        amountMinorSchema.parse(ADDS_UP - 1_240_000),
+      );
+
+      expect(balanceCheck).toMatchObject({
+        status: "off",
+        differenceMinor: -1_240_000,
+      });
+      expect(balance).toBeNull();
+      expect(balances).toBeNull();
+    });
+
+    it("says nothing of it on the days before the closing", async () => {
+      const { clerkUserId, accountId } = await userWith([
+        "quarterly-basic",
+        "movements-basic",
+      ]);
+      await keepTodaysBalance(clerkUserId, accountId, ADDS_UP);
+
+      const third = await getSummary(clerkUserId, {
+        accountId,
+        period: THIRD_QUARTER,
+      });
+
+      expect(third?.balanceCheck).toBeUndefined();
+    });
   });
 
   it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {

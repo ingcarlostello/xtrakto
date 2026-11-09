@@ -3,9 +3,11 @@ import {
   formatAmount,
   formatDayInWords,
   formatMonthRange,
+  type ReportedBalanceCheck,
   sumAmounts,
 } from "@xtrakto/core";
 import type { BankFigures } from "@xtrakto/db";
+import { TODAYS_BALANCE_COPY as BALANCE_COPY } from "@/features/todays-balance/todays-balance.constants";
 import { accountLabel } from "@/utils/account-label.helpers";
 import { countText, formatCount, wordFor } from "@/utils/count-text.utils";
 import { boxAmount, exactSize } from "@/utils/money-text.utils";
@@ -89,8 +91,25 @@ const verifiedOf = ({
   return { movementCount, chainedTo: null };
 };
 
+// What a balance typed says of the period (10.3): that it adds up, or by
+// how much it's off.
+const checkStatus = (check: ReportedBalanceCheck): AccountCardView["status"] =>
+  check.status === "adds_up"
+    ? {
+        tone: "ok",
+        title: BALANCE_COPY.addsUp,
+        detail: `${BALANCE_COPY.typedOn} ${formatDayInWords(check.reported.date)}`,
+      }
+    : {
+        tone: "attention",
+        title: `${BALANCE_COPY.offWithBank} ${exactSize(check.differenceMinor)}`,
+        detail: BALANCE_COPY.fileMissing,
+      };
+
 // A statement of the period that doesn't reconcile comes first: none of its
-// numbers count. Then a verified one, else only files without balances.
+// numbers count. Then what a balance typed says of the days after the
+// latest verified closing (10.3). Then a verified one, else only files
+// without balances.
 const statusOf = (summary: AccountSummary): AccountCardView["status"] => {
   const { unreconciled } = summary;
   const [broken] = unreconciled;
@@ -103,6 +122,7 @@ const statusOf = (summary: AccountSummary): AccountCardView["status"] => {
           : `${COPY.doesNotReconcile} ${COPY.by} ${exactSize(broken.differenceMinor)}`,
       detail: COPY.checkFile,
     };
+  if (summary.balanceCheck) return checkStatus(summary.balanceCheck);
   const verified = verifiedOf(summary);
   return verified
     ? { tone: "ok", title: COPY.verified, detail: verifiedDetail(verified) }

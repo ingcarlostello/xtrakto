@@ -46,6 +46,25 @@ describe("movementsCsv", () => {
     expect(hidden?.endsWith(";4567;No")).toBe(true);
   });
 
+  it("writes each balance the person typed after the movements, counting nowhere (10.3)", () => {
+    const csv = movementsCsv([movement()], {
+      withCounts: true,
+      reportedBalances: [
+        {
+          bankId: "bancolombia",
+          accountType: "savings",
+          accountLast4: "8901",
+          date: "2026-11-09" as LocalDate,
+          amountMinor: 781_851_882 as AmountMinor,
+        },
+      ],
+    });
+
+    expect(linesOf(csv).at(-2)).toBe(
+      "09/11/2026;Cuenta de ahorros · Bancolombia ••••8901;Saldo que escribiste en Xtrakto;;7818518,82;;;No;;;No",
+    );
+  });
+
   it("leaves the kind and category empty for money no rule knows, and marks a guess", () => {
     const [, row] = linesOf(
       movementsCsv(

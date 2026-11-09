@@ -174,6 +174,17 @@ describe("resultView", () => {
     ).toBe(RESULT_COPY.alreadyHad);
   });
 
+  it("offers the check of today's balance when the outcome does (10.3)", () => {
+    const offer = { accountId: "a1" };
+    const offered = outcome(
+      {},
+      { period: JULY, balance: "none", todaysBalance: offer },
+    );
+
+    expect(resultView(movements, offered).todaysBalance).toBe(offer);
+    expect(resultView(movements, outcome({})).todaysBalance).toBeUndefined();
+  });
+
   it("says when it replaced a version that didn't reconcile", () => {
     expect(resultView(quarterly, outcome({ replaced: 1 })).title).toBe(
       RESULT_COPY.replaced,

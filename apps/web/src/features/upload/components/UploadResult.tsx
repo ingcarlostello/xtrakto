@@ -5,6 +5,7 @@ import type { ReactElement } from "react";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TodaysBalanceBox } from "@/features/todays-balance/components/TodaysBalanceBox";
 import {
   RESULT_COPY,
   WHAT_YOU_HAVE_TITLE_ID,
@@ -188,6 +189,7 @@ export function UploadResult({ name, kind, tags, view }: UploadResultProps) {
       <Counts counts={view.counts} isOk={view.isOk} />
       <StatusPill {...view.pill} className="self-start" />
       <Steps steps={view.steps} />
+      {view.todaysBalance && <TodaysBalanceBox offer={view.todaysBalance} />}
       <ResultLink view={view} />
     </li>
   );

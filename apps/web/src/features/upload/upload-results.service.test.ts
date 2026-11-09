@@ -9,9 +9,13 @@ const mocks = vi.hoisted(() => ({
   listRecentIngestionJobs: vi.fn(),
   listStatementMatches: vi.fn(),
   countCountedMovements: vi.fn(),
+  readTodaysBalanceOffer: vi.fn(),
   withUserContext: vi.fn(),
 }));
 
+vi.mock("@/features/todays-balance/todays-balance.service", () => ({
+  readTodaysBalanceOffer: mocks.readTodaysBalanceOffer,
+}));
 vi.mock("@xtrakto/db", () => ({
   findUserId: mocks.findUserId,
   listIngestionJobResults: mocks.listIngestionJobResults,
@@ -145,6 +149,33 @@ describe("listUploadJobs", () => {
     expect(job?.outcome?.matches).toEqual({ ...MATCHES, references: 0 });
   });
 
+  it("offers today's balance on a file without balances, once each (10.3)", async () => {
+    const offer = { accountId: "a1" };
+    mocks.readTodaysBalanceOffer.mockResolvedValue(offer);
+    // The same file twice points at one statement.
+    const THIRD_JOB = "9f3a5e7c-4d6b-4a8c-8e1f-2a3b4c5d6e7f";
+    mocks.listIngestionJobResults.mockResolvedValue([
+      doneJob(JOB_ID, { id: "s1", period: AUGUST_1_TO_15 }),
+      doneJob(OTHER_JOB, { id: "s2", period: QUARTER, balance: "verified" }),
+      doneJob(THIRD_JOB, { id: "s1", period: AUGUST_1_TO_15 }),
+    ]);
+
+    const [movements, quarterly, again] = await listUploadJobs("user_clerk", [
+      JOB_ID,
+      OTHER_JOB,
+      THIRD_JOB,
+    ]);
+
+    expect(movements?.outcome?.todaysBalance).toBe(offer);
+    expect(again?.outcome?.todaysBalance).toBe(offer);
+    expect(quarterly?.outcome?.todaysBalance).toBeUndefined();
+    expect(mocks.readTodaysBalanceOffer).toHaveBeenCalledTimes(1);
+    expect(mocks.readTodaysBalanceOffer.mock.calls[0]?.[1]).toMatchObject({
+      accountId: "a1",
+      period: AUGUST_1_TO_15,
+    });
+  });
+
   it("reads nothing for no jobs, or for someone who never sent a file", async () => {
     mocks.findUserId.mockResolvedValue(undefined);
 
@@ -185,6 +216,17 @@ describe("listUploadedFiles", () => {
     ]);
     expect(mocks.listRecentIngestionJobs).toHaveBeenCalledWith(CONTEXT, 30);
     expect(mocks.countCountedMovements).not.toHaveBeenCalled();
+  });
+
+  it("offers no balance in the list of files", async () => {
+    mocks.listRecentIngestionJobs.mockResolvedValue([
+      doneJob(JOB_ID, { id: "s1", period: AUGUST_1_TO_15 }),
+    ]);
+
+    const [file] = await listUploadedFiles("user_clerk");
+
+    expect(file?.outcome?.todaysBalance).toBeUndefined();
+    expect(mocks.readTodaysBalanceOffer).not.toHaveBeenCalled();
   });
 
   it("lists nothing for someone who never sent a file", async () => {
