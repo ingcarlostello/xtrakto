@@ -23,6 +23,11 @@ const ACCOUNT: AccountRow = {
 };
 const QUARTER: MovementPeriod = { kind: "quarter", year: 2026, quarter: 3 };
 const AUGUST: MovementPeriod = { kind: "month", year: 2026, month: 8 };
+const FOURTH_QUARTER: MovementPeriod = {
+  kind: "quarter",
+  year: 2026,
+  quarter: 4,
+};
 
 type Row = {
   readonly date: string;
@@ -293,6 +298,41 @@ describe("dayByDayChart", () => {
 
     expect(year?.spending).toHaveLength(1);
     expect(pointsOf(year?.spending[0])[0]).toBe("8.49,100");
+  });
+
+  it("says the balances a balance typed worked out add up with the bank (10.3)", () => {
+    const quarter = summaryOf(FOURTH_QUARTER, [
+      {
+        date: "2026-10-05",
+        amount: -100_000_000,
+        as: GROCERIES,
+        balance: 1_280_000_000,
+      },
+    ]);
+    const reported = {
+      date: localDateSchema.parse("2026-11-09"),
+      amountMinor: amountMinorSchema.parse(1_280_000_000),
+    };
+    const closingDate = localDateSchema.parse("2026-09-30");
+
+    const addsUp = dayByDayChart({
+      ...quarter,
+      balanceCheck: { status: "adds_up", reported, closingDate, days: [] },
+    });
+    const off = dayByDayChart({
+      ...quarter,
+      balanceCheck: {
+        status: "off",
+        reported,
+        closingDate,
+        differenceMinor: amountMinorSchema.parse(1),
+      },
+    });
+
+    expect(addsUp?.note).toBe(
+      "Desde el 1 de octubre, el saldo es calculado y cuadra con el de tu banco.",
+    );
+    expect(off?.note).toBeUndefined();
   });
 
   it("draws a year that starts in January from the year's opening", () => {

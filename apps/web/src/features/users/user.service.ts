@@ -16,6 +16,7 @@ import {
   findUserId,
   listAccounts,
   listExportMovements,
+  listReportedBalances,
   listHolderNames,
   listOwnNameTexts,
   listOwnUserCategoryRules,
@@ -54,20 +55,23 @@ export const getProfileAccount = async (
 
 /**
  * Every movement a Clerk user has, as a CSV (7.6): those that count nowhere
- * too, each saying whether it counts in the summary, named by today's date
- * in Bogotá. A user who never uploaded has no row, and gets the header
+ * too, each saying whether it counts in the summary, and the balances they
+ * typed (10.3), named by today's date in Bogotá. A user who never uploaded has no row, and gets the header
  * alone. The Clerk id must come from the session.
  */
 export const getMyDataCsv = async (clerkUserId: string): Promise<CsvFile> => {
   const db = getDb();
   const userId = await findUserId(db, clerkUserId);
-  const movements = userId
-    ? await withUserContext(db, userId, (ctx) => listExportMovements(ctx))
-    : [];
+  const { movements, reportedBalances } = userId
+    ? await withUserContext(db, userId, async (ctx) => ({
+        movements: await listExportMovements(ctx),
+        reportedBalances: await listReportedBalances(ctx),
+      }))
+    : { movements: [], reportedBalances: [] };
   const today = localDateFromInstant(new Date(), DEFAULT_TIME_ZONE);
   return {
     fileName: `${MY_DATA_CSV_NAME}-${today}.csv`,
-    content: movementsCsv(movements, { withCounts: true }),
+    content: movementsCsv(movements, { withCounts: true, reportedBalances }),
   };
 };
 

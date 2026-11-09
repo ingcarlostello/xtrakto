@@ -28,6 +28,7 @@ import type {
   ChartTick,
 } from "@/components/line-chart/line-chart.types";
 import { calendarMonthOf } from "@/features/recurring/recurring.helpers";
+import { checkedNote } from "@/features/todays-balance/todays-balance.helpers";
 import { compactSize } from "@/utils/money-text.utils";
 import { type PagePeriod, periodDays } from "@/utils/transactions-url.helpers";
 import { movedPlaces } from "./glance.helpers";
@@ -218,6 +219,12 @@ const conclusionOf = (runs: readonly LineRun[]): string => {
     : `${change}. ${SUMMARY_COPY.spending.none}`;
 };
 
+// That the days a balance typed worked out add up with the bank (10.3).
+const checkedNoteOf = ({ balanceCheck }: AccountSummary) => {
+  const note = checkedNote(balanceCheck);
+  return note === undefined ? {} : { note };
+};
+
 // The balance's line and area of each run.
 const balancePieces = (runs: readonly LineRun[], plot: ChartPlot) =>
   runs.map(({ balance, at }) => ({
@@ -251,7 +258,7 @@ export const dayByDayChart = (
   return {
     title: balance ? COPY.title : COPY.spendingTitle,
     ...(balance
-      ? { balance: balancePieces(runs, plot) }
+      ? { balance: balancePieces(runs, plot), ...checkedNoteOf(summary) }
       : { note: COPY.noBalance }),
     spending: runs.map((run) => lineOf(run.spending, plot, run.at)),
     yTicks: yTicksOf(amounts, plot),

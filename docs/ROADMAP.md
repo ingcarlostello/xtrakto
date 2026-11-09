@@ -248,7 +248,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.2b A year in Movimientos and Categorías
 - [x] 10.2c A year in Resumen and Pagos fijos
 - [x] 10.2d Gaps and which file to download
-- [ ] 10.3 Today's balance as a check
+- [x] 10.3 Today's balance as a check
 - [ ] 10.4a [HUMAN] Email with Resend and the upload notice
 - [ ] 10.4b Review and fixed-payment notices
 - [ ] 10.5 Monthly email
@@ -2091,7 +2091,11 @@ It came out at about 590 lines of code added and 134 deleted, past the 400 a pha
 
 **Done when:** tests cover a balance that adds up, one that doesn't, no quarterly statement before, a day missing, and a quarterly statement that arrives afterwards; the field works at 390px and 360px and with the keyboard.
 
-**Commits:** `docs(rules): today's balance`, `feat(db): today's balance`, then `feat(web): today's balance as a check`
+Decided with the human when it started (2026-11-09): one phase, though estimated at about 800 lines; a file reaches today when its last movement is of today or yesterday, since the bank doesn't say up to which day it was asked for; and the field sits under "Este archivo no trae saldos", approved by the human before the phase closed. Found while building it: the check runs against the account's latest verified closing, and once a quarterly statement closes on or after the day typed it says nothing, since that statement's balances speak for the day. A balance typed today answers at once, another day asks again, and a later upload can make it add up, since it's worked out when read. The export holds it as a row of its own, in "Saldo después", that counts nowhere. The days it works out have a balance per day, as Movimientos, the chart and "Tu cuenta" read them, and none per movement in a movement's detail or the CSV.
+
+It came out at about 950 lines of code added and 34 deleted, past the 400 a phase should hold (the human chose one phase), in four commits of one pull request: the design rules, the check in core, the database, and the app.
+
+**Commits:** `docs(rules): today's balance`, `feat(core): check a typed balance against the movements that count`, `feat(db): today's balance`, then `feat(web): today's balance as a check`
 
 #### 10.4 Email with Resend
 

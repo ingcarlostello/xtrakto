@@ -1467,3 +1467,48 @@ In a local browser, with fresh Clerk test users deleted afterwards (the local co
 - **The example's notice:** the local database has no example user, so its absence was checked in the code (`!isExample`).
 - **For 10.5:** the monthly email's "which file to download" can reuse `coverageGaps`.
 - **Size:** about 590 lines of code added and 134 deleted, without tests, past the 400 a phase should hold. About 100 of them are the chart's breaks. They land in three commits.
+
+## 10.3 Today's balance as a check
+
+_2026-11-09_
+
+Movements exports print no balances, so the days only they cover had none. Now the person can type the total balance their bank shows today, and Xtrakto checks it against what it added up. It's a check, never a source.
+
+- **The account** keeps the latest balance typed and its day (`reported_balance_minor`, `reported_balance_on`), both or neither by a CHECK; the new one replaces the last.
+- **The check, worked out when read** (`checkReportedBalance`, in core): the latest verified closing balance plus the movements that count since, through the day typed. So a later upload can make it add up. With no verified closing before that day, or once a quarterly statement closes on or after it, there's nothing to compare, and its own balances speak for those days.
+- **The field** (`TodaysBalanceBox`; v8 doesn't draw it, built from its pieces and approved by the human):
+  - under "Este archivo no trae saldos", in the result of a movements file that reaches today (its last movement is of today or yesterday, decided with the human), when no verified quarterly statement covers its last day and one closed before it;
+  - "¿Cuánto ves hoy en tu banco?", the total balance, not the available one, typed the way someone writes it in Colombia;
+  - the answer, "Cuadra con tu banco" or "No cuadra por $12.400 · Puede faltar un archivo de movimientos.", with "Cambiar"; the focus moves between them;
+  - a balance typed today answers after a reload, and another day asks again.
+- **When it adds up:** Movimientos shows each day's balance, the chart its balance line, and "Tu cuenta" the period's closing balance with "Cuadra con tu banco" · "Con el saldo que escribiste el 9 de noviembre". The list and the chart say "Desde el 1 de octubre, el saldo es calculado y cuadra con el de tu banco.".
+- **When it doesn't:** no balance of those days shows, and "Tu cuenta" says "No cuadra con tu banco por $12.400" · "Puede faltar un archivo de movimientos."
+- **The person's data:** the export holds it as a row of its own, in "Saldo después", that counts nowhere; deleting their data deletes it. The privacy page and its date, `docs/data-flow.md` and system design §1, §3, §4 and §5 say so.
+
+72 new tests: 55 in the app (1,257 there), 11 in core and 6 in the database:
+
+- the check: a balance that adds up, one off by some amount, a day's movements missing, nothing since the closing, movements on the closing's day and after the day typed left out, no closing before, a quarterly statement that covers the day typed, past the safe integers;
+- the balances it works out, each day from its opening, keeping what a statement printed;
+- the column: the latest one kept, another user's account neither read nor written, the export's list, gone with the person's data, a balance without its day refused; the latest verified closing, never an unverified statement's or a movements file's;
+- which files reach today (today, yesterday, across a month's end), which days a check speaks about, and what it says;
+- the action: session, invalid input, and each way of typing an amount;
+- through ingestion and the test database, with the date fixed: adds up, off, a later upload that makes it add up, no quarterly statement before, a quarterly statement that arrives afterwards, the field offered or not (reaches today, a file its statement covers, one ending on the closing's day), today's answer and asking again another day, today in Bogotá at night, another user's account;
+- the upload's jobs: offered on a file without balances, once a statement, and not in the list of files;
+- the summary's balances, on and off, and nothing before the closing; "Tu cuenta" and the chart's note; Movimientos's days and its note; the export's row.
+
+Checked: thirty-three deliberate bugs, each in a file of its own. All fail a test but two: one changed nothing, and the other showed a filter the code already did, which went.
+
+In a local browser, with a fresh Clerk test user deleted afterwards (the local counts as before, 4|4|8|564|1|13):
+
+- **The uploads:** `quarterly-basic` and a movements export written by the check, with invented payments, that reaches today.
+- **The field:** text that isn't an amount says how to write it; a balance off by $12.400 says so, with the focus on the answer; "Cambiar" brings the field back with the focus, with the keyboard; the right balance reads "Cuadra con tu banco"; a reload keeps today's answer.
+- **While it's off:** "Tu cuenta" says by how much and shows no balance of those days, and Movimientos shows none.
+- **Once it adds up:** "Saldo al 9 de noviembre", "Cuadra con tu banco", the chart's balance line and its note, each day's balance in Movimientos and its note.
+- **Widths:** nothing overflows at 390px and 360px; no page error.
+
+**Deviations and follow-ups:**
+
+- **Decided with the human:** one phase; today or yesterday; where the field goes. The human approved how it looks before it closed.
+- **Size:** about 950 lines of code added and 34 deleted, without tests, past the 400 a phase should hold, by the human's choice, in four commits.
+- **Reaches today:** the bank doesn't say up to which day a file was asked for, and the human's five real PDFs were downloaded 40 to 64 days after their last movement, so they say nothing about it; only the last movement can be read.
+- **A day's balance, not a movement's:** a movement's detail and the CSV keep showing only printed balances.

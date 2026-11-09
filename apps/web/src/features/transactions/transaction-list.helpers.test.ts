@@ -152,6 +152,24 @@ describe("movementList", () => {
     expect(before?.balanceMinor).toBe(1_001_000);
   });
 
+  it("gives a day without a printed balance the one a balance typed worked out (10.3)", () => {
+    const checked = new Map([
+      [localDateSchema.parse("2026-08-31"), amountMinorSchema.parse(777_000)],
+      // What a statement printed comes first.
+      [localDateSchema.parse("2026-09-30"), amountMinorSchema.parse(1)],
+    ]);
+
+    const days = movementList(ITEMS, 30, checked).days;
+
+    expect(days.map(({ balanceMinor }) => balanceMinor)).toEqual([
+      1_000_014,
+      1_001_000,
+      1_001_986,
+      777_000,
+      null,
+    ]);
+  });
+
   it("shows as many lines as asked, and counts the movements they hold", () => {
     const { days, ...counts } = movementList(ITEMS, 2);
 

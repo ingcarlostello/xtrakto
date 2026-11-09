@@ -13,8 +13,13 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { isOneOf } from "../columns/check.utils";
-import { createdAt, primaryId } from "../columns/column.utils";
+import { isOneOf, safeIntegerCheck } from "../columns/check.utils";
+import {
+  amountMinor,
+  createdAt,
+  localDate,
+  primaryId,
+} from "../columns/column.utils";
 import { users } from "../users/user.schemas";
 
 export const accounts = pgTable(
@@ -32,6 +37,10 @@ export const accounts = pgTable(
     // Optional: the UI can label an account from its bank, type and last4.
     displayName: text("display_name"),
     holderNameNormalized: text("holder_name_normalized"),
+    // The latest balance the person typed, as their bank showed it that day
+    // (10.3): a check on the days only movements files cover, never a source.
+    reportedBalanceMinor: amountMinor("reported_balance_minor"),
+    reportedBalanceOn: localDate("reported_balance_on"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -57,5 +66,10 @@ export const accounts = pgTable(
       isOneOf(t.currency, Object.values(CURRENCY)),
     ),
     check("accounts_last4_check", sql`${t.last4} ~ '^[0-9]{4}$'`),
+    check(
+      "accounts_reported_balance_check",
+      sql`(${t.reportedBalanceMinor} is null) = (${t.reportedBalanceOn} is null)`,
+    ),
+    safeIntegerCheck("accounts", t.reportedBalanceMinor),
   ],
 );

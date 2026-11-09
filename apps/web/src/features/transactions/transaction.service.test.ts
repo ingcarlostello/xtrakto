@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { extractedContentSchema } from "@xtrakto/core";
+import { amountMinorSchema, extractedContentSchema } from "@xtrakto/core";
 import {
   createDb,
   createIngestionJobWithinLimit,
@@ -11,6 +11,7 @@ import {
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { keepTodaysBalance } from "../todays-balance/todays-balance.service";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
 import { getAccountTransactions } from "./transaction.service";
 
@@ -87,6 +88,49 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     if (!transactions) throw new Error("No movements.");
     return transactions;
   };
+
+  it("shows each day's balance a typed balance worked out, and says so (10.3)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-08T15:00:00Z"));
+    try {
+      const owner = await uploadAs(app, ["quarterly-basic", "movements-basic"]);
+      const fourth = { kind: "quarter", year: 2026, quarter: 4 } as const;
+      const account = (await getAccountTransactions(owner, { shown: 30 }))
+        ?.account.id;
+      if (account === undefined) throw new Error("No account.");
+
+      // quarterly-basic's closing plus movements-basic's week.
+      await keepTodaysBalance(
+        owner,
+        account,
+        amountMinorSchema.parse(781_851_882 + 255_150_967),
+      );
+      const list = await getAccountTransactions(owner, {
+        period: fourth,
+        shown: 30,
+      });
+
+      expect(list?.checkedNote).toBe(
+        "Desde el 1 de octubre, el saldo es calculado y cuadra con el de tu banco.",
+      );
+      expect(list?.list.days[0]).toMatchObject({
+        date: "2026-10-07",
+        balanceMinor: 781_851_882 + 255_150_967,
+      });
+      // A period without any of its days says nothing of it.
+      const third = await getAccountTransactions(owner, {
+        period: THIRD_QUARTER,
+        shown: 30,
+      });
+      expect(third?.checkedNote).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("says nothing of a balance typed without one (10.3)", async () => {
+    expect((await listOf(30)).checkedNote).toBeUndefined();
+  });
 
   it("puts July's four daily abonos in one line, and counts every movement", async () => {
     const { total, list } = await listOf(30);

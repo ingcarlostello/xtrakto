@@ -1,5 +1,5 @@
-import type { AmountMinor, Period } from "@xtrakto/core";
-import { and, asc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import type { AmountMinor, DatedBalance, Period } from "@xtrakto/core";
+import { and, asc, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import { alias, QueryBuilder } from "drizzle-orm/pg-core";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -68,4 +68,33 @@ export const listBankFigures = async (
     // The statement it chains on to ends the day this one starts.
     chainedTo: previousFrom ? { from: previousFrom, to: from } : null,
   }));
+};
+
+/**
+ * The closing balance of the account's latest quarterly statement that
+ * reconciles (10.3); `undefined` until one does.
+ */
+export const findLatestVerifiedClosing = async (
+  { tx, userId }: UserContext,
+  accountId: string,
+): Promise<DatedBalance | undefined> => {
+  const [found] = await tx
+    .select({
+      date: statements.periodTo,
+      amountMinor: statements.closingBalanceMinor,
+    })
+    .from(statements)
+    .where(
+      and(
+        eq(statements.userId, userId),
+        eq(statements.accountId, accountId),
+        eq(statements.balanceVerified, true),
+        isNotNull(statements.closingBalanceMinor),
+      ),
+    )
+    .orderBy(desc(statements.periodTo))
+    .limit(1);
+  return found && found.amountMinor !== null
+    ? { date: found.date, amountMinor: found.amountMinor }
+    : undefined;
 };

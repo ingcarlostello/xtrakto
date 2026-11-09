@@ -62,7 +62,7 @@ The server receives the minimized content: the rows the parser reads, the accoun
 | A job's minimized content, raw references included                                                                         | Until the job ends; 24 hours at most (daily cleanup at 03:00 in Bogotá) |
 | Statements: period, balances, balance check, content hash                                                                  | Until the person deletes their account                                  |
 | Movements: date, the bank's text, amount, balance, category and the LLM's answer and title; references as HMAC and last 4  | Until the person deletes their account                                  |
-| Accounts: bank, type, last 4 digits, the holder's normalized name                                                          | Until the person deletes their account                                  |
+| Accounts: bank, type, last 4 digits, the holder's normalized name, the latest balance typed and its day (10.3)             | Until the person deletes their account                                  |
 | The person's category rules and review answers                                                                             | Until they're undone, or the account is deleted                         |
 | Each LLM call's prompt and version, model, outcome, tokens and cost; never its content                                     | Until the account is deleted                                            |
 | The LLM's answers by redacted bank text and direction, with category, title, confidence and model; no user's id (ADR 0033) | Kept, also after an account is deleted, since none is linked to it      |

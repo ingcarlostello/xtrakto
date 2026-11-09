@@ -6,7 +6,7 @@ import {
   channelOf,
   type LocalDate,
 } from "@xtrakto/core";
-import type { ExportMovement } from "@xtrakto/db";
+import type { ExportMovement, ExportReportedBalance } from "@xtrakto/db";
 import { accountLabel } from "./account-label.helpers";
 import { categoryLabel } from "./category-label.helpers";
 
@@ -99,9 +99,29 @@ const rowOf = (movement: ExportMovement): string[] => {
   ];
 };
 
+// A balance the person typed (10.3): a row of its own, in "Saldo después",
+// that counts nowhere.
+const REPORTED_BALANCE_TEXT = "Saldo que escribiste en Xtrakto";
+
+const reportedRow = (reported: ExportReportedBalance): string[] => [
+  dateCell(reported.date),
+  textCell(accountLabel(reported, reported.accountLast4)),
+  textCell(REPORTED_BALANCE_TEXT),
+  "",
+  amountCell(reported.amountMinor),
+  "",
+  "",
+  yesOrNo(false),
+  "",
+  "",
+  yesOrNo(false),
+];
+
 type CsvOptions = {
   /** Every movement's export says which count in the summary. */
   readonly withCounts: boolean;
+  /** The balances the person typed, after the movements (10.3). */
+  readonly reportedBalances?: readonly ExportReportedBalance[];
 };
 
 /**
@@ -111,7 +131,7 @@ type CsvOptions = {
  */
 export const movementsCsv = (
   movements: readonly ExportMovement[],
-  { withCounts }: CsvOptions,
+  { withCounts, reportedBalances = [] }: CsvOptions,
 ): string => {
   const header = withCounts ? [...HEADERS, COUNTS_HEADER] : [...HEADERS];
   const rows = movements.map((movement) =>
@@ -119,6 +139,8 @@ export const movementsCsv = (
       ? [...rowOf(movement), yesOrNo(movement.counts)]
       : rowOf(movement),
   );
-  const lines = [header, ...rows].map((cells) => cells.join(SEPARATOR));
+  const lines = [header, ...rows, ...reportedBalances.map(reportedRow)].map(
+    (cells) => cells.join(SEPARATOR),
+  );
   return `${lines.join(LINE_END)}${LINE_END}`;
 };

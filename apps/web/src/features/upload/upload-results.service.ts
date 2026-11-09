@@ -1,4 +1,5 @@
 import "server-only";
+import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
 import {
   countCountedMovements,
   findUserId,
@@ -11,6 +12,8 @@ import {
   type UserContext,
   withUserContext,
 } from "@xtrakto/db";
+import { readTodaysBalanceOffer } from "@/features/todays-balance/todays-balance.service";
+import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import { getDb } from "@/lib/db";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { periodDays, periodParam } from "@/utils/transactions-url.helpers";
@@ -43,6 +46,8 @@ type JobsRead = {
   readonly jobs: readonly IngestionJobResult[];
   readonly matches: ReadonlyMap<string, StatementMatches>;
   readonly toReview: ReadonlyMap<string, number>;
+  /** By statement: the field a movements file's result offers (10.3). */
+  readonly todaysBalance: ReadonlyMap<string, TodaysBalanceOffer>;
 };
 
 type JobStatement = NonNullable<IngestionJobResult["statement"]>;
@@ -51,6 +56,7 @@ const NOTHING_READ: JobsRead = {
   jobs: [],
   matches: new Map(),
   toReview: new Map(),
+  todaysBalance: new Map(),
 };
 
 const statementsOf = (
@@ -84,6 +90,22 @@ const countToReview = async (
   return counts;
 };
 
+// The field each movements file of the jobs offers, through today in Bogotá.
+// One after the other: they share the transaction.
+const todaysBalanceOffers = async (
+  ctx: UserContext,
+  jobs: readonly IngestionJobResult[],
+): Promise<ReadonlyMap<string, TodaysBalanceOffer>> => {
+  const today = localDateFromInstant(new Date(), DEFAULT_TIME_ZONE);
+  const offers = new Map<string, TodaysBalanceOffer>();
+  for (const statement of statementsOf(jobs)) {
+    if (statement.balance !== "none" || offers.has(statement.id)) continue;
+    const offer = await readTodaysBalanceOffer(ctx, statement, today);
+    if (offer) offers.set(statement.id, offer);
+  }
+  return offers;
+};
+
 // What each statement of the jobs matched, counted when read (10.1b).
 const matchesOf = (ctx: UserContext, jobs: readonly IngestionJobResult[]) =>
   listStatementMatches(ctx, [
@@ -103,12 +125,13 @@ const jobMatches = (
 
 const outcomeOf = (
   job: IngestionJobResult,
-  { matches, toReview }: JobsRead,
+  { matches, toReview, todaysBalance }: JobsRead,
 ): JobOutcome | undefined => {
   const { statement } = job;
   if (statement === null) return undefined;
   const stats = { ...NO_COUNTS, ...job.stats };
   const waiting = toReview.get(reviewKeyOf(statement));
+  const offer = todaysBalance.get(statement.id);
   return {
     stats,
     statementId: statement.id,
@@ -121,6 +144,7 @@ const outcomeOf = (
     ...(statement.chainedTo === null ? {} : { chainedTo: statement.chainedTo }),
     matches: jobMatches(stats, matches.get(statement.id)),
     ...(waiting === undefined ? {} : { toReview: waiting }),
+    ...(offer === undefined ? {} : { todaysBalance: offer }),
   };
 };
 
@@ -158,6 +182,7 @@ export const listUploadJobs = async (
         jobs,
         matches: await matchesOf(ctx, jobs),
         toReview: await countToReview(ctx, jobs),
+        todaysBalance: await todaysBalanceOffers(ctx, jobs),
       };
     });
   });

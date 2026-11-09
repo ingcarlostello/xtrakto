@@ -22,6 +22,7 @@ import type {
   NO_ANSWER,
   UPLOAD_STATUS,
 } from "./upload.constants";
+import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import type { submitStatementSchema } from "./upload.schemas";
 
 export type ExtractionStage =
@@ -208,6 +209,8 @@ export type JobOutcome = {
   readonly matches: StatementMatches;
   /** The movements of its quarter that wait for the quick review, while the screen follows the job. */
   readonly toReview?: number;
+  /** Today's balance, when the file can check it (10.3), while the screen follows the job. */
+  readonly todaysBalance?: TodaysBalanceOffer;
 };
 
 /** The server action that reports how some jobs go, or a stand-in in tests. */
