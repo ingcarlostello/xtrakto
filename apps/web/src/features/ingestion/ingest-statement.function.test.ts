@@ -41,14 +41,20 @@ const round = (hasMore: boolean) => ({
 const SANITIZED =
   "JOB_NOT_INGESTED: DrizzleQueryError 23514 transactions_amount_minor_range";
 
+// The engine stands in for the event's step, and records that it ran.
+const finished = vi.hoisted(() => vi.fn(() => ({ ids: ["event-1"] })));
 const run = () =>
-  new InngestTestEngine({ function: ingestStatement }).execute({
+  new InngestTestEngine({
+    function: ingestStatement,
+    steps: [{ id: "uploads-finished", handler: finished }],
+  }).execute({
     events: [{ name: "statement/submitted", data: JOB }],
   });
 
 describe("ingest-statement", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    finished.mockReturnValue({ ids: ["event-1"] });
     mocks.claimJob.mockResolvedValue(true);
     mocks.ingestJob.mockResolvedValue(DONE);
     mocks.categorizeWaitingMovements.mockResolvedValue(round(false));
@@ -65,7 +71,9 @@ describe("ingest-statement", () => {
       true,
       DONE,
       round(false),
+      { ids: ["event-1"] },
     ]);
+    expect(finished).toHaveBeenCalledOnce();
   });
 
   it("categorizes in rounds while texts wait for the LLM", async () => {
@@ -95,6 +103,7 @@ describe("ingest-statement", () => {
     expect(result).toEqual({ status: "closed" });
     expect(mocks.ingestJob).not.toHaveBeenCalled();
     expect(mocks.categorizeWaitingMovements).not.toHaveBeenCalled();
+    expect(finished).not.toHaveBeenCalled();
   });
 
   it("never asks the LLM when the statement couldn't be read", async () => {
@@ -105,6 +114,7 @@ describe("ingest-statement", () => {
 
     expect(result).toEqual(failed);
     expect(mocks.categorizeWaitingMovements).not.toHaveBeenCalled();
+    expect(finished).toHaveBeenCalledOnce();
   });
 
   it("keeps a step's error as the service throws it, sanitized", async () => {

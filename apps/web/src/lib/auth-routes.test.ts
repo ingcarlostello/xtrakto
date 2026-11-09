@@ -35,6 +35,9 @@ describe("isPublicPath", () => {
     "/waitlist",
     "/waitlist/joined",
     "/privacy",
+    "/unsubscribe",
+    "/unsubscribe/done",
+    "/api/unsubscribe",
   ])("lets a signed-out visitor open %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -53,6 +56,8 @@ describe("isPublicPath", () => {
     "/waitlistx",
     "/waitlist-admin",
     "/privacy-admin",
+    "/unsubscribe-all",
+    "/api/unsubscribex",
   ])("asks for a session on %s", (path) => {
     expect(isPublicPath(path)).toBe(false);
   });

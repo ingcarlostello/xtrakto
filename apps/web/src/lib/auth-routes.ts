@@ -26,6 +26,14 @@ export const WAITLIST_ROUTES = {
 // links it, and a waitlist-only deployment serves it beside the waitlist.
 export const PRIVACY_ROUTE = "/privacy";
 
+// Where a notice's email leads, for anyone: the link's signature is the check
+// (10.4a, ADR 0036). The page asks; the API takes the POST that does it.
+export const UNSUBSCRIBE_ROUTES = {
+  confirm: "/unsubscribe",
+  done: "/unsubscribe/done",
+  oneClick: "/api/unsubscribe",
+} as const;
+
 const PUBLIC_PATH_PREFIXES = [
   AUTH_ROUTES.signIn,
   AUTH_ROUTES.signUp,
@@ -33,6 +41,8 @@ const PUBLIC_PATH_PREFIXES = [
   INNGEST_ROUTE,
   WAITLIST_ROUTES.join,
   PRIVACY_ROUTE,
+  UNSUBSCRIBE_ROUTES.confirm,
+  UNSUBSCRIBE_ROUTES.oneClick,
 ];
 
 const isUnder = (pathname: string, prefix: string): boolean =>

@@ -24,6 +24,7 @@ const SENTRY_DSN = "https://publickey@o1.ingest.us.sentry.io/2";
 const POSTHOG_KEY = fakeKey("phc", "projectKey0123456789abcdef");
 const PERSONAL_KEY = fakeKey("phx", "secretPersonalKey0123456789");
 const DEEPSEEK_KEY = ["sk", "secretDeepSeekKey0123456789"].join("-");
+const RESEND_KEY = fakeKey("re", "secretResendKey0123456789");
 const LANGFUSE_KEYS = {
   LANGFUSE_PUBLIC_KEY: ["pk", "lf", "publicKey0123456789"].join("-"),
   LANGFUSE_SECRET_KEY: ["sk", "lf", "secretKey0123456789"].join("-"),
@@ -298,7 +299,12 @@ describe("parseServerEnv", () => {
   });
 
   it("requires DeepSeek's key on Vercel's production, or categories would wait unnoticed", () => {
-    const deployed = { ...REQUIRED, ...CLOUD_KEYS, VERCEL: "1" };
+    const deployed = {
+      ...REQUIRED,
+      ...CLOUD_KEYS,
+      VERCEL: "1",
+      RESEND_API_KEY: RESEND_KEY,
+    };
 
     expect(failureOf({ ...deployed, VERCEL_ENV: "production" })).toContain(
       "DEEPSEEK_API_KEY",
@@ -324,6 +330,33 @@ describe("parseServerEnv", () => {
     });
 
     expect(env.DEEPSEEK_API_KEY).toBeUndefined();
+  });
+
+  it("requires Resend's key on Vercel's production, or notices would stop unnoticed", () => {
+    const deployed = {
+      ...REQUIRED,
+      ...CLOUD_KEYS,
+      VERCEL: "1",
+      VERCEL_ENV: "production",
+      DEEPSEEK_API_KEY: DEEPSEEK_KEY,
+    };
+
+    expect(failureOf(deployed)).toContain("RESEND_API_KEY");
+    expect(
+      parseServerEnv({ ...deployed, RESEND_API_KEY: RESEND_KEY })
+        .RESEND_API_KEY,
+    ).toBe(RESEND_KEY);
+  });
+
+  it("runs without Resend's key off Vercel's production, and refuses another service's", () => {
+    expect(parseServerEnv(VALID).RESEND_API_KEY).toBeUndefined();
+
+    const message = failureOf({
+      ...VALID,
+      RESEND_API_KEY: "secretResendKey0123456789",
+    });
+    expect(message).toContain("RESEND_API_KEY");
+    expect(message).not.toContain("secretResendKey");
   });
 
   it.each([undefined, ""])(
