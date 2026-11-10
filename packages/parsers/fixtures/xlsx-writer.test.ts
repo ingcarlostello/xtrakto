@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { ok } from "@xtrakto/core";
 import { extractSpreadsheet } from "../src/extraction/spreadsheet-extraction.helpers";
 import { fixtureContent } from "./fixture.utils";
+import mappedDirection from "./mapped-direction.json";
+import mappedNewestFirst from "./mapped-newest-first.json";
+import mappedNoBalance from "./mapped-no-balance.json";
+import mappedOutIn from "./mapped-out-in.json";
+import mappedTitleRows from "./mapped-title-rows.json";
 import movementsBasic from "./movements-basic.json";
 import movementsOverlap from "./movements-overlap.json";
 import quarterlyBasic from "./quarterly-basic.json";
@@ -21,6 +26,11 @@ const FIXTURES = {
   "quarterly-large": quarterlyLarge,
   "movements-basic": movementsBasic,
   "movements-overlap": movementsOverlap,
+  "mapped-out-in": mappedOutIn,
+  "mapped-newest-first": mappedNewestFirst,
+  "mapped-direction": mappedDirection,
+  "mapped-no-balance": mappedNoBalance,
+  "mapped-title-rows": mappedTitleRows,
 };
 
 describe("contentToXlsx", () => {

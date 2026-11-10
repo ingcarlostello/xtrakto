@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { extractedContentSchema } from "@xtrakto/core";
+import mappedDirection from "./mapped-direction.json";
+import mappedNewestFirst from "./mapped-newest-first.json";
+import mappedNoBalance from "./mapped-no-balance.json";
+import mappedOutIn from "./mapped-out-in.json";
+import mappedTitleRows from "./mapped-title-rows.json";
 import movementsBasic from "./movements-basic.json";
 import movementsBasicPdf from "./movements-basic-pdf.json";
 import movementsOverlap from "./movements-overlap.json";
@@ -26,6 +31,11 @@ const FIXTURES = {
   "movements-overlap": movementsOverlap,
   "movements-basic-pdf": movementsBasicPdf,
   "movements-overlap-pdf": movementsOverlapPdf,
+  "mapped-out-in": mappedOutIn,
+  "mapped-newest-first": mappedNewestFirst,
+  "mapped-direction": mappedDirection,
+  "mapped-no-balance": mappedNoBalance,
+  "mapped-title-rows": mappedTitleRows,
 };
 
 describe("synthetic fixtures", () => {

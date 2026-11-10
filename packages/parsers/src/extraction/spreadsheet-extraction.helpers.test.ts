@@ -191,6 +191,50 @@ describe("extractSpreadsheet", () => {
     });
   });
 
+  describe("XLS", () => {
+    it("reads an Excel 97–2003 file as an XLSX: text, amounts and date cells", () => {
+      const file = workbookFile(
+        {
+          Movimientos: [
+            [text("FECHA TRANS"), text("DETALLE"), text("DEBITOS")],
+            [
+              number(46_267, "dd/mm/yyyy"),
+              text("COMPRA POS SUPERMERCADO EL ARCO"),
+              number(85_400, "#,##0.00"),
+            ],
+            [text("03/09/2026"), text("ABONO NOMINA"), text("85.400,00")],
+          ],
+        },
+        { bookType: "xls" },
+      );
+
+      expect(extractSpreadsheet(file)).toEqual(
+        ok(
+          oneSheet("Movimientos", [
+            ["FECHA TRANS", "DETALLE", "DEBITOS"],
+            [
+              { excelSerial: 46_267 },
+              "COMPRA POS SUPERMERCADO EL ARCO",
+              85_400,
+            ],
+            ["03/09/2026", "ABONO NOMINA", "85.400,00"],
+          ]),
+        ),
+      );
+    });
+
+    it("returns PARSE_FAILED for a damaged XLS file", () => {
+      const xls = workbookFile(
+        { Hoja1: [[text("FECHA")]] },
+        { bookType: "xls" },
+      );
+
+      expect(extractSpreadsheet(xls.slice(0, 600))).toEqual(
+        err({ code: APP_ERROR_CODE.PARSE_FAILED }),
+      );
+    });
+  });
+
   describe("CSV", () => {
     it("reads every value of a UTF-8 file as text, without guessing types", () => {
       const csv =
@@ -244,10 +288,6 @@ describe("extractSpreadsheet", () => {
     const sample: Rows = [[text("FECHA")]];
 
     it.each([
-      {
-        label: "a legacy XLS file",
-        file: workbookFile({ Hoja1: sample }, { bookType: "xls" }),
-      },
       {
         label: "an ODS spreadsheet",
         file: workbookFile({ Hoja1: sample }, { bookType: "ods" }),
