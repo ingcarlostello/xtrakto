@@ -1,6 +1,6 @@
 import { APP_ERROR_CODE } from "../result/app-error.constants";
-import { MINOR_DIGITS } from "./money.constants";
-import type { AmountMinor, Currency } from "./money.types";
+import { DECIMAL_SEPARATOR, MINOR_DIGITS } from "./money.constants";
+import type { AmountMinor, Currency, DecimalSeparator } from "./money.types";
 import type { Result } from "../result/result.types";
 import { err, ok } from "../result/result.utils";
 
@@ -13,6 +13,16 @@ const TYPED_AMOUNT_PATTERN =
 // As a bank prints it in Colombia: "-$ 45.900,00", "$ 31,07".
 const PESO_AMOUNT_TEXT_PATTERN =
   /^(-)?\s*\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/;
+// As banks print amounts, by the separator of their cents; the other one
+// groups thousands, and a sign may go before or after the "$": "1.234,56",
+// "-$ 85.400,00", "$ -1,234.5", "85400".
+const SEPARATED_AMOUNT_PATTERNS: Readonly<Record<DecimalSeparator, RegExp>> = {
+  [DECIMAL_SEPARATOR.COMMA]:
+    /^([-−+])?\s*\$?\s*([-−])?\s*(\d{1,3}(?:\.\d{3})+|\d+)?(?:,(\d{1,2}))?$/,
+  [DECIMAL_SEPARATOR.POINT]:
+    /^([-−+])?\s*\$?\s*([-−])?\s*(\d{1,3}(?:,\d{3})+|\d+)?(?:\.(\d{1,2}))?$/,
+};
+const MINUS_SIGNS: ReadonlySet<string | undefined> = new Set(["-", "−"]);
 const HAS_SUB_CENT_DIGITS_PATTERN = /\.\d{3,}|e/i;
 // A double keeps 15 significant decimal digits; beyond that is binary noise.
 const DOUBLE_SIGNIFICANT_DIGITS = 15;
@@ -84,6 +94,32 @@ export const parsePesoAmountText = (text: string): Result<AmountMinor> => {
   return digitsToAmount(
     minus !== undefined,
     integer.replaceAll(".", ""),
+    fraction,
+  );
+};
+
+/**
+ * Parses an amount as a bank prints it, by the separator of its cents: with a
+ * comma, `"1.234,56"`, `"-$ 85.400,00"` or `"85400"`; with a point,
+ * `"1,234.56"` or `"$ -1,234.5"`. One sign at most, before or after the `$`.
+ */
+export const parseAmountWithSeparator = (
+  text: string,
+  decimalSeparator: DecimalSeparator,
+): Result<AmountMinor> => {
+  const match = SEPARATED_AMOUNT_PATTERNS[decimalSeparator].exec(text.trim());
+  if (!match || (match[3] === undefined && match[4] === undefined)) {
+    return parseError("format");
+  }
+  const [, before, after, integer = "0", fraction = ""] = match;
+  if (before !== undefined && after !== undefined) return parseError("format");
+  const thousands =
+    decimalSeparator === DECIMAL_SEPARATOR.COMMA
+      ? DECIMAL_SEPARATOR.POINT
+      : DECIMAL_SEPARATOR.COMMA;
+  return digitsToAmount(
+    MINUS_SIGNS.has(before) || MINUS_SIGNS.has(after),
+    integer.replaceAll(thousands, ""),
     fraction,
   );
 };

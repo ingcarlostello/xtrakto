@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
-import { CURRENCY } from "./money.constants";
+import { CURRENCY, DECIMAL_SEPARATOR } from "./money.constants";
 import {
   amountFromNumber,
   formatAmount,
@@ -9,6 +9,7 @@ import {
   formatSignedCompactAmount,
   isAmountMinor,
   parseAmountText,
+  parseAmountWithSeparator,
   parsePesoAmountText,
   parseTypedAmount,
   sumAmounts,
@@ -270,6 +271,83 @@ describe("parsePesoAmountText", () => {
     expect(parsePesoAmountText("$ 999.999.999.999.999.999,00")).toEqual(
       parseFailure("range"),
     );
+  });
+});
+
+describe("parseAmountWithSeparator", () => {
+  it.each([
+    ["85.400,00", 8_540_000],
+    ["4.200.000,00", 420_000_000],
+    ["-85.400,00", -8_540_000],
+    ["−85.400,00", -8_540_000],
+    ["+4.200.000", 420_000_000],
+    ["$ 1.234,56", 123_456],
+    ["-$ 1.234,56", -123_456],
+    ["$ -1.234,56", -123_456],
+    ["$1.234", 123_400],
+    ["85400", 8_540_000],
+    ["85400,5", 8_540_050],
+    ["0,93", 93],
+    [",93", 93],
+    [" 12,34 ", 1_234],
+  ])("reads %s with a decimal comma as %i minor units", (text, minor) => {
+    expect(parseAmountWithSeparator(text, DECIMAL_SEPARATOR.COMMA)).toEqual(
+      ok(minor),
+    );
+  });
+
+  it.each([
+    ["85,400.00", 8_540_000],
+    ["-1,234.56", -123_456],
+    ["$ -1,234.5", -123_450],
+    ["1234.56", 123_456],
+    ["4,200,000", 420_000_000],
+  ])("reads %s with a decimal point as %i minor units", (text, minor) => {
+    expect(parseAmountWithSeparator(text, DECIMAL_SEPARATOR.POINT)).toEqual(
+      ok(minor),
+    );
+  });
+
+  it("returns a negative zero as plain zero", () => {
+    const result = parseAmountWithSeparator("-0,00", DECIMAL_SEPARATOR.COMMA);
+
+    expect(result.ok && Object.is(result.value, 0)).toBe(true);
+  });
+
+  it.each([
+    "1,234.56",
+    "1.23",
+    "12,345",
+    "1.234.56",
+    "-$ -1.234,56",
+    "+-1.234,56",
+    "1.234,56-",
+    "02/09/2026",
+    "$",
+    "",
+    "DEBITOS",
+  ])("doesn't read %j with a decimal comma", (text) => {
+    expect(parseAmountWithSeparator(text, DECIMAL_SEPARATOR.COMMA)).toEqual(
+      parseFailure("format"),
+    );
+  });
+
+  it.each(["1.234,56", "12.345", "1,23,456"])(
+    "doesn't read %j with a decimal point",
+    (text) => {
+      expect(parseAmountWithSeparator(text, DECIMAL_SEPARATOR.POINT)).toEqual(
+        parseFailure("format"),
+      );
+    },
+  );
+
+  it("refuses an amount beyond the safe integer range", () => {
+    expect(
+      parseAmountWithSeparator(
+        "999.999.999.999.999.999,00",
+        DECIMAL_SEPARATOR.COMMA,
+      ),
+    ).toEqual(parseFailure("range"));
   });
 });
 

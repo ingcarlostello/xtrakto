@@ -1,4 +1,4 @@
-import type { CURRENCY } from "./money.constants";
+import type { CURRENCY, DECIMAL_SEPARATOR } from "./money.constants";
 
 declare const amountMinorBrand: unique symbol;
 
@@ -9,3 +9,6 @@ declare const amountMinorBrand: unique symbol;
 export type AmountMinor = number & { readonly [amountMinorBrand]: true };
 
 export type Currency = (typeof CURRENCY)[keyof typeof CURRENCY];
+
+export type DecimalSeparator =
+  (typeof DECIMAL_SEPARATOR)[keyof typeof DECIMAL_SEPARATOR];

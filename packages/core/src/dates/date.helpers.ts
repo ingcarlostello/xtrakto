@@ -9,9 +9,11 @@ import {
   startOfMonth,
 } from "date-fns";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
+import { DATE_ORDER } from "./date.constants";
 import type {
   CalendarMonth,
   CalendarQuarter,
+  DateOrder,
   ExcelDateTimeZones,
   LocalDate,
   Period,
@@ -30,6 +32,30 @@ const SHORT_MONTHS = "ene feb mar abr may jun jul ago sep oct nov dic".split(
 );
 // September's short name is also written as Intl writes it.
 const SEPTEMBER_ALSO = "sept";
+const MONTH_NAMES =
+  "enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre".split(
+    " ",
+  );
+// September's whole name is also written without its p.
+const SEPTEMBER_WITHOUT_P = "setiembre";
+// A day, a month and a year in some order, apart by slashes, dashes, dots or
+// spaces, maybe with a time after: "02/09/2026", "2026-09-02", "2-sep-26".
+const ORDERED_DATE_PATTERN =
+  /^(\d{1,4}|\p{L}+)\.?[\s/.-]+(\d{1,2}|\p{L}+)\.?[\s/.-]+(\d{1,4})(?:[\sT]+\d{1,2}:\d{2}.*)?$/u;
+const ONLY_DIGITS = /^\d+$/;
+const ONLY_LETTERS = /^\p{L}+$/u;
+// A year of two digits is this century's: "26" is 2026.
+const CENTURY = 2000;
+
+type DatePart = "day" | "month" | "year";
+
+const PARTS_IN_ORDER: Readonly<
+  Record<DateOrder, readonly [DatePart, DatePart, DatePart]>
+> = {
+  [DATE_ORDER.DAY_MONTH_YEAR]: ["day", "month", "year"],
+  [DATE_ORDER.MONTH_DAY_YEAR]: ["month", "day", "year"],
+  [DATE_ORDER.YEAR_MONTH_DAY]: ["year", "month", "day"],
+};
 // Every real day and month exists in a leap year such as 2000.
 const LEAP_YEAR = 2000;
 // Excel's 1900 date system counts days from 1899-12-30 from serial 61
@@ -186,6 +212,46 @@ export const parseShortMonthDate = (text: string): Result<LocalDate> => {
   const month = shortMonthNumber(match?.[2] ?? "");
   if (!match || month === 0) return parseError("format");
   const date = toLocalDate(Number(match[3]), month, Number(match[1]));
+  return date === undefined ? parseError("format") : ok(date);
+};
+
+// A month by its Spanish name, short or whole, from 1, or 0 for none.
+const monthOfName = (name: string): number => {
+  const lowered = name.toLowerCase();
+  if (lowered === SEPTEMBER_WITHOUT_P) return 9;
+  return shortMonthNumber(lowered) || MONTH_NAMES.indexOf(lowered) + 1;
+};
+
+// What one of a date's parts says, or 0 when it can't be that part.
+const partValue = (part: DatePart, token: string): number => {
+  if (part === "month" && ONLY_LETTERS.test(token)) return monthOfName(token);
+  if (!ONLY_DIGITS.test(token)) return 0;
+  if (part !== "year") return token.length <= 2 ? Number(token) : 0;
+  if (token.length === 4) return Number(token);
+  return token.length === 2 ? CENTURY + Number(token) : 0;
+};
+
+/**
+ * Parses a date as a bank's file writes it, its day, month and year in
+ * `order`: `"02/09/2026"`, `"2026-09-02"`, `"2-sep-26"`, `"02 SEP 2026
+ * 14:35"`. The month may go by its Spanish name, the year by its last two
+ * digits, and a time after the date is left out.
+ */
+export const parseDateInOrder = (
+  text: string,
+  order: DateOrder,
+): Result<LocalDate> => {
+  const match = ORDERED_DATE_PATTERN.exec(text.trim());
+  if (!match) return parseError("format");
+  const values = { day: 0, month: 0, year: 0 };
+  PARTS_IN_ORDER[order].forEach((part, index) => {
+    values[part] = partValue(part, match[index + 1] ?? "");
+  });
+  const { day, month, year } = values;
+  const date =
+    day > 0 && month > 0 && year > 0
+      ? toLocalDate(year, month, day)
+      : undefined;
   return date === undefined ? parseError("format") : ok(date);
 };
 
