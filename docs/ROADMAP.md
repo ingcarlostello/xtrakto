@@ -255,7 +255,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 **Stage 11 — Unknown formats: ingestion agent**
 
-- [ ] 11.1a Read a spreadsheet with a mapping
+- [x] 11.1a Read a spreadsheet with a mapping
 - [ ] 11.1b Saved mappings
 - [ ] 11.2a Invented formats to evaluate with
 - [ ] 11.2b The mapping proposal
@@ -2203,7 +2203,11 @@ Split in two when planned (about 850 lines): reading a file with a mapping, then
 
 **Done when:** each fixture gives its expected statement with a mapping written by hand, those with balances reconcile, and `parse(minimize(content))` equals `parse(content)`, with nothing left of the rows above or below the table.
 
-**Commits:** `feat(core): format mappings and Colombia's banks`, then `feat(parsers): read a spreadsheet with a format mapping`
+Found while building it (2026-11-10): a row is blank by the columns the mapping reads, so one with only ignored cells is skipped without a warning, as its minimized row is; a date that reads in another order fails, rather than dropping a movement, while a row without a date gets a warning; an amount of zero holds no movement, since many banks print `0,00` on the empty side of money out and in; another bank's date cell reads as the day it shows; and a period opens on an opening row's day when it comes before the first movement, else the day before it, and closes on a closing row's day when it comes after the last. The parse failures left Bancolombia's folder, since every format shares them, and ADR 0011 now accepts XLS.
+
+It came out at about 940 lines of code added and 14 deleted, besides 23 moved and a 230-line fixture script, twice the 450 estimated and past the 400 a phase should hold, in four commits of one pull request: the shared parse failures, core's mapping and readers, the parser, and the documents.
+
+**Commits:** `refactor(parsers): share the parse failures with every format`, `feat(core): format mappings and Colombia's banks`, `feat(parsers): read a spreadsheet with a format mapping`, then `docs: read a spreadsheet with a format mapping`
 
 #### 11.1b Saved mappings
 

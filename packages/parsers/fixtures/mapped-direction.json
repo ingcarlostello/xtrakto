@@ -1,0 +1,21 @@
+{
+  "type": "spreadsheet",
+  "sheets": [
+    {
+      "name": "Hoja1",
+      "rows": [
+        ["FECHA", "DESCRIPCION", "TIPO", "VALOR", "SALDO"],
+        ["2026-09-02", "COMPRA POS SUPERMERCADO EL ARCO", "D", "85,400.00", "3,125,000.00"],
+        ["2026-09-03", "ABONO NOMINA EMPRESA ABC", "C", "4,200,000.00", "7,325,000.00"],
+        ["2026-09-05", "PAGO TARJETA CREDITO", "D", "1,150,000.00", "6,175,000.00"],
+        ["2026-09-08", "RETIRO CAJERO CENTRO", "D", "300,000.00", "5,875,000.00"],
+        ["2026-09-08", "GMF 4X1000", "D", "1,200.00", "5,873,800.00"],
+        ["2026-09-12", "TRANSFERENCIA A NEQUI", "D", "50,000.00", "5,823,800.00"],
+        ["2026-09-15", "PAGO PSE EMPRESA DE ENERGIA", "D", "182,500.00", "5,641,300.00"],
+        ["2026-09-21", "COMPRA EN LINEA PEDIDO 12345678", "D", "64,900.00", "5,576,400.00"],
+        ["2026-09-25", "INTERESES AHORRO", "C", "12.15", "5,576,412.15"],
+        ["2026-09-30", "ABONO TRANSFERENCIA PRUEBA", "C", "250,000.00", "5,826,412.15"]
+      ]
+    }
+  ]
+}

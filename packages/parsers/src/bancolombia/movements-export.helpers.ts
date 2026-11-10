@@ -30,7 +30,7 @@ import {
   EXPORT_HEADER_ROW,
   EXPORT_NO_REFERENCE,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 
 type ExportKey = keyof typeof EXPORT_COLUMN;
 /** Where each column of the export is, by key. */

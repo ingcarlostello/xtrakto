@@ -18,7 +18,7 @@ import {
   QUARTERLY_PDF_COLUMNS,
   QUARTERLY_PDF_FORMAT_ID,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import {
   findQuarterlyPdfHeader,
   readQuarterlyPdfHeader,

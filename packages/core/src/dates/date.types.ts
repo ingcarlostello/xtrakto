@@ -1,4 +1,8 @@
+import type { DATE_ORDER } from "./date.constants";
+
 declare const localDateBrand: unique symbol;
+
+export type DateOrder = (typeof DATE_ORDER)[keyof typeof DATE_ORDER];
 
 /**
  * A calendar date without time or time zone, as `"YYYY-MM-DD"`: a transaction

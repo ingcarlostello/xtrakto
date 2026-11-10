@@ -1621,3 +1621,32 @@ In a local browser, with a fresh Clerk test user on `example.com`, deleted after
 - **Size:** about 465 lines of code added and 98 deleted, without tests, about 90 of them moved to share the email's layout.
 - **Open from 10.4a:** the email lands in Gmail's spam.
 - **Open from 10.1a:** two movements exports around a month's end, from the human, to compare their fingerprints.
+
+## 11.1a Read a spreadsheet with a mapping
+
+_2026-11-10_
+
+Stage 11 was planned with the human first (`docs: plan Stage 11, unknown formats`). Its first phase reads a spreadsheet no parser knows, with a mapping written by hand that says what each column holds: "DEBITOS" is money out, "CREDITOS" money in, "OFICINA" is read by no one. No LLM, database or screen yet: 11.1b saves mappings, 11.2 proposes them and 11.3 asks the person.
+
+- **The mapping** (`FormatMapping`, `@xtrakto/core`): the header's names as the fingerprint compares them; each column's role (date, description, amount, money out, money in, balance, reference, direction or none); the order of its dates' parts; its decimal separator; the words a direction column writes; and the bank, from `BANKS`, Colombia's banks and wallets with "Otro". Its schema refuses roles that don't read money one way: a signed amount, money out and money in, or an amount with its direction.
+- **Core's readers:** `parseDateInOrder` reads a date with its day, month and year in any order, with the month's Spanish name or a two-digit year, and a time after it; `parseAmountWithSeparator` reads an amount by the separator of its cents, with its sign before or after the `$`.
+- **`findTable`** finds the table of a spreadsheet no parser knows: its header is the last row of names above the first row that holds a date and an amount, so a title row with both is passed over. Its names, without accents, case or extra spaces and with any digit as a 9, are the format's fingerprint (`headerNames`).
+- **`mappingParser(mapping)`**, a `BankParser` whose format is `mapped-spreadsheet`: it recognizes the mapping's header and reads the table through its last row with a date. Each row is a movement; a balance, where a "SALDO ANTERIOR" row before the first movement opens the file and one after the last closes it; or a warning, as a page's subtotal. Newest first or oldest first by the dates, and within a day by the balances. With balances, the period opens on the opening balance's day, so the file covers its days as a quarterly statement does (ADR 0018).
+- **Minimized,** a mapped file keeps its header and the columns the mapping reads, with long numbers masked in descriptions and references whole: nothing above the header, where banks print the holder's name and the account, and nothing under the table.
+- **XLS:** the extraction reads Excel 97–2003 files, told by their first bytes, as it reads XLSX (ADR 0011 amended).
+- **Fixtures:** five invented banks' layouts, the same September of ten movements in each (`scripts/mapped-fixtures.mjs`); no real bank's.
+
+203 new tests: 121 in core (964 there) and 82 in parsers (479 there):
+
+- core: dates in each order, with a month's name, a two-digit year and a time, and the ones that don't exist or are written in another order; amounts with either separator, either sign's place, and what isn't one; each way a mapping reads money and each combination of roles it refuses; every bank's id once, and one a statement accepts;
+- parsers: each fixture's header and fingerprint, and the title rows, headers and sheets with no table; the same September from every layout, oldest first; balances that open and close each file and reconcile, a period from the day before its first movement, or spanning them without balances; references with their kind, masked descriptions, warnings for a subtotal and a balance between movements, a closing row, a day turned by its balances, and a header's digits; a failure with its row and column for an amount, a date in another order, both sides of money, a direction and a description, and no movements, no header or a PDF; the CSV fixtures read from CSV text; recognized by their header alone and by no built-in parser; minimized with the same parse, idempotent, without the title rows, totals, branches or document numbers; and an XLS read as an XLSX, or damaged.
+
+Checked: eight deliberate bugs, one at a time, each failing a test.
+
+**Deviations and follow-ups:**
+
+- **Size:** about 940 lines of code added and 14 deleted, without tests, comments or blank lines, besides 23 moved, twice the 450 estimated: the cell readers, the table's rows, their order and the period took more than planned. It lands in four commits of one pull request.
+- **The parse failures** left Bancolombia's folder for `src/registry/`, in a commit of their own, since every format shares them.
+- **The bank list** labels real banks by their names; the web's labels still name Bancolombia alone until 11.3c.
+- **A description another bank wraps onto a row without a date** gets a warning, and its movement keeps the first line; none of the invented layouts does it.
+- **No private test** reads another bank's file: there is none in `fixtures/private/`, and none may go to DeepSeek from here. The human reads a real one in production in 11.3a.

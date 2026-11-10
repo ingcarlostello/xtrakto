@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { APP_ERROR_CODE } from "../result/app-error.constants";
-import { DEFAULT_TIME_ZONE } from "./date.constants";
+import { DATE_ORDER, DEFAULT_TIME_ZONE } from "./date.constants";
 import {
   addDaysTo,
   compareLocalDates,
@@ -12,6 +12,7 @@ import {
   localDateFromInstant,
   monthBoundsInTimeZone,
   monthPeriod,
+  parseDateInOrder,
   parseShortMonthDate,
   parseSlashDate,
   quarterOfMonth,
@@ -354,6 +355,65 @@ describe("parseShortMonthDate", () => {
     "Fecha",
   ])("rejects %j", (text) => {
     expect(parseShortMonthDate(text)).toEqual(parseFailure("format"));
+  });
+});
+
+describe("parseDateInOrder", () => {
+  const { DAY_MONTH_YEAR, MONTH_DAY_YEAR, YEAR_MONTH_DAY } = DATE_ORDER;
+
+  it.each([
+    { text: "02/09/2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "2/9/2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "02-09-2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "02.09.2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "02/09/26", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "2-sep-26", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "02 SEP. 2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "2 sept 2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    {
+      text: "2/septiembre/2026",
+      order: DAY_MONTH_YEAR,
+      expected: "2026-09-02",
+    },
+    { text: "2-Setiembre-2026", order: DAY_MONTH_YEAR, expected: "2026-09-02" },
+    { text: "31/12/2026 23:59", order: DAY_MONTH_YEAR, expected: "2026-12-31" },
+    {
+      text: "02/09/2026 2:35:10 p. m.",
+      order: DAY_MONTH_YEAR,
+      expected: "2026-09-02",
+    },
+    { text: "09/02/2026", order: MONTH_DAY_YEAR, expected: "2026-09-02" },
+    { text: "dic/31/2026", order: MONTH_DAY_YEAR, expected: "2026-12-31" },
+    { text: "2026-09-02", order: YEAR_MONTH_DAY, expected: "2026-09-02" },
+    { text: "2026/9/2", order: YEAR_MONTH_DAY, expected: "2026-09-02" },
+    {
+      text: "2026-09-02T14:35:00",
+      order: YEAR_MONTH_DAY,
+      expected: "2026-09-02",
+    },
+    { text: " 29/02/2028 ", order: DAY_MONTH_YEAR, expected: "2028-02-29" },
+  ])("parses $text as $order", ({ text, order, expected }) => {
+    expect(parseDateInOrder(text, order)).toEqual(ok(expected));
+  });
+
+  it.each([
+    { text: "31/09/2026", order: DAY_MONTH_YEAR },
+    { text: "29/02/2027", order: DAY_MONTH_YEAR },
+    { text: "13/13/2026", order: DAY_MONTH_YEAR },
+    { text: "00/09/2026", order: DAY_MONTH_YEAR },
+    { text: "02/09/202", order: DAY_MONTH_YEAR },
+    { text: "02/09", order: DAY_MONTH_YEAR },
+    { text: "2026-09-02", order: DAY_MONTH_YEAR },
+    { text: "sep/02/2026", order: DAY_MONTH_YEAR },
+    { text: "02/sepx/2026", order: DAY_MONTH_YEAR },
+    { text: "2 de septiembre de 2026", order: DAY_MONTH_YEAR },
+    { text: "13/09/2026", order: MONTH_DAY_YEAR },
+    { text: "02/09/2026", order: YEAR_MONTH_DAY },
+    { text: "85.400,00", order: DAY_MONTH_YEAR },
+    { text: "FECHA", order: DAY_MONTH_YEAR },
+    { text: "", order: YEAR_MONTH_DAY },
+  ])("rejects $text as $order", ({ text, order }) => {
+    expect(parseDateInOrder(text, order)).toEqual(parseFailure("format"));
   });
 });
 

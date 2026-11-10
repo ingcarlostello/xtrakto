@@ -1,12 +1,12 @@
 # Synthetic fixtures
 
-Bancolombia exports as `extractSpreadsheet` returns them (`ExtractedContent` JSON), for the parser tests. They follow [Appendix A of the roadmap](../../../docs/ROADMAP.md#appendix-a--bank-formats).
+Bancolombia exports, and invented banks' spreadsheets, as `extractSpreadsheet` returns them (`ExtractedContent` JSON), for the parser tests. Bancolombia's follow [Appendix A of the roadmap](../../../docs/ROADMAP.md#appendix-a--bank-formats).
 
 **Every name, number and amount here is invented. Never put real data in this folder.** Real exports may only live in `fixtures/private/`, which git ignores, for the private tests of Phase 2.8.
 
 ## Regenerating
 
-The JSON files are generated: don't edit them by hand. Change the data in [`scripts/fixture-data.mjs`](../scripts/fixture-data.mjs) or the format in [`scripts/generate-fixtures.mjs`](../scripts/generate-fixtures.mjs), then run:
+The JSON files are generated: don't edit them by hand. Change the data in [`scripts/fixture-data.mjs`](../scripts/fixture-data.mjs), the format in [`scripts/generate-fixtures.mjs`](../scripts/generate-fixtures.mjs) or the invented banks in [`scripts/mapped-fixtures.mjs`](../scripts/mapped-fixtures.mjs), then run:
 
 ```bash
 pnpm --filter @xtrakto/parsers generate:fixtures
@@ -28,6 +28,18 @@ The script computes balances and totals, so every statement reconciles except `q
 | `quarterly-large`           | The same quarter with one interest row a day: 465 movements on pages of 50.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `movements-basic`           | Movements export for 2026-10-01 to 2026-10-07: newest first, dates at 05:00 UTC, numeric amounts, and text references (phone, `ATM …`, codes with leading zeros, several numbers in one cell, and none). Interest rows move one day later, so 1/10 has none and 7/10, the last day, has two.                                                                                                                                                                                    |
 | `movements-overlap`         | July of `quarterly-basic` as a 1/07–31/07 export shows it: the same movements and amounts, with interest rows one day later except the last day's, which stays on 31/07.                                                                                                                                                                                                                                                                                                        |
+
+## Other banks' spreadsheets
+
+Five invented banks' layouts that no Bancolombia parser recognizes, for the parser that reads a spreadsheet through a format mapping (Phase 11.1a). Each holds the same invented September of ten movements, so all five read the same movements; the four with balances reconcile. None is a real bank's layout.
+
+| Fixture               | Contents                                                                                                                                                                                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mapped-out-in`       | v8-14's "Banco Horizonte" as a CSV, all text: title rows with the holder's name and an account number, then `FECHA TRANS · DETALLE · OFICINA · DEBITOS · CREDITOS · SALDO`, a "SALDO ANTERIOR" row with the opening balance, money out and in in columns of their own with a decimal comma, a branch to ignore, and totals and a note under the table. |
+| `mapped-newest-first` | An XLSX with date cells at midnight and numbers: a signed amount, newest first, with references (a phone and a PSE code) and the balance.                                                                                                                                                                                                              |
+| `mapped-direction`    | A CSV whose header is its first row: dates year first (`2026-09-02`), an amount with a decimal point, and `TIPO` saying which way it went (`D`, `C`).                                                                                                                                                                                                  |
+| `mapped-no-balance`   | An XLSX with dates written with the month's name (`02-sep-2026`), money out and in as numbers, and no balance.                                                                                                                                                                                                                                         |
+| `mapped-title-rows`   | A CSV under a title row that holds a date and an amount: a time after each date, a second date and a document's number to ignore, a signed amount, a page's subtotal and its repeated header inside the table, and the totals and a note under it.                                                                                                     |
 
 ## XLSX files for manual checks
 

@@ -29,9 +29,9 @@ export type ParseFailureReason =
   | "invalid_output";
 
 /**
- * Where a Bancolombia file couldn't be read: the printed block and column
- * names, a 0-based row and the reason core's helpers gave. Never the cell's
- * value, which can hold personal or financial data.
+ * Where a file couldn't be read: the printed block and column names, a
+ * 0-based row and the reason core's helpers gave. Never the cell's value,
+ * which can hold personal or financial data.
  */
 export type ParseFailure = {
   readonly reason: ParseFailureReason;

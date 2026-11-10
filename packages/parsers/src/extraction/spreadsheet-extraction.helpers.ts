@@ -24,6 +24,8 @@ const platform = globalThis as unknown as TextDecoding;
 const numberFormats: { is_date(format: string): boolean } = SSF;
 
 const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
+// The compound file Excel 97–2003 saves an XLS in, which other banks give.
+const CFB_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 // Days between the 1900 and 1904 date systems. Serials always come out in the
 // 1900 system, the one `localDateFromExcelSerial` reads.
 const DATE_1904_OFFSET_DAYS = 1462;
@@ -56,8 +58,25 @@ const csvOptions = (): ParsingOptions => ({
   cellText: false,
 });
 
-const isZip = (bytes: Uint8Array): boolean =>
-  ZIP_SIGNATURE.every((byte, index) => bytes[index] === byte);
+type FileType = "xlsx" | "xls" | "csv";
+
+// What SheetJS calls each file type it reads: an XLS and a CSV leave it unset.
+const BOOK_TYPES: Readonly<Record<FileType, string | undefined>> = {
+  xlsx: "xlsx",
+  xls: undefined,
+  csv: undefined,
+};
+
+const startsWith = (bytes: Uint8Array, signature: readonly number[]) =>
+  signature.every((byte, index) => bytes[index] === byte);
+
+// By the file's first bytes. Other binary files (PDF, images) contain zero
+// bytes; CSV text doesn't.
+const fileTypeOf = (bytes: Uint8Array): FileType | undefined => {
+  if (startsWith(bytes, ZIP_SIGNATURE)) return "xlsx";
+  if (startsWith(bytes, CFB_SIGNATURE)) return "xls";
+  return bytes.includes(0) ? undefined : "csv";
+};
 
 const decodeText = (bytes: Uint8Array): string => {
   try {
@@ -134,24 +153,24 @@ const toContent = (workbook: WorkBook): SpreadsheetContent => {
 };
 
 /**
- * Reads an XLSX or CSV file into the content bank parsers read, the same way
- * in a browser worker and in Node. Values stay raw: text as written, numbers
- * as stored, date cells as Excel serials (never `Date` objects) and formulas
- * as their saved result. Every CSV value stays text.
+ * Reads an XLSX, XLS or CSV file into the content bank parsers read, the same
+ * way in a browser worker and in Node. Values stay raw: text as written,
+ * numbers as stored, date cells as Excel serials (never `Date` objects) and
+ * formulas as their saved result. Every CSV value stays text.
  */
 export const extractSpreadsheet = (
   bytes: Uint8Array,
 ): Result<SpreadsheetContent> => {
-  const isXlsx = isZip(bytes);
-  // Binary files (PDF, images, legacy XLS) contain zero bytes; CSV text doesn't.
-  if (!isXlsx && bytes.includes(0)) return unknownFileType;
-  const workbook = isXlsx
-    ? tryRead(bytes, xlsxOptions())
-    : tryRead(decodeText(bytes), csvOptions());
+  const fileType = fileTypeOf(bytes);
+  if (fileType === undefined) return unknownFileType;
+  const workbook =
+    fileType === "csv"
+      ? tryRead(decodeText(bytes), csvOptions())
+      : tryRead(bytes, xlsxOptions());
   if (!workbook.ok) return workbook;
   // ODS and XLSB files are ZIP archives too, and SheetJS also reads HTML or
-  // SYLK text: only its CSV reader leaves `bookType` unset.
-  if (workbook.value.bookType !== (isXlsx ? "xlsx" : undefined)) {
+  // SYLK text, each under a book type of its own.
+  if (workbook.value.bookType !== BOOK_TYPES[fileType]) {
     return unknownFileType;
   }
   const content = toContent(workbook.value);

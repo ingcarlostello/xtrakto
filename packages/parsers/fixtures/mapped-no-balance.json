@@ -1,0 +1,23 @@
+{
+  "type": "spreadsheet",
+  "sheets": [
+    {
+      "name": "Hoja1",
+      "rows": [
+        ["Cooperativa Andina - Movimientos"],
+        [],
+        ["Fecha", "Detalle", "Débitos", "Créditos"],
+        ["02-sep-2026", "COMPRA POS SUPERMERCADO EL ARCO", 85400],
+        ["03-sep-2026", "ABONO NOMINA EMPRESA ABC", null, 4200000],
+        ["05-sep-2026", "PAGO TARJETA CREDITO", 1150000],
+        ["08-sep-2026", "RETIRO CAJERO CENTRO", 300000],
+        ["08-sep-2026", "GMF 4X1000", 1200],
+        ["12-sep-2026", "TRANSFERENCIA A NEQUI", 50000],
+        ["15-sep-2026", "PAGO PSE EMPRESA DE ENERGIA", 182500],
+        ["21-sep-2026", "COMPRA EN LINEA PEDIDO 12345678", 64900],
+        ["25-sep-2026", "INTERESES AHORRO", null, 12.15],
+        ["30-sep-2026", "ABONO TRANSFERENCIA PRUEBA", null, 250000]
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 // of docs/ROADMAP.md, from the invented data in fixture-data.mjs. Balances
 // and totals are computed here, so every statement reconciles except
 // quarterly-broken-balance, and a fixed seed makes quarterly-large repeatable.
+// It also writes the invented banks' spreadsheets of mapped-fixtures.mjs.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -16,6 +17,7 @@ import {
   PREVIOUS_MOVEMENTS,
   ROLLOVER_MOVEMENTS,
 } from "./fixture-data.mjs";
+import { mappedFixtures } from "./mapped-fixtures.mjs";
 import { movementsPdfPages } from "./movements-pdf-layout.mjs";
 import { quarterlyPdfPages, renderPdf } from "./quarterly-pdf-layout.mjs";
 
@@ -321,6 +323,7 @@ const fixtures = {
   }),
   "movements-basic": movementsExport(OCTOBER_EXPORT),
   "movements-overlap": movementsExport(JULY_EXPORT),
+  ...mappedFixtures(),
 };
 
 // The PDFs of four files above: a quarterly statement over two pages and one

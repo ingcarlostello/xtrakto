@@ -8,6 +8,12 @@ export { normalizeDescription } from "./descriptions/description.helpers";
 export { extractPdf, isPdf } from "./extraction/pdf-extraction.helpers";
 export type { PdfExtractionOptions } from "./extraction/pdf-extraction.helpers";
 export { extractSpreadsheet } from "./extraction/spreadsheet-extraction.helpers";
+export { MAPPED_FORMAT_ID } from "./format-mapping/format-mapping.constants";
+export { mappingParser } from "./format-mapping/mapping-parser.helpers";
+export {
+  findTable,
+  type TableLocation,
+} from "./format-mapping/mapping-table.helpers";
 export type { BankParser, ParserRegistry } from "./registry/bank-parser.types";
 export { findParser } from "./registry/default-registry.helpers";
 export { createParserRegistry } from "./registry/parser-registry.helpers";
