@@ -1,6 +1,6 @@
 # 0011. SheetJS for spreadsheet extraction
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by Phase 11.1a, which reads legacy XLS too, as other banks give it
 - **Date:** 2026-10-08
 
 ## Context
@@ -9,7 +9,7 @@ The browser reads statement files in a Web Worker and sends only their content (
 
 ## Decision
 
-`@xtrakto/parsers` reads spreadsheets with SheetJS Community Edition (Apache 2.0), installed from its official CDN as a versioned tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`); the lockfile pins its integrity hash. `extractSpreadsheet` accepts only XLSX and CSV. It reads XLSX with date cells as serial numbers (`cellDates: false`) and their number formats to tell dates from amounts, and CSV with every value as text (`raw: true`), so nothing guesses numbers or dates.
+`@xtrakto/parsers` reads spreadsheets with SheetJS Community Edition (Apache 2.0), installed from its official CDN as a versioned tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`); the lockfile pins its integrity hash. `extractSpreadsheet` accepts only XLSX, XLS (since Phase 11.1a) and CSV, each told by its first bytes. It reads XLSX and XLS with date cells as serial numbers (`cellDates: false`) and their number formats to tell dates from amounts, and CSV with every value as text (`raw: true`), so nothing guesses numbers or dates.
 
 ## Alternatives considered
 
@@ -22,4 +22,4 @@ The browser reads statement files in a Web Worker and sends only their content (
 - `pnpm install` needs access to `cdn.sheetjs.com`.
 - SheetJS is the largest part of the package's browser build (about 190 kB gzipped for the whole package before minification). Only the upload worker loads it (Phase 5.2).
 - Its types are loose (`SSF` is `any`), so the code declares the subset it uses. It also writes into the options it receives, so every read builds new ones.
-- Legacy XLS, XLSB and ODS are rejected although SheetJS reads them: ODS stores dates as text that SheetJS converts through `Date`, and each new format needs its own tests before it is accepted.
+- XLSB and ODS are rejected although SheetJS reads them: ODS stores dates as text that SheetJS converts through `Date`, and each new format needs its own tests before it is accepted. Legacy XLS joined with its own in Phase 11.1a, since banks other than Bancolombia give it (Stage 11); it keeps date cells as serials, as XLSX does.
