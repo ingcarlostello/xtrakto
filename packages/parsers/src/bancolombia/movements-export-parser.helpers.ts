@@ -17,7 +17,7 @@ import {
   findExportColumns,
   readExportMovements,
 } from "./movements-export.helpers";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 
 const parse = (content: ExtractedContent): Result<ParsedStatement> => {
   const rows = firstSheetRows(content);

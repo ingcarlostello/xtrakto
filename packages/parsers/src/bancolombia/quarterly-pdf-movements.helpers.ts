@@ -12,7 +12,7 @@ import {
   QUARTERLY_BLOCK,
   QUARTERLY_PDF_FOOTERS,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import { readMovementRows } from "./quarterly-movements.helpers";
 import type { QuarterlyMovements } from "./quarterly-movements.helpers";
 

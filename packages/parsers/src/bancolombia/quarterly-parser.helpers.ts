@@ -12,7 +12,7 @@ import {
   BANCOLOMBIA_BANK_ID,
   QUARTERLY_FORMAT_ID,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import { readQuarterlyHeader } from "./quarterly-header.helpers";
 import { minimizeQuarterly } from "./quarterly-minimize.helpers";
 import {

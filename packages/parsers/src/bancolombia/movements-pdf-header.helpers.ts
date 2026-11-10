@@ -9,7 +9,7 @@ import {
   MOVEMENTS_PDF_FIELD,
   PDF_ACCOUNT_TYPE,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import { accountOf } from "./quarterly-header.helpers";
 
 /** What the movements export's PDF says of its account, before its table. */

@@ -25,7 +25,7 @@ import {
 } from "./movements-pdf-header.helpers";
 import { minimizeMovementsPdf } from "./movements-pdf-minimize.helpers";
 import { readMovementsPdfRows } from "./movements-pdf-movements.helpers";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 
 // Every row fills its date; a description or a reference wraps under it.
 const LAYOUT = { columns: MOVEMENTS_PDF_COLUMNS, anchor: EXPORT_COLUMN.DATE };

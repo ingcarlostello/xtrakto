@@ -9,7 +9,7 @@ import {
   QUARTERLY_PDF_LABEL,
   QUARTERLY_PDF_SUMMARY,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import { accountOf, periodOf, summaryOf } from "./quarterly-header.helpers";
 import type { QuarterlyHeader } from "./quarterly-header.helpers";
 

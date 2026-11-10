@@ -29,7 +29,7 @@ import {
   QUARTERLY_BLOCK,
   SPLIT_MARK,
 } from "./bancolombia.constants";
-import { parseFailed } from "./parse-failure.helpers";
+import { parseFailed } from "../registry/parse-failure.helpers";
 
 /** The movements of a quarterly statement and the rows it couldn't place. */
 export type QuarterlyMovements = Pick<
