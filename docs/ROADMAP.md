@@ -24,7 +24,7 @@ These instructions are for the coding agent (Claude Code, Cursor) and for the hu
 
 **Conflicts:** if this roadmap contradicts the project rules, the rules win. Point out the conflict and propose an update to this file.
 
-**Outlined stages:** stages 11 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
+**Outlined stages:** stages 12 to 16 are outlines. Before starting one, expand each of its phases into the same format as the detailed ones (goal, tasks, done when, commit) and get approval.
 
 **Real data:** real files live only in git-ignored `fixtures/private/` folders. The agent may open them locally to learn a format (authorized by the human), but never commits, pastes into tracked files or logs real data; committed fixtures stay invented, and private tests print no content (Phase 2.8).
 
@@ -253,12 +253,16 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 10.4b Review and fixed-payment notices
 - [x] 10.5 Monthly email
 
-**Stage 11 — Unknown formats: ingestion agent** _(outline)_
+**Stage 11 — Unknown formats: ingestion agent**
 
-- [ ] 11.1 Format fingerprints and saved mappings
-- [ ] 11.2 LLM column-mapping proposal
-- [ ] 11.3 Mapping confirmation screen
-- [ ] 11.4 Ingestion agent with LangGraph.js
+- [ ] 11.1a Read a spreadsheet with a mapping
+- [ ] 11.1b Saved mappings
+- [ ] 11.2a Invented formats to evaluate with
+- [ ] 11.2b The mapping proposal
+- [ ] 11.3a Confirm how to read it
+- [ ] 11.3b Correct the columns
+- [ ] 11.3c Other banks across the app
+- [ ] 11.4 The agent: repair and retry before asking
 - [ ] 11.5 Agent evals
 
 **Stage 12 — Credit cards** _(outline)_
@@ -2157,13 +2161,180 @@ It lands in commits of one pull request: the design rules, the email's layout sh
 
 **Commits:** `docs(rules): monthly email`, `refactor(web): share the notices' email layout`, `feat: monthly email`, then `docs: monthly email`
 
-### Stage 11 — Unknown formats: ingestion agent _(outline)_
+### Stage 11 — Unknown formats: ingestion agent
 
-- **11.1 Fingerprints and saved mappings:** fingerprint of a format from its normalized header; `format_mappings` table (global, no user data): column roles, date and amount formats, sign convention.
-- **11.2 Mapping proposal:** the LLM receives the header and at most 10 redacted sample rows and proposes a mapping, validated with Zod and checked with a dry-run parse and reconciliation.
-- **11.3 Confirmation screen:** when the mapping can't be verified, the user confirms or corrects it. Confirmed mappings are reused deterministically, without the LLM. The upload screen and onboarding then offer "¿Otro banco?", left out in Stage 5.
-- **11.4 Agent with LangGraph.js:** detect → propose → dry run → verify → retry with a stronger model or ask the user, with explicit state.
-- **11.5 Evals:** synthetic spreadsheets from other banks with known answers; success rate and cost per file.
+**Goal:** read a spreadsheet from a bank Xtrakto doesn't know: an LLM names its columns from their names and shapes, the code proves the reading by reconciling it, the person confirms it once (`docs/ui/v8-14`), and the format is saved, so the next file like it reads without the LLM.
+
+Planned with the human on 2026-11-10: nine sub-phases (about 3,300 lines of code), with these decisions.
+
+- **Spreadsheets only.** Excel (`.xlsx`, and Excel 97–2003's `.xls`) and CSV, with one table of movements under a header row. Another bank's PDF stays unknown: 9.2 rebuilds a PDF's rows from its header's known names, which a new format doesn't have. v8-07's "¿Otro banco?" lists Excel and CSV only, so its copy stays true.
+- **The LLM names the columns and sees no value.** It receives the header's names and the shape of up to 10 rows, each letter an `A` or an `a` and each digit a `9` ("99/99/9999", "99.999,99"), and answers each column's role: date, description, amount, money out, money in, balance, reference, direction or none. The outline's "redacted sample rows" become shapes, so DeepSeek receives no date, amount or description of anyone's file (system design §4). The code reads the dates' and numbers' format from the cells, where it can prove it.
+- **The balances are the proof, the person the last word.** A reading whose balances chain to the cent is verified; one of a file without balances can't be, as a movements export can't. A new format is always confirmed once, as v8-14 draws it, even when it adds up: the bank isn't in its columns, and the balances don't prove which column is the description.
+- **Proven where the file is.** The file never leaves the browser (ADR 0008), so the browser reads it with each proposal and, once it's confirmed, sends only the mapped columns under the header (ADR 0017), with the mapping. The server reads that again with it and reconciles before saving anything.
+- **A mapping its balances proved is shared; any other is its person's.** `format_mappings` keeps, by the header's normalized names, each column's role, the formats and the bank, never a value. Proven by balances, a mapping serves everyone, so the next person with that file isn't asked; confirmed without that proof, it serves its person only and goes with their data. The outline had every mapping global: one person's wrong confirmation would misread everyone's files.
+- **A saved format reads without the LLM,** as Bancolombia's do: in the browser for the preview, on the server for real. A saved mapping that doesn't read a file sends it to a new proposal. Two banks with the same header share a format, read as the first one's bank; their numbers stay right.
+- **The agent is a loop in plain TypeScript, not LangGraph.js.** Look up, propose, read, repair, propose again and ask run in the browser, which holds the file, around two server calls. LangGraph.js would load on the upload page for a loop of two calls and one question; Stage 13's chat, with tools and turns on the server, is where it pays. The outline's 11.4 changes.
+- **Repair before asking again.** When a proposal doesn't add up, the code first tries what the balances can prove (money in and out swapped, the amount's sign turned), then `deepseek-v4-pro` alone gets what failed, in codes; only then does the person see the screen.
+- **The rules hold for every bank.** They read Colombia's banking words (PSE, compra, retiro, 4x1000), not a bank's layout, so another bank's movements get them, and the LLM's categories for the rest (8.5); ADR 0023's note that Stage 11 would key them by bank changes. Another bank's file prints no holder's name, so a transfer to the person's own name there reads as a payment to someone until they correct it.
+- **A savings account in pesos.** v8-14's "Moneda" offers pesos only; cards are Stage 12's.
+- **Left out:** another bank's PDF; a file without a header row, or with several tables or accounts; foreign currencies; the holder's name from another bank's file; telling a checking account from a savings one.
+
+#### 11.1 Fingerprints and saved mappings
+
+Split in two when planned (about 850 lines): reading a file with a mapping, then saving the mapping.
+
+#### 11.1a Read a spreadsheet with a mapping
+
+**Tasks**
+
+- `FormatMapping` in `@xtrakto/core`, a Zod schema:
+  - the header's names, and each column's role, in a combination that reads money one way: a signed amount, money out and money in, or an amount with its direction;
+  - the dates' format (day, month and year in any order, with or without a month's name, or Excel's date cells) and the numbers' (a decimal comma or point);
+  - the words a direction column writes for money in and out (`D`, `C`, "Débito");
+  - the bank, from a list of Colombia's banks and wallets with "Otro".
+- `findTable` in `@xtrakto/parsers`: the header, the last row of names above the first rows that hold a date and an amount, and the rows under it through the last one with a date. The rows above it, where a bank prints the holder's name and the account, and those below it are never read.
+- A format's fingerprint: its header's names, compared as `hasText` compares them, with any digit as any other, so "Saldo al 30/09" doesn't make each file a new format.
+- `mappingParser(mapping)`, a `BankParser` whose format is `mapped-spreadsheet`:
+  - `canParse`: the content's header is the mapping's.
+  - `parse`: each movement's date, description (normalized, long numbers masked, ADR 0012), amount, balance and reference. A row with a balance and no amount before the first movement is the opening balance ("SALDO ANTERIOR", v8-14), and after the last one, the closing balance; a row without a date is skipped with a warning, and a date whose amount doesn't read fails with its row and column. Newest or oldest first, by the dates and, within a day, by the balances. With balances, the period opens on the opening balance's day, so the file covers its days as a quarterly statement does (ADR 0018); without them, it spans the movements, as a movements export's does.
+  - `minimize`: the header and the mapped columns of the table's rows, nothing else.
+- The extraction reads Excel 97–2003 files (`.xls`), which other banks give, besides XLSX and CSV.
+- Invented banks' fixtures, as XLSX and CSV: v8-14's "Banco Horizonte" (money out and in, an opening row, a branch column to ignore), a signed amount newest first, an amount with its direction, one without balances, and one with title rows, totals and a second date.
+
+**Done when:** each fixture gives its expected statement with a mapping written by hand, those with balances reconcile, and `parse(minimize(content))` equals `parse(content)`, with nothing left of the rows above or below the table.
+
+**Commits:** `feat(core): format mappings and Colombia's banks`, then `feat(parsers): read a spreadsheet with a format mapping`
+
+#### 11.1b Saved mappings
+
+**Tasks**
+
+- `format_mappings`: the fingerprint, the mapping (read through core's schema), its bank, and its person (`user_id`) when only they confirmed it. Forced Row-Level Security: a user's context reads the shared mappings and its own, and adds one; none changes or deletes one, and a person's go with their data (ADR 0016). One shared mapping per fingerprint, and one of each person's.
+- An ingestion job keeps its mapping's id.
+- `submitStatement` takes content no parser knows, read with the person's mapping for its fingerprint, else the shared one, else the one the person confirmed, which comes with the content (11.3a). The server reads the minimized content with it again and reconciles: a mapping whose balances add up is saved shared, any other as the person's; one that doesn't read the content, or is another header's, is `PARSE_FAILED`. The mapping's bank pins the account, as a format's does (5.4a).
+- `ingest` reads a job with its mapping; the rest of the pipeline stays.
+- An ADR: unknown formats proven in the browser and again on the server, and mappings shared once their balances prove them. ADR 0023 amended (the rules hold for every bank), and system design §3, §5, §6 and §12.
+
+**Done when:**
+
+- Database tests prove that a person's mapping never reaches another person, a shared one reaches everyone, none changes, and deleting a person deletes theirs.
+- The action's tests cover a saved mapping, the person's before the shared one, a confirmed one that adds up and one that doesn't, one that doesn't read the content, and one of another header.
+- An ingestion test saves a mapped fixture twice, and the second time adds nothing.
+
+**Commits:** `feat(db): saved format mappings`, then `feat(web): submit and ingest statements read with a mapping`
+
+#### 11.2 LLM column-mapping proposal
+
+Split in two when planned (about 720 lines): the invented formats that measure it, then the proposal.
+
+#### 11.2a Invented formats to evaluate with
+
+**Tasks**
+
+- In `@xtrakto/evals`, at least 40 invented banks' spreadsheets, written by a seeded generator from layouts so every run gets the same ones, each with its expected mapping:
+  - header names in several wordings ("FECHA TRANS", "Fecha de la transacción", "DETALLE", "Concepto") and orders;
+  - the three ways of writing money, and dates and numbers in each format;
+  - title rows, totals and footers, an opening row, newest or oldest first, with and without balances, and a second date to ignore;
+  - some hard on purpose: two columns that could be the amount, names in English.
+- The metrics: the files whose every column's role is right, each role's accuracy, and the files whose proposal reads the whole file and adds up. A report of figures only.
+
+**Done when:** every case's expected mapping reads its file and reconciles where it has balances, and the metrics match hand-computed ones (tested).
+
+**Commit:** `feat(evals): invented bank formats and the mapping metrics`
+
+#### 11.2b The mapping proposal
+
+**Tasks**
+
+- What the LLM sees, in `@xtrakto/parsers`: the header's names, redacted (`redactPii`), and the shape of up to 10 of the table's rows, never a value.
+- The dates' and numbers' format, read from the column's cells: the only format that reads every date, day first when two do (Colombia's order), and a decimal comma or point by the amounts' last separator.
+- The proposal prompt v1 (`features/format-mappings/prompts/propose-mapping.v1.ts`) and its service: each column's role, validated with Zod, also that the roles read money one way. The person's ledger pays for it (8.3).
+- `proposeFormatMapping`, a server action: the session, a sample validated with Zod (shapes only, bounded), and the proposal or the AI's expected error.
+- The eval runs the mapping set too, against both models, within the run's cap: role accuracy, files right, files that read and add up, and cost per file. Thresholds set with the human from the first run; CI runs it when the prompt, its service or the set change.
+- An ADR: the LLM sees a format's shapes, never its values.
+
+**Done when:** the first run's figures and cost per model are in the phase log, both models meet the thresholds, and tests prove that a sample holds no value of its file.
+
+**Commits:** `feat(parsers): an unknown format's sample, dates and numbers`, `feat(web): the mapping proposal`, then `feat(web): the mapping proposal's eval`
+
+#### 11.3 Mapping confirmation screen
+
+Split in three when planned (about 1,350 lines): confirming, correcting, then other banks across the app.
+
+#### 11.3a Confirm how to read it
+
+**Tasks**
+
+- On the upload screen, a file no parser knows:
+  - with a saved mapping for its fingerprint, is read with it and goes on as any file;
+  - without one, or when the saved one doesn't read it, shows "Formato nuevo" while the LLM proposes, then opens "Confirma cómo leer tu extracto" (`docs/ui/v8-14`). Its content waits in the page's memory, as a PDF's password does.
+- The screen, a view of the upload screen, which holds the file:
+  - "Lo que entendimos de cada columna": each column's role over the file's first rows as it writes them, the opening row struck through, "Y 74 filas más.", and "Formato del archivo": numbers, dates, pesos, and where the table starts and ends.
+  - "Prueba con tu archivo": the opening balance, money in and out with their counts and the closing balance worked out, then "Cuadra con tu extracto", "No cuadra por $12.400" or "Este archivo no trae saldos".
+  - "¿De qué banco es?"; "Confirmar y leer" sends the file read with the mapping, and the mapping; "Algo está mal" leaves the file out, unread, saving nothing.
+  - "Solo lo confirmas una vez".
+- The AI off or failing, and its month spent (8.3), in plain Spanish; a file without a table to read stays "No pudimos leer este archivo" (`v8-13`).
+- `docs/data-flow.md`, the privacy page and its date (of another bank's file, its columns' names and the shapes of 10 rows reach DeepSeek), system design §1, §4 and §10, and the design rules.
+
+**Done when:**
+
+- In a local browser, a synthetic file of each fixture's layout is read, confirmed and saved, and a second one of the same format reads without the screen, at desktop, 390px and 360px and with the keyboard.
+- **Human:** reads a real export from another bank in production.
+
+Estimated at about 650 lines, it lands in commits of one pull request: the design rules, saved formats on the upload screen, then the confirmation.
+
+**Commits:** `docs(rules): confirm how to read a new format`, `feat(web): saved formats on the upload screen`, then `feat(web): confirm how to read a new format`
+
+#### 11.3b Correct the columns
+
+**Tasks**
+
+- Each column's role becomes a choice (v8-14's chips), among those the others leave: one date, one description, money read one way, and "Ignorar" for the rest.
+- "Formato del archivo" becomes choices: the numbers' and dates' format, and the rows where the table starts and ends.
+- Each change reads the file again in the browser and redoes "Prueba con tu archivo"; "Confirmar y leer" waits for a reading of the whole file.
+- Without a proposal (the AI off, failing or its month spent), the screen opens with the dates' column the code found, for the person to choose the rest.
+
+**Done when:** each correction reads right from synthetic files, the test's figures are tested, and the chips work with the keyboard and at 390px and 360px, scrolling with the table.
+
+**Commits:** `docs(rules): correct a new format's columns`, then `feat(web): correct a new format's columns`
+
+#### 11.3c Other banks across the app
+
+**Tasks**
+
+- The upload screen (`v8-07`): "¿Otro banco?" ("Súbelo igual. Te mostramos qué entendimos de cada columna y lo confirmas una vez.") with Excel and CSV; the picker and the drop zone take `.xls` and `.csv`; the subtitle, "Cómo cuidamos tus datos" and the empty summary's download paths (`v8-12`) true for another bank.
+- The welcome's second step (`v8-16`): "Banco", Bancolombia or "Otro" ("¿No está tu banco? Elige "Otro": lo leemos y te pedimos confirmar las columnas."), and the third step's guide for another bank.
+- Another bank's account: its name in the account's label, "Archivos subidos" (its file by its period and type, Excel or CSV), "Lo que tienes" and the profile; the coverage timeline's legend for months a file other than a quarterly statement verified.
+- The design rules.
+
+**Done when:** every screen reads right with an account of another bank beside a Bancolombia one, at 390px and 360px and with the keyboard.
+
+**Commits:** `docs(rules): other banks across the app`, then `feat(web): other banks across the app`
+
+#### 11.4 The agent: repair and retry before asking
+
+**Tasks**
+
+- The loop as explicit state: a pure transition function in `features/format-mappings`, with the proposal and the reading injected, so tests and the eval run it without a browser: look up, propose, read, repair, propose again, ask.
+- What the code repairs where the balances prove it: money in and out swapped, the amount's sign turned.
+- A second proposal from `deepseek-v4-pro` alone, told what failed in codes (a column whose dates or amounts don't read, the share of rows whose balance breaks), never a value. The person sees the reading that verifies, else the one that reads most.
+- "Formato nuevo" says what's going on while it tries again.
+- An ADR: the agent's loop in the browser, without LangGraph.js; system design §7 rewritten, with its flowchart.
+
+**Done when:** tests cover each transition and repair, a second proposal that verifies, and a loop that ends with the person after two proposals; no transition sends a value.
+
+**Commit:** `feat(web): the format agent repairs and retries before asking`
+
+#### 11.5 Agent evals
+
+**Tasks**
+
+- The eval runs the whole loop over 11.2a's set: the files read right after the first proposal, after the repairs and after the second proposal, those left to the person, and the calls and cost per file.
+- Thresholds set with the human from the first run; CI runs it when the loop, the prompts or the set change.
+
+**Done when:** the first run's figures are in the phase log, ready for the final README (16.2), and the loop meets the thresholds.
+
+**Commit:** `feat(web): the format agent's eval`
 
 ### Stage 12 — Credit cards _(outline)_
 
