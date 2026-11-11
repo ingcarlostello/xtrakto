@@ -260,7 +260,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.2a Invented formats to evaluate with
 - [x] 11.2b The mapping proposal
 - [x] 11.3a Confirm how to read it
-- [ ] 11.3b Correct the columns
+- [x] 11.3b Correct the columns
 - [ ] 11.3c Other banks across the app
 - [ ] 11.4 The agent: repair and retry before asking
 - [ ] 11.5 Agent evals
@@ -2316,7 +2316,13 @@ It came out at about 1,450 lines of code added and 190 deleted, about 110 of the
 
 **Done when:** each correction reads right from synthetic files, the test's figures are tested, and the chips work with the keyboard and at 390px and 360px, scrolling with the table.
 
-**Commits:** `docs(rules): correct a new format's columns`, then `feat(web): correct a new format's columns`
+Decided with the human when it started (2026-11-11): one phase, though estimated at 900 to 1,100 lines; "Empieza en" and "Termina en" stay facts without a chevron, since a saved format finds its table by its header's names and ends it at its last date, so a row number wouldn't hold for the next file of the format; and a direction column reads only the words banks use, the code's 34, so a file with others can't be read that way and the view says so, rather than the person teaching new ones, as 11.2b's log had left for this phase.
+
+Found while building it (2026-11-11): the review parts in two (`reviewChoices`, `@xtrakto/parsers`): the table as the file writes it, which needs no mapping, and what the person's choices read, the mapping with what the file adds up to or why it doesn't read, by row and column, so the view shows the file while the choices are incomplete. A format left unchosen is the one the cells write, so it follows the roles; before any column is the amount, every column but the date's says how the numbers are written, which the browser check found showing "1.234,56" for a file that writes "85,400.00". Each correction carries a number and only the review of the latest counts, since a native select can change several times in a row. With every proposal opening the view, the AI's failures stop failing a file: only an ended session does, and their rows' words went. Checked in a local browser twice: with the AI, corrections of a balance, the money and the dates, each with its verdict and nothing sent meanwhile, the keyboard through the chips, formats and bank, and 390px and 360px; and with the server started without DeepSeek's key, the date alone, the rest chosen, and the format read alone the next time.
+
+It came out at about 860 lines of code added and 330 deleted, in four commits of one pull request: the design rules, core's reasons named, the parsers and the app together, since the parsers' new review alone fails the app's type check, and the documents.
+
+**Commits:** `docs(rules): correct a new format's columns`, `refactor(core): name why a table's roles read no table`, `feat: correct a new format's columns`, then `docs: correct a new format's columns`
 
 #### 11.3c Other banks across the app
 

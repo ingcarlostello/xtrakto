@@ -1773,3 +1773,34 @@ Checked in a local browser with the five invented banks of `generate:xlsx`, a fr
 - **The local database** lacked 11.1b's tables, applied with `pnpm db:migrate`.
 - **The evals run in CI** for this pull request, about USD 0.13, since it changes `features/format-mappings` and the parsers' mapping code.
 - **Human:** reading a real export from another bank in production, as the phase's "Done when" asks, once it's deployed.
+
+## 11.3b Correct the columns
+
+_2026-11-11_
+
+What the LLM proposed for another bank's file is now the person's to correct. In v8-14's invented "Banco Horizonte", a "SALDO" read as "Ignorar" becomes "Saldo" with its chip, the file is read again in its worker, and "Prueba con tu archivo" turns from "Este archivo no trae saldos" to "Cuadra con tu extracto". A correction that leaves money read no way, or dates in an order the file doesn't write, says what to change ("No se lee la fila 8" · "“FECHA TRANS” no es una fecha año/mes/día."), and "Confirmar y leer" waits. When the LLM proposes nothing, the view opens with only the date the code found, for the person to choose the rest.
+
+- **Choices, read in the worker** (`reviewChoices`, `@xtrakto/parsers`): each column's role and the numbers' and dates' formats, those left unchosen read from the cells (`mappingFromChoices`, which `mappingFromRoles` now calls). The review is the table as the file writes it, which needs no mapping, and what the choices read: the mapping with what the file adds up to, or why it doesn't read, by row and column. `findTable` says the column its first movement dates; without choices, only that column is the date.
+- **Why roles read no table** (`ROLES_PROBLEM`, `@xtrakto/core`): `columnRolesProblem`'s reasons, named, so the view says each in the person's words.
+- **The chips and formats** (`FormatChoices.tsx`): native selects drawn as v8's chips, each offering the roles the other columns leave (`rolesLeft`); "Números" and "Fechas" as selects, and "Moneda", "Empieza en" and "Termina en" as facts. Each change goes to the worker with a number, and only the review of the latest counts (`formatCorrected`, `formatReviewed`); a correction sends nothing to the server.
+- **What to change** (`readingProblem`): the roles a table lacks; the row that doesn't read and why, with its column as the file writes it; a direction column whose words aren't the banks'; or no movement read. The test's pill says it as a polite live region, and "Confirmar y leer" waits with "Corrige lo que no se lee para seguir.".
+- **Without a proposal** (`noProposalOf`): the AI off, a month's limit or its failure open the view with only the date, saying why ("Ahora no podemos proponer qué es cada columna."), instead of leaving the file unread; only an ended session does. The rows' words for those failures, and `FORMAT_PROBLEM`, went.
+- **The documents:** the design rules (the chips and formats as choices, what to change, the view without a proposal), `docs/data-flow.md`, and system design §1, §3 and §10.
+
+35 more tests: 10 in parsers (561 there) and 25 in the app (1,547):
+
+- parsers: the column a table's first movement dates; the formats the person chose over the cells', the cells' when unchosen, and why roles read no table; the review's mapping and formats, its rows without a kind while the choices don't read, a row the mapping skips, a page's repeated header left out, the date alone without choices and in the column the code found, the table's end at the date chosen, the row where a date order stops reading, and how the numbers are written before any column is the amount;
+- app: the roles each column can take, a column's name for screen readers, and the reading's line; each problem's words (the roles a table lacks, a date, an amount, both amounts, a direction, an empty cell, a column no row of which reads, no movement); the queue's corrections, a stale review ignored, the first review with and without a proposal, and a worker that lost its file; why there's no proposal for each answer; the worker answering each review with its number; the hook reading again with each correction and opening the view without a proposal; and the view's chips and formats, waiting for a whole reading and while one is read, and its words without a proposal.
+
+Checked: thirty deliberate bugs, one at a time; twenty-seven failed a test at first, and three tests now catch the three left: the date alone always in the first column, the table's end ignoring the date the person chose, and a page's repeated header shown as a row.
+
+Checked in a local browser with the invented banks and a fresh Clerk test user, twice. With the AI: "Banco Horizonte"'s proposal corrected (its balance ignored and chosen again, its money out ignored, its dates as year first), each verdict as expected and no request sent meanwhile; the keyboard through the six chips, "Números", "Fechas", the bank and "Confirmar y leer"; the chips scrolling with the table at 390px and 360px; and the file confirmed and read. With the server started without DeepSeek's key: another format opened with only the date and "Faltan columnas por elegir", read once its roles were chosen, and read alone the next time. The test user and its rows were deleted afterwards.
+
+**Deviations and follow-ups:**
+
+- **Size:** about 860 lines of code added and 330 deleted, without tests, comments or blank lines (900 to 1,100 estimated), in one phase as the human chose. It lands in four commits of one pull request; the parsers and the app go together, since the parsers' new review alone fails the app's type check.
+- **"Empieza en" and "Termina en" stay facts** (decided with the human): a saved format finds its table by its header's names and ends it at its last date, so a row number chosen for one file wouldn't hold for the next. If a real file shows the code finding the wrong table, a later phase can let the person choose the header's row.
+- **Direction words stay the banks'** (decided with the human): 11.2b's log had the person say which word is which here; a column with other words now says so instead.
+- **The AI's failures no longer fail a file:** the view opens with the date alone, so their rows' words went; analytics counts failures by code, so nothing changed there.
+- **"Números" before any column is the amount** read "1.234,56" for a file that writes "85,400.00", found in the browser: every column but the date's now says how the numbers are written until the person names an amount.
+- **The evals run in CI** for this pull request, about USD 0.13, since it changes `features/format-mappings` and the parsers' mapping code; the proposal itself didn't change.

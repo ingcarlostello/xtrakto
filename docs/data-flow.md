@@ -46,15 +46,15 @@ flowchart LR
 
 ## What stays in the browser
 
-| Data                                    | Why                                                                                         | Kept for                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| The statement file and its name         | Read by a Web Worker, which gets the bytes, never the name (ADR 0008)                       | While the upload page is open                                                            |
-| A PDF's password                        | Opens the file in its worker; the one that opened a PDF is tried on the others still locked | In the page's memory, until no file waits for it, its file is removed or the page closes |
-| The extracted content, unminimized      | Minimized before sending: only what the parser reads (ADR 0017)                             | While the upload page is open                                                            |
-| A file no parser knows, whole           | Its worker keeps it while its format is found or proposed; the page shows its first rows    | Until the person confirms it and it's read, leaves it out, or the page closes            |
-| Clerk's session cookies                 | Keep the person signed in                                                                   | Clerk's session lifetime                                                                 |
-| The analytics consent, with its version | Asks once per browser (ADR 0029)                                                            | Until the person changes it or clears the browser                                        |
-| PostHog's random id (`localStorage`)    | Counts a browser once, only after a yes; withdrawing deletes it                             | Until consent is withdrawn                                                               |
+| Data                                    | Why                                                                                                  | Kept for                                                                                 |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| The statement file and its name         | Read by a Web Worker, which gets the bytes, never the name (ADR 0008)                                | While the upload page is open                                                            |
+| A PDF's password                        | Opens the file in its worker; the one that opened a PDF is tried on the others still locked          | In the page's memory, until no file waits for it, its file is removed or the page closes |
+| The extracted content, unminimized      | Minimized before sending: only what the parser reads (ADR 0017)                                      | While the upload page is open                                                            |
+| A file no parser knows, whole           | Its worker keeps it while its format is found, proposed and corrected; the page shows its first rows | Until the person confirms it and it's read, leaves it out, or the page closes            |
+| Clerk's session cookies                 | Keep the person signed in                                                                            | Clerk's session lifetime                                                                 |
+| The analytics consent, with its version | Asks once per browser (ADR 0029)                                                                     | Until the person changes it or clears the browser                                        |
+| PostHog's random id (`localStorage`)    | Counts a browser once, only after a yes; withdrawing deletes it                                      | Until consent is withdrawn                                                               |
 
 ## What reaches the server
 
