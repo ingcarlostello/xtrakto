@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   APP_ERROR_CODE,
-  COLUMN_ROLE,
   err,
   formatMappingSchema,
   ok,
@@ -14,99 +13,17 @@ import type {
   SpreadsheetCell,
 } from "@xtrakto/core";
 import { fixtureContent, fixtureRows } from "../../fixtures/fixture.utils";
-import mappedDirection from "../../fixtures/mapped-direction.json";
-import mappedNewestFirst from "../../fixtures/mapped-newest-first.json";
-import mappedNoBalance from "../../fixtures/mapped-no-balance.json";
-import mappedOutIn from "../../fixtures/mapped-out-in.json";
-import mappedTitleRows from "../../fixtures/mapped-title-rows.json";
+import {
+  MAPPED_FIXTURE_MAPPINGS as MAPPINGS,
+  MAPPED_FIXTURES as FIXTURES,
+  type MappedFixtureName as FixtureName,
+} from "../../fixtures/mapped-fixtures";
 import movementsBasic from "../../fixtures/movements-basic.json";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import { extractSpreadsheet } from "../extraction/spreadsheet-extraction.helpers";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
 import { findParser } from "../registry/default-registry.helpers";
 import { mappingParser } from "./mapping-parser.helpers";
-
-const {
-  DATE,
-  DESCRIPTION,
-  AMOUNT,
-  MONEY_OUT,
-  MONEY_IN,
-  BALANCE,
-  REFERENCE,
-  DIRECTION,
-  NONE,
-} = COLUMN_ROLE;
-
-// How a person would read each invented bank's columns.
-const MAPPINGS = {
-  "mapped-out-in": {
-    header: [
-      "FECHA TRANS",
-      "DETALLE",
-      "OFICINA",
-      "DEBITOS",
-      "CREDITOS",
-      "SALDO",
-    ],
-    columns: [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN, BALANCE],
-    dateOrder: "dmy",
-    decimalSeparator: ",",
-    bankId: "other",
-  },
-  "mapped-newest-first": {
-    header: [
-      "FECHA TRANSACCION",
-      "CONCEPTO",
-      "REFERENCIA",
-      "MONTO",
-      "SALDO DISPONIBLE",
-    ],
-    columns: [DATE, DESCRIPTION, REFERENCE, AMOUNT, BALANCE],
-    dateOrder: "dmy",
-    decimalSeparator: ",",
-    bankId: "other",
-  },
-  "mapped-direction": {
-    header: ["FECHA", "DESCRIPCION", "TIPO", "VALOR", "SALDO"],
-    columns: [DATE, DESCRIPTION, DIRECTION, AMOUNT, BALANCE],
-    dateOrder: "ymd",
-    decimalSeparator: ".",
-    directionWords: { in: ["C"], out: ["D"] },
-    bankId: "other",
-  },
-  "mapped-no-balance": {
-    header: ["FECHA", "DETALLE", "DEBITOS", "CREDITOS"],
-    columns: [DATE, DESCRIPTION, MONEY_OUT, MONEY_IN],
-    dateOrder: "dmy",
-    decimalSeparator: ",",
-    bankId: "other",
-  },
-  "mapped-title-rows": {
-    header: [
-      "FECHA",
-      "FECHA VALOR",
-      "DESCRIPCION",
-      "DOCUMENTO",
-      "VALOR",
-      "SALDO",
-    ],
-    columns: [DATE, NONE, DESCRIPTION, NONE, AMOUNT, BALANCE],
-    dateOrder: "dmy",
-    decimalSeparator: ",",
-    bankId: "other",
-  },
-} as const;
-
-const FIXTURES = {
-  "mapped-out-in": mappedOutIn,
-  "mapped-newest-first": mappedNewestFirst,
-  "mapped-direction": mappedDirection,
-  "mapped-no-balance": mappedNoBalance,
-  "mapped-title-rows": mappedTitleRows,
-};
-
-type FixtureName = keyof typeof FIXTURES;
 
 const NAMES = Object.keys(FIXTURES) as FixtureName[];
 const WITH_BALANCES = NAMES.filter((name) => name !== "mapped-no-balance");
