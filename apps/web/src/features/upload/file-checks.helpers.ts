@@ -18,10 +18,14 @@ const isSameFile = (a: File, b: File): boolean =>
 export const isPdfName = (name: string): boolean =>
   name.toLowerCase().endsWith(".pdf");
 
+/** Whether a file's name says it's a CSV, which reads as an Excel does. */
+export const isCsvName = (name: string): boolean =>
+  name.toLowerCase().endsWith(".csv");
+
 /**
- * Why a chosen file is refused before it is read: it isn't an XLSX or a PDF,
- * it's over 10 MB, or it's already among the chosen files. The worker then
- * checks what the file holds.
+ * Why a chosen file is refused before it is read: it isn't an Excel, a CSV or
+ * a PDF, it's over 10 MB, or it's already among the chosen files. The worker
+ * then checks what the file holds.
  */
 export const fileProblem = (
   file: File,

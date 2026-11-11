@@ -1,6 +1,7 @@
 // The welcome a new account sees right after sign-up (docs/ui/v8-15 to
-// v8-17), with only what works today: the files of a Bancolombia savings
-// account, in Excel or PDF. Later stages add their lines (roadmap 5.8).
+// v8-17), with only what works today: a Bancolombia savings account's files,
+// in Excel or PDF, and another bank's, in Excel or CSV (11.3c). Later stages
+// add their lines (roadmap 5.8).
 
 export const ONBOARDING_STEP_COUNT = 3;
 
@@ -12,6 +13,15 @@ export const FIRST_FILE = {
 
 /** The search param that takes the choice to the last step. */
 export const FIRST_FILE_PARAM = "first";
+
+/** Whose files the second step's choice is: Bancolombia's, or another bank's. */
+export const FIRST_BANK = {
+  BANCOLOMBIA: "bancolombia",
+  OTHER: "other",
+} as const;
+
+/** The search param that takes the bank to the last step. */
+export const BANK_PARAM = "bank";
 
 export const ONBOARDING_COPY = {
   step: "Paso",
@@ -26,7 +36,7 @@ export const WELCOME_COPY = {
   metaTitle: "Bienvenida",
   title: "Entiende tu extracto en minutos",
   subtitle:
-    "Sube el Excel o el PDF de tu cuenta de ahorros Bancolombia y te lo mostramos en limpio.",
+    "Sube el archivo de tu cuenta de ahorros, de Bancolombia o de otro banco, y te lo mostramos en limpio.",
   features: {
     moved: {
       title: "Separa lo que gastaste de lo que solo moviste",
@@ -69,12 +79,12 @@ export const WELCOME_COPY = {
   },
 } as const;
 
-// docs/ui/v8-16 without the credit card (12.1) and other banks (11.3).
+// docs/ui/v8-16 without the credit card (12.1).
 export const FIRST_FILE_COPY = {
   metaTitle: "Qué subir primero",
   title: "¿Qué vas a subir primero?",
   subtitle:
-    "De tu cuenta de ahorros Bancolombia, en Excel o PDF. Puedes subir los dos; se complementan.",
+    "De tu cuenta de ahorros. Puedes subir los dos tipos; se complementan.",
   quarterly: {
     title: "Extracto trimestral",
     badge: "Recomendado",
@@ -83,6 +93,13 @@ export const FIRST_FILE_COPY = {
   movements: {
     title: "Movimientos del mes",
     detail: "Sin saldos. Puedes bajar varios rangos: no se duplican.",
+  },
+  // Another bank's spreadsheet is read once the person confirms it (11.3c).
+  bank: {
+    label: "Banco",
+    hint: "¿No está tu banco? Elige “Otro”: lo leemos y te pedimos confirmar las columnas.",
+    bancolombia: "Bancolombia",
+    other: "Otro",
   },
   // The files that print the holder's name (6.2a, 9.3b).
   name: "No te pedimos tu nombre: lo tomamos de tu extracto trimestral o del PDF de tus movimientos.",
@@ -130,6 +147,34 @@ export const DOWNLOAD_COPY = {
         detail: "Súbelos todos: si se cruzan, no se duplica nada.",
       },
     ],
+  },
+  // Another bank's files: its own path isn't known, only what to bring.
+  otherBank: {
+    title: "Trae tus archivos de tu banco",
+    subtitle:
+      "Descárgalos de tu banco en Excel o CSV. La primera vez te mostramos qué entendimos de cada columna y lo confirmas.",
+    guide: {
+      title: "Movimientos de tu cuenta",
+      steps: [
+        {
+          title: "Entra a la banca en línea de tu banco",
+          detail: "Desde el computador es más fácil.",
+        },
+        {
+          title: "Busca los movimientos o el extracto de tu cuenta de ahorros",
+        },
+        {
+          title: "Descárgalos en Excel o CSV",
+          detail:
+            "Si puede traer el saldo de cada movimiento, mejor: así lo verificamos al centavo.",
+        },
+        {
+          title: "Súbelos aquí, sin editarlos",
+          detail:
+            "La primera vez confirmas qué es cada columna; luego se leen solos.",
+        },
+      ],
+    },
   },
   uploadHere: "Súbelos aquí",
 } as const;
