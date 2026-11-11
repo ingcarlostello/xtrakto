@@ -1804,3 +1804,39 @@ Checked in a local browser with the invented banks and a fresh Clerk test user, 
 - **The AI's failures no longer fail a file:** the view opens with the date alone, so their rows' words went; analytics counts failures by code, so nothing changed there.
 - **"Números" before any column is the amount** read "1.234,56" for a file that writes "85,400.00", found in the browser: every column but the date's now says how the numbers are written until the person names an amount.
 - **The evals run in CI** for this pull request, about USD 0.13, since it changes `features/format-mappings` and the parsers' mapping code; the proposal itself didn't change.
+
+## 11.3c Other banks across the app
+
+_2026-11-11_
+
+Someone with a Davivienda account beside their Bancolombia one now reads the app in its words. The welcome asks for their bank, and with "Otro" its last step guides another bank's files; the upload screen takes Excel 97–2003 and CSV too, and lists "¿Otro banco?" under Bancolombia's formats. Where a Bancolombia account's files said "tu extracto trimestral", Davivienda's say "tu archivo con saldos": its movements file without balances is "Verificado por tu archivo con saldos", "Archivos subidos" reads "Davivienda · 10 movimientos · cuadra al centavo", the summary asks for "tus movimientos de Davivienda de octubre", and the profile counts "1 trimestral y 2 de otros bancos".
+
+- **Another bank** (`isOtherBank`, `utils/account-label.helpers.ts`): an account whose bank isn't the one the parsers read, Bancolombia (`PARSED_BANK_ID`). Each job's statement and each statement that doesn't reconcile now carry their account's bank (`@xtrakto/db`).
+- **What verifies its files** (`verifierOf`, `VERIFIER_COPY`): the upload result's pill, steps and sentences, and "Archivos subidos", say Bancolombia's quarterly statement or another bank's file with balances, by the account's bank.
+- **"Archivos subidos"** starts another bank's line with its account's bank instead of its file type (decided with the human); while the file is open, its line says nothing.
+- **The coverage timeline:** each account's view knows whether it's another bank's, and the legend's first words follow the accounts shown (`verifiedLegend`).
+- **"Tus datos"** counts the files by bank (`countUserFiles`, `BankFiles`): Bancolombia's by kind, another bank's together.
+- **Movimientos and "Ver dónde no cuadra"** name another bank's files with balances by what they are (`joinedFilesText`, `statementName`).
+- **The months missing** of another bank's account ask for its movements, by its bank's name or "de tu banco" for "Otro", with "Ir a Subir"; the monthly email asks for "tus movimientos de octubre" when an account is another bank's, since an email never names a bank.
+- **The upload screen** (`v8-07`): the picker takes `.xls` and `.csv`; "¿Otro banco?" with its Excel and CSV tags at the formats' full width; "De otro banco, la IA solo ve sus columnas" in "Cómo cuidamos tus datos"; and the subtitle, a file's problems and the empty summary's "Descárgalo de tu banco" true for both banks. A spreadsheet read from a CSV is tagged "CSV" (`isCsvName`).
+- **The welcome** (`v8-16`, `v8-17`): "Banco", Bancolombia or "Otro", under the files, travels in the URL to the last step (`?bank=other`), whose guide for another bank downloads its movements in Excel or CSV.
+- **The documents:** the design rules (the welcome, the drop zone, a file's problems, the upload result, "Archivos subidos", the coverage legend, Movimientos, "Dónde no cuadra", the months missing, "Tus datos" and the email), and system design §3's monthly email.
+
+18 new tests in the app (1,565), and three of the database's (294 there) now checking another bank's account:
+
+- app: which account is another bank's and the legend's words for the accounts shown; every sentence of the upload result for another bank's file with balances; "Archivos subidos" naming a saved file's bank and nothing while it's open, and its verified line; the profile's files of other banks apart; Movimientos's and "Dónde no cuadra"'s words; the months missing by the bank's name; the monthly email without a bank's name, also against the database; CSV and XLS accepted, DOCX and ODS refused; and a CSV's tag in either case, and a PDF's whatever its name says.
+- database: a job's result and a statement that doesn't reconcile naming another bank's account, and the files counted by bank.
+
+Checked: thirty-four deliberate bugs, one at a time; thirty-one failed a test at first, and one test now catches the three left, the upload result's sentences for another bank's movements its file with balances had in part, covered, or matched in part. Three tests that only saw Bancolombia's accounts now see another bank's, so a bank read from the wrong place fails them.
+
+Checked in a local browser with a fresh Clerk test user and invented files: the welcome's bank, its hint and its place in the keyboard's order, its guide for another bank and Bancolombia's guides kept; the upload screen's subtitle, "¿Otro banco?" and the privacy item; a Bancolombia quarterly statement, then "Banco Horizonte"'s statement as a CSV with balances and an Excel without them, both confirmed as Davivienda's; the Excel's result "Verificado por tu archivo con saldos"; "Archivos subidos" naming Davivienda; the legend with both kinds; the profile's "3 archivos: 1 trimestral y 2 de otros bancos."; Movimientos's "Juntamos tu archivo con saldos y 1 archivo de movimientos, sin duplicar."; the summary's "Para ver el año completo, sube tus movimientos de Davivienda de octubre."; and no page overflow at 390px and 360px. The CSV's tag read "Excel" in the first run; fixed, it reads "CSV". The test user and its rows were deleted afterwards.
+
+**Deviations and follow-ups:**
+
+- **Size:** about 460 lines of code added and 135 deleted, without tests, comments or blank lines (600 to 800 estimated), in one phase as the human chose. It lands in four commits of one pull request; the database's change goes with the app's account words, since alone it fails the app's type check.
+- **Beyond the tasks** (decided with the human): Movimientos's files joined, the summary's months missing with the monthly email, and "Ver dónde no cuadra", whose words named Bancolombia's files too.
+- **"Archivo con saldos":** v8 doesn't name another bank's verifying file. Its kinds aren't Bancolombia's quarterly statement and movements export, so its files read by what they are, with balances or without.
+- **The categorization prompt** still introduces its texts as Bancolombia's (`categorize.v2.ts`), though the rules hold for every bank (ADR 0037); changing it takes a new version and its eval run, for a phase that touches the prompt.
+- **`ingestion-job.queries.ts`** was already past the 300 lines the lint warns about, and grew by its account's join: a later phase can split its reads from its writes.
+- **No evals in CI** for this pull request: it changes neither `features/format-mappings` nor the parsers.
+- **Human:** reading a real export from another bank in production (11.3a), once deployed.
