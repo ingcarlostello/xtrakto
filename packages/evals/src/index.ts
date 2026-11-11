@@ -17,9 +17,14 @@ export type {
 } from "./categorization/categorization.types";
 export { FORMAT_MAPPING_CASES } from "./format-mapping/format-mapping-cases.constants";
 export { mappingReport } from "./format-mapping/format-mapping-report.helpers";
-export { scoreMappings } from "./format-mapping/format-mapping-score.helpers";
+export {
+  failedMappingThresholds,
+  scoreMappings,
+} from "./format-mapping/format-mapping-score.helpers";
+export { MAPPING_THRESHOLDS } from "./format-mapping/format-mapping.constants";
 export type {
   MappingCase,
   MappingPrediction,
   MappingScore,
+  MappingThresholds,
 } from "./format-mapping/format-mapping.types";

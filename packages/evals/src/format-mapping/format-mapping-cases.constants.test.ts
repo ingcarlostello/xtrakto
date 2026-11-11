@@ -1,5 +1,14 @@
-import { COLUMN_ROLE, compareLocalDates } from "@xtrakto/core";
-import { findTable, mappingParser, reconcile } from "@xtrakto/parsers";
+import {
+  CELL_SHAPE_PATTERN,
+  COLUMN_ROLE,
+  compareLocalDates,
+} from "@xtrakto/core";
+import {
+  findTable,
+  formatSample,
+  mappingParser,
+  reconcile,
+} from "@xtrakto/parsers";
 import { describe, expect, it } from "vitest";
 import { FORMAT_MAPPING_CASES } from "./format-mapping-cases.constants";
 import { mappingCase } from "./format-mapping-cases.helpers";
@@ -120,4 +129,34 @@ describe("FORMAT_MAPPING_CASES", () => {
       expect(headerRow === 0 || above.includes("Cliente:")).toBe(true);
     }
   });
+
+  it.each(FORMAT_MAPPING_CASES.map((testCase) => [testCase.name, testCase]))(
+    "keeps every value of %s out of the sample the LLM reads",
+    (name, { content, headerRow }) => {
+      const sample = formatSample(content);
+      const table = findTable(content);
+      if (!sample.ok || !table.ok || content.type !== "spreadsheet") {
+        throw new Error(name);
+      }
+      const rows = content.sheets[0]?.rows ?? [];
+      const shapes = sample.value.rows.flat();
+      // Every text of the file but its header's names, which the LLM reads.
+      const values = [...rows.slice(0, headerRow), ...rows.slice(headerRow + 1)]
+        .flat()
+        .flatMap((cell) =>
+          typeof cell === "string" || typeof cell === "number"
+            ? [String(cell)]
+            : [],
+        )
+        .filter((text) => /[\p{L}\p{N}].*[\p{L}\p{N}]/u.test(text));
+
+      expect(sample.value.header).toEqual(table.value.header);
+      expect(shapes.every((shape) => CELL_SHAPE_PATTERN.test(shape))).toBe(
+        true,
+      );
+      for (const value of values) {
+        expect(shapes.some((shape) => shape.includes(value))).toBe(false);
+      }
+    },
+  );
 });

@@ -4,8 +4,11 @@ import { mappingParser } from "@xtrakto/parsers";
 import { describe, expect, it } from "vitest";
 import { mappingCase } from "./format-mapping-cases.helpers";
 import { mappingReport } from "./format-mapping-report.helpers";
-import { scoreMappings } from "./format-mapping-score.helpers";
-import type { Layout, LayoutColumn } from "./format-mapping.types";
+import {
+  failedMappingThresholds,
+  scoreMappings,
+} from "./format-mapping-score.helpers";
+import type { Layout, LayoutColumn, MappingCase } from "./format-mapping.types";
 
 const { DATE, DESCRIPTION, AMOUNT, MONEY_OUT, MONEY_IN, BALANCE, NONE } =
   COLUMN_ROLE;
@@ -46,19 +49,20 @@ const withRoles = (
   roles: readonly ColumnRole[],
 ): FormatMapping => formatMappingSchema.parse({ ...mapping, columns: roles });
 
+// A model's roles, and the mapping the code made with them.
+const predicted = (testCase: MappingCase, roles: readonly ColumnRole[]) => ({
+  testCase,
+  roles,
+  proposed: withRoles(testCase.expected, roles),
+});
+
 // Money out read as money in, and the other way around.
 const SWAPPED = [DATE, DESCRIPTION, MONEY_IN, MONEY_OUT];
 
 const PREDICTIONS = [
-  { testCase: WITH_BALANCES, proposed: WITH_BALANCES.expected },
-  {
-    testCase: WITH_BALANCES_TOO,
-    proposed: withRoles(WITH_BALANCES_TOO.expected, [...SWAPPED, BALANCE]),
-  },
-  {
-    testCase: WITHOUT_BALANCES,
-    proposed: withRoles(WITHOUT_BALANCES.expected, SWAPPED),
-  },
+  predicted(WITH_BALANCES, WITH_BALANCES.expected.columns),
+  predicted(WITH_BALANCES_TOO, [...SWAPPED, BALANCE]),
+  predicted(WITHOUT_BALANCES, SWAPPED),
   { testCase: UNANSWERED },
 ];
 
@@ -89,36 +93,50 @@ describe("scoreMappings", () => {
     );
   });
 
+  it("scores a model's roles when the code made no mapping with them, and reads that file in none", () => {
+    const { columns } = WITH_BALANCES.expected;
+
+    expect(
+      scoreMappings([{ testCase: WITH_BALANCES, roles: columns }]),
+    ).toMatchObject({ answered: 1, rolesRight: 1, readRight: 0 });
+  });
+
   it("doesn't count a proposal that reads only part of its file as read", () => {
     // Money out read as a signed amount: the rows of money in hold none.
-    const proposed = withRoles(WITHOUT_BALANCES.expected, [
+    const prediction = predicted(WITHOUT_BALANCES, [
       DATE,
       DESCRIPTION,
       AMOUNT,
       NONE,
     ]);
-    const statement = mappingParser(proposed).parse(WITHOUT_BALANCES.content);
+    const statement = mappingParser(prediction.proposed).parse(
+      WITHOUT_BALANCES.content,
+    );
     if (!statement.ok) throw new Error(JSON.stringify(statement.error));
 
     expect(statement.value.transactions.length).toBeLessThan(
       WITHOUT_BALANCES.movementCount,
     );
-    expect(
-      scoreMappings([{ testCase: WITHOUT_BALANCES, proposed }]),
-    ).toMatchObject({ answered: 1, rolesRight: 0, readRight: 0 });
+    expect(scoreMappings([prediction])).toMatchObject({
+      answered: 1,
+      rolesRight: 0,
+      readRight: 0,
+    });
   });
 
   it("doesn't count a proposal that reads no movement as read", () => {
-    const proposed = withRoles(WITHOUT_BALANCES.expected, [
+    const prediction = predicted(WITHOUT_BALANCES, [
       DESCRIPTION,
       DATE,
       MONEY_OUT,
       MONEY_IN,
     ]);
 
-    expect(
-      scoreMappings([{ testCase: WITHOUT_BALANCES, proposed }]),
-    ).toMatchObject({ answered: 1, rolesRight: 0, readRight: 0 });
+    expect(scoreMappings([prediction])).toMatchObject({
+      answered: 1,
+      rolesRight: 0,
+      readRight: 0,
+    });
   });
 
   it("scores nothing as nothing", () => {
@@ -134,12 +152,36 @@ describe("scoreMappings", () => {
   });
 });
 
+describe("failedMappingThresholds", () => {
+  const score = scoreMappings(PREDICTIONS);
+
+  it("names the shares under their thresholds, in the report's order", () => {
+    expect(
+      failedMappingThresholds(score, {
+        rolesRightShare: 0.3,
+        readRightShare: 0.6,
+      }),
+    ).toEqual(["rolesRightShare", "readRightShare"]);
+  });
+
+  it("passes a share that reaches its threshold", () => {
+    expect(
+      failedMappingThresholds(score, {
+        rolesRightShare: 0.25,
+        readRightShare: 0.5,
+      }),
+    ).toEqual([]);
+  });
+});
+
 describe("mappingReport", () => {
-  it("gives figures only, each role worst first", () => {
-    expect(mappingReport(scoreMappings(PREDICTIONS))).toEqual([
+  it("gives figures only, against the thresholds, each role worst first", () => {
+    const thresholds = { rolesRightShare: 0.2, readRightShare: 0.6 };
+
+    expect(mappingReport(scoreMappings(PREDICTIONS), thresholds)).toEqual([
       "files 4, answered 3",
-      "roles right  0.250 (1)",
-      "read right   0.500 (2)",
+      "roles right  0.250 (1)  min 0.20  ok",
+      "read right   0.500 (2)  min 0.60  BELOW",
       "  amount      0.00",
       "  money_in    0.33",
       "  money_out   0.33",
