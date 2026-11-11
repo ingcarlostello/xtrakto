@@ -1,6 +1,6 @@
 # 0023. Rules give a best guess and flag what to review
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0037](0037-other-banks-formats-proven-where-the-file-is.md), where the rules hold for every bank
 - **Date:** 2026-10-16
 
 ## Context
@@ -26,4 +26,4 @@ Stage 6 categorizes movements without an LLM first ([system design §6](../ARCHI
 - A movement keeps the category it was saved with when the rules change (`ON CONFLICT DO NOTHING`): before the private beta (Phase 7.2), the movements whose source is `rule`, never the user's, need categorizing again.
 - The detail panel (6.3) shows a rule's reason by its id, with a generic one for an id the table no longer has.
 - Filtering by channel (`docs/ui/v8-03`) will need the prefixes in SQL, or the channel stored.
-- The rules are Bancolombia's; another bank's (Stage 11) will key them by bank.
+- The rules read Colombia's banking words, not Bancolombia's layout, so they hold for another bank's statements too (Stage 11, [ADR 0037](0037-other-banks-formats-proven-where-the-file-is.md)), which aren't keyed by bank.
