@@ -41,6 +41,7 @@ const outcome = (
   stats: stats(counts),
   statementId: "s1",
   accountId: "a1",
+  bankId: "bancolombia",
   period: QUARTER,
   balance: "verified",
   matches: NO_MATCHES,
@@ -158,7 +159,7 @@ describe("resultView", () => {
       "Bancolombia · Movimientos · 1–31 jul 2026",
     );
     expect(detailOf(movements, covered, "Revisando duplicados")).toBe(
-      `14 movimientos ${RESULT_COPY.hadIn} ${RESULT_COPY.coveredNote}`,
+      `14 movimientos ${RESULT_COPY.hadIn} Tu extracto trimestral ya los traía.`,
     );
     expect(view.steps.at(-1)).toEqual({
       title: "Este archivo no trae saldos",
@@ -307,6 +308,75 @@ describe("resultView", () => {
 
       expect(resultView(movements, result).pill.detail).toBe(
         "Este tipo de archivo no trae saldos; lo comparamos con jul–sep 2026 y oct–dic 2026 y coincide.",
+      );
+    });
+
+    it("says another bank's file with balances verifies it, by what it is", () => {
+      const mapped: UploadJob = {
+        ...movements,
+        formatId: "mapped-spreadsheet",
+      };
+      const result = {
+        ...exported({}, { matched: 48, verifiedBy: [QUARTER] }),
+        bankId: "davivienda",
+      };
+      const view = resultView(mapped, result);
+
+      expect(view.pill.title).toBe("Verificado por tu archivo con saldos");
+      expect(detailOf(mapped, result, "Revisando duplicados")).toBe(
+        "48 movimientos ya estaban en tu archivo con saldos.",
+      );
+      expect(view.steps.at(-1)?.title).toBe(
+        "Verificado con tu archivo con saldos",
+      );
+    });
+
+    it("waits for another bank's file with balances, not a quarterly statement", () => {
+      const mapped: UploadJob = {
+        ...movements,
+        formatId: "mapped-spreadsheet",
+      };
+      const result = {
+        ...exported({ total: 21, added: 21 }, {}),
+        bankId: "davivienda",
+      };
+
+      expect(resultView(mapped, result).steps.at(-1)).toEqual({
+        title: "Este archivo no trae saldos",
+        detail:
+          "Los verificamos cuando subas un archivo de ese periodo que traiga saldos.",
+        isOk: true,
+      });
+    });
+
+    it("names another bank's file with balances wherever a quarterly statement would be", () => {
+      const mapped: UploadJob = {
+        ...movements,
+        formatId: "mapped-spreadsheet",
+      };
+      const ofDavivienda = (result: JobOutcome): JobOutcome => ({
+        ...result,
+        bankId: "davivienda",
+      });
+      const covered = ofDavivienda(exported({ total: 14, covered: 14 }, {}));
+      const partlyHad = ofDavivienda(
+        exported(
+          { covered: 28, skipped: 20 },
+          { matched: 28, verifiedBy: [QUARTER] },
+        ),
+      );
+      const partlyCovered = ofDavivienda(
+        exported({ total: 21, added: 6, covered: 15 }, { matched: 15 }),
+      );
+
+      expect(detailOf(mapped, covered, "Revisando duplicados")).toBe(
+        `14 movimientos ${RESULT_COPY.hadIn} Tu archivo con saldos ya los traía.`,
+      );
+      expect(detailOf(mapped, partlyHad, "Revisando duplicados")).toBe(
+        "48 movimientos ya estaban en tu cuenta: no se duplican. De ellos, 28 venían en tu archivo con saldos.",
+      );
+      expect(resultView(mapped, partlyCovered).steps.at(-1)?.detail).toBe(
+        "15 movimientos coinciden con tu archivo con saldos; los demás, cuando subas uno de su periodo.",
       );
     });
 

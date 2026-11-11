@@ -6,13 +6,14 @@ export const PROFILE_COPY = {
 } as const;
 
 // "Tus datos" (docs/ui/v8-11, Phase 10.2a): the files the user keeps, and
-// each account's months: "9 archivos: 3 trimestrales y 6 de movimientos."
+// each account's months: "9 archivos: 3 trimestrales y 6 de movimientos.",
+// and another bank's files apart (11.3c).
 export const YOUR_DATA_COPY = {
   title: "Tus datos",
   files: { one: "archivo", other: "archivos" },
   quarterly: { one: "trimestral", other: "trimestrales" },
   movements: "de movimientos",
-  and: "y",
+  otherBanks: "de otros bancos",
   none: "Aún no tienes archivos.",
 } as const;
 

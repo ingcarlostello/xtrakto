@@ -5,9 +5,9 @@ import {
   isAmountMinor,
   type Period,
 } from "@xtrakto/core";
-import type { StatementMatches } from "@xtrakto/db";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
+import { isOtherBank } from "@/utils/account-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import {
   breaksHref,
@@ -15,7 +15,7 @@ import {
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import { recognizedText } from "./upload-display.helpers";
-import { RESULT_COPY as COPY } from "./upload-result.constants";
+import { RESULT_COPY as COPY, VERIFIER_COPY } from "./upload-result.constants";
 import { STATEMENT_BALANCE, UPLOAD_COPY } from "./upload.constants";
 import type { JobOutcome, PdfReading, UploadJob } from "./upload.types";
 
@@ -126,6 +126,14 @@ const countsOf = ({
 const quarterlyWords = (periods: readonly Period[]): string =>
   periods.map(formatMonthRange).join(` ${COPY.and} `);
 
+/**
+ * What verifies a file without balances, in words, as its account's bank has
+ * it: Bancolombia's quarterly statement, or another bank's spreadsheet with
+ * balances (11.3c).
+ */
+export const verifierOf = (bankId: string) =>
+  isOtherBank(bankId) ? VERIFIER_COPY.balances : VERIFIER_COPY.quarterly;
+
 // Chained says more than verified: it also opens where the previous closed.
 const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
   chainedTo
@@ -142,11 +150,14 @@ const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
 
 // A movements export prints no balances, unless its quarterly statement
 // verifies it, movement by movement (10.1b).
-const noBalancePill = ({ verifiedBy }: StatementMatches): ResultView["pill"] =>
+const noBalancePill = ({
+  matches: { verifiedBy },
+  bankId,
+}: JobOutcome): ResultView["pill"] =>
   verifiedBy.length > 0
     ? {
         tone: "ok",
-        title: COPY.verifiedByQuarterly,
+        title: verifierOf(bankId).verifiedBy,
         detail: `${COPY.verifiedByQuarterlyDetail} ${quarterlyWords(verifiedBy)} ${COPY.andMatches}`,
       }
     : { tone: "none", title: COPY.noBalance, detail: COPY.movementsFile };
@@ -154,7 +165,7 @@ const noBalancePill = ({ verifiedBy }: StatementMatches): ResultView["pill"] =>
 const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
   const { balance } = outcome;
   if (balance === STATEMENT_BALANCE.VERIFIED) return verifiedPill(outcome);
-  if (balance === STATEMENT_BALANCE.NONE) return noBalancePill(outcome.matches);
+  if (balance === STATEMENT_BALANCE.NONE) return noBalancePill(outcome);
   const amount = offBy(outcome);
   return {
     tone: "attention",
@@ -168,20 +179,21 @@ const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
 // What the account had of the file, and where: a movements export its
 // quarterly statement repeats says so (10.1b).
 const hadSentences = (
-  { stats, balance, matches }: JobOutcome,
+  { stats, balance, matches, bankId }: JobOutcome,
   had: number,
 ): readonly string[] => {
   const movements = countText(had, UPLOAD_COPY.movements);
+  const verifier = verifierOf(bankId);
   if (balance === STATEMENT_BALANCE.NONE && matches.matched > 0)
     return matches.matched === had
-      ? [`${movements} ${COPY.hadInQuarterly}`]
+      ? [`${movements} ${verifier.hadIn}`]
       : [
           `${movements} ${COPY.hadIn}`,
-          `${COPY.someInQuarterly} ${NUMBER.format(matches.matched)} ${COPY.inQuarterly}`,
+          `${COPY.someInQuarterly} ${NUMBER.format(matches.matched)} ${verifier.in}`,
         ];
   return [
     `${movements} ${COPY.hadIn}`,
-    ...(stats.covered > 0 ? [COPY.coveredNote] : []),
+    ...(stats.covered > 0 ? [verifier.covered] : []),
     ...(stats.hidden > 0 ? [COPY.hiddenNote] : []),
   ];
 };
@@ -200,12 +212,13 @@ const duplicatesText = (outcome: JobOutcome): string => {
 // A movements export: verified by its quarterly statement, matched in
 // part, or waiting for the statement of its period (v8-13).
 const noBalanceStep = ({
-  verifiedBy,
-  matched,
-}: StatementMatches): ResultStep => {
+  matches: { verifiedBy, matched },
+  bankId,
+}: JobOutcome): ResultStep => {
+  const verifier = verifierOf(bankId);
   if (verifiedBy.length > 0)
     return {
-      title: COPY.verifiedWithQuarterly,
+      title: verifier.verifiedWith,
       detail: `${COPY.verifiedWithQuarterlyDetail} ${quarterlyWords(verifiedBy)}.`,
       isOk: true,
     };
@@ -213,16 +226,17 @@ const noBalanceStep = ({
     title: COPY.noBalanceStep,
     detail:
       matched > 0
-        ? `${countText(matched, UPLOAD_COPY.movements)} ${COPY.partlyVerifiedDetail}`
-        : COPY.noBalanceDetail,
+        ? `${countText(matched, UPLOAD_COPY.movements)} ${verifier.partly}`
+        : verifier.waiting,
     isOk: true,
   };
 };
 
-const balanceStep = ({ balance, matches }: JobOutcome): ResultStep => {
+const balanceStep = (outcome: JobOutcome): ResultStep => {
+  const { balance } = outcome;
   if (balance === STATEMENT_BALANCE.VERIFIED)
     return { title: COPY.verified, detail: COPY.verifiedDetail, isOk: true };
-  if (balance === STATEMENT_BALANCE.NONE) return noBalanceStep(matches);
+  if (balance === STATEMENT_BALANCE.NONE) return noBalanceStep(outcome);
   return {
     title: COPY.notReconciled,
     detail: COPY.notReconciledDetail,

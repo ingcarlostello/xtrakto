@@ -5,6 +5,7 @@ import {
   createDb,
   type DbClient,
   findOrCreateUser,
+  resolveIdentifiedAccount,
   saveNoticePreference,
   type UserId,
   withUserContext,
@@ -231,6 +232,26 @@ describe.skipIf(!testDatabase)("the monthly email", () => {
 
       expect(message.subject).toBe("Te falta octubre");
       expect(message.text).toContain("sube los movimientos de octubre.");
+    });
+
+    it("asks another bank's account for its movements, without naming the bank", async () => {
+      const userId = await personWhoAsked();
+      await withUserContext(app.db, userId, (ctx) =>
+        resolveIdentifiedAccount(ctx, {
+          bankId: "davivienda",
+          accountType: "savings",
+          last4: "4321",
+          currency: "COP",
+        }),
+      );
+
+      // September's quarter ended: Bancolombia's would be its quarterly statement.
+      const { message } = await emailOf(userId, "2026-09");
+
+      expect(message.subject).toBe("Te falta septiembre");
+      expect(message.text).toContain("sube tus movimientos de septiembre.");
+      for (const body of [message.subject, message.text, message.html])
+        expect(body.toLowerCase()).not.toContain("davivienda");
     });
 
     it("says which file to someone with no file yet", async () => {

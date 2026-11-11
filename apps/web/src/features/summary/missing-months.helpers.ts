@@ -13,8 +13,11 @@ import {
 } from "@/components/coverage-timeline/coverage-gaps.helpers";
 import { coverageViewOf } from "@/components/coverage-timeline/coverage-timeline.helpers";
 import { PAGE_COPY } from "@/components/empty-state/empty-states.constants";
+import { BANK_LABELS } from "@/utils/account-label.constants";
+import { isOtherBank } from "@/utils/account-label.helpers";
 import { wordFor } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
+import { labelOf } from "@/utils/statement-label.helpers";
 import { SUMMARY_COPY } from "./summary.constants";
 import type { AccountSummary, MissingMonthsView } from "./summary.types";
 
@@ -109,26 +112,45 @@ export const filesText = (
   ]);
 };
 
+// Another bank's months come in its own files, which only its bank names:
+// "tus movimientos de Davivienda de abril a junio" (11.3c).
+const otherBankText = (bankId: string, months: string): string => {
+  const bank =
+    bankId === "other" ? COPY.yourBank : labelOf(BANK_LABELS, bankId);
+  return `${COPY.toSee} ${COPY.yourMovements} ${bank} ${COPY.of} ${months}.`;
+};
+
 /**
  * "Te falta abril a junio" (docs/ui/v8-13): the months the account misses,
  * which files bring them, and the way to Subir, naming the one file when
- * there is one. `undefined` when it misses none.
+ * there is one; for another bank's account, its movements of those months.
+ * `undefined` when it misses none.
  */
 export const missingMonthsView = ({
   missing,
-}: Pick<AccountSummary, "missing">): MissingMonthsView | undefined => {
+  account,
+}: Pick<AccountSummary, "missing" | "account">):
+  MissingMonthsView | undefined => {
   if (!missing) return undefined;
   const { gaps, today, segments, sentence } = missing;
   const current = Number(today.slice(0, 4));
+  const months = joined(gaps.runs.flatMap((run) => runWords(run, current)));
   const [only] = gaps.files;
+  const shared = { title: `${COPY.title} ${months}`, segments };
+  if (isOtherBank(account.bankId))
+    return {
+      ...shared,
+      text: otherBankText(account.bankId, months),
+      action: PAGE_COPY.uploadAction,
+      timelineLabel: sentence,
+    };
   return {
-    title: `${COPY.title} ${joined(gaps.runs.flatMap((run) => runWords(run, current)))}`,
+    ...shared,
     text: `${COPY.toSee} ${filesText(gaps.files, current)}.`,
     action:
       gaps.files.length === 1 && only
         ? `${COPY.upload} ${fileWords(only, current)}`
         : PAGE_COPY.uploadAction,
-    segments,
     timelineLabel: sentence,
   };
 };

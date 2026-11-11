@@ -39,22 +39,40 @@ describe("previewTags", () => {
     to: "2026-09-30",
   });
 
+  const otherBank = (bankId: string) =>
+    ({
+      bankId,
+      formatId: "mapped-spreadsheet",
+      accountType: "savings",
+      period: SEPTEMBER,
+      periodSource: PERIOD_SOURCE.ROWS,
+      movementCount: 10,
+    }) as const;
+
   it.each([
     ["davivienda", "Davivienda"],
     ["other", "Otro banco"],
   ])(
     "names another bank's spreadsheet by the bank its mapping says: %s",
     (bankId, bank) => {
-      expect(
-        previewTags({
-          bankId,
-          formatId: "mapped-spreadsheet",
-          accountType: "savings",
-          period: SEPTEMBER,
-          periodSource: PERIOD_SOURCE.ROWS,
-          movementCount: 10,
-        }),
-      ).toEqual([bank, "Movimientos", "Excel", "1–30 sep 2026"]);
+      expect(previewTags(otherBank(bankId), "movimientos.xlsx")).toEqual([
+        bank,
+        "Movimientos",
+        "Excel",
+        "1–30 sep 2026",
+      ]);
+    },
+  );
+
+  it.each(["movimientos.csv", "MOVIMIENTOS.CSV"])(
+    "names a CSV by its name, since a spreadsheet's format reads either: %s",
+    (name) => {
+      expect(previewTags(otherBank("davivienda"), name)).toEqual([
+        "Davivienda",
+        "Movimientos",
+        "CSV",
+        "1–30 sep 2026",
+      ]);
     },
   );
 
@@ -66,44 +84,60 @@ describe("previewTags", () => {
 
   it("names a quarterly statement's bank, format, file type and months", () => {
     expect(
-      previewTags({
-        bankId: "bancolombia",
-        formatId: "bancolombia-savings-quarterly",
-        accountType: "savings",
-        accountLast4: "8901",
-        period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
-        periodSource: PERIOD_SOURCE.STATEMENT,
-        movementCount: 33,
-      }),
+      previewTags(
+        {
+          bankId: "bancolombia",
+          formatId: "bancolombia-savings-quarterly",
+          accountType: "savings",
+          accountLast4: "8901",
+          period: periodSchema.parse({ from: "2026-06-30", to: "2026-09-30" }),
+          periodSource: PERIOD_SOURCE.STATEMENT,
+          movementCount: 33,
+        },
+        "extracto.xlsx",
+      ),
     ).toEqual(["Bancolombia", "Extracto trimestral", "Excel", "jul–sep 2026"]);
   });
 
   it("names a movements export by the days of its movements", () => {
     expect(
-      previewTags({
-        bankId: "bancolombia",
-        formatId: "bancolombia-movements-export",
-        accountType: "savings",
-        period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-15" }),
-        periodSource: PERIOD_SOURCE.ROWS,
-        movementCount: 48,
-      }),
+      previewTags(
+        {
+          bankId: "bancolombia",
+          formatId: "bancolombia-movements-export",
+          accountType: "savings",
+          period: periodSchema.parse({ from: "2026-08-01", to: "2026-08-15" }),
+          periodSource: PERIOD_SOURCE.ROWS,
+          movementCount: 48,
+        },
+        "movimientos.xlsx",
+      ),
     ).toEqual(["Bancolombia", "Movimientos", "Excel", "1–15 ago 2026"]);
   });
 
-  it("names a PDF's file type", () => {
-    expect(
-      previewTags({
-        bankId: "bancolombia",
-        formatId: "bancolombia-movements-export-pdf",
-        accountType: "savings",
-        accountLast4: "8901",
-        period: periodSchema.parse({ from: "2026-10-01", to: "2026-10-07" }),
-        periodSource: PERIOD_SOURCE.ROWS,
-        movementCount: 17,
-      }),
-    ).toEqual(["Bancolombia", "Movimientos", "PDF", "1–7 oct 2026"]);
-  });
+  // The worker tells a PDF by its bytes, whatever its name says.
+  it.each(["movimientos.pdf", "movimientos.csv"])(
+    "names a PDF's file type: %s",
+    (name) => {
+      expect(
+        previewTags(
+          {
+            bankId: "bancolombia",
+            formatId: "bancolombia-movements-export-pdf",
+            accountType: "savings",
+            accountLast4: "8901",
+            period: periodSchema.parse({
+              from: "2026-10-01",
+              to: "2026-10-07",
+            }),
+            periodSource: PERIOD_SOURCE.ROWS,
+            movementCount: 17,
+          },
+          name,
+        ),
+      ).toEqual(["Bancolombia", "Movimientos", "PDF", "1–7 oct 2026"]);
+    },
+  );
 });
 
 describe("fileRowView", () => {
@@ -273,6 +307,7 @@ describe("a sent file's job", () => {
   const outcomeIn = (period: Period): JobOutcome => ({
     statementId: "s1",
     accountId: "a1",
+    bankId: "bancolombia",
     stats: {
       total: 1,
       added: 1,

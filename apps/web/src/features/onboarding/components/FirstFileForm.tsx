@@ -1,4 +1,11 @@
-import { Check, FileSpreadsheet, List, UserRound } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  FileSpreadsheet,
+  Landmark,
+  List,
+  UserRound,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Form from "next/form";
 import Link from "next/link";
@@ -6,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  BANK_PARAM,
+  FIRST_BANK,
   FIRST_FILE,
   FIRST_FILE_COPY as COPY,
   FIRST_FILE_PARAM,
@@ -15,6 +24,8 @@ import type { FirstFile } from "../onboarding.schemas";
 // One per page, so plain ids name the choice.
 const TITLE_ID = "first-file-title";
 const SUBTITLE_ID = "first-file-subtitle";
+const BANK_FIELD_ID = "first-file-bank";
+const BANK_HINT_ID = "first-file-bank-hint";
 
 const OPTIONS = [
   { value: FIRST_FILE.QUARTERLY, icon: FileSpreadsheet, ...COPY.quarterly },
@@ -70,10 +81,47 @@ function FirstFileOption({
   );
 }
 
+// Whose files: Bancolombia's, or another bank's, whose columns the person
+// confirms the first time (11.3c). A native select drawn as a white pill.
+function BankField() {
+  const { bank } = COPY;
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={BANK_FIELD_ID} className="text-body font-bold">
+        {bank.label}
+      </label>
+      <div className="relative">
+        <Landmark
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2"
+        />
+        <select
+          id={BANK_FIELD_ID}
+          name={BANK_PARAM}
+          defaultValue={FIRST_BANK.BANCOLOMBIA}
+          aria-describedby={BANK_HINT_ID}
+          className="h-12 w-full appearance-none rounded-full bg-surface pr-11 pl-11 text-body text-ink shadow-chip"
+        >
+          <option value={FIRST_BANK.BANCOLOMBIA}>{bank.bancolombia}</option>
+          <option value={FIRST_BANK.OTHER}>{bank.other}</option>
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 right-4 size-[18px] -translate-y-1/2 text-ink-muted"
+        />
+      </div>
+      <p id={BANK_HINT_ID} className="text-caption text-ink-muted">
+        {bank.hint}
+      </p>
+    </div>
+  );
+}
+
 /**
- * docs/ui/v8-16 without the credit card and other banks: the two files, the
- * quarterly statement first and chosen. A GET form, so the choice goes to the last step in its
- * URL, which puts that file's guide first; nothing is stored.
+ * docs/ui/v8-16 without the credit card: the two files, the quarterly
+ * statement first and chosen, and the bank, Bancolombia unless another. A
+ * GET form, so both go to the last step in its URL, which puts that file's
+ * guide first, or another bank's; nothing is stored.
  */
 export function FirstFileForm() {
   return (
@@ -99,6 +147,7 @@ export function FirstFileForm() {
             <FirstFileOption key={option.value} {...option} />
           ))}
         </fieldset>
+        <BankField />
         <FormFooter />
       </Form>
     </Card>

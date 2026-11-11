@@ -22,9 +22,18 @@ describe("joinedFilesText", () => {
   ])(
     "names the files it joined: $files.quarterly and $files.movements",
     ({ files, text }) => {
-      expect(joinedFilesText(files)).toBe(text);
+      expect(joinedFilesText(files, "bancolombia")).toBe(text);
     },
   );
+
+  it("names another bank's files with balances by what they are", () => {
+    expect(joinedFilesText({ quarterly: 1, movements: 2 }, "davivienda")).toBe(
+      "Juntamos tu archivo con saldos y 2 archivos de movimientos, sin duplicar.",
+    );
+    expect(joinedFilesText({ quarterly: 2, movements: 1 }, "other")).toBe(
+      "Juntamos 2 archivos con saldos y 1 archivo de movimientos, sin duplicar.",
+    );
+  });
 
   it.each([
     { quarterly: 0, movements: 0 },
@@ -32,9 +41,9 @@ describe("joinedFilesText", () => {
     { quarterly: 0, movements: 1 },
     { quarterly: 2, movements: 0 },
   ])(
-    "says nothing with one file, or quarterly statements alone: $quarterly and $movements",
+    "says nothing with one file, or files with balances alone: $quarterly and $movements",
     (files) => {
-      expect(joinedFilesText(files)).toBeUndefined();
+      expect(joinedFilesText(files, "bancolombia")).toBeUndefined();
     },
   );
 });

@@ -274,8 +274,9 @@ export type JobOutcome = {
   readonly stats: IngestionStats;
   /** The statement it saved, or the one that already held its movements. */
   readonly statementId: string;
-  /** The account its statement was saved to. */
+  /** The account its statement was saved to, and its bank. */
   readonly accountId: string;
+  readonly bankId: string;
   readonly period: Period;
   readonly balance: StatementBalance;
   /** When it doesn't reconcile: the closing difference. */

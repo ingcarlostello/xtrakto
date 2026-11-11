@@ -32,6 +32,7 @@ const done = (
     },
     statementId: `s-${jobId}`,
     accountId: "a1",
+    bankId: "bancolombia",
     balance: "none",
     matches: { matched: 0, dayApart: 0, references: 0, verifiedBy: [] },
     ...outcome,

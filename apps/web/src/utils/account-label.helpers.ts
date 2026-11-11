@@ -2,7 +2,16 @@ import {
   ACCOUNT_TYPE_LABELS,
   BANK_LABELS,
   MASKED_DIGITS,
+  PARSED_BANK_ID,
 } from "./account-label.constants";
+
+/**
+ * Whether an account is another bank's than the one whose formats the parsers
+ * read (11.3c): its files are no quarterly statements or movements exports,
+ * but spreadsheets with balances or without them.
+ */
+export const isOtherBank = (bankId: string): boolean =>
+  bankId !== PARSED_BANK_ID;
 
 type Labels = Readonly<Partial<Record<string, string>>>;
 type AccountKind = { readonly bankId: string; readonly accountType: string };

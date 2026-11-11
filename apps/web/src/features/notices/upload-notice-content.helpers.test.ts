@@ -68,6 +68,7 @@ describe("statementsBrought", () => {
   const statement = (id: string, to: string) => ({
     id,
     accountId: "a1",
+    bankId: "bancolombia",
     period: periodSchema.parse({ from: "2026-01-01", to }),
     balance: "none" as const,
     differenceMinor: null,

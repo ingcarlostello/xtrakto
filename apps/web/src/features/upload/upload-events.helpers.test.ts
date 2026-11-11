@@ -121,7 +121,7 @@ describe("queueEvents", () => {
   it("tells a file the browser's checks refused, by which check", () => {
     const added = step([], {
       type: "added",
-      files: [{ id: "c", file: new File([], "movimientos.csv") }],
+      files: [{ id: "c", file: new File([], "movimientos.docx") }],
     });
 
     expect(queueEvents([], added)).toEqual([

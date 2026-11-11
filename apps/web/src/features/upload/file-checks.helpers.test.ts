@@ -11,15 +11,20 @@ const fileOf = (name: string, size = 12_000, lastModified = 1) => {
 };
 
 describe("fileProblem", () => {
-  it.each(["extracto.xlsx", "EXTRACTO.XLSX", "extracto.pdf", "Extracto.PDF"])(
-    "accepts %s",
-    (name) => {
-      expect(fileProblem(fileOf(name), [])).toBeUndefined();
-    },
-  );
+  it.each([
+    "extracto.xlsx",
+    "EXTRACTO.XLSX",
+    "extracto.pdf",
+    "Extracto.PDF",
+    // Another bank's spreadsheet (11.3c).
+    "movimientos.csv",
+    "extracto.xls",
+  ])("accepts %s", (name) => {
+    expect(fileProblem(fileOf(name), [])).toBeUndefined();
+  });
 
-  it.each(["movimientos.csv", "extracto.xls", "extracto.pdf.zip", "extracto"])(
-    "refuses %s, which isn't an XLSX or a PDF",
+  it.each(["extracto.docx", "extracto.ods", "extracto.pdf.zip", "extracto"])(
+    "refuses %s, which isn't an Excel, a CSV or a PDF",
     (name) => {
       expect(fileProblem(fileOf(name), [])).toEqual({
         code: APP_ERROR_CODE.UNKNOWN_FORMAT,

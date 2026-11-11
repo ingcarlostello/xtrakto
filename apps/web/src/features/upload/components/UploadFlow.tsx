@@ -167,7 +167,7 @@ function SentFile({ name, preview, job }: SentFileProps) {
     <UploadResult
       name={name}
       kind={jobFileKind(job)}
-      tags={preview ? previewTags(preview) : []}
+      tags={preview ? previewTags(preview, name) : []}
       view={resultView(job, job.outcome, preview?.pdf)}
     />
   ) : (

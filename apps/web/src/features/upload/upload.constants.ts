@@ -17,8 +17,11 @@ export const MAX_PARALLEL_EXTRACTIONS = 3;
 /** The largest file accepted, as the free tier allows (roadmap §2). */
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-/** The file types read: the bank's Excel export and its PDF. */
-export const ACCEPTED_EXTENSIONS = [".xlsx", ".pdf"] as const;
+/**
+ * The file types read: Bancolombia's Excel and PDF, and another bank's
+ * spreadsheet, as Excel (also 97–2003) or CSV (Stage 11).
+ */
+export const ACCEPTED_EXTENSIONS = [".xlsx", ".xls", ".csv", ".pdf"] as const;
 
 /**
  * Most bytes of minimized content one file may send, as JSON: under the
@@ -132,7 +135,7 @@ export const FORMAT_BANKS = {
 export const UPLOAD_COPY = {
   title: "Subir extracto",
   subtitle:
-    "Trimestral o movimientos del mes de tu cuenta de ahorros Bancolombia, en Excel o PDF.",
+    "Trimestral o movimientos de tu cuenta de ahorros: de Bancolombia en Excel o PDF, de otro banco en Excel o CSV.",
   chooseTitle: "Elige uno o varios archivos",
   chooseDescription:
     "Del banco tal como los descargaste. No tienes que editarlos ni renombrarlos.",
@@ -201,6 +204,12 @@ export const FORMATS_COPY = {
     detail:
       "Sin saldos, pero con referencias (Nequi, PSE). Puedes bajar varios rangos del mismo mes: no se duplican.",
   },
+  // Stage 11: a spreadsheet no parser knows, read once the person confirms it.
+  otherBank: {
+    title: "¿Otro banco?",
+    detail:
+      "Súbelo igual. Te mostramos qué entendimos de cada columna y lo confirmas una vez.",
+  },
 } as const;
 
 // Exactly what leaves the browser (ADR 0017) and what is kept of it.
@@ -225,19 +234,25 @@ export const PRIVACY_COPY = {
     detail:
       "Una referencia, como el celular de un Nequi, queda como un código que no se puede revertir y sus últimos 4 dígitos. El número se borra al terminar de procesar el archivo.",
   },
+  // ADR 0038: what the LLM sees of another bank's spreadsheet.
+  otherBank: {
+    title: "De otro banco, la IA solo ve sus columnas",
+    detail:
+      "Sus nombres y la forma de cada dato, como «99/99/9999» en vez de una fecha. Nunca tus movimientos.",
+  },
   deletion: {
     title: "Borras todo cuando quieras",
     detail: "Desde tu perfil, en un paso.",
   },
 } as const;
 
-// The bank's own download paths (docs/ui/v8-12).
+// The bank's own download paths (docs/ui/v8-12), and another bank's files.
 export const HOW_IT_WORKS_COPY = {
   title: "Así funciona",
   download: {
-    title: "Descárgalo en Excel o PDF de la Sucursal Virtual",
+    title: "Descárgalo de tu banco",
     detail:
-      "Documentos → Extractos (trimestral) o Movimientos: Cuentas (del mes).",
+      "De Bancolombia, en Excel o PDF: Documentos → Extractos (trimestral) o Movimientos: Cuentas (del mes). De otro banco, tus movimientos en Excel o CSV.",
   },
   upload: {
     title: "Súbelos todos juntos en Subir",
@@ -248,9 +263,9 @@ export const HOW_IT_WORKS_COPY = {
 // What happened and what to do, without apologizing (design-system.md §11).
 export const PROBLEM_COPY = {
   wrongType: {
-    title: "Este archivo no es un Excel ni un PDF",
+    title: "Este archivo no es un Excel, un CSV ni un PDF",
     detail:
-      "Descárgalo del banco en Excel (.xlsx) o en PDF, los formatos que leemos.",
+      "Descárgalo del banco en Excel, CSV o PDF, los formatos que leemos.",
   },
   tooHeavy: {
     title: "Pesa más de 10 MB",
@@ -264,7 +279,7 @@ export const PROBLEM_COPY = {
   notAStatement: {
     title: "No pudimos leer este archivo",
     detail:
-      "No parece un extracto de Bancolombia. Revisa que sea el Excel o PDF que descargaste del banco, sin editar.",
+      "No encontramos una tabla de movimientos que sepamos leer. De Bancolombia leemos Excel y PDF; de otro banco, Excel y CSV, sin editar.",
   },
   incomplete: {
     title: "No pudimos leer este extracto completo",

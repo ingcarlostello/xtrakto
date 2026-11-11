@@ -49,6 +49,7 @@ const doneJob = (
   stats: { total: 3, added: 3 },
   statement: {
     accountId: "a1",
+    bankId: "davivienda",
     balance: "none",
     differenceMinor: null,
     chainedTo: null,
@@ -100,6 +101,7 @@ describe("listUploadJobs", () => {
           stats: { ...ALL_COUNTS, total: 3, added: 3 },
           statementId: "s1",
           accountId: "a1",
+          bankId: "davivienda",
           period: AUGUST_1_TO_15,
           balance: "none",
           matches: MATCHES,
@@ -207,6 +209,7 @@ describe("listUploadedFiles", () => {
           stats: { ...ALL_COUNTS, total: 3, added: 3 },
           statementId: "s1",
           accountId: "a1",
+          bankId: "davivienda",
           period: QUARTER,
           balance: "verified",
           chainedTo: PREVIOUS,

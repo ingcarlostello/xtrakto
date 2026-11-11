@@ -33,7 +33,7 @@ export function YourData({ files, coverage }: YourDataProps) {
           <CoverageTimeline segments={view.segments} label={view.sentence} />
         </div>
       ))}
-      {coverage.length > 0 && <CoverageLegend />}
+      {coverage.length > 0 && <CoverageLegend views={coverage} />}
     </Card>
   );
 }

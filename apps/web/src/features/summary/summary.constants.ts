@@ -19,6 +19,10 @@ export const SUMMARY_COPY = {
     },
     movements: "los movimientos de",
     upload: "Subir",
+    // Another bank's months (11.3c): "sube tus movimientos de Davivienda de
+    // abril a junio", or "de tu banco" when the person chose "Otro".
+    yourMovements: "tus movimientos de",
+    yourBank: "tu banco",
   },
   glanceTitle: {
     quarter: "Tu trimestre de un vistazo",

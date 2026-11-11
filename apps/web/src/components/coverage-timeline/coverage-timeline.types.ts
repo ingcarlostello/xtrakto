@@ -18,6 +18,8 @@ export type CoverageView = {
   readonly accountId: string;
   /** Its short label, when the user has several accounts with months. */
   readonly accountLabel?: string;
+  /** Another bank's: a spreadsheet with balances verifies its months (11.3c). */
+  readonly isOtherBank: boolean;
   readonly segments: readonly CoverageSegment[];
   /** What the segments show, in words. */
   readonly sentence: string;

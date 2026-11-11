@@ -262,7 +262,7 @@ describe("useUploadQueue", () => {
   it("never reads a file that fails the checks", () => {
     const statement = fileNamed("extracto.xlsx");
 
-    add(fileNamed("movimientos.csv"), statement, statement);
+    add(fileNamed("movimientos.docx"), statement, statement);
 
     expect(queue.items).toMatchObject([
       {

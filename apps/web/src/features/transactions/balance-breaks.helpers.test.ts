@@ -36,6 +36,7 @@ const breaks = (breakPositions: number[]): StatementBreaks => ({
   statement: {
     id: "s1",
     accountId: "a1",
+    bankId: "bancolombia",
     period: QUARTER,
     differenceMinor: amount(-50_000),
     openingBalanceMinor: amount(1_100_000),
@@ -115,16 +116,41 @@ describe("texts", () => {
   });
 
   it("names the statement and warns that its movements don't count", () => {
-    expect(statementName(QUARTER)).toBe("Extracto trimestral jul–sep 2026");
+    expect(statementName({ period: QUARTER, bankId: "bancolombia" })).toBe(
+      "Extracto trimestral jul–sep 2026",
+    );
     expect(
       unreconciledText({
         id: "s1",
         accountId: "a1",
+        bankId: "bancolombia",
         period: QUARTER,
         differenceMinor: amount(-81_000),
       }),
     ).toBe(
       "Tu extracto trimestral jul–sep 2026 no cuadra por $810: sus movimientos no se cuentan aquí.",
+    );
+  });
+
+  it("names another bank's file with balances by what it is", () => {
+    const september = periodSchema.parse({
+      from: "2026-08-31",
+      to: "2026-09-30",
+    });
+
+    expect(statementName({ period: september, bankId: "davivienda" })).toBe(
+      "Archivo con saldos de sep 2026",
+    );
+    expect(
+      unreconciledText({
+        id: "s1",
+        accountId: "a1",
+        bankId: "davivienda",
+        period: september,
+        differenceMinor: null,
+      }),
+    ).toBe(
+      "Tu archivo con saldos de sep 2026 no cuadra: sus movimientos no se cuentan aquí.",
     );
   });
 });

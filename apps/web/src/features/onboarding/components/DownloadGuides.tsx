@@ -1,8 +1,12 @@
-import { FileSpreadsheet, List } from "lucide-react";
+import { FileSpreadsheet, Globe, List } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { DOWNLOAD_COPY as COPY, FIRST_FILE } from "../onboarding.constants";
-import type { FirstFile } from "../onboarding.schemas";
+import {
+  DOWNLOAD_COPY as COPY,
+  FIRST_BANK,
+  FIRST_FILE,
+} from "../onboarding.constants";
+import type { FirstBank, FirstFile } from "../onboarding.schemas";
 
 type GuideStep = { readonly title: string; readonly detail?: string };
 
@@ -14,6 +18,21 @@ type GuideProps = {
 
 const QUARTERLY = { icon: FileSpreadsheet, ...COPY.quarterly };
 const MOVEMENTS = { icon: List, ...COPY.movements };
+const OTHER_BANK = { icon: Globe, ...COPY.otherBank.guide };
+
+// What the step says and which guides it shows: Bancolombia's two files, the
+// one chosen first on top, or another bank's (11.3c).
+const contentOf = (first: FirstFile, bank: FirstBank) => {
+  if (bank === FIRST_BANK.OTHER) {
+    const { title, subtitle } = COPY.otherBank;
+    return { title, subtitle, guides: [OTHER_BANK] };
+  }
+  const guides =
+    first === FIRST_FILE.MOVEMENTS
+      ? [MOVEMENTS, QUARTERLY]
+      : [QUARTERLY, MOVEMENTS];
+  return { title: COPY.title, subtitle: COPY.subtitle[first], guides };
+};
 
 // The bank's own path to one file, step by step.
 function Guide({ icon: Icon, title, steps }: GuideProps) {
@@ -45,21 +64,25 @@ function Guide({ icon: Icon, title, steps }: GuideProps) {
   );
 }
 
-/** docs/ui/v8-17: where to get each file, the one chosen first on top. */
-export function DownloadGuides({ first }: { first: FirstFile }) {
-  const guides =
-    first === FIRST_FILE.MOVEMENTS
-      ? [MOVEMENTS, QUARTERLY]
-      : [QUARTERLY, MOVEMENTS];
+/**
+ * docs/ui/v8-17: where to get each file, the one chosen first on top; or,
+ * for another bank, what to download from it.
+ */
+export function DownloadGuides({
+  first,
+  bank,
+}: {
+  first: FirstFile;
+  bank: FirstBank;
+}) {
+  const { title, subtitle, guides } = contentOf(first, bank);
   return (
     <Card variant="card" className="gap-5 sm:p-8">
       <div className="flex flex-col gap-1">
         <h1 className="font-display text-title font-medium text-balance">
-          {COPY.title}
+          {title}
         </h1>
-        <p className="text-body text-pretty text-ink-muted">
-          {COPY.subtitle[first]}
-        </p>
+        <p className="text-body text-pretty text-ink-muted">{subtitle}</p>
       </div>
       {guides.map((guide) => (
         <Guide key={guide.title} {...guide} />

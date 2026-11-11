@@ -6,6 +6,13 @@ import type { FormatId, MAPPED_FORMAT_ID } from "@xtrakto/parsers";
 // (Stage 11), whose bank its mapping says.
 type LabeledFormat = FormatId | typeof MAPPED_FORMAT_ID;
 
+/**
+ * Another bank's spreadsheet's format, as the parsers name it: here, so code
+ * the browser runs doesn't load the parsers to compare with it.
+ */
+export const MAPPED_FORMAT =
+  "mapped-spreadsheet" satisfies typeof MAPPED_FORMAT_ID;
+
 // Keyed by the parsers' format ids: the build fails if a format has no label.
 export const FORMAT_LABELS = {
   "bancolombia-savings-quarterly": "Extracto trimestral",
@@ -16,7 +23,7 @@ export const FORMAT_LABELS = {
 } as const satisfies Record<LabeledFormat, string>;
 
 /** The files statements come in, as their tags say it. */
-export const FILE_TYPE = { EXCEL: "Excel", PDF: "PDF" } as const;
+export const FILE_TYPE = { EXCEL: "Excel", PDF: "PDF", CSV: "CSV" } as const;
 
 // The file each format comes in, as its tags and "Archivos subidos" say it.
 export const FORMAT_FILE_TYPES = {

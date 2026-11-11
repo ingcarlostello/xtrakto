@@ -261,7 +261,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.2b The mapping proposal
 - [x] 11.3a Confirm how to read it
 - [x] 11.3b Correct the columns
-- [ ] 11.3c Other banks across the app
+- [x] 11.3c Other banks across the app
 - [ ] 11.4 The agent: repair and retry before asking
 - [ ] 11.5 Agent evals
 
@@ -2335,7 +2335,13 @@ It came out at about 860 lines of code added and 330 deleted, in four commits of
 
 **Done when:** every screen reads right with an account of another bank beside a Bancolombia one, at 390px and 360px and with the keyboard.
 
-**Commits:** `docs(rules): other banks across the app`, then `feat(web): other banks across the app`
+Decided with the human when it started (2026-11-11): one phase, though estimated at 600 to 800 lines; "Archivos subidos" names another bank's file by its account's bank instead of its type, since the server only gets what was read and can't tell an Excel from a CSV; and the words a Bancolombia account's files gave beyond the tasks go too: Movimientos's "Juntamos tu extracto trimestral…", the summary's missing months and the monthly email, which name Bancolombia's files, and "Ver dónde no cuadra", which titles its statement "Extracto trimestral".
+
+Found while building it (2026-11-11): what verifies another bank's file without balances is one of its files with balances, so each "tu extracto trimestral" reads "tu archivo con saldos" for its account, and the coverage legend's first words follow the accounts shown ("Archivo con saldos, verificado", or "Extracto trimestral o archivo con saldos, verificado" beside a Bancolombia one). The profile counts another bank's files apart ("y 2 de otros bancos"), since their kinds aren't Bancolombia's. The summary asks another bank's account for its movements of the months missing, by its bank's name, while the monthly email, which never carries a bank's name, asks for "tus movimientos de octubre". The welcome's bank travels in the URL with the file. A CSV's tag read "Excel" while the page held it, found in the browser: a spreadsheet's tag now follows its name.
+
+It came out at about 460 lines of code added and 135 deleted, without tests, comments or blank lines (600 to 800 estimated), in commits of one pull request: the design rules, the upload screen and the welcome, another bank's account across the app, where the database's change alone fails the app's type check, and the documents.
+
+**Commits:** `docs(rules): other banks across the app`, `feat(web): other banks on the upload screen and in the welcome`, `feat: another bank's account across the app`, then `docs: other banks across the app`
 
 #### 11.4 The agent: repair and retry before asking
 

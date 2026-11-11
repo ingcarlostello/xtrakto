@@ -26,6 +26,9 @@ export const COVERAGE_COPY = {
   },
   legend: {
     verified: "Extracto trimestral, verificado",
+    // Another bank's months (11.3c), and both banks' together.
+    verifiedByBalances: "Archivo con saldos, verificado",
+    verifiedEither: "Extracto trimestral o archivo con saldos, verificado",
     alsoInMovements:
       "También en movimientos (rangos que se cruzan, sin duplicar)",
     unverified: "Sin saldo para verificar",

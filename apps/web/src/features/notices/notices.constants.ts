@@ -93,6 +93,8 @@ export const MONTHLY_EMAIL_COPY = {
     title: "Te falta parte de",
     toSee: "Para ver el mes completo, sube",
   },
+  // With an account of another bank (11.3c): "tus movimientos de octubre".
+  yourMovements: "tus movimientos de",
   footer:
     "Te escribimos porque activaste el resumen del mes en Xtrakto. Este correo no incluye montos ni datos de tus movimientos.",
 } as const;

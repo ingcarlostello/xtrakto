@@ -1,5 +1,6 @@
 import type { Period } from "@xtrakto/core";
 import { and, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { accounts } from "../accounts/account.schemas";
 import { countingStatement } from "../coverage/coverage.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -52,29 +53,46 @@ export const countPeriodFiles = async (
   return { quarterly: row?.quarterly ?? 0, movements: row?.movements ?? 0 };
 };
 
-/** The files the user keeps, of every account (10.2a). */
-export type UserFiles = PeriodFiles;
+/** The files the user keeps of one bank's accounts (10.2a, 11.3c). */
+export type BankFiles = {
+  readonly bankId: string;
+  /** Those that print balances, such as a quarterly statement. */
+  readonly withBalances: number;
+  readonly withoutBalances: number;
+};
+
+/** The files the user keeps, of every account, by bank (10.2a, 11.3c). */
+export type UserFiles = readonly BankFiles[];
 
 /**
- * How many statements the user keeps, of each kind: every file saved, also
- * one that doesn't reconcile or whose movements another saved before.
+ * How many statements the user keeps of each bank's accounts, with balances
+ * and without them: every file saved, also one that doesn't reconcile or
+ * whose movements another saved before. A bank without files isn't listed.
  */
 export const countUserFiles = async ({
   tx,
   userId,
-}: UserContext): Promise<UserFiles> => {
-  const [row] = await tx
+}: UserContext): Promise<UserFiles> =>
+  tx
     .select({
-      quarterly:
+      bankId: accounts.bankId,
+      withBalances:
         sql<number>`count(*) filter (where ${isNotNull(statements.openingBalanceMinor)})`.mapWith(
           Number,
         ),
-      movements:
+      withoutBalances:
         sql<number>`count(*) filter (where ${isNull(statements.openingBalanceMinor)})`.mapWith(
           Number,
         ),
     })
     .from(statements)
-    .where(eq(statements.userId, userId));
-  return { quarterly: row?.quarterly ?? 0, movements: row?.movements ?? 0 };
-};
+    .innerJoin(
+      accounts,
+      and(
+        eq(accounts.id, statements.accountId),
+        eq(accounts.userId, statements.userId),
+      ),
+    )
+    .where(eq(statements.userId, userId))
+    .groupBy(accounts.bankId)
+    .orderBy(accounts.bankId);

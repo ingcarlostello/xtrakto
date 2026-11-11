@@ -3,6 +3,7 @@ import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
 import {
   findClerkUserId,
   listAccountCoverage,
+  listAccounts,
   listMonthlySummaryUserIds,
   readNoticePreferences,
   toUserId,
@@ -18,6 +19,7 @@ import { sendEmail } from "@/lib/email";
 import { getServerEnv } from "@/lib/env";
 import { EXAMPLE_CLERK_USER_ID } from "@/lib/example-mode";
 import { inngest, monthlySummaryDue } from "@/lib/inngest";
+import { isOtherBank } from "@/utils/account-label.helpers";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { monthlySummaryEmail } from "./monthly-summary-email.helpers";
 import { monthlyStatusOf, monthThatEnded } from "./monthly-summary.helpers";
@@ -71,13 +73,16 @@ export const sendMonthlySummary = (
   monthParam: string,
 ): Promise<NoticeOutcome> =>
   withSanitizedErrors("MONTHLY_SUMMARY_NOT_SENT", async () => {
-    const { isOn, clerkUserId, accounts } = await withUserContext(
+    const { isOn, clerkUserId, accounts, hasOtherBank } = await withUserContext(
       getDb(),
       toUserId(userId),
       async (ctx) => ({
         isOn: (await readNoticePreferences(ctx)).monthlySummary,
         clerkUserId: await findClerkUserId(ctx),
         accounts: await listAccountCoverage(ctx),
+        hasOtherBank: (await listAccounts(ctx)).some(({ bankId }) =>
+          isOtherBank(bankId),
+        ),
       }),
     );
     if (!isOn) return notSent("NOTICE_OFF");
@@ -92,7 +97,7 @@ export const sendMonthlySummary = (
     const sent = await sendEmail({
       to: address,
       ...monthlySummaryEmail(
-        monthlyStatusOf(accounts, month),
+        { status: monthlyStatusOf(accounts, month), hasOtherBank },
         month,
         urlOf(UNSUBSCRIBE_ROUTES.confirm, token),
       ),

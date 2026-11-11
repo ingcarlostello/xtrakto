@@ -14,7 +14,7 @@ import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { coverageViews } from "./coverage-timeline.helpers";
 import type { CoverageView } from "./coverage-timeline.types";
 
-const NO_FILES: UserFiles = { quarterly: 0, movements: 0 };
+const NO_FILES: UserFiles = [];
 
 // The user's accounts with months, through today's month in Bogotá.
 const readCoverage = async (ctx: UserContext): Promise<CoverageView[]> =>
