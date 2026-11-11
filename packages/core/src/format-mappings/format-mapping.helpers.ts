@@ -53,7 +53,14 @@ const readsMoneyOneWay = (columns: readonly ColumnRole[]): boolean =>
     MONEY_ROLES.every((role) => countOf(columns, role) === way[role]),
   );
 
-const rolesProblem = (columns: readonly ColumnRole[]): string | undefined => {
+/**
+ * Why a table's roles can't read its movements, whatever its header, or
+ * undefined when they can: one date and one description, at most one
+ * balance and one reference, and money read one way.
+ */
+export const columnRolesProblem = (
+  columns: readonly ColumnRole[],
+): string | undefined => {
   if (countOf(columns, DATE) !== 1) return "one date column";
   if (countOf(columns, DESCRIPTION) !== 1) return "one description column";
   if (countOf(columns, BALANCE) > 1) return "one balance column at most";
@@ -82,5 +89,5 @@ const wordsProblem = ({
  */
 export const mappingProblem = (mapping: MappingColumns): string | undefined =>
   mapping.columns.length === mapping.header.length
-    ? (rolesProblem(mapping.columns) ?? wordsProblem(mapping))
+    ? (columnRolesProblem(mapping.columns) ?? wordsProblem(mapping))
     : "a role for each column";
