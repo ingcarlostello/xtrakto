@@ -1680,3 +1680,28 @@ Checked: nine deliberate bugs, one at a time, each failing a test, once the fing
 - **A confirmed mapping is always its person's,** also when it's shared, so their latest confirmation reads their files first.
 - **The privacy page** says nothing of mappings yet: 11.3a, which lets people confirm one, adds them with what DeepSeek receives.
 - **A shared mapping that reads the wrong description column** reaches everyone with its format: the balances prove only the amounts (ADR 0037). Changing one takes the owner role.
+
+## 11.2a Invented formats to evaluate with
+
+_2026-11-11_
+
+The mapping proposal of 11.2b gets a set to be measured on: 48 invented banks' spreadsheets, each with the mapping a person would confirm for it. One lists its movements newest first under the bank's and the holder's names, writes "15/03/2026" and "-85.400,00" and ends with its totals; another names its columns "Date", "Debit" and "Credit". No LLM is called yet: 11.2b proposes, and its eval runs on this set.
+
+- **The set** (`FORMAT_MAPPING_CASES`, `@xtrakto/evals`): 40 layouts from a seeded generator, each feature cycling at a pace of its own: how money is written (a signed amount, money out and in, an amount with its direction); eight ways of writing dates (day first with slashes, dashes, a time, a two-digit year or the month's name, month first, year first, and Excel's date cells) and four of writing amounts (a decimal comma, a point, a peso sign, number cells); title rows, totals under the table, a "SALDO ANTERIOR" row, newest or oldest first, 0 on the empty side, no balances, and a second date, a reference and a branch; the header's names drawn from several wordings. And 8 written by hand to be hard: names in English, cut short or in two languages, an amount beside a fee, two balances, a direction spelled out, nine columns.
+- **Each case** is a month of invented movements from a seed of its own: 10 to 22, the last on the 28th, an income now and then, a balance that never goes below zero, a phone as a transfer's reference and a code as a PSE payment's. Its expected mapping takes the header `findTable` finds, so the set also checks `findTable` on 48 layouts.
+- **The metrics** (`scoreMappings`): the files whose every column's role is right; the files whose proposal reads every movement and, with balances, reconciles; and each role's share of the columns that hold it. A file without an answer counts in every whole and is right in none. `mappingReport` gives figures only.
+- **A newest-first file's balance rows** are read from the bottom up (`fix(parsers)`): such a file prints its "SALDO ANTERIOR" at its foot, which 11.1a's parser read as the closing balance. The set's newest-first layouts with an opening row found it.
+
+108 new tests: 107 in evals (120 there) and 1 in parsers (481 there):
+
+- evals: every case's header where the set wrote it, and every movement read with its expected mapping, without warnings, reconciling where it has balances; each layout's features in its file (title rows, totals, the opening row, newest first) and 0 on the empty side where a layout says so; the same set on every run, with every way of writing money, dates and numbers; the holder's name only above the table; and the metrics against hand-computed figures: an exact proposal, money out and in swapped with and without balances, a proposal that reads part of its file or none of it, no answer, and the report's lines, each role worst first;
+- parsers: a newest-first file's closing row first and its opening row last.
+
+Checked: fourteen deliberate bugs, one at a time, each failing a test.
+
+**Deviations and follow-ups:**
+
+- **Size:** about 760 lines of code, without tests, comments or blank lines, past the 400 a phase should hold and the 720 planned for the whole of 11.2: about 620 are the generator, which writes the invented files as 11.1a's fixture script writes its fixtures, and 140 the metrics and their types. Besides 20 added and 13 deleted in the parser's fix. It lands in three commits of one pull request.
+- **`@xtrakto/evals` depends on `@xtrakto/parsers`,** besides `@xtrakto/core`: its metrics read a proposal as the server reads a confirmed mapping. No package depends on evals, so there's no cycle.
+- **No thresholds yet:** they're set with the human from 11.2b's first run, as planned.
+- **Invented, not real:** no real bank's layout is in the set; the human's read of a real export from another bank comes in 11.3a.
