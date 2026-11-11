@@ -29,13 +29,18 @@ const directionWordsSchema = z.strictObject({
     .max(MAX_DIRECTION_WORDS),
 });
 
+/**
+ * The names of a table's header, as `findTable` normalizes them: the
+ * format's fingerprint. A column without a name has an empty one.
+ */
+export const formatHeaderSchema = z
+  .array(z.string().max(MAX_TEXT_LENGTH))
+  .min(1)
+  .max(MAX_ROW_CELLS);
+
 export const formatMappingSchema = z
   .strictObject({
-    /**
-     * The names of the table's header, as `findTable` normalizes them: the
-     * format's fingerprint. A column without a name has an empty one.
-     */
-    header: z.array(z.string().max(MAX_TEXT_LENGTH)).min(1).max(MAX_ROW_CELLS),
+    header: formatHeaderSchema,
     /** The role of each of the header's columns, in order. */
     columns: z.array(z.enum(COLUMN_ROLE)).max(MAX_ROW_CELLS),
     /** How its dates write their parts; a date cell reads as the day it shows. */
