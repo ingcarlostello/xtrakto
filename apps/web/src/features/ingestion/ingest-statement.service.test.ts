@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import {
   type ExtractedContent,
   extractedContentSchema,
+  type FormatMapping,
+  formatMappingSchema,
   type ParsedStatement,
 } from "@xtrakto/core";
 import {
@@ -16,13 +18,15 @@ import {
   listTransactions,
   type NewIngestionJob,
   resolveIdentifiedAccount,
+  saveOwnFormatMapping,
   saveStatement,
   saveUserCategoryRule,
+  shareFormatMapping,
   type UserId,
   withUserContext,
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
-import { findParser } from "@xtrakto/parsers";
+import { findParser, MAPPED_FORMAT_ID, mappingParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   claimJob,
@@ -95,6 +99,21 @@ const JULY_EXPORT = fixture("movements-overlap");
 const JULY_EXPORT_PDF = fixture("movements-overlap-pdf");
 const OCTOBER_EXPORT = fixture("movements-basic");
 const OCTOBER_EXPORT_PDF = fixture("movements-basic-pdf");
+// v8-14's invented "Banco Horizonte", minimized with the mapping the person
+// confirmed for it (Phase 11.1a's fixture).
+const OUT_AND_IN: FormatMapping = formatMappingSchema.parse({
+  header: ["FECHA TRANS", "DETALLE", "OFICINA", "DEBITOS", "CREDITOS", "SALDO"],
+  columns: ["date", "description", "none", "money_out", "money_in", "balance"],
+  dateOrder: "dmy",
+  decimalSeparator: ",",
+  bankId: "other",
+});
+const HORIZONTE = mappingParser(OUT_AND_IN).minimize(
+  extractedContentSchema.parse(
+    JSON.parse(readFileSync(new URL("mapped-out-in.json", FIXTURES), "utf8")),
+  ),
+);
+const HORIZONTE_MOVEMENTS = 10;
 const QUARTERLY_MOVEMENTS = parse(QUARTERLY).transactions.length;
 const QUARTERLY_LAST4 = parse(QUARTERLY).accountLast4;
 const JULY_MOVEMENTS = parse(JULY_EXPORT).transactions.length;
@@ -520,6 +539,85 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
     expect(await run(await submit(userId, OCTOBER_EXPORT))).toEqual({
       status: "failed",
       errorCode: "ACCOUNT_REQUIRED",
+    });
+  });
+
+  describe("another bank's spreadsheet (Stage 11)", () => {
+    // A pending job for it, as the submit action creates it once its
+    // mapping reads it.
+    const submitMapped = async (
+      userId: UserId,
+      content: ExtractedContent = HORIZONTE,
+    ): Promise<JobRef> => {
+      const created = await withUserContext(app.db, userId, (ctx) =>
+        createIngestionJobWithinLimit(
+          ctx,
+          { formatId: MAPPED_FORMAT_ID, extractedContent: content },
+          { limit: 100, month: MONTH },
+        ),
+      );
+      if (!created.ok) throw new Error("No job created.");
+      return { jobId: created.value, userId };
+    };
+
+    // Horizonte with a column's name no format has: nobody saved its mapping.
+    const withNewHeader = (content: ExtractedContent): ExtractedContent =>
+      content.type === "spreadsheet"
+        ? {
+            ...content,
+            sheets: content.sheets.map((sheet) => ({
+              ...sheet,
+              rows: sheet.rows.map((row) =>
+                row.map((cell) =>
+                  cell === "OFICINA" ? `OFICINA ${randomUUID()}` : cell,
+                ),
+              ),
+            })),
+          }
+        : content;
+
+    it("reads it with the mapping saved for its format, in an account of its bank, adding nothing the second time", async () => {
+      const userId = await newUser();
+      await withUserContext(app.db, userId, (ctx) =>
+        saveOwnFormatMapping(ctx, OUT_AND_IN),
+      );
+
+      expect(await run(await submitMapped(userId))).toEqual({
+        status: "done",
+        stats: allNew(HORIZONTE_MOVEMENTS),
+      });
+      expect(await run(await submitMapped(userId))).toEqual({
+        status: "done",
+        stats: {
+          ...allNew(HORIZONTE_MOVEMENTS),
+          added: 0,
+          skipped: HORIZONTE_MOVEMENTS,
+        },
+      });
+      expect(await accountsOf(userId)).toMatchObject([
+        { bankId: "other", accountType: "savings", last4: null },
+      ]);
+    });
+
+    it("reads it with the mapping another user's balances proved", async () => {
+      await withUserContext(app.db, await newUser(), (ctx) =>
+        shareFormatMapping(ctx, OUT_AND_IN),
+      );
+
+      expect(await run(await submitMapped(await newUser()))).toMatchObject({
+        status: "done",
+      });
+    });
+
+    it("fails it when its format has no mapping, freeing its slot", async () => {
+      const userId = await newUser();
+      const job = await submitMapped(userId, withNewHeader(HORIZONTE));
+
+      expect(await run(job)).toEqual({
+        status: "failed",
+        errorCode: "UNKNOWN_FORMAT",
+      });
+      expect(await slotsUsedBy(userId)).toBe(0);
     });
   });
 

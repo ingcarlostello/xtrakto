@@ -33,6 +33,10 @@ const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   notice_preferences: ["SELECT", "INSERT", "UPDATE"],
   // Shared answers, linked to no one: read and added, never changed.
   llm_category_answers: ["SELECT", "INSERT"],
+  // Shared mappings, linked to no one: read and added, never changed.
+  format_mappings: ["SELECT", "INSERT"],
+  // Replaced by the next confirmation; the user's deletion takes it.
+  user_format_mappings: ["SELECT", "INSERT", "UPDATE"],
 };
 
 // The tables that hold no user's data, each with its own policies. Every
@@ -50,6 +54,11 @@ const POLICIES_WITHOUT_USER: Readonly<Record<string, readonly string[]>> = {
   ],
   // The LLM's answers by redacted text, which every user reads and adds to.
   llm_category_answers: [
+    `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+    `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
+  ],
+  // The mappings their balances proved, which every user reads and adds to.
+  format_mappings: [
     `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
     `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
   ],

@@ -1,5 +1,6 @@
 import "server-only";
 import {
+  APP_ERROR_CODE,
   categorizeStatement,
   err,
   normalizeHolderName,
@@ -26,7 +27,7 @@ import {
   type UserContext,
   withUserContext,
 } from "@xtrakto/db";
-import { findParser } from "@xtrakto/parsers";
+import { findStatementParser } from "@/features/format-mappings/format-mapping.service";
 import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
@@ -58,11 +59,17 @@ const inUserContext = <T>(
   );
 
 // The server's parse is the authoritative one; the browser's was a preview.
-const parseJob = ({
-  extractedContent,
-}: OpenIngestionJob): Result<ParsedStatement, IngestionJobError> => {
-  const parser = findParser(extractedContent);
-  if (!parser.ok) return err(UNKNOWN_FORMAT);
+// Another bank's spreadsheet reads with the mapping saved for its format when
+// it was submitted (Stage 11).
+const parseJob = async (
+  ctx: UserContext,
+  { extractedContent }: OpenIngestionJob,
+): Promise<Result<ParsedStatement, IngestionJobError>> => {
+  const parser = await findStatementParser(ctx, extractedContent);
+  if (!parser.ok) {
+    const isUnknown = parser.error.code === APP_ERROR_CODE.UNKNOWN_FORMAT;
+    return err(isUnknown ? UNKNOWN_FORMAT : PARSE_FAILED);
+  }
   const parsed = parser.value.parse(extractedContent);
   return parsed.ok ? parsed : err(PARSE_FAILED);
 };
@@ -114,7 +121,7 @@ const ingestOpenJob = async (
   jobId: string,
   job: OpenIngestionJob,
 ): Promise<IngestOutcome> => {
-  const parsed = parseJob(job);
+  const parsed = await parseJob(ctx, job);
   if (!parsed.ok) return fail(ctx, jobId, parsed.error);
   const account = await resolveAccount(ctx, parsed.value, job);
   if (!account.ok) return fail(ctx, jobId, ACCOUNT_REQUIRED);

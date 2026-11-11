@@ -419,6 +419,21 @@ describe("mappingParser.parse", () => {
     );
   });
 
+  it("fails on dates in another order than the mapping's, at the first one", () => {
+    const parser = mappingParser(
+      mappingOf("mapped-out-in", { dateOrder: "ymd" }),
+    );
+
+    expect(parser.parse(contentOf("mapped-out-in"))).toEqual(
+      failed({
+        reason: "invalid_value",
+        column: "FECHA TRANS",
+        row: 7,
+        cause: "date_format",
+      }),
+    );
+  });
+
   it("fails on a table without movements", () => {
     const content = spreadsheet(rowsOf("mapped-out-in").slice(0, 8));
 

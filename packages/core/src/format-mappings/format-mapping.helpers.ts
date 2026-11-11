@@ -1,6 +1,15 @@
+import { sha256Hex } from "../hashing/web-crypto.utils";
 import { foldText } from "../text/text.utils";
 import { COLUMN_ROLE } from "./format-mapping.constants";
 import type { ColumnRole } from "./format-mapping.types";
+
+/**
+ * A format's fingerprint, by which its mapping is saved and found: the
+ * SHA-256 of its header's names, as `headerNames` in `@xtrakto/parsers`
+ * writes them, so a key of fixed length stands for a header of any size.
+ */
+export const formatFingerprint = (header: readonly string[]): Promise<string> =>
+  sha256Hex(JSON.stringify(header));
 
 /** What a mapping says of its columns, before they are checked. */
 type MappingColumns = {

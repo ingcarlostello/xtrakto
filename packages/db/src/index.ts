@@ -137,6 +137,12 @@ export {
   listUserCategoryRules,
   saveUserCategoryRule,
 } from "./user-category-rules/user-category-rule.queries";
+export {
+  findFormatMapping,
+  type SavedFormatMapping,
+  saveOwnFormatMapping,
+  shareFormatMapping,
+} from "./format-mappings/format-mapping.queries";
 export { deleteUserCategoryRule } from "./user-category-rules/user-category-rule-undo.queries";
 export {
   findUserCategoryRule,

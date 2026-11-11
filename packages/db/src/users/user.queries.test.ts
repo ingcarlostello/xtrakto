@@ -6,6 +6,7 @@ import { seedUser } from "../../test/test-rows";
 import { accounts } from "../accounts/account.schemas";
 import { createDb } from "../client/db-client.queries";
 import type { DbClient } from "../client/db-client.types";
+import { userFormatMappings } from "../format-mappings/format-mapping.schemas";
 import { ingestionJobs } from "../ingestion-jobs/ingestion-job.schemas";
 import { llmUsage } from "../llm-usage/llm-usage.schemas";
 import { statements } from "../statements/statement.schemas";
@@ -23,10 +24,11 @@ const DATA_TABLES = [
   ingestionJobs,
   userCategoryRules,
   llmUsage,
+  userFormatMappings,
 ];
 // seedUser leaves one row in users and in each data table.
-const SEEDED = [1, 1, 1, 1, 1, 1, 1];
-const GONE = [0, 0, 0, 0, 0, 0, 0];
+const SEEDED = [1, 1, 1, 1, 1, 1, 1, 1];
+const GONE = [0, 0, 0, 0, 0, 0, 0, 0];
 
 describe.skipIf(!testDatabase)("user queries", () => {
   let app: DbClient;
@@ -69,7 +71,7 @@ describe.skipIf(!testDatabase)("user queries", () => {
     return row.clerkUserId;
   };
 
-  it("deletes every row of the user in the six tables, and nothing of another user", async () => {
+  it("deletes every row of the user in the seven tables, and nothing of another user", async () => {
     const a = await seedUser(owner.db);
     const b = await seedUser(owner.db);
 

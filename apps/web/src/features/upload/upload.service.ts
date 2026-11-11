@@ -21,7 +21,8 @@ import {
   type UserId,
   withUserContext,
 } from "@xtrakto/db";
-import { type BankParser, findParser } from "@xtrakto/parsers";
+import { type BankParser, findParser, findTable } from "@xtrakto/parsers";
+import { findStatementParser } from "@/features/format-mappings/format-mapping.service";
 import { getDb } from "@/lib/db";
 import { inngest, statementSubmitted } from "@/lib/inngest";
 import {
@@ -134,12 +135,30 @@ const announceJob = async (
   }
 };
 
+// Reads the statement with its format's parser, or another bank's mapping
+// (Stage 11), and queues it minimized again (ADR 0017), in one transaction.
+const queueInContext = async (
+  ctx: UserContext,
+  { content, account, mapping }: SubmitStatementRequest,
+): Promise<Result<string>> => {
+  const parser = await findStatementParser(ctx, content, mapping);
+  if (!parser.ok) return parser;
+  const minimized = parser.value.minimize(content);
+  return createJob(ctx, {
+    parser: parser.value,
+    content: minimized,
+    choice: account,
+  });
+};
+
 /**
  * Queues a statement read in the browser: checks its size, recognizes its
- * format and minimizes it again (ADR 0017), pins its account and takes one of
- * the month's slots, then sends the event that has it processed. The Clerk id
- * must come from the session; the user's row is created on their first
- * statement. Unexpected errors are thrown without their message, which could
+ * format, or reads another bank's with the mapping the person confirmed or
+ * saved before, and minimizes it again (ADR 0017), pins its account and
+ * takes one of the month's slots, then sends the event that has it
+ * processed. The Clerk id must come from the session; the user's row is
+ * created on their first statement, never for content without a table to
+ * read. Unexpected errors are thrown without their message, which could
  * quote the content.
  */
 export const queueStatement = async (
@@ -147,21 +166,14 @@ export const queueStatement = async (
   request: SubmitStatementRequest,
 ): Promise<Result<SubmittedStatement>> => {
   if (!fitsInUpload(request.content)) return err(CONTENT_TOO_LARGE);
-  const parser = findParser(request.content);
-  if (!parser.ok) return parser;
-  const content = parser.value.minimize(request.content);
+  const known = findParser(request.content);
+  if (!known.ok && !findTable(request.content).ok) return known;
   const db = getDb();
   const userId = await withSanitizedErrors("USER_NOT_RESOLVED", () =>
     findOrCreateUser(db, clerkUserId),
   );
   const job = await withSanitizedErrors("JOB_NOT_CREATED", () =>
-    withUserContext(db, userId, (ctx) =>
-      createJob(ctx, {
-        parser: parser.value,
-        content,
-        choice: request.account,
-      }),
-    ),
+    withUserContext(db, userId, (ctx) => queueInContext(ctx, request)),
   );
   if (!job.ok) return job;
   await announceJob(db, userId, job.value);

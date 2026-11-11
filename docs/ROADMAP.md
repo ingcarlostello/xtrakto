@@ -256,7 +256,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 11 — Unknown formats: ingestion agent**
 
 - [x] 11.1a Read a spreadsheet with a mapping
-- [ ] 11.1b Saved mappings
+- [x] 11.1b Saved mappings
 - [ ] 11.2a Invented formats to evaluate with
 - [ ] 11.2b The mapping proposal
 - [ ] 11.3a Confirm how to read it
@@ -2225,7 +2225,11 @@ It came out at about 940 lines of code added and 14 deleted, besides 23 moved an
 - The action's tests cover a saved mapping, the person's before the shared one, a confirmed one that adds up and one that doesn't, one that doesn't read the content, and one of another header.
 - An ingestion test saves a mapped fixture twice, and the second time adds nothing.
 
-**Commits:** `feat(db): saved format mappings`, then `feat(web): submit and ingest statements read with a mapping`
+Found while building it (2026-11-10): the catalog's test allows a user's id on every row of a table with a user's data and on none of a shared table, so mappings take two tables: `format_mappings`, everyone's and linked to no one, and `user_format_mappings`, each person's (ADR 0037). A confirmed mapping is always its person's, and everyone's too once its balances add up, so the person's latest confirmation reads their files first; no job keeps its mapping's id, since ingestion finds the mapping again by the content's header; and the server proves a saved mapping again when a file is submitted. A mapped table now ends at its last row with a date in any order, so a mapping whose dates are in another order says so, rather than finding no movements.
+
+It came out at about 240 lines of code added and 20 deleted, besides the generated migration, in five commits of one pull request: the parsers' fix, core's fingerprint, the database, the app, and the documents.
+
+**Commits:** `fix(parsers): end a mapped table at its last date in any order`, `feat(core): a format's fingerprint`, `feat(db): saved format mappings`, `feat(web): submit and ingest statements read with a mapping`, then `docs: saved format mappings`
 
 #### 11.2 LLM column-mapping proposal
 

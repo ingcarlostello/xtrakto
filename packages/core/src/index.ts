@@ -112,6 +112,7 @@ export type {
   SpreadsheetContent,
 } from "./extracted-content/extracted-content.types";
 export { COLUMN_ROLE } from "./format-mappings/format-mapping.constants";
+export { formatFingerprint } from "./format-mappings/format-mapping.helpers";
 export { formatMappingSchema } from "./format-mappings/format-mapping.schemas";
 export type {
   ColumnRole,

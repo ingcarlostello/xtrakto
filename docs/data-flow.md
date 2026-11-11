@@ -68,6 +68,8 @@ The server receives the minimized content: the rows the parser reads, the accoun
 | The person's category rules and review answers                                                                             | Until they're undone, or the account is deleted                         |
 | Each LLM call's prompt and version, model, outcome, tokens and cost; never its content                                     | Until the account is deleted                                            |
 | The LLM's answers by redacted bank text and direction, with category, title, confidence and model; no user's id (ADR 0033) | Kept, also after an account is deleted, since none is linked to it      |
+| How the person said to read another bank's spreadsheet: its header's names, each column's role, its formats and the bank   | Until a new confirmation for the format, or the account is deleted      |
+| The same, once a file's balances proved it, for every user of the format; no user's id (ADR 0037)                          | Kept, also after an account is deleted, since none is linked to it      |
 | Which email notices the person receives, once they change one (10.4a)                                                      | Until the account is deleted                                            |
 | `users`: the Clerk id                                                                                                      | Until the account is deleted                                            |
 | The waitlist: name, normalized email, consent version and time                                                             | Until the launch notice, or until the person asks (ADR 0021)            |

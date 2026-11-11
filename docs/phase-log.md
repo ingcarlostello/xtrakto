@@ -1650,3 +1650,33 @@ Checked: eight deliberate bugs, one at a time, each failing a test.
 - **The bank list** labels real banks by their names; the web's labels still name Bancolombia alone until 11.3c.
 - **A description another bank wraps onto a row without a date** gets a warning, and its movement keeps the first line; none of the invented layouts does it.
 - **No private test** reads another bank's file: there is none in `fixtures/private/`, and none may go to DeepSeek from here. The human reads a real one in production in 11.3a.
+
+## 11.1b Saved mappings
+
+_2026-11-10_
+
+The server now reads another bank's spreadsheet with a mapping, and keeps it: the Excel of v8-14's "Banco Horizonte", confirmed once, reads alone afterwards, for its person always and for everyone once its balances add up. Nothing sends one yet: the confirmation screen comes in 11.3a.
+
+- **Two tables** (ADR 0037): `format_mappings`, a mapping its balances proved, linked to no one, which any user's context reads and adds and none changes or deletes, the first of each format staying; and `user_format_mappings`, the one each person confirmed for a format, under the per-user policy, replaced by their next confirmation and taken by their deletion. Both find a mapping by its format's fingerprint (`formatFingerprint`, core), the SHA-256 of its header's names, so any header fits a key of fixed length. A mapping the schema no longer reads counts as none.
+- **`findStatementParser`** (`features/format-mappings`): a known format's parser; else, for content no parser knows, the mapping the person confirmed with it, which the server proves against the content's table (`proveMapping`: its header, the whole table read, the balances) and saves, theirs, and everyone's when its balances add up; else the one saved for its format, theirs before everyone's, proved again. Content without a table or a mapping is `UNKNOWN_FORMAT`, a mapping that doesn't read it `PARSE_FAILED`.
+- **Submitting** takes a confirmed mapping beside the content (`submitStatementSchema`), queues the file minimized under `mapped-spreadsheet`, and pins it to an account of the mapping's bank, as an export's. Content without a table to read still creates nothing, not even the user's row.
+- **Ingesting** finds the mapping again by the content's header, as the submission did; the rest of the pipeline stays. Its statements are a savings account of the mapping's bank without a number.
+- **The rules hold for every bank:** ADR 0023's note that Stage 11 would key them by bank is amended (ADR 0037).
+- **A mapped table ends at its last row with a date in any order** (`fix(parsers)`), so a mapping whose dates are in another order fails at its first date, `date_format`, rather than reading no movements, which 11.4's retry needs to tell apart.
+- System design §3, §4, §5, §6 and §12, and `docs/data-flow.md`, say so.
+
+36 new tests: 6 in core (970 there), 1 in parsers (480), 8 in the database (294) and 21 in the app (1,415):
+
+- core: a fingerprint of 64 hex characters, the same each time, and another for a header with another name, order or count, the same letters split elsewhere, or an empty name more;
+- parsers: dates in another order than the mapping's fail at the first one;
+- database: none for a format nobody saved; a person's mapping for them alone; a shared one for everyone; theirs before the shared one; their next confirmation replacing it; the first shared mapping staying; a mapping the schema no longer reads counting as none; no user changing or deleting a shared mapping, nor deleting their own; and the catalog's privileges and policies and a person's deletion with the new tables;
+- app: a mapping proved, without balances, whose balances don't add up, of another header, that doesn't read its file, and content without a table; the parser of a known format whatever mapping comes with it, of a saved mapping, of a confirmed one shared or the person's alone, nothing saved for one that doesn't read its file, a saved one that no longer reads it, no mapping and no table; a file queued with its saved mapping and minimized, with a confirmed one, pinned to its bank's account, and nothing queued without a mapping; and, against the database, a file ingested with the person's mapping in an account of its bank that adds nothing the second time, one with another user's proved mapping, and one whose format has no mapping, failed with its slot freed.
+
+Checked: nine deliberate bugs, one at a time, each failing a test, once the fingerprint's test told apart the same letters split elsewhere (a fingerprint joining names without a separator had passed the first one).
+
+**Deviations and follow-ups:**
+
+- **Two tables instead of one with an optional user id,** since the catalog's test, and ADR 0014, allow a user's id on every row of a user's data or on none; and **no job keeps its mapping's id**, since a person's mapping is replaced in place.
+- **A confirmed mapping is always its person's,** also when it's shared, so their latest confirmation reads their files first.
+- **The privacy page** says nothing of mappings yet: 11.3a, which lets people confirm one, adds them with what DeepSeek receives.
+- **A shared mapping that reads the wrong description column** reaches everyone with its format: the balances prove only the amounts (ADR 0037). Changing one takes the owner role.
