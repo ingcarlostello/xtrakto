@@ -20,7 +20,7 @@ import type {
 } from "@xtrakto/core";
 import { parseFailed } from "../registry/parse-failure.helpers";
 import { MAPPED_FORMAT_ID } from "./format-mapping.constants";
-import { inDateOrder } from "./mapping-order.helpers";
+import { inDateOrder, isNewestFirst } from "./mapping-order.helpers";
 import type { TableRow } from "./mapping-rows.helpers";
 
 type BalanceRow = Extract<TableRow, { readonly kind: "balance" }>;
@@ -45,9 +45,9 @@ const balanceAt = (table: readonly TableRow[], index: number) => {
   return row?.kind === "balance" ? row : undefined;
 };
 
-// A balance row right before the first movement opens the file, and one
-// right after the last closes it; any other row that isn't a movement gets a
-// warning.
+// In the order the file is read, oldest first: a balance row right before
+// the first movement opens the file, and one right after the last closes it;
+// any other row that isn't a movement gets a warning.
 const edgesOf = (table: readonly TableRow[]): TableEdges => {
   const first = table.findIndex(({ kind }) => kind === "movement");
   const last = table.findLastIndex(({ kind }) => kind === "movement");
@@ -68,7 +68,7 @@ const edgesOf = (table: readonly TableRow[]): TableEdges => {
   return {
     opening: balanceAt(table, opening),
     closing: balanceAt(table, closing),
-    warnings,
+    warnings: warnings.toSorted((a, b) => a.sourceRow - b.sourceRow),
   };
 };
 
@@ -125,11 +125,15 @@ export const mappedStatement = (
   mapping: FormatMapping,
   table: readonly TableRow[],
 ): Result<ParsedStatement> => {
-  const edges = edgesOf(table);
-  const movements = inDateOrder(
-    table.flatMap((row) => (row.kind === "movement" ? [row.transaction] : [])),
-    edges.opening?.balance,
+  const fileMovements = table.flatMap((row) =>
+    row.kind === "movement" ? [row.transaction] : [],
   );
+  // A file that lists its movements newest first lists its balance rows so
+  // too: its opening balance comes last.
+  const edges = edgesOf(
+    isNewestFirst(fileMovements) ? table.toReversed() : table,
+  );
+  const movements = inDateOrder(fileMovements, edges.opening?.balance);
   const [first] = movements;
   const last = movements.at(-1);
   if (first === undefined || last === undefined) {

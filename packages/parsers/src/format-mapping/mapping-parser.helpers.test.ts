@@ -336,6 +336,36 @@ describe("mappingParser.parse", () => {
     );
   });
 
+  it("reads a newest-first file's balance rows bottom-up: its closing first, its opening last", () => {
+    const rows = rowsOf("mapped-newest-first");
+    // 30 September and 31 August 2026, as date cells.
+    rows.splice(3, 0, [
+      { excelSerial: 46_295 },
+      "SALDO FINAL",
+      null,
+      null,
+      5_826_412.15,
+    ]);
+    rows.push([
+      { excelSerial: 46_265 },
+      "SALDO ANTERIOR",
+      null,
+      null,
+      3_210_400,
+    ]);
+
+    const result = parserOf("mapped-newest-first").parse(spreadsheet(rows));
+    if (!result.ok) throw new Error("Not parsed.");
+
+    expect(result.value).toMatchObject({
+      openingBalanceMinor: OPENING,
+      closingBalanceMinor: CLOSING,
+      period: { from: "2026-08-31", to: "2026-09-30" },
+      warnings: [],
+    });
+    expect(reconcile(result.value).balanceVerified).toBe(true);
+  });
+
   it("turns a day whose balances chain only the other way around", () => {
     // Newest first, but the 8th's two movements oldest first.
     const rows = rowsOf("mapped-newest-first");
