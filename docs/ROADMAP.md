@@ -257,7 +257,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 11.1a Read a spreadsheet with a mapping
 - [x] 11.1b Saved mappings
-- [ ] 11.2a Invented formats to evaluate with
+- [x] 11.2a Invented formats to evaluate with
 - [ ] 11.2b The mapping proposal
 - [ ] 11.3a Confirm how to read it
 - [ ] 11.3b Correct the columns
@@ -2248,7 +2248,11 @@ Split in two when planned (about 720 lines): the invented formats that measure i
 
 **Done when:** every case's expected mapping reads its file and reconciles where it has balances, and the metrics match hand-computed ones (tested).
 
-**Commit:** `feat(evals): invented bank formats and the mapping metrics`
+Found while building it (2026-11-11): a file that lists its movements newest first prints its "SALDO ANTERIOR" at its foot, which 11.1a's parser read as the closing balance, so a newest-first file's balance rows are now read from the bottom up. The set is 40 generated layouts, each feature cycling at a pace of its own, and 8 written by hand (names in English, cut short or mixed, an amount beside a fee, two balances, a direction spelled out, nine columns), each with a month of invented movements. The metrics read each proposal with the mapping parser and reconcile it, as the server would, so `@xtrakto/evals` depends on `@xtrakto/parsers`. A file without balances reads whole with its money in and out swapped, since nothing proves its signs, so "roles right" is the figure that catches it; a file without an answer counts in every share and is right in none.
+
+It came out at about 760 lines of code, past the 400 a phase should hold: about 620 are the generator that writes the invented files, as 11.1a's fixture script writes its fixtures, and 140 the metrics and their types; besides 20 added and 13 deleted in the parser's fix. It lands in three commits of one pull request: the parser's fix, the set with its metrics, and the documents.
+
+**Commits:** `fix(parsers): read a newest-first file's balance rows bottom-up`, `feat(evals): invented bank formats and the mapping metrics`, then `docs: invented bank formats to evaluate with`
 
 #### 11.2b The mapping proposal
 

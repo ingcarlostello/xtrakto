@@ -62,23 +62,32 @@ const chainedDays = (
 };
 
 /**
- * A mapped file's movements, oldest first. A file whose last movement is
- * older than its first lists them newest first, and reads bottom-up; within
- * a day, a file's balances decide, turning a day whose balances chain only
- * the other way around. `opening` is the balance before the first movement,
- * when the file prints it.
+ * Whether a file lists its movements newest first: its last movement is
+ * older than its first. Such a file reads bottom-up.
+ */
+export const isNewestFirst = (movements: readonly Movement[]): boolean => {
+  const first = movements[0];
+  const last = movements.at(-1);
+  return (
+    first !== undefined &&
+    last !== undefined &&
+    compareLocalDates(first.date, last.date) > 0
+  );
+};
+
+/**
+ * A mapped file's movements, oldest first. A file that lists them newest
+ * first reads bottom-up; within a day, a file's balances decide, turning a
+ * day whose balances chain only the other way around. `opening` is the
+ * balance before the first movement, when the file prints it.
  */
 export const inDateOrder = (
   movements: readonly Movement[],
   opening?: AmountMinor,
 ): Movement[] => {
-  const first = movements[0];
-  const last = movements.at(-1);
-  const isNewestFirst =
-    first !== undefined &&
-    last !== undefined &&
-    compareLocalDates(first.date, last.date) > 0;
-  const fileOrder = isNewestFirst ? movements.toReversed() : [...movements];
+  const fileOrder = isNewestFirst(movements)
+    ? movements.toReversed()
+    : [...movements];
   const byDate = fileOrder.toSorted((a, b) =>
     compareLocalDates(a.date, b.date),
   );
