@@ -1,10 +1,11 @@
-import { APP_ERROR_CODE } from "@xtrakto/core";
-import type { AppError, AppErrorCode, Result } from "@xtrakto/core";
+import type { AppError, FormatMapping, Result } from "@xtrakto/core";
 import { fileProblem } from "./file-checks.helpers";
+import { formatItem } from "./format-queue.helpers";
+import type { FormatAction } from "./format-queue.helpers";
+import { afterSending, startSending } from "./send-queue.helpers";
 import {
   EXTRACTION_STAGE,
   MAX_PARALLEL_EXTRACTIONS,
-  NO_ANSWER,
   PDF_PASSWORD_REASONS,
   UPLOAD_STATUS,
 } from "./upload.constants";
@@ -23,6 +24,8 @@ type FinishedAction = {
   readonly type: "finished";
   readonly id: string;
   readonly result: Result<ExtractedStatement>;
+  /** The mapping the person confirmed for a file no parser knows. */
+  readonly mapping?: FormatMapping;
 };
 
 export type UploadQueueAction =
@@ -50,7 +53,8 @@ export type UploadQueueAction =
       readonly id: string;
       readonly outcome: SendOutcome;
     }
-  | { readonly type: "removed"; readonly id: string };
+  | { readonly type: "removed"; readonly id: string }
+  | FormatAction;
 
 type Queue = readonly UploadItem[];
 
@@ -82,12 +86,15 @@ const withPassword = (
 // one that didn't open with its try waits for the person's.
 const finishedItem = (
   item: UploadItem,
-  result: Result<ExtractedStatement>,
+  { result, mapping }: FinishedAction,
   remembered: string | undefined,
 ): UploadItem => {
   const { id, file } = item;
-  if (result.ok)
-    return { id, file, status: UPLOAD_STATUS.READY, statement: result.value };
+  if (result.ok) {
+    const statement = result.value;
+    const confirmed = mapping ? { mapping } : {};
+    return { id, file, status: UPLOAD_STATUS.READY, statement, ...confirmed };
+  }
   if (!isLockedOut(result.error))
     return { id, file, status: UPLOAD_STATUS.FAILED, error: result.error };
   const tried =
@@ -113,12 +120,13 @@ const triedOnTheLocked = (items: Queue, password: string): Queue =>
 
 const finished = (
   { items, opener }: UploadQueueState,
-  { id, result }: FinishedAction,
+  action: FinishedAction,
 ): UploadQueueState => {
+  const { id, result } = action;
   const item = items.find((candidate) => candidate.id === id);
   if (item === undefined) return { items, opener };
   const updated = updateItem(items, id, () =>
-    finishedItem(item, result, opener?.password),
+    finishedItem(item, action, opener?.password),
   );
   const opened =
     result.ok && item.status === UPLOAD_STATUS.EXTRACTING
@@ -130,66 +138,6 @@ const finished = (
         items: triedOnTheLocked(updated, opened),
         opener: { password: opened, itemId: id },
       };
-};
-
-type ReadyItem = Extract<
-  UploadItem,
-  { readonly status: typeof UPLOAD_STATUS.READY }
->;
-type SendingItem = Extract<
-  UploadItem,
-  { readonly status: typeof UPLOAD_STATUS.SENDING }
->;
-
-// Whatever went wrong the last time is behind it now.
-const startSending = ({
-  id,
-  file,
-  statement,
-  accountKey,
-}: ReadyItem): UploadItem => ({
-  id,
-  file,
-  status: UPLOAD_STATUS.SENDING,
-  statement,
-  accountKey,
-});
-
-// Refusals the person can fix by choosing another account.
-const ACCOUNT_REFUSALS: ReadonlySet<AppErrorCode> = new Set([
-  APP_ERROR_CODE.ACCOUNT_REQUIRED,
-  APP_ERROR_CODE.NOT_FOUND,
-]);
-
-// A sent file lets its content go. One the month's limit stopped stays as it
-// was: the screen says so once. One that got no answer, or whose account the
-// server couldn't use, can be sent again; any other refusal is final.
-const afterSending = (
-  { id, file, statement, accountKey }: SendingItem,
-  outcome: SendOutcome,
-): UploadItem => {
-  const ready = {
-    id,
-    file,
-    status: UPLOAD_STATUS.READY,
-    statement,
-    accountKey,
-  };
-  if (outcome === NO_ANSWER) return { ...ready, sendProblem: NO_ANSWER };
-  if (outcome.ok) {
-    const { jobId } = outcome.value;
-    return {
-      id,
-      file,
-      status: UPLOAD_STATUS.SENT,
-      preview: statement.preview,
-      jobId,
-    };
-  }
-  const { error } = outcome;
-  if (error.code === APP_ERROR_CODE.LIMIT_REACHED) return ready;
-  if (ACCOUNT_REFUSALS.has(error.code)) return { ...ready, sendProblem: error };
-  return { id, file, status: UPLOAD_STATUS.FAILED, error };
 };
 
 // A file that fails the checks is never read; the others wait their turn.
@@ -240,6 +188,8 @@ const changedItem = (item: UploadItem, action: ItemAction): UploadItem => {
       return item.status === UPLOAD_STATUS.SENDING
         ? afterSending(item, action.outcome)
         : item;
+    default:
+      return formatItem(item, action);
   }
 };
 

@@ -62,6 +62,7 @@ export { CHANNELS } from "./categorization/channel.constants";
 export { channelOf } from "./categorization/channel.helpers";
 export type { Channel, ChannelId } from "./categorization/channel.types";
 export { BANKS } from "./banks/bank.constants";
+export { isBankId } from "./banks/bank.helpers";
 export type { BankId } from "./banks/bank.types";
 export { DATE_ORDER, DEFAULT_TIME_ZONE } from "./dates/date.constants";
 export {
@@ -121,7 +122,10 @@ export {
   columnRolesProblem,
   formatFingerprint,
 } from "./format-mappings/format-mapping.helpers";
-export { formatMappingSchema } from "./format-mappings/format-mapping.schemas";
+export {
+  formatHeaderSchema,
+  formatMappingSchema,
+} from "./format-mappings/format-mapping.schemas";
 export type {
   ColumnRole,
   FormatMapping,

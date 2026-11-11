@@ -1,4 +1,9 @@
-import { APP_ERROR_CODE, PERIOD_SOURCE, periodSchema } from "@xtrakto/core";
+import {
+  APP_ERROR_CODE,
+  formatMappingSchema,
+  PERIOD_SOURCE,
+  periodSchema,
+} from "@xtrakto/core";
 import type { ExtractedContent } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
 import { filesToSend } from "./upload-send.helpers";
@@ -45,6 +50,27 @@ const ACCOUNT_8901: UploadAccount = {
 };
 
 describe("filesToSend", () => {
+  it("sends a file no parser knows with the mapping the person confirmed", () => {
+    const mapping = formatMappingSchema.parse({
+      header: ["FECHA", "DETALLE", "VALOR"],
+      columns: ["date", "description", "amount"],
+      dateOrder: "dmy",
+      decimalSeparator: ",",
+      bankId: "davivienda",
+    });
+    const confirmed: UploadItem = {
+      id: "a",
+      file: FILE,
+      status: UPLOAD_STATUS.READY,
+      statement: { content: CONTENT, preview: preview() },
+      mapping,
+    };
+
+    expect(filesToSend([confirmed], [])).toEqual([
+      { id: "a", input: { content: CONTENT, mapping } },
+    ]);
+  });
+
   it("sends a quarterly statement with its content only: it names its own account", () => {
     expect(filesToSend([ready("q", "2109")], [ACCOUNT_8901])).toEqual([
       { id: "q", input: { content: CONTENT } },

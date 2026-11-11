@@ -1,6 +1,10 @@
 import { PERIOD_SOURCE } from "@xtrakto/core";
 import type { PeriodSource } from "@xtrakto/core";
-import type { FormatId } from "@xtrakto/parsers";
+import type { FormatId, MAPPED_FORMAT_ID } from "@xtrakto/parsers";
+
+// The parsers' formats, and another bank's spreadsheet read through a mapping
+// (Stage 11), whose bank its mapping says.
+type LabeledFormat = FormatId | typeof MAPPED_FORMAT_ID;
 
 // Keyed by the parsers' format ids: the build fails if a format has no label.
 export const FORMAT_LABELS = {
@@ -8,7 +12,8 @@ export const FORMAT_LABELS = {
   "bancolombia-savings-quarterly-pdf": "Extracto trimestral",
   "bancolombia-movements-export": "Movimientos",
   "bancolombia-movements-export-pdf": "Movimientos",
-} as const satisfies Record<FormatId, string>;
+  "mapped-spreadsheet": "Movimientos",
+} as const satisfies Record<LabeledFormat, string>;
 
 /** The files statements come in, as their tags say it. */
 export const FILE_TYPE = { EXCEL: "Excel", PDF: "PDF" } as const;
@@ -19,8 +24,9 @@ export const FORMAT_FILE_TYPES = {
   "bancolombia-savings-quarterly-pdf": FILE_TYPE.PDF,
   "bancolombia-movements-export": FILE_TYPE.EXCEL,
   "bancolombia-movements-export-pdf": FILE_TYPE.PDF,
+  "mapped-spreadsheet": FILE_TYPE.EXCEL,
 } as const satisfies Record<
-  FormatId,
+  LabeledFormat,
   (typeof FILE_TYPE)[keyof typeof FILE_TYPE]
 >;
 
@@ -30,4 +36,5 @@ export const FORMAT_PERIOD_SOURCE = {
   "bancolombia-savings-quarterly-pdf": PERIOD_SOURCE.STATEMENT,
   "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
   "bancolombia-movements-export-pdf": PERIOD_SOURCE.ROWS,
-} as const satisfies Record<FormatId, PeriodSource>;
+  "mapped-spreadsheet": PERIOD_SOURCE.ROWS,
+} as const satisfies Record<LabeledFormat, PeriodSource>;

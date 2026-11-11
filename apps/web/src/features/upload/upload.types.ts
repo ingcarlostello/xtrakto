@@ -2,7 +2,10 @@ import type {
   AccountType,
   AmountMinor,
   AppError,
+  ColumnRole,
   ExtractedContent,
+  FormatMapping,
+  FormatSample,
   LocalDate,
   Period,
   PeriodSource,
@@ -22,6 +25,7 @@ import type {
   NO_ANSWER,
   UPLOAD_STATUS,
 } from "./upload.constants";
+import type { MappingProposal } from "@/features/format-mappings/format-mapping.types";
 import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import type { submitStatementSchema } from "./upload.schemas";
 
@@ -61,13 +65,38 @@ export type ExtractedStatement = {
 };
 
 /**
- * The one message a worker receives: the file's bytes, without its name, and
- * the password to open a PDF with, when there's one to try.
+ * A file no parser knows, with a table: what's asked about its format (Stage
+ * 11). Its header's names find a mapping saved for it, and its sample, names
+ * and shapes only (ADR 0038), lets the LLM propose one.
  */
-export type ExtractRequest = {
-  readonly bytes: ArrayBuffer;
-  readonly password?: string;
+export type UnknownFormat = {
+  readonly header: readonly string[];
+  readonly sample: FormatSample;
 };
+
+/** A file read in the browser: a statement of a known format, or a table no parser knows. */
+export type FileReading =
+  | { readonly kind: "statement"; readonly statement: ExtractedStatement }
+  | {
+      readonly kind: "unknown";
+      readonly content: ExtractedContent;
+      readonly format: UnknownFormat;
+    };
+
+/**
+ * What a worker is asked: to read a file's bytes, without its name and with
+ * the password to open a PDF with when there's one to try; then, for a file
+ * no parser knows, which it keeps, to read it with a mapping, or what a
+ * mapping from the LLM's roles makes of it.
+ */
+export type ExtractRequest =
+  | {
+      readonly type: "extract";
+      readonly bytes: ArrayBuffer;
+      readonly password?: string;
+    }
+  | { readonly type: "read"; readonly mapping: FormatMapping }
+  | { readonly type: "propose"; readonly roles: readonly ColumnRole[] };
 
 /** The kind of file a row shows, by its icon. */
 export type FileKind = "excel" | "pdf";
@@ -81,10 +110,17 @@ export type PasswordTry = {
   readonly isTyped: boolean;
 };
 
-/** What a worker posts back: each stage as it starts, then the result. */
+/**
+ * What a worker posts back: each stage as it starts, then the statement it
+ * read; or, for a file no parser knows, its format, then what each mapping
+ * asked about makes of it.
+ */
 export type ExtractionMessage =
   | { readonly type: "stage"; readonly stage: ExtractionStage }
-  | { readonly type: "done"; readonly result: Result<ExtractedStatement> };
+  | { readonly type: "done"; readonly result: Result<ExtractedStatement> }
+  | { readonly type: "unknown"; readonly format: UnknownFormat }
+  | { readonly type: "read"; readonly result: Result<ExtractedStatement> }
+  | { readonly type: "proposed"; readonly result: Result<MappingProposal> };
 
 /** What the upload queue needs from a worker, so tests can pass a fake one. */
 export type ExtractionWorker = {
@@ -113,6 +149,23 @@ export type SubmittedStatement = { readonly jobId: string };
 export type SubmitStatement = (
   input: SubmitStatementInput,
 ) => Promise<Result<SubmittedStatement>>;
+
+/** The server action that finds the mapping saved for a format, or a stand-in in tests. */
+export type FindSavedFormat = (
+  header: readonly string[],
+) => Promise<Result<{ mapping: FormatMapping | null }>>;
+
+/** Why the LLM proposed no roles: an app error or the AI's, by its code. */
+export type ProposalError = {
+  readonly code: string;
+  /** For a limit reached: the user's month or the platform's budget. */
+  readonly limit?: string;
+};
+
+/** The server action that asks the LLM for a format's roles, or a stand-in in tests. */
+export type ProposeFormat = (
+  sample: FormatSample,
+) => Promise<Result<{ roles: ColumnRole[] }, ProposalError>>;
 
 /** A file ready to send, with what goes up for it. */
 export type FileToSend = {
@@ -152,11 +205,23 @@ type UploadState =
       /** Whether the person typed that password for this file. */
       readonly isWrong: boolean;
     }
+  // A file no parser knows (11.3a), while a mapping saved for its format is
+  // looked up and read, then while the LLM proposes one.
+  | { readonly status: typeof UPLOAD_STATUS.FINDING_FORMAT }
+  | { readonly status: typeof UPLOAD_STATUS.PROPOSING }
+  | {
+      // Waiting for the person to confirm what the proposal makes of it.
+      readonly status: typeof UPLOAD_STATUS.CONFIRMING;
+      readonly proposal: MappingProposal;
+    }
+  | { readonly status: typeof UPLOAD_STATUS.CONFIRMED }
   | {
       readonly status: typeof UPLOAD_STATUS.READY;
       readonly statement: ExtractedStatement;
       /** The account chosen for a movements export, when it had to be asked. */
       readonly accountKey?: AccountKey;
+      /** The mapping the person confirmed for it, which goes up with it. */
+      readonly mapping?: FormatMapping;
       /** Why the last attempt to send it didn't go through, if there was one. */
       readonly sendProblem?: SendProblem;
     }
@@ -164,6 +229,7 @@ type UploadState =
       readonly status: typeof UPLOAD_STATUS.SENDING;
       readonly statement: ExtractedStatement;
       readonly accountKey?: AccountKey;
+      readonly mapping?: FormatMapping;
     }
   | {
       // Its content is let go: only the preview stays, with the job's id.

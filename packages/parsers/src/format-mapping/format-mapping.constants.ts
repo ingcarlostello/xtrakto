@@ -19,6 +19,9 @@ export const MAPPED_DATE_TIME_ZONES: ExcelDateTimeZones = {
 /** The fewest names a table's header has: a date, a description and an amount. */
 export const MIN_HEADER_NAMES = 3;
 
+/** The table's rows the person sees before confirming a mapping (v8-14). */
+export const MAX_REVIEW_ROWS = 5;
+
 /** A date cell as a sample shows it: the shape of the day it holds. */
 export const DATE_CELL_SHAPE = "9999-99-99";
 

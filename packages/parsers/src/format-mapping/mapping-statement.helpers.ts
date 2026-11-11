@@ -26,7 +26,7 @@ import type { TableRow } from "./mapping-rows.helpers";
 type BalanceRow = Extract<TableRow, { readonly kind: "balance" }>;
 
 /** What a table holds around its movements. */
-type TableEdges = {
+export type TableEdges = {
   /** The balance row before its first movement, such as "SALDO ANTERIOR". */
   readonly opening?: BalanceRow;
   /** The balance row after its last movement. */
@@ -71,6 +71,18 @@ const edgesOf = (table: readonly TableRow[]): TableEdges => {
     warnings: warnings.toSorted((a, b) => a.sourceRow - b.sourceRow),
   };
 };
+
+const movementsOf = (table: readonly TableRow[]): ParsedTransaction[] =>
+  table.flatMap((row) => (row.kind === "movement" ? [row.transaction] : []));
+
+/**
+ * The balance rows that open and close a table, and a warning for each of
+ * its other rows, in the order the file is read, oldest first: a file that
+ * lists its movements newest first lists its balance rows so too, its
+ * opening balance last.
+ */
+export const tableEdges = (table: readonly TableRow[]): TableEdges =>
+  edgesOf(isNewestFirst(movementsOf(table)) ? table.toReversed() : table);
 
 const balanceBefore = ({
   amountMinor,
@@ -125,15 +137,8 @@ export const mappedStatement = (
   mapping: FormatMapping,
   table: readonly TableRow[],
 ): Result<ParsedStatement> => {
-  const fileMovements = table.flatMap((row) =>
-    row.kind === "movement" ? [row.transaction] : [],
-  );
-  // A file that lists its movements newest first lists its balance rows so
-  // too: its opening balance comes last.
-  const edges = edgesOf(
-    isNewestFirst(fileMovements) ? table.toReversed() : table,
-  );
-  const movements = inDateOrder(fileMovements, edges.opening?.balance);
+  const edges = tableEdges(table);
+  const movements = inDateOrder(movementsOf(table), edges.opening?.balance);
   const [first] = movements;
   const last = movements.at(-1);
   if (first === undefined || last === undefined) {

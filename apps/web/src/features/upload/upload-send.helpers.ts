@@ -38,10 +38,12 @@ const accountToSend = (
 
 /**
  * The files ready to send, in the list's order, each with what goes up: its
- * content and, for a movements export whose account the person chose, that
- * account's key. An export still waiting for a choice stays out: sent without
- * one, the server could put it in the user's only account, not the one a
- * quarterly statement of this upload creates.
+ * content; for a movements export whose account the person chose, that
+ * account's key; and for a file no parser knows, the mapping the person
+ * confirmed (a saved one, the server finds again). An export still waiting
+ * for a choice stays out: sent without one, the server could put it in the
+ * user's only account, not the one a quarterly statement of this upload
+ * creates.
  */
 export const filesToSend = (
   items: readonly UploadItem[],
@@ -51,13 +53,14 @@ export const filesToSend = (
   return items.flatMap((item) => {
     if (item.status !== UPLOAD_STATUS.READY) return [];
     const { content, preview } = item.statement;
+    const confirmed = item.mapping ? { mapping: item.mapping } : {};
     if (preview.accountLast4 !== undefined) {
-      return [{ id: item.id, input: { content } }];
+      return [{ id: item.id, input: { content, ...confirmed } }];
     }
     const destination = exportDestination(preview, accounts, batch);
     const account = accountToSend(destination, item.accountKey);
     if (!account) return [];
-    const input = account.key ? { content, account: account.key } : { content };
-    return [{ id: item.id, input }];
+    const chosen = account.key ? { account: account.key } : {};
+    return [{ id: item.id, input: { content, ...chosen, ...confirmed } }];
   });
 };

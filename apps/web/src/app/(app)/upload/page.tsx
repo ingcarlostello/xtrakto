@@ -5,7 +5,7 @@ import { MonthlyUsagePill } from "@/features/upload/components/MonthlyUsagePill"
 import { PrivacyPanel } from "@/features/upload/components/PrivacyPanel";
 import { SupportedFormats } from "@/features/upload/components/SupportedFormats";
 import { UploadedFiles } from "@/features/upload/components/UploadedFiles";
-import { UploadFlow } from "@/features/upload/components/UploadFlow";
+import { UploadScreen } from "@/features/upload/components/UploadScreen";
 import { UPLOAD_COPY as COPY } from "@/features/upload/upload.constants";
 import { listUploadedFiles } from "@/features/upload/upload-results.service";
 import {
@@ -18,7 +18,9 @@ export const metadata: Metadata = { title: COPY.title };
 
 // docs/ui/v8-07: the month's count beside the title, the upload card with
 // what follows the files sent and what the user has under it, and the
-// privacy facts and the files sent beside them (below them on phones).
+// privacy facts and the files sent beside them (below them on phones). A file
+// no parser knows takes the screen while the person confirms its format
+// (v8-14).
 export default async function UploadPage() {
   const clerkUserId = await requireSignedIn();
   const [accounts, usage, files, coverage] = await Promise.all([
@@ -28,22 +30,23 @@ export default async function UploadPage() {
     getCoverage(clerkUserId),
   ]);
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
-        <MonthlyUsagePill usage={usage} />
-      </div>
-      <div className="flex flex-wrap items-start gap-5.5">
-        <div className="flex min-w-0 flex-[2_1_600px] flex-col gap-5.5">
-          <UploadFlow accounts={accounts} usage={usage} coverage={coverage}>
-            <SupportedFormats />
-          </UploadFlow>
+    <UploadScreen
+      accounts={accounts}
+      usage={usage}
+      coverage={coverage}
+      header={
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <PageHeader title={COPY.title} subtitle={COPY.subtitle} />
+          <MonthlyUsagePill usage={usage} />
         </div>
-        <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-5.5">
+      }
+      side={
+        <>
           <PrivacyPanel />
           <UploadedFiles jobs={files} />
-        </div>
-      </div>
-    </>
+        </>
+      }
+      formats={<SupportedFormats />}
+    />
   );
 }

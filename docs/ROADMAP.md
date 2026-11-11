@@ -259,7 +259,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.1b Saved mappings
 - [x] 11.2a Invented formats to evaluate with
 - [x] 11.2b The mapping proposal
-- [ ] 11.3a Confirm how to read it
+- [x] 11.3a Confirm how to read it
 - [ ] 11.3b Correct the columns
 - [ ] 11.3c Other banks across the app
 - [ ] 11.4 The agent: repair and retry before asking
@@ -2297,9 +2297,13 @@ Split in three when planned (about 1,350 lines): confirming, correcting, then ot
 - In a local browser, a synthetic file of each fixture's layout is read, confirmed and saved, and a second one of the same format reads without the screen, at desktop, 390px and 360px and with the keyboard.
 - **Human:** reads a real export from another bank in production.
 
-Estimated at about 650 lines, it lands in commits of one pull request: the design rules, saved formats on the upload screen, then the confirmation.
+Decided with the human when it started (2026-11-11): one phase, though estimated at 1,100 to 1,350 lines (about 650 planned), in commits of one pull request.
 
-**Commits:** `docs(rules): confirm how to read a new format`, `feat(web): saved formats on the upload screen`, then `feat(web): confirm how to read a new format`
+Found while building it (2026-11-11): the file stays in its worker, not the page's memory, while its format is settled: the page gets its sample, then what each mapping makes of it (`reviewMapping`, `@xtrakto/parsers`: the header and first rows as the file writes them, where the table starts and ends, and what its movements add up to against its balances), so nothing large crosses to the page. The view takes the place of the upload screen's content, which a client `UploadScreen` now holds, with the page's server parts passed in. "Confirmar y leer" reads the file with the mapping and leaves it ready, to go up with "Subir N archivos" as any file, since an export may still need its account and the month's limit stops the rest; the mapping goes up with it, and a saved one doesn't, since the server finds it again. A file's tags name its bank as its mapping says, and every bank of core's list has its label now ("Otro banco" for "Otro"). Checked in a local browser with the five invented banks: each format was proposed, confirmed, read and sent, and read alone the next time; `deepseek-flash` once called a single "SALDO DISPONIBLE" none, which the test showed as a file without balances (11.3b corrects a column). Where another bank's file with balances verifies one without them, the upload result says "tu extracto trimestral": 11.3c gains it.
+
+It came out at about 1,450 lines of code added and 190 deleted, about 110 of them moved (the send's transitions, the worker's reading), in six commits of one pull request: the design rules, core's header schema and bank check shared, the parsers' review of a mapping, the upload screen's saved and proposed formats, the confirmation, and the documents.
+
+**Commits:** `docs(rules): confirm how to read a new format`, `refactor(core): share a format's header schema and the bank id check`, `feat(parsers): how a file reads with a mapping, for the person to check`, `feat(web): saved and proposed formats on the upload screen`, `feat(web): confirm how to read a new format`, then `docs: confirm how to read a new format`
 
 #### 11.3b Correct the columns
 
@@ -2320,7 +2324,7 @@ Estimated at about 650 lines, it lands in commits of one pull request: the desig
 
 - The upload screen (`v8-07`): "¿Otro banco?" ("Súbelo igual. Te mostramos qué entendimos de cada columna y lo confirmas una vez.") with Excel and CSV; the picker and the drop zone take `.xls` and `.csv`; the subtitle, "Cómo cuidamos tus datos" and the empty summary's download paths (`v8-12`) true for another bank.
 - The welcome's second step (`v8-16`): "Banco", Bancolombia or "Otro" ("¿No está tu banco? Elige "Otro": lo leemos y te pedimos confirmar las columnas."), and the third step's guide for another bank.
-- Another bank's account: its name in the account's label, "Archivos subidos" (its file by its period and type, Excel or CSV), "Lo que tienes" and the profile; the coverage timeline's legend for months a file other than a quarterly statement verified.
+- Another bank's account: its name in the account's label, "Archivos subidos" (its file by its period and type, Excel or CSV), "Lo que tienes" and the profile; the coverage timeline's legend for months a file other than a quarterly statement verified; and the upload result's words where such a file verifies one without balances, which say "Verificado por tu extracto trimestral" and "ya estaban en tu extracto trimestral" today (found in 11.3a).
 - The design rules.
 
 **Done when:** every screen reads right with an account of another bank beside a Bancolombia one, at 390px and 360px and with the keyboard.
