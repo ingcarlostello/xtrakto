@@ -18,6 +18,8 @@ export type TableLocation = {
   readonly headerRow: number;
   /** The header's names, as `headerNames` writes them: the format's fingerprint. */
   readonly header: readonly string[];
+  /** The column its first movement holds its date in. */
+  readonly dateColumn: number;
 };
 
 // A digit, or one masked as ADR 0012 masks them.
@@ -82,7 +84,10 @@ const movementDateColumn = (row: Row): number | undefined => {
 
 // The header over a movement's row: the nearest row above it that holds
 // something, when it's a row of names that also names the date's column.
-const headerOver = (rows: SheetRows, index: number): number | undefined => {
+const headerOver = (
+  rows: SheetRows,
+  index: number,
+): TableLocation | undefined => {
   const column = movementDateColumn(rows[index] ?? []);
   if (column === undefined) return undefined;
   const above = rows.slice(0, index).findLastIndex((row) => !isBlankRow(row));
@@ -90,7 +95,7 @@ const headerOver = (rows: SheetRows, index: number): number | undefined => {
   return header !== undefined &&
     isNamesRow(header) &&
     !isBlankCell(header[column])
-    ? above
+    ? { headerRow: above, header: headerNames(header), dateColumn: column }
     : undefined;
 };
 
@@ -103,10 +108,8 @@ const headerOver = (rows: SheetRows, index: number): number | undefined => {
 export const findTable = (content: ExtractedContent): Result<TableLocation> => {
   const rows = firstSheetRows(content) ?? [];
   for (let index = 1; index < rows.length; index++) {
-    const headerRow = headerOver(rows, index);
-    if (headerRow !== undefined) {
-      return ok({ headerRow, header: headerNames(rows[headerRow] ?? []) });
-    }
+    const table = headerOver(rows, index);
+    if (table !== undefined) return ok(table);
   }
   return noTable;
 };

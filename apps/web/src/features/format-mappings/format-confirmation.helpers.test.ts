@@ -1,25 +1,42 @@
 import {
   amountMinorSchema,
+  APP_ERROR_CODE,
+  COLUMN_ROLE,
+  err,
   formatMappingSchema,
   localDateSchema,
+  ok,
 } from "@xtrakto/core";
-import type { MappingTest } from "@xtrakto/parsers";
+import type { MappingReview, MappingTest } from "@xtrakto/parsers";
 import { describe, expect, it } from "vitest";
 import {
   cellText,
+  columnLabel,
   formatFacts,
   readText,
+  rolesLeft,
   rowsNote,
   testLines,
   testVerdict,
 } from "./format-confirmation.helpers";
-import type { MappingProposal } from "./format-mapping.types";
 
 const minor = (amount: number) => amountMinorSchema.parse(amount);
 
+const {
+  DATE,
+  DESCRIPTION,
+  AMOUNT,
+  MONEY_OUT,
+  MONEY_IN,
+  BALANCE,
+  REFERENCE,
+  DIRECTION,
+  NONE,
+} = COLUMN_ROLE;
+
 const MAPPING = formatMappingSchema.parse({
   header: ["FECHA TRANS", "DETALLE", "OFICINA", "DEBITOS", "CREDITOS", "SALDO"],
-  columns: ["date", "description", "none", "money_out", "money_in", "balance"],
+  columns: [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN, BALANCE],
   dateOrder: "dmy",
   decimalSeparator: ",",
   bankId: "other",
@@ -39,19 +56,18 @@ const BALANCES = {
   isVerified: true,
 };
 
-const proposal = (
-  review: Partial<MappingProposal["review"]>,
-): MappingProposal => ({
-  mapping: MAPPING,
-  review: {
-    header: MAPPING.header,
-    rows: [],
-    moreRows: 0,
-    firstRow: 8,
-    lastRow: 18,
-    test: WAYS,
-    ...review,
-  },
+const reviewOf = (review: Partial<MappingReview>): MappingReview => ({
+  header: MAPPING.header,
+  names: MAPPING.header,
+  rows: [],
+  moreRows: 0,
+  firstRow: 8,
+  lastRow: 18,
+  roles: MAPPING.columns,
+  dateOrder: "dmy",
+  decimalSeparator: ",",
+  reading: ok({ mapping: MAPPING, test: WAYS }),
+  ...review,
 });
 
 describe("cellText", () => {
@@ -77,38 +93,108 @@ describe("rowsNote", () => {
       "3.210.400,00",
     ];
 
-    expect(rowsNote(proposal({ moreRows: 6, openingRow }))).toBe(
+    const review = reviewOf({ moreRows: 6, openingRow });
+
+    expect(rowsNote(review, MAPPING.columns)).toBe(
       "Y 6 filas más. La fila “SALDO ANTERIOR” se usa como saldo inicial, no como movimiento.",
     );
   });
 
+  it("quotes the opening row by the description the person chose", () => {
+    const openingRow = ["01/09/2026", "SALDO ANTERIOR", "0102"];
+    const roles = [DATE, NONE, DESCRIPTION];
+
+    expect(rowsNote(reviewOf({ openingRow }), roles)).toBe(
+      "La fila “0102” se usa como saldo inicial, no como movimiento.",
+    );
+  });
+
   it("says one row is left, or nothing when none is and nothing opens it", () => {
-    expect(rowsNote(proposal({ moreRows: 1 }))).toBe("Y 1 fila más.");
-    expect(rowsNote(proposal({}))).toBe("");
+    expect(rowsNote(reviewOf({ moreRows: 1 }), MAPPING.columns)).toBe(
+      "Y 1 fila más.",
+    );
+    expect(rowsNote(reviewOf({}), MAPPING.columns)).toBe("");
   });
 });
 
 describe("formatFacts", () => {
-  it("names how the file writes its numbers and dates, and where its table is", () => {
-    expect(formatFacts(proposal({}))).toEqual([
-      { term: "Números", value: "1.234,56" },
-      { term: "Fechas", value: "día/mes/año" },
+  it("names the file's currency and where its table starts and ends", () => {
+    expect(formatFacts(reviewOf({}))).toEqual([
       { term: "Moneda", value: "pesos (COP)" },
       { term: "Empieza en", value: "fila 8" },
       { term: "Termina en", value: "fila 18" },
     ]);
   });
+});
 
-  it("names a decimal point and the year first", () => {
-    const point = {
-      ...proposal({}),
-      mapping: { ...MAPPING, decimalSeparator: ".", dateOrder: "ymd" },
-    } as const;
+describe("rolesLeft", () => {
+  const ALL = [
+    DATE,
+    DESCRIPTION,
+    AMOUNT,
+    MONEY_OUT,
+    MONEY_IN,
+    BALANCE,
+    REFERENCE,
+    DIRECTION,
+    NONE,
+  ];
 
-    expect(formatFacts(point).slice(0, 2)).toEqual([
-      { term: "Números", value: "1,234.56" },
-      { term: "Fechas", value: "año/mes/día" },
+  it("offers a column every role while no other column takes one", () => {
+    expect(rolesLeft([NONE, NONE, NONE], 1)).toEqual(ALL);
+  });
+
+  it("leaves out the date, description, balance and reference another column has", () => {
+    const roles = [DATE, DESCRIPTION, BALANCE, REFERENCE, NONE];
+
+    expect(rolesLeft(roles, 4)).toEqual([
+      AMOUNT,
+      MONEY_OUT,
+      MONEY_IN,
+      DIRECTION,
+      NONE,
     ]);
+  });
+
+  it("keeps money read one way", () => {
+    expect(rolesLeft([AMOUNT, NONE], 1)).toEqual([
+      DATE,
+      DESCRIPTION,
+      BALANCE,
+      REFERENCE,
+      DIRECTION,
+      NONE,
+    ]);
+    expect(rolesLeft([MONEY_OUT, NONE], 1)).toEqual([
+      DATE,
+      DESCRIPTION,
+      MONEY_IN,
+      BALANCE,
+      REFERENCE,
+      NONE,
+    ]);
+    expect(rolesLeft([DIRECTION, NONE], 1)).toEqual([
+      DATE,
+      DESCRIPTION,
+      AMOUNT,
+      BALANCE,
+      REFERENCE,
+      NONE,
+    ]);
+  });
+
+  it("keeps a column's own role among its choices", () => {
+    expect(rolesLeft(MAPPING.columns, 0)).toContain(DATE);
+    expect(rolesLeft(MAPPING.columns, 3)).toEqual([MONEY_OUT, REFERENCE, NONE]);
+  });
+});
+
+describe("columnLabel", () => {
+  it("names a column's choice by its name, or its place when it has none", () => {
+    expect(columnLabel(" Fecha Trans ", 0)).toBe(
+      "Qué es la columna Fecha Trans",
+    );
+    expect(columnLabel(null, 2)).toBe("Qué es la columna 3");
   });
 });
 
@@ -192,9 +278,24 @@ describe("testVerdict", () => {
 
 describe("readText", () => {
   it("counts the movements read", () => {
-    expect(readText(WAYS)).toBe("Leímos 10 movimientos con este mapeo.");
-    expect(readText({ ...WAYS, movementCount: 1 })).toBe(
+    const one = ok({ mapping: MAPPING, test: { ...WAYS, movementCount: 1 } });
+
+    expect(readText(reviewOf({}), false)).toBe(
+      "Leímos 10 movimientos con este mapeo.",
+    );
+    expect(readText(reviewOf({ reading: one }), false)).toBe(
       "Leímos 1 movimiento con este mapeo.",
+    );
+  });
+
+  it("says the file is read again, or that the choices don't read it", () => {
+    const unread = reviewOf({
+      reading: err({ code: APP_ERROR_CODE.PARSE_FAILED }),
+    });
+
+    expect(readText(reviewOf({}), true)).toBe("Leyendo tu archivo de nuevo…");
+    expect(readText(unread, false)).toBe(
+      "Así no podemos leer todo el archivo.",
     );
   });
 });

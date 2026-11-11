@@ -10,8 +10,8 @@ import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   extractStatement,
-  proposeReading,
   readWithMapping,
+  reviewReading,
 } from "./statement-extraction.helpers";
 import { EXTRACTION_STAGE } from "./upload.constants";
 import type { ExtractionStage } from "./upload.types";
@@ -340,28 +340,34 @@ describe("readWithMapping", () => {
   });
 });
 
-describe("proposeReading", () => {
-  it("makes the mapping the roles read, with how the file reads with it", () => {
-    expect(proposeReading(HORIZONTE, HORIZONTE_MAPPING.columns)).toMatchObject({
+describe("reviewReading", () => {
+  it("gives the mapping the choices make, with how the file reads with it", () => {
+    const choices = { roles: HORIZONTE_MAPPING.columns };
+
+    expect(reviewReading(HORIZONTE, choices)).toMatchObject({
       ok: true,
       value: {
-        mapping: { ...HORIZONTE_MAPPING, bankId: "other" },
-        review: {
-          firstRow: 8,
-          test: { movementCount: 10, balances: { isVerified: true } },
+        firstRow: 8,
+        reading: {
+          ok: true,
+          value: {
+            mapping: { ...HORIZONTE_MAPPING, bankId: "other" },
+            test: { movementCount: 10, balances: { isVerified: true } },
+          },
         },
       },
     });
   });
 
-  it("fails for roles that read no table", () => {
-    const roles = HORIZONTE_MAPPING.columns.slice(1);
-
-    expect(proposeReading(HORIZONTE, roles)).toMatchObject({
-      ok: false,
-      error: {
-        code: APP_ERROR_CODE.PARSE_FAILED,
-        details: { reason: "invalid_mapping" },
+  it("reads with only the date the code found, without choices", () => {
+    expect(reviewReading(HORIZONTE)).toMatchObject({
+      ok: true,
+      value: {
+        roles: ["date", "none", "none", "none", "none", "none"],
+        reading: {
+          ok: false,
+          error: { details: { reason: "invalid_mapping" } },
+        },
       },
     });
   });

@@ -13,10 +13,7 @@ import {
   statementPeriodText,
 } from "@/utils/statement-label.helpers";
 import { isPdfName } from "./file-checks.helpers";
-import {
-  FORMAT_PROBLEM_COPY,
-  UNKNOWN_FORMAT_COPY as FORMAT_COPY,
-} from "./unknown-format.constants";
+import { UNKNOWN_FORMAT_COPY as FORMAT_COPY } from "./unknown-format.constants";
 import {
   FILE_PROBLEM,
   FORMAT_BANKS,
@@ -137,17 +134,11 @@ const inputProblem = (reason: unknown): ProblemText =>
   (typeof reason === "string" ? INPUT_PROBLEMS[reason] : undefined) ??
   PROBLEM_COPY.tooLarge;
 
-const FORMAT_PROBLEMS: Readonly<Partial<Record<string, ProblemText>>> =
-  FORMAT_PROBLEM_COPY;
-
-// A file that isn't a spreadsheet or a PDF, one whose format couldn't be
-// settled (11.3a), or one that holds no table.
-const unknownFormatProblem = (reason: unknown): ProblemText => {
-  if (reason === FILE_PROBLEM.TYPE) return PROBLEM_COPY.wrongType;
-  const formatProblem =
-    typeof reason === "string" ? FORMAT_PROBLEMS[reason] : undefined;
-  return formatProblem ?? PROBLEM_COPY.notAStatement;
-};
+// A file that isn't a spreadsheet or a PDF, or one that holds no table.
+const unknownFormatProblem = (reason: unknown): ProblemText =>
+  reason === FILE_PROBLEM.TYPE
+    ? PROBLEM_COPY.wrongType
+    : PROBLEM_COPY.notAStatement;
 
 // SheetJS and pdf.js give no reason when they can't open a file; a parser
 // always says which part of a statement it couldn't read.

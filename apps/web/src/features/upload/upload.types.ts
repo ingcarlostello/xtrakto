@@ -19,13 +19,14 @@ import type {
   StatementBalance,
   StatementMatches,
 } from "@xtrakto/db";
+import type { MappingChoices, MappingReview } from "@xtrakto/parsers";
 import type { z } from "zod";
 import type {
   EXTRACTION_STAGE,
   NO_ANSWER,
   UPLOAD_STATUS,
 } from "./upload.constants";
-import type { MappingProposal } from "@/features/format-mappings/format-mapping.types";
+import type { FormatConfirmation } from "@/features/format-mappings/format-mapping.types";
 import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import type { submitStatementSchema } from "./upload.schemas";
 
@@ -86,8 +87,8 @@ export type FileReading =
 /**
  * What a worker is asked: to read a file's bytes, without its name and with
  * the password to open a PDF with when there's one to try; then, for a file
- * no parser knows, which it keeps, to read it with a mapping, or what a
- * mapping from the LLM's roles makes of it.
+ * no parser knows, which it keeps, to read it with a mapping, or what the
+ * person's choices make of it.
  */
 export type ExtractRequest =
   | {
@@ -96,7 +97,13 @@ export type ExtractRequest =
       readonly password?: string;
     }
   | { readonly type: "read"; readonly mapping: FormatMapping }
-  | { readonly type: "propose"; readonly roles: readonly ColumnRole[] };
+  | {
+      readonly type: "review";
+      /** Unset: only the date the code found (11.3b). */
+      readonly choices?: MappingChoices;
+      /** The correction it answers. */
+      readonly revision: number;
+    };
 
 /** The kind of file a row shows, by its icon. */
 export type FileKind = "excel" | "pdf";
@@ -113,14 +120,18 @@ export type PasswordTry = {
 /**
  * What a worker posts back: each stage as it starts, then the statement it
  * read; or, for a file no parser knows, its format, then what each mapping
- * asked about makes of it.
+ * or choices asked about make of it.
  */
 export type ExtractionMessage =
   | { readonly type: "stage"; readonly stage: ExtractionStage }
   | { readonly type: "done"; readonly result: Result<ExtractedStatement> }
   | { readonly type: "unknown"; readonly format: UnknownFormat }
   | { readonly type: "read"; readonly result: Result<ExtractedStatement> }
-  | { readonly type: "proposed"; readonly result: Result<MappingProposal> };
+  | {
+      readonly type: "reviewed";
+      readonly revision: number;
+      readonly result: Result<MappingReview>;
+    };
 
 /** What the upload queue needs from a worker, so tests can pass a fake one. */
 export type ExtractionWorker = {
@@ -210,9 +221,9 @@ type UploadState =
   | { readonly status: typeof UPLOAD_STATUS.FINDING_FORMAT }
   | { readonly status: typeof UPLOAD_STATUS.PROPOSING }
   | {
-      // Waiting for the person to confirm what the proposal makes of it.
+      // Waiting for the person to correct and confirm how to read it.
       readonly status: typeof UPLOAD_STATUS.CONFIRMING;
-      readonly proposal: MappingProposal;
+      readonly confirmation: FormatConfirmation;
     }
   | { readonly status: typeof UPLOAD_STATUS.CONFIRMED }
   | {
