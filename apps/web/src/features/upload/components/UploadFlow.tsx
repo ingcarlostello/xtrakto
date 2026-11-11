@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { countText } from "@/utils/count-text.utils";
 import { exportDestination } from "../account-destination.helpers";
-import { type FileActions, useUploadFlow } from "../hooks/use-upload-flow";
+import type { FileActions, UploadFlowState } from "../hooks/use-upload-flow";
 import {
   fileKindOf,
   fileRowView,
@@ -240,6 +240,8 @@ function StatusCheck({ stopped, onCheckAgain }: StatusCheckProps) {
 }
 
 type UploadFlowProps = {
+  /** The upload screen's state, which UploadScreen holds. */
+  flow: UploadFlowState;
   /** The user's accounts, where a movements export can go. */
   accounts: readonly UploadAccount[];
   /** The month's statements, counted on the server. */
@@ -291,9 +293,8 @@ function UnderTheCard({ jobs, coverage }: UnderTheCardProps) {
 }
 
 export function UploadFlow(props: UploadFlowProps) {
-  const { accounts, usage, coverage, children } = props;
-  const { items, restored, statuses, files, isBusy, ...flow } =
-    useUploadFlow(accounts);
+  const { flow, accounts, usage, coverage, children } = props;
+  const { items, restored, statuses, files, isBusy } = flow;
   const { picker, addFiles, actions, sendAll } = flow;
   return (
     <>
