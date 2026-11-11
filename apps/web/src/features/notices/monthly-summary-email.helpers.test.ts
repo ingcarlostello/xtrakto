@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { monthlySummaryEmail } from "./monthly-summary-email.helpers";
+import type { MonthlyStatus } from "./monthly-summary.helpers";
 
 const UNSUBSCRIBE = "https://xtrakto.site/unsubscribe?token=abc";
 const OCTOBER = { year: 2026, month: 10 };
 const DECEMBER = { year: 2026, month: 12 };
 
+// Someone whose accounts are all Bancolombia's.
+const facts = (status: MonthlyStatus) => ({ status, hasOtherBank: false });
+
 describe("monthlySummaryEmail", () => {
   it("links the month's summary when it's ready", () => {
     const { subject, text, html } = monthlySummaryEmail(
-      { kind: "ready", accountId: "a1" },
+      facts({ kind: "ready", accountId: "a1" }),
       OCTOBER,
       UNSUBSCRIBE,
     );
@@ -24,7 +28,7 @@ describe("monthlySummaryEmail", () => {
 
   it("asks for the month's movements while its quarter goes on", () => {
     const { subject, text } = monthlySummaryEmail(
-      { kind: "missing" },
+      facts({ kind: "missing" }),
       OCTOBER,
       UNSUBSCRIBE,
     );
@@ -38,7 +42,7 @@ describe("monthlySummaryEmail", () => {
 
   it("asks for the quarterly statement once its quarter ended, with its year from the next", () => {
     const { text } = monthlySummaryEmail(
-      { kind: "missing" },
+      facts({ kind: "missing" }),
       DECEMBER,
       UNSUBSCRIBE,
     );
@@ -46,9 +50,24 @@ describe("monthlySummaryEmail", () => {
     expect(text).toContain("sube el extracto trimestral oct–dic 2026.");
   });
 
+  it("asks for the month's movements, without naming a bank, when an account is another bank's", () => {
+    const { text, html } = monthlySummaryEmail(
+      { status: { kind: "missing" }, hasOtherBank: true },
+      DECEMBER,
+      UNSUBSCRIBE,
+    );
+
+    for (const body of [text, html]) {
+      expect(body).toContain(
+        "Para ver tu resumen del mes, sube tus movimientos de diciembre.",
+      );
+      expect(body).not.toContain("trimestral");
+    }
+  });
+
   it("says what's left of a month it has in part", () => {
     const { subject, text } = monthlySummaryEmail(
-      { kind: "partial" },
+      facts({ kind: "partial" }),
       OCTOBER,
       UNSUBSCRIBE,
     );
@@ -61,7 +80,7 @@ describe("monthlySummaryEmail", () => {
 
   it("says why it arrived, and its way out, in HTML and text", () => {
     const { text, html } = monthlySummaryEmail(
-      { kind: "missing" },
+      facts({ kind: "missing" }),
       OCTOBER,
       UNSUBSCRIBE,
     );

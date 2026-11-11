@@ -48,7 +48,6 @@ export const RESULT_COPY = {
   stepDuplicates: "Revisando duplicados",
   noneHad: "Ninguno estaba en tu cuenta.",
   hadIn: "ya estaban en tu cuenta: no se duplican.",
-  coveredNote: "Tu extracto trimestral ya los traía.",
   hiddenNote: "Ahora cuentan los de este extracto, que trae saldos.",
   keptApart: "Quedan guardados, pero no cuentan hasta que el saldo cuadre.",
   verifiedDetail: "Cada movimiento cuadra con su saldo, al centavo.",
@@ -56,27 +55,49 @@ export const RESULT_COPY = {
     "Revisa que el archivo esté completo, o sube una versión que cuadre.",
   // What a movements export matched (Phase 10.1b, v8-08 and v8-13).
   references: { one: "referencia agregada", other: "referencias agregadas" },
-  hadInQuarterly: "ya estaban en tu extracto trimestral.",
   someInQuarterly: "De ellos,",
-  inQuarterly: "venían en tu extracto trimestral.",
   interestDayApart:
     "Los intereses vienen con un día de diferencia entre archivos; igual los reconocimos.",
-  verifiedByQuarterly: "Verificado por tu extracto trimestral",
   verifiedByQuarterlyDetail:
     "Este tipo de archivo no trae saldos; lo comparamos con",
   andMatches: "y coincide.",
-  verifiedWithQuarterly: "Verificado con tu extracto trimestral",
   verifiedWithQuarterlyDetail:
     "Este archivo no trae saldos, pero todo coincide con",
   noBalanceStep: "Este archivo no trae saldos",
-  noBalanceDetail:
-    "Los movimientos de la Sucursal Virtual no los incluyen. Los verificamos cuando subas el extracto trimestral de ese periodo.",
-  partlyVerifiedDetail:
-    "coinciden con tu extracto trimestral; los demás, cuando subas el de su periodo.",
   stepClassified: "Clasificado",
   newReferences: { one: "referencia nueva", other: "referencias nuevas" },
   referencesKinds: "como números de Nequi o de PSE.",
   and: "y",
+} as const;
+
+// What verifies a file without balances (10.1b), as its account's bank has
+// it: Bancolombia's quarterly statement, or another bank's spreadsheet with
+// balances (11.3c).
+export const VERIFIER_COPY = {
+  quarterly: {
+    covered: "Tu extracto trimestral ya los traía.",
+    hadIn: "ya estaban en tu extracto trimestral.",
+    in: "venían en tu extracto trimestral.",
+    verifiedBy: "Verificado por tu extracto trimestral",
+    verifiedWith: "Verificado con tu extracto trimestral",
+    waiting:
+      "Los movimientos de la Sucursal Virtual no los incluyen. Los verificamos cuando subas el extracto trimestral de ese periodo.",
+    partly:
+      "coinciden con tu extracto trimestral; los demás, cuando subas el de su periodo.",
+    listed: "verificado por tu extracto trimestral",
+  },
+  balances: {
+    covered: "Tu archivo con saldos ya los traía.",
+    hadIn: "ya estaban en tu archivo con saldos.",
+    in: "venían en tu archivo con saldos.",
+    verifiedBy: "Verificado por tu archivo con saldos",
+    verifiedWith: "Verificado con tu archivo con saldos",
+    waiting:
+      "Los verificamos cuando subas un archivo de ese periodo que traiga saldos.",
+    partly:
+      "coinciden con tu archivo con saldos; los demás, cuando subas uno de su periodo.",
+    listed: "verificado por tu archivo con saldos",
+  },
 } as const;
 
 // What follows the files sent (v8-08's "Lo que sigue", Phase 10.1b).

@@ -15,7 +15,6 @@ export const UPLOADED_FILES_COPY = {
   notReconciled: "no cuadra",
   notReconciledBy: "no cuadra por",
   noBalance: "sin saldo para verificar",
-  verifiedByQuarterly: "verificado por tu extracto trimestral",
   badge: {
     verified: "Verificado",
     unverified: "Sin verificar",

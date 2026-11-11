@@ -18,6 +18,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+import { accounts } from "../accounts/account.schemas";
 import type { Database, DbTransaction } from "../client/db-client.types";
 import { chainedFrom } from "../statements/statement-chain.queries";
 import { statements } from "../statements/statement.schemas";
@@ -66,8 +67,9 @@ export type IngestionJobResult = {
   /** Once done: the statement it saved, or the one that already held it. */
   readonly statement: {
     readonly id: string;
-    /** The account it was saved to. */
+    /** The account it was saved to, and its bank. */
     readonly accountId: string;
+    readonly bankId: string;
     readonly period: Period;
     /** It reconciles, it doesn't, or it prints no balances (an export). */
     readonly balance: StatementBalance;
@@ -334,6 +336,7 @@ const RESULT_COLUMNS = {
   stats: ingestionJobs.stats,
   statementId: statements.id,
   accountId: statements.accountId,
+  bankId: accounts.bankId,
   from: statements.periodFrom,
   to: statements.periodTo,
   isVerified: statements.balanceVerified,
@@ -350,7 +353,8 @@ const balanceOf = (
   return hasBalances ? "unverified" : "none";
 };
 
-// The context user's jobs, newest first, each with the statement it saved.
+// The context user's jobs, newest first, each with the statement it saved
+// and that statement's account.
 const selectJobResults = ({ tx, userId }: UserContext, filter?: SQL) =>
   tx
     .select(RESULT_COLUMNS)
@@ -362,6 +366,13 @@ const selectJobResults = ({ tx, userId }: UserContext, filter?: SQL) =>
         eq(statements.userId, ingestionJobs.userId),
       ),
     )
+    .leftJoin(
+      accounts,
+      and(
+        eq(accounts.id, statements.accountId),
+        eq(accounts.userId, statements.userId),
+      ),
+    )
     .where(and(eq(ingestionJobs.userId, userId), filter))
     .orderBy(desc(ingestionJobs.createdAt), desc(ingestionJobs.id))
     .$dynamic();
@@ -371,6 +382,7 @@ type JobResultRow = Awaited<ReturnType<typeof selectJobResults>>[number];
 const toJobResult = ({
   statementId,
   accountId,
+  bankId,
   from,
   to,
   isVerified,
@@ -381,10 +393,11 @@ const toJobResult = ({
 }: JobResultRow): IngestionJobResult => ({
   ...job,
   statement:
-    statementId && accountId && from && to
+    statementId && accountId && bankId && from && to
       ? {
           id: statementId,
           accountId,
+          bankId,
           period: { from, to },
           balance: balanceOf(isVerified, hasBalances),
           differenceMinor,

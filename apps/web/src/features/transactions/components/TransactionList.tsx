@@ -60,7 +60,7 @@ export function TransactionList({
 }) {
   const { account, period } = transactions;
   const link = listLinkOf(transactions);
-  const joined = joinedFilesText(transactions.files);
+  const joined = joinedFilesText(transactions.files, account.bankId);
   return (
     <Card variant="card" className="w-full min-w-0 gap-0">
       <CardHeader className="pb-4">

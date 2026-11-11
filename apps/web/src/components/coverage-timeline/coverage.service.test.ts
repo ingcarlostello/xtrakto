@@ -109,8 +109,11 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     expect(view?.sentence).toBe(
       "Julio a septiembre de 2026 completo y verificado. Octubre y noviembre no los tienes todavía.",
     );
-    expect(data.files).toEqual({ quarterly: 1, movements: 1 });
+    expect(data.files).toEqual([
+      { bankId: "bancolombia", withBalances: 1, withoutBalances: 1 },
+    ]);
     expect(data.coverage).toEqual([view]);
+    expect(view?.isOtherBank).toBe(false);
   });
 
   it("reads nothing before the user's first file", async () => {
@@ -118,7 +121,7 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
 
     expect(await getCoverage(clerkUserId)).toEqual([]);
     expect(await getYourData(clerkUserId)).toEqual({
-      files: { quarterly: 0, movements: 0 },
+      files: [],
       coverage: [],
     });
   });

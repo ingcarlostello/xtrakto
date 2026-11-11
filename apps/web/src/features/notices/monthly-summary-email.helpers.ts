@@ -24,16 +24,24 @@ const UPLOAD_URL = `${SITE_URL}/upload`;
 const nameOf = (month: CalendarMonth): string =>
   formatMonthName(month).toLocaleLowerCase("es-CO");
 
+/** What the email says of the month: its status, and whether an account is another bank's (11.3c). */
+export type MonthlyFacts = {
+  readonly status: MonthlyStatus;
+  readonly hasOtherBank: boolean;
+};
+
 // The file that brings the month, as the summary's notice names it (10.2d),
 // seen from the month after it: its quarterly statement once its quarter
-// ended, else its movements.
-const fileWords = (month: CalendarMonth): string => {
+// ended, else its movements. With an account of another bank, whose name an
+// email never carries, its movements, which every bank gives (11.3c).
+const fileWords = (month: CalendarMonth, hasOtherBank: boolean): string => {
+  if (hasOtherBank) return `${COPY.yourMovements} ${nameOf(month)}`;
   const today = monthAtIndex(monthIndex(month) + 1);
   return filesText(filesFor([month], today), today.year);
 };
 
 const sectionOf = (
-  status: MonthlyStatus,
+  { status, hasOtherBank }: MonthlyFacts,
   month: CalendarMonth,
 ): EmailSection => {
   const name = nameOf(month);
@@ -52,7 +60,7 @@ const sectionOf = (
   const { title, toSee } = COPY[status.kind];
   return {
     title: `${title} ${name}`,
-    lines: [`${toSee} ${fileWords(month)}.`],
+    lines: [`${toSee} ${fileWords(month, hasOtherBank)}.`],
     action: PAGE_COPY.uploadAction,
     url: UPLOAD_URL,
   };
@@ -60,12 +68,12 @@ const sectionOf = (
 
 /** The email of the first of the month: its summary, or which file it needs. */
 export const monthlySummaryEmail = (
-  status: MonthlyStatus,
+  facts: MonthlyFacts,
   month: CalendarMonth,
   unsubscribeUrl: string,
 ) =>
   noticeEmail({
-    sections: [sectionOf(status, month)],
+    sections: [sectionOf(facts, month)],
     footer: COPY.footer,
     unsubscribe: UPLOAD_EMAIL_COPY.unsubscribe.one,
     unsubscribeUrl,

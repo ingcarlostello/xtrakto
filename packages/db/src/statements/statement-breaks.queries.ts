@@ -13,7 +13,9 @@ import { statements } from "./statement.schemas";
 /** A statement whose balances don't reconcile: none of its movements count. */
 export type UnreconciledStatement = {
   readonly id: string;
+  /** Its account, and the account's bank (11.3c). */
   readonly accountId: string;
+  readonly bankId: string;
   /** From the day of its opening balance, which belongs to the period before. */
   readonly period: Period;
   /** The closing balance minus the opening balance and every amount. */
@@ -42,11 +44,13 @@ export const listUnreconciledStatements = (
     .select({
       id: statements.id,
       accountId: statements.accountId,
+      bankId: accounts.bankId,
       from: statements.periodFrom,
       to: statements.periodTo,
       differenceMinor: statements.balanceDifferenceMinor,
     })
     .from(statements)
+    .innerJoin(accounts, eq(accounts.id, statements.accountId))
     .where(
       and(
         doesNotReconcile(userId),
@@ -121,7 +125,12 @@ export const findStatementBreaks = async (
     .orderBy(desc(transactions.position));
   const { from, to, account, ...statement } = found;
   return {
-    statement: { ...statement, accountId: account.id, period: { from, to } },
+    statement: {
+      ...statement,
+      accountId: account.id,
+      bankId: account.bankId,
+      period: { from, to },
+    },
     account,
     movements,
   };

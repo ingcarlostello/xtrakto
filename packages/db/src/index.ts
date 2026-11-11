@@ -65,6 +65,7 @@ export {
   type StatementMatches,
 } from "./statements/statement-matches.queries";
 export {
+  type BankFiles,
   countPeriodFiles,
   countUserFiles,
   type PeriodFiles,

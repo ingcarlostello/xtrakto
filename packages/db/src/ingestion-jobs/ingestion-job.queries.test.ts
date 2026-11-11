@@ -381,9 +381,13 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
     });
   });
 
-  it("lists the user's jobs asked for, with their statement's balance, never their content", async () => {
+  it("lists the user's jobs asked for, with their statement's balance and bank, never their content", async () => {
     const userId = await newUser();
-    const owned = { userId, accountId: await insertAccount(owner.db, userId) };
+    // Another bank's account, whose bank each statement's result names (11.3c).
+    const owned = {
+      userId,
+      accountId: await insertAccount(owner.db, userId, "davivienda"),
+    };
     // A quarterly statement that reconciles, one that doesn't, and an export.
     const statementIds = await Promise.all(
       [
@@ -460,6 +464,7 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
       statement: {
         id: expect.any(String),
         accountId: owned.accountId,
+        bankId: "davivienda",
         period: { from: `2026-0${month}-01`, to: "2026-09-30" },
         balance,
         differenceMinor,

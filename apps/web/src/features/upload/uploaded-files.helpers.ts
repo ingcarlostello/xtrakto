@@ -1,8 +1,10 @@
+import { BANK_LABELS } from "@/utils/account-label.constants";
 import { countText } from "@/utils/count-text.utils";
-import { fileTypeOf } from "@/utils/statement-label.helpers";
+import { MAPPED_FORMAT } from "@/utils/statement-label.constants";
+import { fileTypeOf, labelOf } from "@/utils/statement-label.helpers";
 import { jobLabel } from "./upload-display.helpers";
 import { RESULT_COPY } from "./upload-result.constants";
-import { offBy } from "./upload-result.helpers";
+import { offBy, verifierOf } from "./upload-result.helpers";
 import {
   JOB_PROBLEMS,
   JOB_STATUS,
@@ -88,14 +90,19 @@ const exportSummary = (outcome: JobOutcome): Summary => {
     facts: [
       countText(outcome.stats.added, RESULT_COPY.new),
       ...referenceFacts(outcome),
-      isVerified ? COPY.verifiedByQuarterly : COPY.noBalance,
+      isVerified ? verifierOf(outcome.bankId).listed : COPY.noBalance,
     ],
   };
 };
 
 // The file its format comes in, "Excel" or "PDF", when the job knows it.
-const fileTypeFacts = ({ formatId }: UploadJob): readonly string[] =>
-  formatId === undefined ? [] : [fileTypeOf(formatId)];
+// Another bank's spreadsheet, which may have been an Excel or a CSV, the
+// server doesn't know: it's named by its account's bank once saved (11.3c).
+const fileTypeFacts = ({ formatId, outcome }: UploadJob): readonly string[] => {
+  if (formatId === undefined) return [];
+  if (formatId !== MAPPED_FORMAT) return [fileTypeOf(formatId)];
+  return outcome ? [labelOf(BANK_LABELS, outcome.bankId)] : [];
+};
 
 /** A file sent, named by its format and period (docs/ui/v8-07). */
 export const uploadedFileView = (job: UploadJob): UploadedFileView => {

@@ -3,7 +3,7 @@ import {
   localDateSchema,
   periodSchema,
 } from "@xtrakto/core";
-import type { AccountCoverage } from "@xtrakto/db";
+import type { AccountCoverage, AccountRow } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import type {
   CoverageGaps,
@@ -24,8 +24,20 @@ const movements = (...months: CalendarMonth[]): GapFile => ({
   months,
 });
 
-// The notice reads only what the account misses.
-const missing = (gaps: CoverageGaps, today = "2026-11-05") =>
+const accountOf = (bankId: string): AccountRow => ({
+  id: "a1",
+  bankId,
+  accountType: "savings",
+  last4: null,
+});
+const BANCOLOMBIA = accountOf("bancolombia");
+
+// The notice reads only what the account misses, and its bank.
+const missing = (
+  gaps: CoverageGaps,
+  today = "2026-11-05",
+  account = BANCOLOMBIA,
+) =>
   missingMonthsView({
     missing: {
       segments: [],
@@ -33,6 +45,7 @@ const missing = (gaps: CoverageGaps, today = "2026-11-05") =>
       gaps,
       today: localDateSchema.parse(today),
     },
+    account,
   });
 
 describe("missingMonthsView", () => {
@@ -127,8 +140,26 @@ describe("missingMonthsView", () => {
     );
   });
 
+  it("asks another bank's account for its movements of those months, by its bank", () => {
+    const gaps: CoverageGaps = {
+      runs: [[month(4), month(5), month(6)]],
+      files: [quarterly(2)],
+    };
+    const davivienda = missing(gaps, "2026-11-05", accountOf("davivienda"));
+    const chosenOther = missing(gaps, "2026-11-05", accountOf("other"));
+
+    expect(davivienda).toMatchObject({
+      title: "Te falta abril a junio",
+      text: "Para ver el año completo, sube tus movimientos de Davivienda de abril a junio.",
+      action: "Ir a Subir",
+    });
+    expect(chosenOther?.text).toBe(
+      "Para ver el año completo, sube tus movimientos de tu banco de abril a junio.",
+    );
+  });
+
   it("shows nothing when the account misses nothing", () => {
-    expect(missingMonthsView({})).toBeUndefined();
+    expect(missingMonthsView({ account: BANCOLOMBIA })).toBeUndefined();
   });
 });
 

@@ -78,7 +78,7 @@ export function WhatYouHave({ views, isNow }: WhatYouHaveProps) {
       {views.map((view) => (
         <AccountMonths key={view.accountId} view={view} />
       ))}
-      <CoverageLegend />
+      <CoverageLegend views={views} />
       {views.map((view) => (
         <JoinedNote key={view.accountId} view={view} />
       ))}

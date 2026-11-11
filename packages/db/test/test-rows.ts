@@ -34,12 +34,13 @@ export const insertUser = async (db: Database): Promise<string> => {
 export const insertAccount = async (
   db: Database,
   userId: string,
+  bankId = "bancolombia",
 ): Promise<string> => {
   const [row] = await db
     .insert(accounts)
     .values({
       userId,
-      bankId: "bancolombia",
+      bankId,
       accountType: "savings",
       // Random, so one user can have several accounts.
       last4: String(randomInt(10_000)).padStart(4, "0"),

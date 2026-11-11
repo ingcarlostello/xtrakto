@@ -12,6 +12,7 @@ import {
   hasWholeMonth,
   monthsHad,
   timelineMonths,
+  verifiedLegend,
 } from "./coverage-timeline.helpers";
 
 const day = (date: string) => localDateSchema.parse(date);
@@ -240,6 +241,29 @@ describe("coverageViews", () => {
     );
 
     expect(view?.accountLabel).toBeUndefined();
+  });
+
+  it("says which account is another bank's", () => {
+    const views = coverageViews(
+      [ANA, { ...ANA, accountId: "a2" }],
+      [account("a1", "8901"), { ...account("a2", ""), bankId: "davivienda" }],
+      day("2026-10-20"),
+    );
+
+    expect(views.map(({ isOtherBank }) => isOtherBank)).toEqual([false, true]);
+  });
+});
+
+describe("verifiedLegend", () => {
+  const ours = { isOtherBank: false };
+  const theirs = { isOtherBank: true };
+
+  it("names what verifies the months of the accounts shown", () => {
+    expect(verifiedLegend([ours])).toBe("Extracto trimestral, verificado");
+    expect(verifiedLegend([theirs])).toBe("Archivo con saldos, verificado");
+    expect(verifiedLegend([ours, theirs])).toBe(
+      "Extracto trimestral o archivo con saldos, verificado",
+    );
   });
 });
 

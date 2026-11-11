@@ -278,7 +278,7 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     expect(await coverageOf(stranger)).toEqual([]);
   });
 
-  it("counts every file the user keeps, of each kind", async () => {
+  it("counts every file the user keeps, by bank, with balances and without", async () => {
     const account = await newAccount();
     await save(account, await preparedQuarterly(JULY), VERIFIED);
     await save(
@@ -292,12 +292,27 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     await save(account, await preparedExport(JULY_EXPORT), UNCHECKED);
     await save(account, await preparedExport(OCTOBER), UNCHECKED);
     await save(account, await preparedExport(AUGUST), UNCHECKED);
+    const otherBank = {
+      userId: account.userId,
+      accountId: await withUserContext(app.db, account.userId, (ctx) =>
+        resolveIdentifiedAccount(ctx, {
+          bankId: "davivienda",
+          accountType: "savings",
+          last4: "4321",
+          currency: "COP",
+        }),
+      ),
+    };
+    await save(otherBank, await preparedExport(AUGUST), UNCHECKED);
     const stranger = await newAccount();
 
     const files = (who: Account) =>
       withUserContext(app.db, who.userId, countUserFiles);
 
-    expect(await files(account)).toEqual({ quarterly: 2, movements: 3 });
-    expect(await files(stranger)).toEqual({ quarterly: 0, movements: 0 });
+    expect(await files(account)).toEqual([
+      { bankId: "bancolombia", withBalances: 2, withoutBalances: 3 },
+      { bankId: "davivienda", withBalances: 0, withoutBalances: 1 },
+    ]);
+    expect(await files(stranger)).toEqual([]);
   });
 });

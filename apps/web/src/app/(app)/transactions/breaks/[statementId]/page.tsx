@@ -31,7 +31,7 @@ export default async function StatementBreaksPage({
     <>
       <PageHeader
         title={COPY.title}
-        subtitle={`${statementName(statement.period)} · ${accountLabel(account, account.last4)}`}
+        subtitle={`${statementName(statement)} · ${accountLabel(account, account.last4)}`}
       />
       <StatementBreaksView
         breaks={breaks}

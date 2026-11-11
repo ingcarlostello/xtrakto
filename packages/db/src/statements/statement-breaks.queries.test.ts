@@ -45,10 +45,14 @@ describe.skipIf(!testDatabase)("statements that don't reconcile", () => {
     await owner.pool.end();
   });
 
-  const newAccount = async (userId: UserId, last4 = "8901") =>
+  const newAccount = async (
+    userId: UserId,
+    last4 = "8901",
+    bankId = "bancolombia",
+  ) =>
     withUserContext(app.db, userId, (ctx) =>
       resolveIdentifiedAccount(ctx, {
-        bankId: "bancolombia",
+        bankId,
         accountType: "savings",
         last4,
         currency: "COP",
@@ -93,6 +97,7 @@ describe.skipIf(!testDatabase)("statements that don't reconcile", () => {
       {
         id: off,
         accountId,
+        bankId: "bancolombia",
         period: { from: "2026-06-30", to: "2026-09-30" },
         differenceMinor: -1_000,
       },
@@ -113,7 +118,8 @@ describe.skipIf(!testDatabase)("statements that don't reconcile", () => {
 
   it("finds a statement that doesn't reconcile with every movement, newest first", async () => {
     const userId = toUserId(await insertUser(owner.db));
-    const accountId = await newAccount(userId);
+    // Another bank's account, whose bank its statement names (11.3c).
+    const accountId = await newAccount(userId, "8901", "davivienda");
     const off = await saveIn(userId, accountId, [
       await preparedQuarterly(QUARTER),
       UNVERIFIED,
@@ -123,9 +129,13 @@ describe.skipIf(!testDatabase)("statements that don't reconcile", () => {
       findStatementBreaks(ctx, off),
     );
 
+    expect(await unreconciled(userId)).toEqual([
+      expect.objectContaining({ id: off, bankId: "davivienda" }),
+    ]);
     expect(breaks?.statement).toEqual({
       id: off,
       accountId,
+      bankId: "davivienda",
       period: { from: "2026-06-30", to: "2026-09-30" },
       differenceMinor: -1_000,
       openingBalanceMinor: 100_000,

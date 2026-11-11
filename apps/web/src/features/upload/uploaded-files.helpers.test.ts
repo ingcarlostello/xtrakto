@@ -39,6 +39,7 @@ const done = (
     stats: stats(counts),
     statementId: "s1",
     accountId: "a1",
+    bankId: "bancolombia",
     period: QUARTER,
     balance: "verified",
     matches: NO_MATCHES,
@@ -227,5 +228,41 @@ describe("uploadedFileView", () => {
       uploadedFileView(done(quarterly, { total: 1, added: 0, skipped: 1 }))
         .detail,
     ).toBe("Excel · 1 ya lo tenías · nada nuevo");
+  });
+
+  describe("another bank's file", () => {
+    const mapped: UploadJob = { ...movements, formatId: "mapped-spreadsheet" };
+
+    it("names it by its account's bank once saved, since it may have been a CSV", () => {
+      const saved = done(
+        mapped,
+        { total: 10, added: 10 },
+        { bankId: "davivienda" },
+      );
+
+      expect(uploadedFileView(saved).detail).toBe(
+        "Davivienda · 10 movimientos · cuadra al centavo",
+      );
+      expect(uploadedFileView({ ...mapped, status: "processing" }).detail).toBe(
+        "",
+      );
+    });
+
+    it("says another bank's file with balances verified it", () => {
+      const verified = done(
+        mapped,
+        { total: 21, added: 6 },
+        {
+          bankId: "davivienda",
+          period: OCTOBER,
+          balance: "none",
+          matches: { ...NO_MATCHES, matched: 15, verifiedBy: [OCTOBER] },
+        },
+      );
+
+      expect(uploadedFileView(verified).detail).toBe(
+        "Davivienda · 6 nuevos · verificado por tu archivo con saldos",
+      );
+    });
   });
 });

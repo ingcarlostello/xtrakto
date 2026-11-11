@@ -11,9 +11,9 @@ import type {
   CoverageMonth,
   CoverageQuarter,
 } from "@xtrakto/db";
-import { accountShortLabel } from "@/utils/account-label.helpers";
+import { accountShortLabel, isOtherBank } from "@/utils/account-label.helpers";
 import { coverageSentence, overlapNote } from "./coverage-sentence.helpers";
-import { TIMELINE_MONTHS } from "./coverage-timeline.constants";
+import { COVERAGE_COPY, TIMELINE_MONTHS } from "./coverage-timeline.constants";
 import type {
   CoverageSegment,
   CoverageStatus,
@@ -161,7 +161,7 @@ const isChainedIn = (
 export const coverageViewOf = (
   coverage: AccountCoverage,
   today: LocalDate,
-): Omit<CoverageView, "accountLabel"> => {
+): Omit<CoverageView, "accountLabel" | "isOtherBank"> => {
   const verified = verifiedMonths(coverage.quarters);
   const known = [
     ...new Set([...coverage.months.map(({ month }) => month), ...verified]),
@@ -202,8 +202,25 @@ export const coverageViews = (
   });
   return shown.map(({ account, found }) => ({
     ...coverageViewOf(found, today),
+    isOtherBank: isOtherBank(account.bankId),
     ...(shown.length > 1
       ? { accountLabel: accountShortLabel(account, account.last4) }
       : {}),
   }));
+};
+
+/**
+ * What verified a month, as the legend says it for the accounts shown: a
+ * quarterly statement, another bank's spreadsheet with balances (11.3c), or
+ * either.
+ */
+export const verifiedLegend = (
+  views: readonly Pick<CoverageView, "isOtherBank">[],
+): string => {
+  const { legend } = COVERAGE_COPY;
+  const hasOtherBank = views.some(({ isOtherBank }) => isOtherBank);
+  if (!hasOtherBank) return legend.verified;
+  return views.every(({ isOtherBank }) => isOtherBank)
+    ? legend.verifiedByBalances
+    : legend.verifiedEither;
 };

@@ -4,10 +4,10 @@ import {
   formatAmount,
   formatMonthRange,
   isAmountMinor,
-  type Period,
   sumAmounts,
 } from "@xtrakto/core";
 import type { StatementBreaks, UnreconciledStatement } from "@xtrakto/db";
+import { isOtherBank } from "@/utils/account-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
 import type { MovementMark } from "./transaction.types";
@@ -26,18 +26,28 @@ const offBy = (difference: AmountMinor | null): string | undefined => {
   return amount !== 0 && isAmountMinor(amount) ? money(amount) : undefined;
 };
 
-/** `"Extracto trimestral jul–sep 2026"`: only quarterly statements have balances. */
-export const statementName = (period: Period): string =>
-  `${COPY.statement} ${formatMonthRange(period)}`;
+/**
+ * `"Extracto trimestral jul–sep 2026"`: of Bancolombia's files, only quarterly
+ * statements have balances; another bank's is a file with balances (11.3c).
+ */
+export const statementName = ({
+  period,
+  bankId,
+}: Pick<UnreconciledStatement, "period" | "bankId">): string =>
+  `${isOtherBank(bankId) ? COPY.balancesFile : COPY.statement} ${formatMonthRange(period)}`;
 
 /** `"Tu extracto trimestral jul–sep 2026 no cuadra por $810: …"`. */
 export const unreconciledText = ({
   period,
+  bankId,
   differenceMinor,
 }: UnreconciledStatement): string => {
   const amount = offBy(differenceMinor);
   const off = amount ? `${COPY.offBy} ${amount}` : COPY.off;
-  return `${COPY.yourStatement} ${formatMonthRange(period)} ${off}: ${COPY.notCounted}`;
+  const yours = isOtherBank(bankId)
+    ? COPY.yourBalancesFile
+    : COPY.yourStatement;
+  return `${yours} ${formatMonthRange(period)} ${off}: ${COPY.notCounted}`;
 };
 
 /** `"El saldo final no cuadra por $810"`, or why else it doesn't. */

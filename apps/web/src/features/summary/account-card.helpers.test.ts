@@ -184,6 +184,7 @@ describe("accountCardView", () => {
     const broken = {
       id: "s1",
       accountId: "a1",
+      bankId: "bancolombia",
       period: period("2026-06-30", "2026-09-30"),
       differenceMinor: amount(-81_000),
     };
@@ -251,6 +252,7 @@ describe("accountCardView", () => {
       const broken = {
         id: "s1",
         accountId: "a1",
+        bankId: "bancolombia",
         period: period("2026-09-30", "2026-12-31"),
         differenceMinor: amount(-81_000),
       };

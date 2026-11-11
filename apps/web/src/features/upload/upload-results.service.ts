@@ -136,6 +136,7 @@ const outcomeOf = (
     stats,
     statementId: statement.id,
     accountId: statement.accountId,
+    bankId: statement.bankId,
     period: statement.period,
     balance: statement.balance,
     ...(statement.differenceMinor === null

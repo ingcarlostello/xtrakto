@@ -82,6 +82,7 @@ describe("quarterChoices", () => {
   const unreconciled = (from: string, to: string): UnreconciledStatement => ({
     id: "s1",
     accountId: "a1",
+    bankId: "bancolombia",
     period: periodSchema.parse({ from, to }),
     differenceMinor: null,
   });

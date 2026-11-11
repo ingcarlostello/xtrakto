@@ -115,6 +115,9 @@ export const TRANSACTIONS_COPY = {
     action: "Ver dónde no cuadra",
     statement: "Extracto trimestral",
     yourStatement: "Tu extracto trimestral",
+    // Another bank's spreadsheet with balances (11.3c).
+    balancesFile: "Archivo con saldos de",
+    yourBalancesFile: "Tu archivo con saldos de",
     offBy: "no cuadra por",
     off: "no cuadra",
     notCounted: "sus movimientos no se cuentan aquí.",
@@ -150,13 +153,17 @@ export const TRANSACTIONS_COPY = {
     ofYear: "de",
   },
   // The files the list joined (10.1c): "Juntamos tu extracto trimestral y
-  // 2 archivos de movimientos, sin duplicar."
+  // 2 archivos de movimientos, sin duplicar."; another bank's file with
+  // balances is no quarterly statement (11.3c).
   joined: {
     before: "Juntamos",
-    yourQuarterly: "tu extracto trimestral",
-    quarterlies: {
-      one: "extracto trimestral",
-      other: "extractos trimestrales",
+    quarterly: {
+      yours: "tu extracto trimestral",
+      files: { one: "extracto trimestral", other: "extractos trimestrales" },
+    },
+    balances: {
+      yours: "tu archivo con saldos",
+      files: { one: "archivo con saldos", other: "archivos con saldos" },
     },
     movements: {
       one: "archivo de movimientos",

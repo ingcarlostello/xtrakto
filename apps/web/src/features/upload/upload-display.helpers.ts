@@ -3,7 +3,7 @@ import type { AppError, Period } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { BANK_LABELS, MASKED_DIGITS } from "@/utils/account-label.constants";
 import { countText } from "@/utils/count-text.utils";
-import { FORMAT_LABELS } from "@/utils/statement-label.constants";
+import { FILE_TYPE, FORMAT_LABELS } from "@/utils/statement-label.constants";
 import {
   fileTypeOf,
   isPdfFormat,
@@ -12,7 +12,7 @@ import {
   statementLabel,
   statementPeriodText,
 } from "@/utils/statement-label.helpers";
-import { isPdfName } from "./file-checks.helpers";
+import { isCsvName, isPdfName } from "./file-checks.helpers";
 import { UNKNOWN_FORMAT_COPY as FORMAT_COPY } from "./unknown-format.constants";
 import {
   FILE_PROBLEM,
@@ -60,11 +60,21 @@ export type FileRowView =
       readonly isOpening: boolean;
     } & ProblemText);
 
+// The file type a tag says: its format's, but a spreadsheet's by its name,
+// since a CSV reads as an Excel does (11.3c).
+const fileTypeTag = (formatId: string, fileName: string): string => {
+  const type = fileTypeOf(formatId);
+  return type === FILE_TYPE.EXCEL && isCsvName(fileName) ? FILE_TYPE.CSV : type;
+};
+
 /** The tags of a file read in the browser: bank, format, file type, period. */
-export const previewTags = (preview: StatementPreview): readonly string[] => [
+export const previewTags = (
+  preview: StatementPreview,
+  fileName: string,
+): readonly string[] => [
   labelOf(BANK_LABELS, preview.bankId),
   labelOf(FORMAT_LABELS, preview.formatId),
-  fileTypeOf(preview.formatId),
+  fileTypeTag(preview.formatId, fileName),
   periodText(preview.period, preview.periodSource),
 ];
 
@@ -174,10 +184,16 @@ const sendProblemText = (problem: SendProblem): ProblemText => {
     : PROBLEM_COPY.accountGone;
 };
 
-const previewView = (preview: StatementPreview, note?: string) =>
+/** A file read in the browser: its preview, and its name, which only the page knows. */
+type ReadFile = {
+  readonly preview: StatementPreview;
+  readonly fileName: string;
+};
+
+const previewView = ({ preview, fileName }: ReadFile, note?: string) =>
   ({
     kind: "ready",
-    tags: previewTags(preview),
+    tags: previewTags(preview, fileName),
     count: readyCount(preview),
     note,
   }) as const;
@@ -191,7 +207,7 @@ const jobNote = (job: UploadJob | undefined): string => {
 /** A sent file's row as its job goes, under its preview when the page read it. */
 export const jobView = (
   job: UploadJob | undefined,
-  preview?: StatementPreview,
+  read?: ReadFile,
 ): FileRowView => {
   if (job?.status === JOB_STATUS.FAILED)
     return {
@@ -201,7 +217,7 @@ export const jobView = (
         : PROBLEM_COPY.notProcessed),
     };
   return {
-    ...(preview ? previewView(preview) : { kind: "ready", tags: [] }),
+    ...(read ? previewView(read) : { kind: "ready", tags: [] }),
     note: jobNote(job),
     notice: job?.isSlow ? COPY.slow : undefined,
   };
@@ -247,11 +263,17 @@ export const fileRowView = (item: UploadItem, job?: UploadJob): FileRowView => {
     case UPLOAD_STATUS.READY:
       return item.sendProblem
         ? { kind: "problem", ...sendProblemText(item.sendProblem) }
-        : previewView(item.statement.preview);
+        : previewView({
+            preview: item.statement.preview,
+            fileName: item.file.name,
+          });
     case UPLOAD_STATUS.SENDING:
-      return previewView(item.statement.preview, COPY.sending);
+      return previewView(
+        { preview: item.statement.preview, fileName: item.file.name },
+        COPY.sending,
+      );
     case UPLOAD_STATUS.SENT:
-      return jobView(job, item.preview);
+      return jobView(job, { preview: item.preview, fileName: item.file.name });
     case UPLOAD_STATUS.FAILED:
       return { kind: "problem", ...problemText(item.error) };
   }
