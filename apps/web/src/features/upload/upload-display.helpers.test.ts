@@ -18,11 +18,7 @@ import {
   recognizedText,
   usagePill,
 } from "./upload-display.helpers";
-import {
-  FORMAT_PROBLEM,
-  FORMAT_PROBLEM_COPY,
-  UNKNOWN_FORMAT_COPY,
-} from "./unknown-format.constants";
+import { UNKNOWN_FORMAT_COPY } from "./unknown-format.constants";
 import {
   NO_ANSWER,
   PROBLEM_COPY,
@@ -472,15 +468,6 @@ describe("problemText", () => {
   ])("explains %s", (_case, error, expected) => {
     expect(problemText(error)).toEqual(expected);
   });
-
-  it.each(Object.values(FORMAT_PROBLEM))(
-    "explains a format the LLM couldn't settle: %s",
-    (reason) => {
-      expect(
-        problemText(problem(APP_ERROR_CODE.UNKNOWN_FORMAT, reason)),
-      ).toEqual(FORMAT_PROBLEM_COPY[reason]);
-    },
-  );
 });
 
 describe("fileRowView, for a file no parser knows", () => {

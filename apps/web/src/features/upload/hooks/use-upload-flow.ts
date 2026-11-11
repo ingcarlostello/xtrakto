@@ -1,4 +1,5 @@
 import type { FormatMapping } from "@xtrakto/core";
+import type { MappingChoices } from "@xtrakto/parsers";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore, useTransition } from "react";
 import type { RefObject } from "react";
@@ -164,8 +165,10 @@ export type ConfirmingItem = Extract<
   { readonly status: typeof UPLOAD_STATUS.CONFIRMING }
 >;
 
-/** What the person does with a file whose format they're asked to confirm (11.3a). */
+/** What the person does with a file whose format they're asked to confirm (11.3a, 11.3b). */
 export type FormatActions = {
+  /** Reads it again with their choices. */
+  readonly onCorrect: (id: string, choices: MappingChoices) => void;
   /** Reads it with the mapping, the bank they chose included. */
   readonly onConfirm: (id: string, mapping: FormatMapping) => void;
   /** "Algo está mal": the file is left out, unread, and nothing is saved. */
@@ -179,6 +182,7 @@ const useConfirmation = (queue: ReturnType<typeof useScreenQueue>) => {
     (item): item is ConfirmingItem => item.status === UPLOAD_STATUS.CONFIRMING,
   );
   const formatActions: FormatActions = {
+    onCorrect: queue.correctFormat,
     onConfirm: queue.confirmFormat,
     onLeaveOut: queue.remove,
   };

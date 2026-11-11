@@ -1,8 +1,10 @@
 import { APP_ERROR_CODE, err } from "@xtrakto/core";
 import type { FormatMapping, FormatSample, Result } from "@xtrakto/core";
+import type { MappingChoices } from "@xtrakto/parsers";
 import { useEffect, useRef } from "react";
 import type { Dispatch } from "react";
-import { proposalProblem } from "../format-queue.helpers";
+import type { NoProposal } from "@/features/format-mappings/format-mapping.types";
+import { noProposalOf } from "../format-queue.helpers";
 import { itemsToStart } from "../upload-queue.helpers";
 import type { UploadQueueAction } from "../upload-queue.helpers";
 import { FILE_PROBLEM, NO_ANSWER, UPLOAD_STATUS } from "../upload.constants";
@@ -29,13 +31,16 @@ const unreadable: Result<never> = err({
 });
 
 // One file's reading, and what its worker answers for: a file no parser
-// knows keeps its format, then the mapping the person confirmed.
+// knows keeps its format, the latest correction's number and why there's no
+// proposal, if there isn't, then the mapping the person confirmed.
 type Reading = {
   readonly id: string;
   readonly worker: ExtractionWorker;
   readonly dispatch: Dispatch<UploadQueueAction>;
   readonly services: FormatServices;
   unknown?: UnknownFormat;
+  revision: number;
+  noProposal?: NoProposal;
   confirmed?: FormatMapping;
 };
 
@@ -46,20 +51,35 @@ const finish = (reading: Reading, result: Result<ExtractedStatement>) => {
   dispatch({ type: "finished", id, result, ...mapping });
 };
 
+// What choices make of the file its worker keeps; without them, only the date
+// the code found.
+const review = (reading: Reading, choices?: MappingChoices) => {
+  const { worker, revision } = reading;
+  const chosen = choices === undefined ? {} : { choices };
+  worker.postMessage({ type: "review", revision, ...chosen }, []);
+};
+
 // No mapping is saved for the format, or the saved one no longer reads the
 // file: the LLM proposes roles from its sample, which the worker reads.
+// Without them the person chooses (11.3b), unless the session ended.
 const propose = async (reading: Reading, sample: FormatSample) => {
-  const { id, worker, dispatch, services } = reading;
+  const { id, dispatch, services } = reading;
   dispatch({ type: "formatProposing", id });
   const answer = await services
     .propose(sample)
     .catch((): typeof NO_ANSWER => NO_ANSWER);
   if (answer !== NO_ANSWER && answer.ok) {
-    worker.postMessage({ type: "propose", roles: answer.value.roles }, []);
+    review(reading, { roles: answer.value.roles });
     return;
   }
-  const error = proposalProblem(answer === NO_ANSWER ? answer : answer.error);
-  dispatch({ type: "formatFailed", id, error });
+  const noProposal = noProposalOf(answer === NO_ANSWER ? answer : answer.error);
+  if (noProposal === undefined) {
+    const error = { code: APP_ERROR_CODE.UNAUTHORIZED };
+    dispatch({ type: "formatFailed", id, error });
+    return;
+  }
+  reading.noProposal = noProposal;
+  review(reading);
 };
 
 // A file no parser knows: read with the mapping saved for its format, when
@@ -97,14 +117,20 @@ const onMessage = (reading: Reading, message: ExtractionMessage) => {
     case "read":
       onRead(reading, message.result);
       return;
-    case "proposed":
-      dispatch({ type: "formatProposed", id, result: message.result });
+    case "reviewed": {
+      const { revision, result } = message;
+      const { noProposal } = reading;
+      const why = noProposal === undefined ? {} : { noProposal };
+      dispatch({ type: "formatReviewed", id, revision, result, ...why });
+    }
   }
 };
 
 /** A file's worker, and what the page can ask of it. */
 type FileReader = {
   readonly stop: () => void;
+  /** Reads a file no parser knows again with the person's choices (11.3b). */
+  readonly correct: (choices: MappingChoices) => void;
   /** Reads a file no parser knows with the mapping the person confirmed. */
   readonly confirm: (mapping: FormatMapping) => void;
 };
@@ -128,6 +154,12 @@ const readFile = (item: UploadItem, reading: Reading): FileReader => {
   );
   return {
     stop: () => worker.terminate(),
+    correct: (choices) => {
+      reading.revision += 1;
+      const { revision } = reading;
+      dispatch({ type: "formatCorrected", id: item.id, choices, revision });
+      review(reading, choices);
+    },
     confirm: (mapping) => {
       reading.confirmed = mapping;
       dispatch({ type: "formatConfirmed", id: item.id });
@@ -165,6 +197,7 @@ export const useFileReaders = ({
         worker: createWorker(),
         dispatch,
         services,
+        revision: 0,
       };
       readers.current.set(item.id, readFile(item, reading));
     }
@@ -182,7 +215,9 @@ export const useFileReaders = ({
     readers.current.get(id)?.stop();
     readers.current.delete(id);
   };
+  const correct = (id: string, choices: MappingChoices) =>
+    readers.current.get(id)?.correct(choices);
   const confirm = (id: string, mapping: FormatMapping) =>
     readers.current.get(id)?.confirm(mapping);
-  return { stop, confirm };
+  return { stop, correct, confirm };
 };

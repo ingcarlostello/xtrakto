@@ -77,7 +77,7 @@ describe("findTable", () => {
     "finds the header of $name, over its first movement",
     ({ fixture, headerRow, header }) => {
       expect(findTable(fixtureContent(fixture))).toEqual(
-        ok({ headerRow, header }),
+        ok({ headerRow, header, dateColumn: 0 }),
       );
     },
   );
@@ -91,8 +91,21 @@ describe("findTable", () => {
     ]);
 
     expect(findTable(content)).toEqual(
-      ok({ headerRow: 2, header: ["FECHA", "DETALLE", "VALOR"] }),
+      ok({
+        headerRow: 2,
+        header: ["FECHA", "DETALLE", "VALOR"],
+        dateColumn: 0,
+      }),
     );
+  });
+
+  it("says which column its first movement dates", () => {
+    const content = spreadsheet([
+      ["Detalle", "Oficina", "Fecha", "Valor"],
+      ["COMPRA POS", "0102", "02/09/2026", "85.400,00"],
+    ]);
+
+    expect(findTable(content)).toMatchObject(ok({ dateColumn: 2 }));
   });
 
   it("finds a header with empty rows under it", () => {
@@ -113,7 +126,11 @@ describe("findTable", () => {
     ]);
 
     expect(findTable(content)).toEqual(
-      ok({ headerRow: 0, header: ["FECHA", "", "DETALLE", "VALOR"] }),
+      ok({
+        headerRow: 0,
+        header: ["FECHA", "", "DETALLE", "VALOR"],
+        dateColumn: 0,
+      }),
     );
   });
 

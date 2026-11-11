@@ -1,5 +1,6 @@
 import { APP_ERROR_CODE } from "@xtrakto/core";
 import type { FormatMapping } from "@xtrakto/core";
+import type { MappingChoices } from "@xtrakto/parsers";
 import { useEffect, useReducer, useState } from "react";
 import type { Dispatch } from "react";
 import { uploadQueueReducer } from "../upload-queue.helpers";
@@ -86,7 +87,7 @@ type UploadQueueOptions = {
  * a time, then sent one at a time. A PDF with a password waits for it, and the
  * one that opened a PDF is tried on the others; it never leaves the browser.
  * A file no parser knows waits for its format: the one saved for it, or the
- * one the person confirms (11.3a).
+ * one the person corrects and confirms (11.3a, 11.3b).
  */
 export const useUploadQueue = ({
   createWorker,
@@ -112,6 +113,9 @@ export const useUploadQueue = ({
   const openPdf = (id: string, password: string) =>
     dispatch({ type: "passwordTyped", id, password });
 
+  const correctFormat = (id: string, choices: MappingChoices) =>
+    readers.correct(id, choices);
+
   const confirmFormat = (id: string, mapping: FormatMapping) =>
     readers.confirm(id, mapping);
 
@@ -121,6 +125,7 @@ export const useUploadQueue = ({
     remove,
     chooseAccount,
     openPdf,
+    correctFormat,
     confirmFormat,
     send,
     isSending,

@@ -1,7 +1,10 @@
 import {
   APP_ERROR_CODE,
   COLUMN_ROLE,
+  DATE_ORDER,
+  DECIMAL_SEPARATOR,
   formatMappingSchema,
+  ROLES_PROBLEM,
 } from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
@@ -12,7 +15,7 @@ import {
   type MappedFixtureName,
 } from "../../fixtures/mapped-fixtures";
 import { mappingParser } from "./mapping-parser.helpers";
-import { mappingFromRoles } from "./mapping-roles.helpers";
+import { mappingFromChoices, mappingFromRoles } from "./mapping-roles.helpers";
 
 const {
   DATE,
@@ -63,15 +66,31 @@ describe("mappingFromRoles", () => {
     });
   });
 
-  it.each([
-    { roles: [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN] },
-    { roles: [NONE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN, BALANCE] },
-    { roles: [DATE, DESCRIPTION, AMOUNT, MONEY_OUT, MONEY_IN, BALANCE] },
-  ])("fails roles that read no table: $roles", ({ roles }) => {
+  it("fails roles that aren't one for each column", () => {
+    const roles = [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN];
+
     expect(mappingFromRoles(OUT_IN, roles)).toEqual(
       failure({ reason: "invalid_mapping" }),
     );
   });
+
+  it.each([
+    {
+      roles: [NONE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN, BALANCE],
+      cause: ROLES_PROBLEM.DATE,
+    },
+    {
+      roles: [DATE, DESCRIPTION, AMOUNT, MONEY_OUT, MONEY_IN, BALANCE],
+      cause: ROLES_PROBLEM.MONEY,
+    },
+  ])(
+    "fails roles that read no table, saying why: $cause",
+    ({ roles, cause }) => {
+      expect(mappingFromRoles(OUT_IN, roles)).toEqual(
+        failure({ reason: "invalid_mapping", cause }),
+      );
+    },
+  );
 
   it("fails dates no order reads, with their column", () => {
     const content = spreadsheet([
@@ -108,6 +127,35 @@ describe("mappingFromRoles", () => {
     ).toMatchObject({
       ok: false,
       error: { code: APP_ERROR_CODE.UNKNOWN_FORMAT },
+    });
+  });
+});
+
+describe("mappingFromChoices", () => {
+  const { columns } = MAPPED_FIXTURE_MAPPINGS["mapped-out-in"];
+
+  it("keeps the formats the person chose over those the cells write", () => {
+    const choices = {
+      roles: columns,
+      dateOrder: DATE_ORDER.MONTH_DAY_YEAR,
+      decimalSeparator: DECIMAL_SEPARATOR.POINT,
+    };
+
+    expect(mappingFromChoices(OUT_IN, choices)).toMatchObject({
+      ok: true,
+      value: { dateOrder: "mdy", decimalSeparator: "." },
+    });
+  });
+
+  it("reads the formats the person left unset from the cells", () => {
+    const choices = {
+      roles: columns,
+      decimalSeparator: DECIMAL_SEPARATOR.POINT,
+    };
+
+    expect(mappingFromChoices(OUT_IN, choices)).toMatchObject({
+      ok: true,
+      value: { dateOrder: "dmy", decimalSeparator: "." },
     });
   });
 });

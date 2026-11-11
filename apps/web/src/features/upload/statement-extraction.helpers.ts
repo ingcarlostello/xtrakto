@@ -1,6 +1,5 @@
 import { err, ok, PARSE_WARNING_CODE } from "@xtrakto/core";
 import type {
-  ColumnRole,
   ExtractedContent,
   FormatMapping,
   ParsedStatement,
@@ -14,11 +13,11 @@ import {
   findTable,
   formatSample,
   isPdf,
-  mappingFromRoles,
+  type MappingChoices,
   mappingParser,
-  reviewMapping,
+  type MappingReview,
+  reviewChoices,
 } from "@xtrakto/parsers";
-import type { MappingProposal } from "@/features/format-mappings/format-mapping.types";
 import { fitsInUpload } from "./upload-size.helpers";
 import { CONTENT_TOO_LARGE, EXTRACTION_STAGE } from "./upload.constants";
 import type {
@@ -135,19 +134,12 @@ export const readWithMapping = (
 ): Result<ExtractedStatement> => readWith(mappingParser(mapping), content);
 
 /**
- * What the roles the LLM proposed make of a file no parser knows (11.3a):
- * the mapping, with the formats its cells write, and how the file reads with
- * it, for the person to confirm. Fails when the roles read no table or the
- * mapping doesn't read the file.
+ * What the person's choices make of a file no parser knows, for them to
+ * correct and confirm (11.3a, 11.3b): its table as the file writes it and,
+ * when they read the whole file, the mapping with what it adds up to, else
+ * where they stop. Without choices, only the date the code found.
  */
-export const proposeReading = (
+export const reviewReading = (
   content: ExtractedContent,
-  roles: readonly ColumnRole[],
-): Result<MappingProposal> => {
-  const mapping = mappingFromRoles(content, roles);
-  if (!mapping.ok) return mapping;
-  const review = reviewMapping(content, mapping.value);
-  return review.ok
-    ? ok({ mapping: mapping.value, review: review.value })
-    : review;
-};
+  choices?: MappingChoices,
+): Result<MappingReview> => reviewChoices(content, choices);

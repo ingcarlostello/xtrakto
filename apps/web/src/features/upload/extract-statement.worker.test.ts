@@ -20,7 +20,7 @@ import type {
 const mocks = vi.hoisted(() => ({
   extractStatement: vi.fn(),
   readWithMapping: vi.fn(),
-  proposeReading: vi.fn(),
+  reviewReading: vi.fn(),
 }));
 
 vi.mock("./statement-extraction.helpers", () => mocks);
@@ -90,7 +90,7 @@ beforeEach(() => {
   posted.length = 0;
   mocks.extractStatement.mockReset();
   mocks.readWithMapping.mockReset();
-  mocks.proposeReading.mockReset();
+  mocks.reviewReading.mockReset();
 });
 
 describe("extract-statement worker", () => {
@@ -167,26 +167,29 @@ describe("extract-statement worker", () => {
     ]);
   });
 
-  it("reads the file it keeps with a mapping, and says what each proposal makes of it", async () => {
+  it("reads the file it keeps with a mapping, and says what each choice makes of it", async () => {
     mocks.extractStatement.mockResolvedValue(
       ok({ kind: "unknown", content: UNKNOWN_CONTENT, format: FORMAT }),
     );
     mocks.readWithMapping.mockReturnValue(ok(STATEMENT));
-    mocks.proposeReading.mockReturnValue(err({ code: "PARSE_FAILED" }));
+    mocks.reviewReading.mockReturnValue(err({ code: "PARSE_FAILED" }));
     extract();
     await answered("unknown");
+    const choices = { roles: MAPPING.columns };
 
-    receive({ data: { type: "propose", roles: MAPPING.columns } });
+    receive({ data: { type: "review", revision: 0 } });
+    receive({ data: { type: "review", choices, revision: 3 } });
     receive({ data: { type: "read", mapping: MAPPING } });
 
     expect(posted.slice(1)).toEqual([
-      { type: "proposed", result: err({ code: "PARSE_FAILED" }) },
+      { type: "reviewed", revision: 0, result: err({ code: "PARSE_FAILED" }) },
+      { type: "reviewed", revision: 3, result: err({ code: "PARSE_FAILED" }) },
       { type: "read", result: ok(STATEMENT) },
     ]);
-    expect(mocks.proposeReading).toHaveBeenCalledWith(
-      UNKNOWN_CONTENT,
-      MAPPING.columns,
-    );
+    expect(mocks.reviewReading.mock.calls).toEqual([
+      [UNKNOWN_CONTENT, undefined],
+      [UNKNOWN_CONTENT, choices],
+    ]);
     expect(mocks.readWithMapping).toHaveBeenCalledWith(
       UNKNOWN_CONTENT,
       MAPPING,

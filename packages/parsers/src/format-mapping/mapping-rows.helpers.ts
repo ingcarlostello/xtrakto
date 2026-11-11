@@ -209,18 +209,17 @@ const readRow = (row: Row, context: Context): Result<TableRow | undefined> => {
 };
 
 /**
- * The table's last row with a date, in any order a bank writes one, so dates
- * in another order than the mapping's fail as such: whatever comes under it,
- * such as totals and notes, isn't read.
+ * The table's last row with a date in its date column, in any order a bank
+ * writes one, so dates in another order than the mapping's fail as such:
+ * whatever comes under it, such as totals and notes, isn't read.
  */
 export const lastDatedRow = (
   rows: SheetRows,
   headerRow: number,
-  mapping: FormatMapping,
+  dateColumn: number,
 ): number => {
-  const { date } = mappedColumns(mapping);
   const last = rows.findLastIndex(
-    (row, index) => index > headerRow && looksLikeDate(row[date]),
+    (row, index) => index > headerRow && looksLikeDate(row[dateColumn]),
   );
   return Math.max(last, headerRow);
 };
@@ -237,7 +236,7 @@ export const readTable = (
 ): Result<TableRow[]> => {
   const columns = mappedColumns(mapping);
   const table: TableRow[] = [];
-  const last = lastDatedRow(rows, headerRow, mapping);
+  const last = lastDatedRow(rows, headerRow, columns.date);
   for (let sourceRow = headerRow + 1; sourceRow <= last; sourceRow++) {
     const row = readRow(rows[sourceRow] ?? [], { mapping, columns, sourceRow });
     if (!row.ok) return row;

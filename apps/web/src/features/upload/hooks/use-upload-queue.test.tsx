@@ -9,11 +9,11 @@ import {
   periodSchema,
 } from "@xtrakto/core";
 import type { AppError, Result } from "@xtrakto/core";
+import type { MappingChoices, MappingReview } from "@xtrakto/parsers";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MappingProposal } from "@/features/format-mappings/format-mapping.types";
-import { FORMAT_PROBLEM } from "../unknown-format.constants";
+import { NO_PROPOSAL } from "@/features/format-mappings/format-confirmation.constants";
 import {
   EXTRACTION_STAGE,
   FILE_PROBLEM,
@@ -579,20 +579,24 @@ describe("useUploadQueue, for a file no parser knows", () => {
     bankId: "other",
   });
   const ZERO = amountMinorSchema.parse(0);
-  const PROPOSAL: MappingProposal = {
-    mapping: MAPPING,
-    review: {
-      header: FORMAT.header,
-      rows: [],
-      moreRows: 0,
-      firstRow: 2,
-      lastRow: 2,
+  const REVIEW: MappingReview = {
+    header: FORMAT.header,
+    names: FORMAT.header,
+    rows: [],
+    moreRows: 0,
+    firstRow: 2,
+    lastRow: 2,
+    roles: MAPPING.columns,
+    dateOrder: "dmy",
+    decimalSeparator: ",",
+    reading: ok({
+      mapping: MAPPING,
       test: {
         movementCount: 1,
         moneyIn: { count: 0, totalMinor: ZERO },
         moneyOut: { count: 1, totalMinor: ZERO },
       },
-    },
+    }),
   };
   const CONFIRMED = { ...MAPPING, bankId: "davivienda" as const };
 
@@ -614,7 +618,7 @@ describe("useUploadQueue, for a file no parser knows", () => {
     propose.mockResolvedValue(ok({ roles: [...MAPPING.columns] }));
     await unknownFile();
     await askedOf(2);
-    workers[0]?.post({ type: "proposed", result: ok(PROPOSAL) });
+    workers[0]?.post({ type: "reviewed", revision: 0, result: ok(REVIEW) });
   };
 
   it("reads it with the mapping saved for its format", async () => {
@@ -641,18 +645,25 @@ describe("useUploadQueue, for a file no parser knows", () => {
     expect(propose).not.toHaveBeenCalled();
   });
 
-  it("asks the LLM when none is saved, and waits for the person with what it makes of the file", async () => {
+  it("asks the LLM when none is saved, and waits for the person with what its roles make of the file", async () => {
     await proposedFor();
 
     expect(propose).toHaveBeenCalledWith(FORMAT.sample);
     expect(workers[0]?.requests[1]?.request).toEqual({
-      type: "propose",
-      roles: MAPPING.columns,
+      type: "review",
+      revision: 0,
+      choices: { roles: MAPPING.columns },
     });
     expect(queue.items[0]).toMatchObject({
       status: UPLOAD_STATUS.CONFIRMING,
-      proposal: PROPOSAL,
+      confirmation: {
+        review: REVIEW,
+        choices: { roles: REVIEW.roles },
+        revision: 0,
+        isRereading: false,
+      },
     });
+    expect(queue.items[0]).not.toHaveProperty("confirmation.noProposal");
     expect(workers[0]?.isTerminated).toBe(false);
   });
 
@@ -666,6 +677,35 @@ describe("useUploadQueue, for a file no parser knows", () => {
 
     await vi.waitFor(() => expect(propose).toHaveBeenCalledWith(FORMAT.sample));
     expect(statuses()).toEqual([UPLOAD_STATUS.PROPOSING]);
+  });
+
+  it("reads the file again with each correction, keeping the latest one's review", async () => {
+    await proposedFor();
+    const first: MappingChoices = { roles: ["date", "none", "amount"] };
+    const latest: MappingChoices = { ...first, decimalSeparator: "." };
+    const answer: MappingReview = { ...REVIEW, decimalSeparator: "." };
+
+    act(() => queue.correctFormat(idOf(0), first));
+    act(() => queue.correctFormat(idOf(0), latest));
+
+    expect(workers[0]?.requests.slice(2).map(({ request }) => request)).toEqual(
+      [
+        { type: "review", revision: 1, choices: first },
+        { type: "review", revision: 2, choices: latest },
+      ],
+    );
+    expect(queue.items[0]).toMatchObject({
+      confirmation: { choices: latest, revision: 2, isRereading: true },
+    });
+
+    workers[0]?.post({ type: "reviewed", revision: 1, result: ok(REVIEW) });
+    expect(queue.items[0]).toMatchObject({
+      confirmation: { isRereading: true },
+    });
+    workers[0]?.post({ type: "reviewed", revision: 2, result: ok(answer) });
+    expect(queue.items[0]).toMatchObject({
+      confirmation: { review: answer, choices: latest, isRereading: false },
+    });
   });
 
   it("reads it with the mapping the person confirmed, which goes up with it", async () => {
@@ -707,45 +747,45 @@ describe("useUploadQueue, for a file no parser knows", () => {
   });
 
   it.each([
-    { answer: err({ code: "AI_OFF" }), reason: FORMAT_PROBLEM.AI_OFF },
+    { answer: err({ code: "AI_OFF" }), reason: NO_PROPOSAL.AI_OFF },
     {
       answer: err({ code: "AI_LIMIT_REACHED", limit: "USER_MONTH" }),
-      reason: FORMAT_PROBLEM.USER_MONTH,
+      reason: NO_PROPOSAL.USER_MONTH,
     },
     {
       answer: err({ code: "AI_LIMIT_REACHED", limit: "PLATFORM_BUDGET" }),
-      reason: FORMAT_PROBLEM.PLATFORM_BUDGET,
+      reason: NO_PROPOSAL.PLATFORM_BUDGET,
     },
-    { answer: err({ code: "AI_FAILED" }), reason: FORMAT_PROBLEM.AI_FAILED },
+    { answer: err({ code: "AI_FAILED" }), reason: NO_PROPOSAL.AI_FAILED },
   ])(
-    "says why the LLM proposed nothing: $reason",
+    "opens it with only the date the code found when the LLM proposed nothing: $reason",
     async ({ answer, reason }) => {
       findSaved.mockResolvedValue(ok({ mapping: null }));
       propose.mockResolvedValue(answer);
       await unknownFile();
 
-      await vi.waitFor(() =>
-        expect(queue.items[0]).toEqual(
-          expect.objectContaining({
-            status: UPLOAD_STATUS.FAILED,
-            error: { code: APP_ERROR_CODE.UNKNOWN_FORMAT, details: { reason } },
-          }),
-        ),
-      );
+      expect((await askedOf(2))?.request).toEqual({
+        type: "review",
+        revision: 0,
+      });
+      workers[0]?.post({ type: "reviewed", revision: 0, result: ok(REVIEW) });
+
+      expect(queue.items[0]).toMatchObject({
+        status: UPLOAD_STATUS.CONFIRMING,
+        confirmation: { noProposal: reason },
+      });
     },
   );
 
-  it("says the LLM proposed nothing when its call gets no answer, or the session ended", async () => {
+  it("opens it so too when the LLM's call gets no answer, and leaves it unread once the session ended", async () => {
     findSaved.mockRejectedValue(new Error("offline"));
     propose.mockRejectedValueOnce(new Error("offline"));
     await unknownFile();
 
-    await vi.waitFor(() =>
-      expect(queue.items[0]).toMatchObject({
-        status: UPLOAD_STATUS.FAILED,
-        error: { details: { reason: FORMAT_PROBLEM.AI_FAILED } },
-      }),
-    );
+    expect((await askedOf(2))?.request).toEqual({
+      type: "review",
+      revision: 0,
+    });
 
     propose.mockResolvedValue(err({ code: APP_ERROR_CODE.UNAUTHORIZED }));
     add(fileNamed("otro.xlsx"));
@@ -757,19 +797,24 @@ describe("useUploadQueue, for a file no parser knows", () => {
         error: { code: APP_ERROR_CODE.UNAUTHORIZED },
       }),
     );
+    expect(workers[1]?.requests).toHaveLength(1);
   });
 
-  it("leaves unread a file whose proposal reads no table", async () => {
+  it("leaves unread a file its worker can no longer read", async () => {
     findSaved.mockResolvedValue(ok({ mapping: null }));
     propose.mockResolvedValue(ok({ roles: [...MAPPING.columns] }));
     await unknownFile();
     await askedOf(2);
 
-    workers[0]?.post({ type: "proposed", result: err(UNREADABLE) });
+    workers[0]?.post({
+      type: "reviewed",
+      revision: 0,
+      result: err(UNREADABLE),
+    });
 
     expect(queue.items[0]).toMatchObject({
       status: UPLOAD_STATUS.FAILED,
-      error: { details: { reason: FORMAT_PROBLEM.NOT_READ } },
+      error: UNREADABLE,
     });
   });
 

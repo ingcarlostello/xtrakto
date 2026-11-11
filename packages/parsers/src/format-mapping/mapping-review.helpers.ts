@@ -1,6 +1,15 @@
-import { isAmountMinor, ok, sumAmounts } from "@xtrakto/core";
+import {
+  COLUMN_ROLE,
+  DATE_ORDER,
+  isAmountMinor,
+  ok,
+  sumAmounts,
+} from "@xtrakto/core";
 import type {
   AmountMinor,
+  ColumnRole,
+  DateOrder,
+  DecimalSeparator,
   ExtractedContent,
   FormatMapping,
   LocalDate,
@@ -9,15 +18,17 @@ import type {
   SpreadsheetCell,
 } from "@xtrakto/core";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
-import { parseFailed } from "../registry/parse-failure.helpers";
-import { firstSheetRows } from "../sheets/sheet.utils";
+import { firstSheetRows, isBlankRow } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
 import { MAX_REVIEW_ROWS } from "./format-mapping.constants";
 import { mappingParser } from "./mapping-parser.helpers";
+import { formatsOf, mappingOn } from "./mapping-roles.helpers";
+import type { MappingChoices } from "./mapping-roles.helpers";
 import { lastDatedRow, readTable } from "./mapping-rows.helpers";
 import type { TableRow } from "./mapping-rows.helpers";
 import { tableEdges } from "./mapping-statement.helpers";
-import { findHeaderRow } from "./mapping-table.helpers";
+import { findTable, isHeaderRow } from "./mapping-table.helpers";
+import type { TableLocation } from "./mapping-table.helpers";
 
 /** Money that went one way: how many movements, and how much in all. */
 export type MoneyWay = {
@@ -44,18 +55,27 @@ export type MappingTest = {
   };
 };
 
-/** A row of the table as the file writes it, and what the mapping reads in it. */
+/** A row of the table as the file writes it, and what the mapping read in it. */
 export type ReviewRow = {
   readonly cells: readonly SpreadsheetCell[];
-  readonly kind: TableRow["kind"];
+  /** What the mapping read in it, when the choices read the file. */
+  readonly kind?: TableRow["kind"];
   /** The balance the file opens with, such as "SALDO ANTERIOR". */
   readonly isOpening: boolean;
 };
 
-/** How a file reads with a mapping, as the person confirms it (v8-14). */
+/** What the person's choices read: the mapping they make, and what the file adds up to with it. */
+export type MappingReading = {
+  readonly mapping: FormatMapping;
+  readonly test: MappingTest;
+};
+
+/** How a file no parser knows reads with the person's choices, as they confirm them (v8-14). */
 export type MappingReview = {
   /** The header's cells, as the file writes them. */
   readonly header: readonly SpreadsheetCell[];
+  /** The header's names, as the format compares them: a failure names its column so. */
+  readonly names: readonly string[];
   /** The table's first rows. */
   readonly rows: readonly ReviewRow[];
   /** The row that opens the table with its balance, wherever it is. */
@@ -65,8 +85,16 @@ export type MappingReview = {
   /** Where the table starts and ends, as a spreadsheet numbers its rows. */
   readonly firstRow: number;
   readonly lastRow: number;
-  readonly test: MappingTest;
+  /** The roles it read with: the person's, or only the date the code found. */
+  readonly roles: readonly ColumnRole[];
+  /** The formats it read with: the person's, else those its cells write. */
+  readonly dateOrder: DateOrder;
+  readonly decimalSeparator: DecimalSeparator;
+  /** The mapping and its test when the choices read the whole file; else where they don't. */
+  readonly reading: Result<MappingReading>;
 };
+
+const { DATE, NONE } = COLUMN_ROLE;
 
 const sourceRowOf = (row: TableRow): number =>
   row.kind === "movement" ? row.transaction.sourceRow : row.sourceRow;
@@ -118,52 +146,99 @@ export const mappingTest = (statement: ParsedStatement): MappingTest => {
   };
 };
 
-const reviewRows = (
+// Only the date the code found, for the person to choose the rest (11.3b).
+const startingRoles = ({ header, dateColumn }: TableLocation): ColumnRole[] =>
+  header.map((_, column) => (column === dateColumn ? DATE : NONE));
+
+// The table's rows as the file writes them: those under its header that hold
+// something, through its last date, but a page's repeated header.
+const tableRowIndexes = (
   rows: SheetRows,
-  table: readonly TableRow[],
-  width: number,
-): Pick<MappingReview, "rows" | "openingRow"> => {
-  const opening = tableEdges(table).opening?.sourceRow;
+  table: TableLocation,
+  last: number,
+): number[] =>
+  Array.from(
+    { length: last - table.headerRow },
+    (_, offset) => table.headerRow + 1 + offset,
+  ).filter((index) => {
+    const row = rows[index] ?? [];
+    return !isBlankRow(row) && !isHeaderRow(row, table.header);
+  });
+
+type Reading = {
+  readonly reading: Result<MappingReading>;
+  /** The kind of each row it read, by its position. */
+  readonly kinds: ReadonlyMap<number, TableRow["kind"]>;
+  readonly opening?: number;
+};
+
+// What the choices read of the file: the whole of it, or where they stop.
+const readingOf = (
+  content: ExtractedContent,
+  table: TableLocation,
+  choices: MappingChoices,
+): Reading => {
+  const rows = firstSheetRows(content) ?? [];
+  const unread = { kinds: new Map<number, TableRow["kind"]>() };
+  const mapping = mappingOn(rows, table, choices);
+  if (!mapping.ok) return { ...unread, reading: mapping };
+  const statement = mappingParser(mapping.value).parse(content);
+  if (!statement.ok) return { ...unread, reading: statement };
+  const read = readTable(rows, table.headerRow, mapping.value);
+  const tableRows = read.ok ? read.value : [];
   return {
-    rows: table.slice(0, MAX_REVIEW_ROWS).map((row) => ({
-      cells: cellsOf(rows[sourceRowOf(row)], width),
-      kind: row.kind,
-      isOpening: row.kind === "balance" && row.sourceRow === opening,
-    })),
-    ...(opening === undefined
-      ? {}
-      : { openingRow: cellsOf(rows[opening], width) }),
+    reading: ok({ mapping: mapping.value, test: mappingTest(statement.value) }),
+    kinds: new Map(tableRows.map((row) => [sourceRowOf(row), row.kind])),
+    opening: tableEdges(tableRows).opening?.sourceRow,
   };
 };
 
 /**
- * How a spreadsheet reads with a mapping, for the person to confirm it
- * before anything is sent (11.3a): its header and first rows as the file
- * writes them, the rows the table spans, and what its movements add up to,
- * against its balances when it prints them. Fails as its parse does.
+ * How a spreadsheet no parser knows reads with the person's choices, as they
+ * confirm and correct them (11.3a, 11.3b): its header and first rows as the
+ * file writes them, the rows the table spans, the roles and formats it read
+ * with, and the mapping they make with what its movements add up to, or
+ * where they don't read it. Without choices, it reads with only the date the
+ * code found. Fails only when the file holds no table.
  */
-export const reviewMapping = (
+export const reviewChoices = (
   content: ExtractedContent,
-  mapping: FormatMapping,
+  choices?: MappingChoices,
 ): Result<MappingReview> => {
-  const rows = firstSheetRows(content);
-  if (rows === undefined) return parseFailed({ reason: "content_type" });
-  const headerRow = findHeaderRow(rows, mapping.header);
-  if (headerRow === undefined) {
-    return parseFailed({ reason: "missing_block", block: "header" });
-  }
-  const statement = mappingParser(mapping).parse(content);
-  if (!statement.ok) return statement;
-  const table = readTable(rows, headerRow, mapping);
-  if (!table.ok) return table;
-  const width = mapping.header.length;
+  const located = findTable(content);
+  if (!located.ok) return located;
+  const table = located.value;
+  const rows = firstSheetRows(content) ?? [];
+  const width = table.header.length;
+  const chosen = { ...choices, roles: choices?.roles ?? startingRoles(table) };
+  const date = chosen.roles.indexOf(DATE);
+  const last = lastDatedRow(
+    rows,
+    table.headerRow,
+    date === -1 ? table.dateColumn : date,
+  );
+  const indexes = tableRowIndexes(rows, table, last);
+  const { reading, kinds, opening } = readingOf(content, table, chosen);
+  const formats = formatsOf(rows, table, chosen);
   return ok({
-    header: cellsOf(rows[headerRow], width),
-    ...reviewRows(rows, table.value, width),
-    moreRows: Math.max(0, table.value.length - MAX_REVIEW_ROWS),
+    header: cellsOf(rows[table.headerRow], width),
+    names: table.header,
+    rows: indexes.slice(0, MAX_REVIEW_ROWS).map((index) => ({
+      cells: cellsOf(rows[index], width),
+      // A row the mapping skips holds nothing it reads: no movement.
+      ...(reading.ok ? { kind: kinds.get(index) ?? "other" } : {}),
+      isOpening: index === opening,
+    })),
+    ...(opening === undefined
+      ? {}
+      : { openingRow: cellsOf(rows[opening], width) }),
+    moreRows: Math.max(0, indexes.length - MAX_REVIEW_ROWS),
     // Spreadsheets number their rows from 1.
-    firstRow: headerRow + 2,
-    lastRow: lastDatedRow(rows, headerRow, mapping) + 1,
-    test: mappingTest(statement.value),
+    firstRow: table.headerRow + 2,
+    lastRow: last + 1,
+    roles: chosen.roles,
+    dateOrder: formats.dateOrder ?? DATE_ORDER.DAY_MONTH_YEAR,
+    decimalSeparator: formats.decimalSeparator,
+    reading,
   });
 };

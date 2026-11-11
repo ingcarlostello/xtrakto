@@ -39,7 +39,7 @@ type UploadScreenProps = {
  * The upload screen (docs/ui/v8-07), which holds the files chosen: the
  * upload card with the files and what they came to, or, while a file no
  * parser knows waits for the person, "Confirma cómo leer tu extracto"
- * (v8-14, 11.3a) in its place, one file at a time.
+ * (v8-14, 11.3a, 11.3b) in its place, one file at a time.
  */
 export function UploadScreen(props: UploadScreenProps) {
   const { accounts, usage, coverage, header, side, formats } = props;
@@ -47,13 +47,15 @@ export function UploadScreen(props: UploadScreenProps) {
   const { confirming, formatActions, picker } = flow;
   usePickerFocusAfterConfirming(confirming?.id, picker);
   if (confirming) {
+    const { id } = confirming;
     return (
       <ConfirmFormatView
-        key={confirming.id}
+        key={id}
         fileName={confirming.file.name}
-        proposal={confirming.proposal}
-        onConfirm={(mapping) => formatActions.onConfirm(confirming.id, mapping)}
-        onLeaveOut={() => formatActions.onLeaveOut(confirming.id)}
+        confirmation={confirming.confirmation}
+        onCorrect={(choices) => formatActions.onCorrect(id, choices)}
+        onConfirm={(mapping) => formatActions.onConfirm(id, mapping)}
+        onLeaveOut={() => formatActions.onLeaveOut(id)}
       />
     );
   }

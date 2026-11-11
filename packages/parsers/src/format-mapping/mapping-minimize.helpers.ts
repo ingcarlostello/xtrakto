@@ -35,7 +35,7 @@ export const minimizeMapped = (
   if (rows === undefined) return content;
   const headerRow = findHeaderRow(rows, mapping.header);
   if (headerRow === undefined) return asSingleSheet(rows);
-  const { description, read } = mappedColumns(mapping);
+  const { date, description, read } = mappedColumns(mapping);
   const minimizeRow = (row: Row, index: number): Row => {
     if (index < headerRow) return [];
     if (isHeaderRow(row, mapping.header)) return row.map(masked);
@@ -44,6 +44,6 @@ export const minimizeMapped = (
       text === undefined ? row : row.with(description, masked(text));
     return keepCells(withMasked, read);
   };
-  const last = lastDatedRow(rows, headerRow, mapping);
+  const last = lastDatedRow(rows, headerRow, date);
   return asSingleSheet(rows.slice(0, last + 1).map(minimizeRow));
 };

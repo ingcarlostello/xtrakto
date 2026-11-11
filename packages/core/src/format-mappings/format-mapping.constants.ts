@@ -17,6 +17,18 @@ export const COLUMN_ROLE = {
   NONE: "none",
 } as const;
 
+/**
+ * Why a table's roles can't read its movements, as `columnRolesProblem`
+ * says it: the person reads each in their words (11.3b).
+ */
+export const ROLES_PROBLEM = {
+  DATE: "one date column",
+  DESCRIPTION: "one description column",
+  BALANCE: "one balance column at most",
+  REFERENCE: "one reference column at most",
+  MONEY: "money read one way",
+} as const;
+
 /** The most rows of its table a format's sample shows the LLM (11.2b). */
 export const MAX_SAMPLE_ROWS = 10;
 /** The longest a cell's shape gets: a text's first words say what it is. */

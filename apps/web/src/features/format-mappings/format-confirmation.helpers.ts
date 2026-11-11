@@ -8,14 +8,12 @@ import {
   localDateFromExcelSerial,
 } from "@xtrakto/core";
 import type { AmountMinor, ColumnRole, SpreadsheetCell } from "@xtrakto/core";
-import type { MappingTest } from "@xtrakto/parsers";
+import type { MappingReview, MappingTest } from "@xtrakto/parsers";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import {
   CONFIRMATION_COPY as COPY,
-  DATE_ORDER_LABELS,
-  NUMBER_LABELS,
+  ROLE_LABELS,
 } from "./format-confirmation.constants";
-import type { MappingProposal } from "./format-mapping.types";
 
 const NUMBERS = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
@@ -25,11 +23,22 @@ const BOGOTA = {
   targetTimeZone: DEFAULT_TIME_ZONE,
 };
 
+const {
+  DATE,
+  DESCRIPTION,
+  AMOUNT,
+  MONEY_OUT,
+  MONEY_IN,
+  BALANCE,
+  REFERENCE,
+  DIRECTION,
+} = COLUMN_ROLE;
+
 const AMOUNT_ROLES: ReadonlySet<ColumnRole> = new Set([
-  COLUMN_ROLE.AMOUNT,
-  COLUMN_ROLE.MONEY_OUT,
-  COLUMN_ROLE.MONEY_IN,
-  COLUMN_ROLE.BALANCE,
+  AMOUNT,
+  MONEY_OUT,
+  MONEY_IN,
+  BALANCE,
 ]);
 
 /** Whether a column holds amounts, which line up on the right. */
@@ -50,6 +59,48 @@ export const cellText = (cell: SpreadsheetCell | undefined): string => {
   return `${date}/${month}/${year}`;
 };
 
+// The roles another column's role leaves no room for: one of each, and money
+// read one way.
+const CLASHES: Readonly<Record<ColumnRole, readonly ColumnRole[]>> = {
+  [DATE]: [DATE],
+  [DESCRIPTION]: [DESCRIPTION],
+  [AMOUNT]: [AMOUNT, MONEY_OUT, MONEY_IN],
+  [MONEY_OUT]: [MONEY_OUT, AMOUNT, DIRECTION],
+  [MONEY_IN]: [MONEY_IN, AMOUNT, DIRECTION],
+  [BALANCE]: [BALANCE],
+  [REFERENCE]: [REFERENCE],
+  [DIRECTION]: [DIRECTION, MONEY_OUT, MONEY_IN],
+  [COLUMN_ROLE.NONE]: [],
+};
+
+const ROLES = Object.keys(ROLE_LABELS).filter((role): role is ColumnRole =>
+  Object.hasOwn(CLASHES, role),
+);
+
+/**
+ * The roles a column can take, among those the other columns leave (11.3b):
+ * one date, one description, one balance and one reference, money read one
+ * way, and "Ignorar" always. Its own role stays among them.
+ */
+export const rolesLeft = (
+  roles: readonly ColumnRole[],
+  column: number,
+): ColumnRole[] => {
+  const others = roles.filter((_, index) => index !== column);
+  return ROLES.filter(
+    (role) =>
+      role === roles[column] ||
+      !CLASHES[role].some((clash) => others.includes(clash)),
+  );
+};
+
+/** What a column's choice is read as: its name as the file writes it, or its place. */
+export const columnLabel = (
+  header: SpreadsheetCell | undefined,
+  column: number,
+) =>
+  COPY.columns.choose.replace("{name}", cellText(header) || String(column + 1));
+
 const counted = (
   count: number,
   { one, other }: { readonly one: string; readonly other: string },
@@ -57,24 +108,24 @@ const counted = (
 
 /**
  * What the table says under its rows: how many more it has, and which row
- * opens it with its balance, by its text.
+ * opens it with its balance, by its text in the description's column.
  */
-export const rowsNote = ({ mapping, review }: MappingProposal): string => {
+export const rowsNote = (
+  review: MappingReview,
+  roles: readonly ColumnRole[],
+): string => {
   const more =
     review.moreRows === 0 ? [] : [counted(review.moreRows, COPY.columns.more)];
-  const description = mapping.columns.indexOf(COLUMN_ROLE.DESCRIPTION);
-  const text = cellText(review.openingRow?.[description]);
+  const text = cellText(review.openingRow?.[roles.indexOf(DESCRIPTION)]);
   const opening =
     text === "" ? [] : [COPY.columns.openingNote.replace("{text}", text)];
   return [...more, ...opening].join(" ");
 };
 
-/** How the file writes its numbers and dates, and where its table is. */
-export const formatFacts = ({ mapping, review }: MappingProposal) => {
+/** What the file's format holds that the person doesn't choose: its currency and where its table is. */
+export const formatFacts = (review: MappingReview) => {
   const { format } = COPY;
   return [
-    { term: format.numbers, value: NUMBER_LABELS[mapping.decimalSeparator] },
-    { term: format.dates, value: DATE_ORDER_LABELS[mapping.dateOrder] },
     { term: format.currency, value: format.currencyValue },
     { term: format.starts, value: `${format.row} ${review.firstRow}` },
     { term: format.ends, value: `${format.row} ${review.lastRow}` },
@@ -124,14 +175,15 @@ export const testLines = ({
   };
 };
 
-/** The test's verdict: the balances add up, they're off by an amount, or there are none. */
-export const testVerdict = ({
-  balances,
-}: MappingTest): {
+/** What a status pill says: its tone, its title and its detail. */
+export type Verdict = {
   readonly tone: StatusTone;
   readonly title: string;
   readonly detail: string;
-} => {
+};
+
+/** The test's verdict: the balances add up, they're off by an amount, or there are none. */
+export const testVerdict = ({ balances }: MappingTest): Verdict => {
   const { test } = COPY;
   if (balances === undefined) {
     return { tone: "none", title: test.noBalances, detail: test.checkWays };
@@ -151,6 +203,12 @@ export const testVerdict = ({
   return { tone: "attention", title, detail };
 };
 
-/** "Leímos 78 movimientos con este mapeo." */
-export const readText = ({ movementCount }: MappingTest): string =>
-  counted(movementCount, COPY.test.read);
+/** The test's line under its title: what the choices read, or that they're read again. */
+export const readText = (
+  { reading }: MappingReview,
+  isRereading: boolean,
+): string => {
+  if (isRereading) return COPY.test.rereading;
+  if (!reading.ok) return COPY.test.notRead;
+  return counted(reading.value.test.movementCount, COPY.test.read);
+};
