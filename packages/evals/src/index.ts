@@ -15,3 +15,11 @@ export type {
   CategorizationThresholds,
   ThresholdFigure,
 } from "./categorization/categorization.types";
+export { FORMAT_MAPPING_CASES } from "./format-mapping/format-mapping-cases.constants";
+export { mappingReport } from "./format-mapping/format-mapping-report.helpers";
+export { scoreMappings } from "./format-mapping/format-mapping-score.helpers";
+export type {
+  MappingCase,
+  MappingPrediction,
+  MappingScore,
+} from "./format-mapping/format-mapping.types";
