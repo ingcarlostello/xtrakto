@@ -1,6 +1,9 @@
+import type { FormatMapping } from "@xtrakto/core";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore, useTransition } from "react";
 import type { RefObject } from "react";
+import { findSavedFormat } from "@/features/format-mappings/actions/find-saved-format.action";
+import { proposeFormatMapping } from "@/features/format-mappings/actions/propose-format-mapping.action";
 import { getUploadStatuses } from "../actions/get-upload-statuses.action";
 import { submitStatement } from "../actions/submit-statement.action";
 import {
@@ -10,7 +13,7 @@ import {
 } from "../upload-jobs.helpers";
 import { isAskingForPassword } from "../upload-display.helpers";
 import { filesToSend } from "../upload-send.helpers";
-import { JOBS_PARAM } from "../upload.constants";
+import { JOBS_PARAM, UPLOAD_STATUS } from "../upload.constants";
 import { takeHandedFiles } from "../upload.store";
 import type {
   AccountKey,
@@ -19,6 +22,7 @@ import type {
   UploadAccount,
   UploadItem,
 } from "../upload.types";
+import type { FormatServices } from "./use-file-readers";
 import { useUploadEvents } from "./use-upload-events";
 import { useUploadQueue } from "./use-upload-queue";
 import { useUploadStatuses } from "./use-upload-statuses";
@@ -28,6 +32,13 @@ import { useUploadStatuses } from "./use-upload-statuses";
 // chosen, never with the page.
 const createExtractionWorker = (): ExtractionWorker =>
   new Worker(new URL("../extract-statement.worker.ts", import.meta.url));
+
+// The format of a file no parser knows: the one saved for it, else the LLM's
+// proposal (11.3a). One object, so the queue's effects don't run again.
+const FORMAT_SERVICES: FormatServices = {
+  findSaved: findSavedFormat,
+  propose: proposeFormatMapping,
+};
 
 // The month's count and the user's accounts come from the server: once files
 // go up, the page asks for them again, keeping what's on screen.
@@ -137,6 +148,43 @@ export type FileActions = {
   readonly onChooseAnother: (id: string) => void;
 };
 
+// The screen's files, read in the browser's workers and sent by the server's
+// actions.
+const useScreenQueue = () =>
+  useUploadQueue({
+    createWorker: createExtractionWorker,
+    submit: submitStatement,
+    services: FORMAT_SERVICES,
+    takeHandedFiles,
+  });
+
+/** A file no parser knows, waiting for the person to confirm how to read it. */
+export type ConfirmingItem = Extract<
+  UploadItem,
+  { readonly status: typeof UPLOAD_STATUS.CONFIRMING }
+>;
+
+/** What the person does with a file whose format they're asked to confirm (11.3a). */
+export type FormatActions = {
+  /** Reads it with the mapping, the bank they chose included. */
+  readonly onConfirm: (id: string, mapping: FormatMapping) => void;
+  /** "Algo está mal": the file is left out, unread, and nothing is saved. */
+  readonly onLeaveOut: (id: string) => void;
+};
+
+// The first file waiting for its format, which the screen asks about; the
+// others wait their turn.
+const useConfirmation = (queue: ReturnType<typeof useScreenQueue>) => {
+  const confirming = queue.items.find(
+    (item): item is ConfirmingItem => item.status === UPLOAD_STATUS.CONFIRMING,
+  );
+  const formatActions: FormatActions = {
+    onConfirm: queue.confirmFormat,
+    onLeaveOut: queue.remove,
+  };
+  return { confirming, formatActions };
+};
+
 // The "Elegir archivos" button, where the focus goes when what had it goes.
 const usePicker = (isBusy: boolean, items: readonly UploadItem[]) => {
   const picker = useRef<HTMLButtonElement>(null);
@@ -146,17 +194,13 @@ const usePicker = (isBusy: boolean, items: readonly UploadItem[]) => {
 };
 
 /**
- * The upload card's state: the files chosen, here or on the welcome's last
+ * The upload screen's state: the files chosen, here or on the welcome's last
  * step, the ones ready to send, whether files are going up (until the page
- * has the server's new count), and how the jobs sent go, those of earlier
- * visits to the page included.
+ * has the server's new count), how the jobs sent go, those of earlier visits
+ * to the page included, and the file whose format the person confirms.
  */
 export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
-  const queue = useUploadQueue({
-    createWorker: createExtractionWorker,
-    submit: submitStatement,
-    takeHandedFiles,
-  });
+  const queue = useScreenQueue();
   const { sendFiles, isRefreshing } = useRefreshingSend(queue.send);
   const isBusy = queue.isSending || isRefreshing;
   const picker = usePicker(isBusy, queue.items);
@@ -190,5 +234,9 @@ export const useUploadFlow = (accounts: readonly UploadAccount[]) => {
     picker,
     actions,
     sendAll,
+    ...useConfirmation(queue),
   };
 };
+
+/** The upload screen's state, as `useUploadFlow` gives it. */
+export type UploadFlowState = ReturnType<typeof useUploadFlow>;

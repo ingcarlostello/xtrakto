@@ -1,8 +1,18 @@
 import { readFileSync } from "node:fs";
-import { APP_ERROR_CODE, err, extractedContentSchema, ok } from "@xtrakto/core";
+import {
+  APP_ERROR_CODE,
+  err,
+  extractedContentSchema,
+  formatMappingSchema,
+  ok,
+} from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { extractStatement } from "./statement-extraction.helpers";
+import {
+  extractStatement,
+  proposeReading,
+  readWithMapping,
+} from "./statement-extraction.helpers";
 import { EXTRACTION_STAGE } from "./upload.constants";
 import type { ExtractionStage } from "./upload.types";
 
@@ -101,26 +111,29 @@ describe("extractStatement", () => {
 
     expect(await extract()).toEqual(
       ok({
-        content: {
-          type: "spreadsheet",
-          sheets: [
-            {
-              name: "",
-              rows: [
-                HEADER,
-                [OCTOBER_2, "INTERES INV VIRT *******0001", null, 1250.5],
-                [OCTOBER_1, "TRANSFERENCIAS A NEQUI", "3001234567", -20000],
-              ],
-            },
-          ],
-        },
-        preview: {
-          bankId: "bancolombia",
-          formatId: "bancolombia-movements-export",
-          accountType: "savings",
-          period: { from: "2026-10-01", to: "2026-10-02" },
-          periodSource: "rows",
-          movementCount: 2,
+        kind: "statement",
+        statement: {
+          content: {
+            type: "spreadsheet",
+            sheets: [
+              {
+                name: "",
+                rows: [
+                  HEADER,
+                  [OCTOBER_2, "INTERES INV VIRT *******0001", null, 1250.5],
+                  [OCTOBER_1, "TRANSFERENCIAS A NEQUI", "3001234567", -20000],
+                ],
+              },
+            ],
+          },
+          preview: {
+            bankId: "bancolombia",
+            formatId: "bancolombia-movements-export",
+            accountType: "savings",
+            period: { from: "2026-10-01", to: "2026-10-02" },
+            periodSource: "rows",
+            movementCount: 2,
+          },
         },
       }),
     );
@@ -202,12 +215,14 @@ describe("extractStatement", () => {
     expect(result).toMatchObject({
       ok: true,
       value: {
-        preview: {
-          formatId: "bancolombia-movements-export-pdf",
-          accountLast4: "8901",
-          movementCount: 17,
-          // Its pages, and the descriptions it wrapped over two lines.
-          pdf: { pageCount: 2, joinedDescriptions: 5 },
+        statement: {
+          preview: {
+            formatId: "bancolombia-movements-export-pdf",
+            accountLast4: "8901",
+            movementCount: 17,
+            // Its pages, and the descriptions it wrapped over two lines.
+            pdf: { pageCount: 2, joinedDescriptions: 5 },
+          },
         },
       },
     });
@@ -224,10 +239,12 @@ describe("extractStatement", () => {
     expect(await extract(PDF_BYTES)).toMatchObject({
       ok: true,
       value: {
-        preview: {
-          formatId: "bancolombia-savings-quarterly-pdf",
-          movementCount: 33,
-          pdf: { pageCount: 2, joinedDescriptions: 0 },
+        statement: {
+          preview: {
+            formatId: "bancolombia-savings-quarterly-pdf",
+            movementCount: 33,
+            pdf: { pageCount: 2, joinedDescriptions: 0 },
+          },
         },
       },
     });
@@ -245,5 +262,107 @@ describe("extractStatement", () => {
       password: undefined,
     });
     expect(stages).toEqual([EXTRACTION_STAGE.READING]);
+  });
+});
+
+// v8-14's "Banco Horizonte", with its invented holder in its title rows.
+const HORIZONTE = fixture("mapped-out-in");
+const HORIZONTE_MAPPING = formatMappingSchema.parse({
+  header: ["FECHA TRANS", "DETALLE", "OFICINA", "DEBITOS", "CREDITOS", "SALDO"],
+  columns: ["date", "description", "none", "money_out", "money_in", "balance"],
+  dateOrder: "dmy",
+  decimalSeparator: ",",
+  bankId: "davivienda",
+});
+
+describe("extractStatement, for a file no parser knows", () => {
+  it("keeps a spreadsheet with a table whole, with its header's names and its sample", async () => {
+    mocks.extractSpreadsheet.mockReturnValue(ok(HORIZONTE));
+
+    const result = await extract();
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        kind: "unknown",
+        content: HORIZONTE,
+        format: {
+          header: HORIZONTE_MAPPING.header,
+          sample: { header: HORIZONTE_MAPPING.header },
+        },
+      },
+    });
+    const sample =
+      result.ok && result.value.kind === "unknown"
+        ? result.value.format.sample
+        : undefined;
+    expect(sample?.rows).toHaveLength(10);
+    expect(JSON.stringify(sample)).not.toContain("SUPERMERCADO");
+    expect(stages).toEqual([
+      EXTRACTION_STAGE.READING,
+      EXTRACTION_STAGE.RECOGNIZING,
+    ]);
+  });
+});
+
+describe("readWithMapping", () => {
+  it("reads the file with the mapping, keeping only what it reads", () => {
+    const result = readWithMapping(HORIZONTE, HORIZONTE_MAPPING);
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        preview: {
+          bankId: "davivienda",
+          formatId: "mapped-spreadsheet",
+          accountType: "savings",
+          period: { from: "2026-09-01", to: "2026-09-30" },
+          movementCount: 10,
+        },
+      },
+    });
+    // The title rows, with the holder's name and the account, stay here.
+    expect(JSON.stringify(result)).not.toMatch(
+      /ANA MARIA PRUEBA GOMEZ|12345678901|BANCO HORIZONTE/,
+    );
+  });
+
+  it("fails when the mapping isn't the file's", () => {
+    const other = {
+      ...HORIZONTE_MAPPING,
+      header: ["FECHA", "DETALLE", "VALOR"],
+    };
+
+    expect(readWithMapping(HORIZONTE, other)).toMatchObject({
+      ok: false,
+      error: { code: APP_ERROR_CODE.PARSE_FAILED },
+    });
+  });
+});
+
+describe("proposeReading", () => {
+  it("makes the mapping the roles read, with how the file reads with it", () => {
+    expect(proposeReading(HORIZONTE, HORIZONTE_MAPPING.columns)).toMatchObject({
+      ok: true,
+      value: {
+        mapping: { ...HORIZONTE_MAPPING, bankId: "other" },
+        review: {
+          firstRow: 8,
+          test: { movementCount: 10, balances: { isVerified: true } },
+        },
+      },
+    });
+  });
+
+  it("fails for roles that read no table", () => {
+    const roles = HORIZONTE_MAPPING.columns.slice(1);
+
+    expect(proposeReading(HORIZONTE, roles)).toMatchObject({
+      ok: false,
+      error: {
+        code: APP_ERROR_CODE.PARSE_FAILED,
+        details: { reason: "invalid_mapping" },
+      },
+    });
   });
 });

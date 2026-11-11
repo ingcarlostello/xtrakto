@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import {
+  amountMinorSchema,
   APP_ERROR_CODE,
   err,
+  formatMappingSchema,
   ok,
   PERIOD_SOURCE,
   periodSchema,
@@ -10,6 +12,8 @@ import type { AppError, Result } from "@xtrakto/core";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MappingProposal } from "@/features/format-mappings/format-mapping.types";
+import { FORMAT_PROBLEM } from "../unknown-format.constants";
 import {
   EXTRACTION_STAGE,
   FILE_PROBLEM,
@@ -22,8 +26,11 @@ import type {
   ExtractionWorker,
   ExtractRequest,
   FileToSend,
+  FindSavedFormat,
+  ProposeFormat,
   SubmitStatement,
   SubmittedStatement,
+  UnknownFormat,
 } from "../upload.types";
 import { useUploadQueue } from "./use-upload-queue";
 
@@ -77,8 +84,11 @@ const createWorker = () => {
   workers.push(worker);
   return worker;
 };
-// Stands in for the server action.
+// Stand in for the server actions.
 const submit = vi.fn<SubmitStatement>();
+const findSaved = vi.fn<FindSavedFormat>();
+const propose = vi.fn<ProposeFormat>();
+const services = { findSaved, propose };
 
 type TakeHandedFiles = () => readonly File[];
 
@@ -89,7 +99,7 @@ function Harness({
   onRender: (queue: Queue) => void;
   takeHandedFiles?: TakeHandedFiles;
 }) {
-  onRender(useUploadQueue({ createWorker, submit, takeHandedFiles }));
+  onRender(useUploadQueue({ createWorker, submit, services, takeHandedFiles }));
   return null;
 }
 
@@ -115,6 +125,8 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   workers = [];
   submit.mockReset();
+  findSaved.mockReset();
+  propose.mockReset();
   mount();
 });
 
@@ -134,6 +146,10 @@ const bytesSentTo = async (worker: FakeWorker | undefined) => {
   await vi.waitFor(() => expect(worker?.requests).toHaveLength(1));
   return worker?.requests[0];
 };
+
+// What a worker was asked to read: the file's bytes, and a PDF's password.
+const extractOf = (sent: FakeWorker["requests"][number] | undefined) =>
+  sent?.request.type === "extract" ? sent.request : undefined;
 
 describe("useUploadQueue", () => {
   it("reads at most three files at a time, and starts the next when one ends", async () => {
@@ -177,11 +193,11 @@ describe("useUploadQueue", () => {
 
     const sent = await bytesSentTo(workers[0]);
 
-    expect(Object.keys(sent?.request ?? {})).toEqual(["bytes"]);
-    expect(new Uint8Array(sent?.request.bytes ?? [])).toEqual(
+    expect(Object.keys(sent?.request ?? {})).toEqual(["type", "bytes"]);
+    expect(new Uint8Array(extractOf(sent)?.bytes ?? [])).toEqual(
       new Uint8Array([1, 2, 3]),
     );
-    expect(sent?.transfer).toEqual([sent?.request.bytes]);
+    expect(sent?.transfer).toEqual([extractOf(sent)?.bytes]);
   });
 
   it("follows each stage and keeps what was read", async () => {
@@ -328,7 +344,7 @@ describe("PDFs with a password in useUploadQueue", () => {
 
   // What a worker was asked to open its file with, if anything.
   const passwordSentTo = async (worker: FakeWorker | undefined) =>
-    (await bytesSentTo(worker))?.request.password;
+    extractOf(await bytesSentTo(worker))?.password;
 
   it("asks for a PDF's password, and reads it again with the one typed", async () => {
     add(fileNamed("trimestral.pdf"));
@@ -543,5 +559,226 @@ describe("sending with useUploadQueue", () => {
       status: UPLOAD_STATUS.FAILED,
       error: unknownFormat,
     });
+  });
+});
+
+describe("useUploadQueue, for a file no parser knows", () => {
+  const idOf = (index: number) => queue.items[index]?.id ?? "";
+  const FORMAT: UnknownFormat = {
+    header: ["FECHA", "DETALLE", "VALOR"],
+    sample: {
+      header: ["FECHA", "DETALLE", "VALOR"],
+      rows: [["99/99/9999", "AAAAAA", "-99.999,99"]],
+    },
+  };
+  const MAPPING = formatMappingSchema.parse({
+    header: FORMAT.header,
+    columns: ["date", "description", "amount"],
+    dateOrder: "dmy",
+    decimalSeparator: ",",
+    bankId: "other",
+  });
+  const ZERO = amountMinorSchema.parse(0);
+  const PROPOSAL: MappingProposal = {
+    mapping: MAPPING,
+    review: {
+      header: FORMAT.header,
+      rows: [],
+      moreRows: 0,
+      firstRow: 2,
+      lastRow: 2,
+      test: {
+        movementCount: 1,
+        moneyIn: { count: 0, totalMinor: ZERO },
+        moneyOut: { count: 1, totalMinor: ZERO },
+      },
+    },
+  };
+  const CONFIRMED = { ...MAPPING, bankId: "davivienda" as const };
+
+  // The file read, then its worker says no parser knows it.
+  const unknownFile = async () => {
+    add(fileNamed("otro-banco.xlsx"));
+    await bytesSentTo(workers[0]);
+    workers[0]?.post({ type: "unknown", format: FORMAT });
+  };
+
+  // What the worker was asked after its file's bytes.
+  const askedOf = async (count: number) => {
+    await vi.waitFor(() => expect(workers[0]?.requests).toHaveLength(count));
+    return workers[0]?.requests.at(-1);
+  };
+
+  const proposedFor = async () => {
+    findSaved.mockResolvedValue(ok({ mapping: null }));
+    propose.mockResolvedValue(ok({ roles: [...MAPPING.columns] }));
+    await unknownFile();
+    await askedOf(2);
+    workers[0]?.post({ type: "proposed", result: ok(PROPOSAL) });
+  };
+
+  it("reads it with the mapping saved for its format", async () => {
+    findSaved.mockResolvedValue(ok({ mapping: MAPPING }));
+    await unknownFile();
+
+    expect(statuses()).toEqual([UPLOAD_STATUS.FINDING_FORMAT]);
+    expect(findSaved).toHaveBeenCalledWith(FORMAT.header);
+    expect((await askedOf(2))?.request).toEqual({
+      type: "read",
+      mapping: MAPPING,
+    });
+
+    workers[0]?.post({ type: "read", result: ok(STATEMENT) });
+
+    expect(queue.items[0]).toEqual(
+      expect.objectContaining({
+        status: UPLOAD_STATUS.READY,
+        statement: STATEMENT,
+      }),
+    );
+    expect(queue.items[0]).not.toHaveProperty("mapping");
+    expect(workers[0]?.isTerminated).toBe(true);
+    expect(propose).not.toHaveBeenCalled();
+  });
+
+  it("asks the LLM when none is saved, and waits for the person with what it makes of the file", async () => {
+    await proposedFor();
+
+    expect(propose).toHaveBeenCalledWith(FORMAT.sample);
+    expect(workers[0]?.requests[1]?.request).toEqual({
+      type: "propose",
+      roles: MAPPING.columns,
+    });
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.CONFIRMING,
+      proposal: PROPOSAL,
+    });
+    expect(workers[0]?.isTerminated).toBe(false);
+  });
+
+  it("asks the LLM when the saved mapping no longer reads the file", async () => {
+    findSaved.mockResolvedValue(ok({ mapping: MAPPING }));
+    propose.mockReturnValue(new Promise(() => {}));
+    await unknownFile();
+    await askedOf(2);
+
+    workers[0]?.post({ type: "read", result: err(UNREADABLE) });
+
+    await vi.waitFor(() => expect(propose).toHaveBeenCalledWith(FORMAT.sample));
+    expect(statuses()).toEqual([UPLOAD_STATUS.PROPOSING]);
+  });
+
+  it("reads it with the mapping the person confirmed, which goes up with it", async () => {
+    await proposedFor();
+
+    act(() => queue.confirmFormat(idOf(0), CONFIRMED));
+
+    expect(statuses()).toEqual([UPLOAD_STATUS.CONFIRMED]);
+    expect((await askedOf(3))?.request).toEqual({
+      type: "read",
+      mapping: CONFIRMED,
+    });
+
+    workers[0]?.post({ type: "read", result: ok(STATEMENT) });
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.READY,
+      statement: STATEMENT,
+      mapping: CONFIRMED,
+    });
+    expect(workers[0]?.isTerminated).toBe(true);
+  });
+
+  it("keeps the mapping of a file whose send got no answer, to send it again", async () => {
+    await proposedFor();
+    act(() => queue.confirmFormat(idOf(0), CONFIRMED));
+    await askedOf(3);
+    workers[0]?.post({ type: "read", result: ok(STATEMENT) });
+    submit.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    const input = { content: STATEMENT.content, mapping: CONFIRMED };
+
+    await act(() => queue.send([{ id: idOf(0), input }]));
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.READY,
+      mapping: CONFIRMED,
+      sendProblem: NO_ANSWER,
+    });
+  });
+
+  it.each([
+    { answer: err({ code: "AI_OFF" }), reason: FORMAT_PROBLEM.AI_OFF },
+    {
+      answer: err({ code: "AI_LIMIT_REACHED", limit: "USER_MONTH" }),
+      reason: FORMAT_PROBLEM.USER_MONTH,
+    },
+    {
+      answer: err({ code: "AI_LIMIT_REACHED", limit: "PLATFORM_BUDGET" }),
+      reason: FORMAT_PROBLEM.PLATFORM_BUDGET,
+    },
+    { answer: err({ code: "AI_FAILED" }), reason: FORMAT_PROBLEM.AI_FAILED },
+  ])(
+    "says why the LLM proposed nothing: $reason",
+    async ({ answer, reason }) => {
+      findSaved.mockResolvedValue(ok({ mapping: null }));
+      propose.mockResolvedValue(answer);
+      await unknownFile();
+
+      await vi.waitFor(() =>
+        expect(queue.items[0]).toEqual(
+          expect.objectContaining({
+            status: UPLOAD_STATUS.FAILED,
+            error: { code: APP_ERROR_CODE.UNKNOWN_FORMAT, details: { reason } },
+          }),
+        ),
+      );
+    },
+  );
+
+  it("says the LLM proposed nothing when its call gets no answer, or the session ended", async () => {
+    findSaved.mockRejectedValue(new Error("offline"));
+    propose.mockRejectedValueOnce(new Error("offline"));
+    await unknownFile();
+
+    await vi.waitFor(() =>
+      expect(queue.items[0]).toMatchObject({
+        status: UPLOAD_STATUS.FAILED,
+        error: { details: { reason: FORMAT_PROBLEM.AI_FAILED } },
+      }),
+    );
+
+    propose.mockResolvedValue(err({ code: APP_ERROR_CODE.UNAUTHORIZED }));
+    add(fileNamed("otro.xlsx"));
+    await bytesSentTo(workers[1]);
+    workers[1]?.post({ type: "unknown", format: FORMAT });
+    await vi.waitFor(() =>
+      expect(queue.items[1]).toMatchObject({
+        status: UPLOAD_STATUS.FAILED,
+        error: { code: APP_ERROR_CODE.UNAUTHORIZED },
+      }),
+    );
+  });
+
+  it("leaves unread a file whose proposal reads no table", async () => {
+    findSaved.mockResolvedValue(ok({ mapping: null }));
+    propose.mockResolvedValue(ok({ roles: [...MAPPING.columns] }));
+    await unknownFile();
+    await askedOf(2);
+
+    workers[0]?.post({ type: "proposed", result: err(UNREADABLE) });
+
+    expect(queue.items[0]).toMatchObject({
+      status: UPLOAD_STATUS.FAILED,
+      error: { details: { reason: FORMAT_PROBLEM.NOT_READ } },
+    });
+  });
+
+  it("stops the worker of a file left out, unread", async () => {
+    await proposedFor();
+
+    act(() => queue.remove(idOf(0)));
+
+    expect(queue.items).toEqual([]);
+    expect(workers[0]?.isTerminated).toBe(true);
   });
 });

@@ -21,7 +21,7 @@ export const PRIVACY_COPY = {
   title: "Cómo cuidamos tus datos",
   intro:
     "Qué datos usa Xtrakto, para qué, con quién los comparte y cómo decides sobre ellos.",
-  effective: "Vigente desde el 9 de noviembre de 2026.",
+  effective: "Vigente desde el 11 de noviembre de 2026.",
   sections: [
     {
       id: "responsable",
@@ -45,6 +45,7 @@ export const PRIVACY_COPY = {
         "Los números de Nequi o de cuenta de otras personas que traen tus movimientos: los guardamos cifrados con una clave secreta, y solo vemos sus últimos 4 dígitos. Los textos del banco pueden nombrar a quién le transferiste; solo tú los ves.",
         "Tus respuestas en la revisión rápida y tus correcciones de categoría, para clasificar tus movimientos.",
         "Los textos del banco que ninguna regla reconoce, como «COMPRA EN TIENDA XYZ», para clasificarlos y nombrarlos en palabras simples con inteligencia artificial (IA), sin tu nombre ni números de cuenta, celular o documento.",
+        "Si subes el archivo de un banco que aún no leemos: los nombres de sus columnas y la forma de sus primeras filas, como «99/99/9999» en vez de una fecha, para que la IA proponga qué es cada columna, nunca sus valores. Tú confirmas cómo leerlo antes de que lo leamos, y guardamos esa forma de leerlo, sin datos tuyos; si sus saldos cuadran, también la usamos para otras personas que suban un archivo igual.",
         "Tu correo, para avisarte cuando tus archivos estén listos, si hay algo por revisar o si un pago fijo sube. Si lo activas, también para enviarte cada mes tu resumen o qué archivo te falta. Esos avisos solo dicen cuántos archivos, movimientos, grupos o pagos son, nunca cuáles; los apagas desde el mismo correo o en tu perfil.",
         "La lista de espera: tu nombre y tu correo, solo para avisarte cuando Xtrakto esté disponible.",
       ],
@@ -71,7 +72,7 @@ export const PRIVACY_COPY = {
         "Inngest procesa tus archivos en segundo plano: solo recibe identificadores, nunca tus movimientos.",
         "Sentry recibe los errores técnicos, sin montos ni textos del banco.",
         "PostHog recibe la medición de uso, solo si la aceptas.",
-        "DeepSeek clasifica con IA los movimientos que ninguna regla reconoce, y los nombra en palabras simples. Recibe solo el texto del banco, sin tu nombre ni números de cuenta, celular o documento, y si el dinero entró o salió: nunca montos, fechas ni tu cuenta. Sus servidores están en China, no dice cuánto tiempo guarda esos textos y puede usarlos para entrenar sus modelos.",
+        "DeepSeek clasifica con IA los movimientos que ninguna regla reconoce, y los nombra en palabras simples. Recibe solo el texto del banco, sin tu nombre ni números de cuenta, celular o documento, y si el dinero entró o salió: nunca montos, fechas ni tu cuenta. Del archivo de un banco que aún no leemos, recibe los nombres de sus columnas y la forma de sus primeras filas, nunca sus valores. Sus servidores están en China, no dice cuánto tiempo guarda esos textos y puede usarlos para entrenar sus modelos.",
         "Langfuse recibe, de cada consulta a la IA, qué modelo respondió, cuánto usó y cuánto costó, sin el texto ni tus datos.",
         "Hostinger administra el dominio, y Forward Email reenvía los correos que nos escribes.",
       ],

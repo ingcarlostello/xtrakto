@@ -15,8 +15,14 @@ import {
   limitText,
   previewTags,
   problemText,
+  recognizedText,
   usagePill,
 } from "./upload-display.helpers";
+import {
+  FORMAT_PROBLEM,
+  FORMAT_PROBLEM_COPY,
+  UNKNOWN_FORMAT_COPY,
+} from "./unknown-format.constants";
 import {
   NO_ANSWER,
   PROBLEM_COPY,
@@ -32,6 +38,36 @@ import type {
 } from "./upload.types";
 
 describe("previewTags", () => {
+  const SEPTEMBER = periodSchema.parse({
+    from: "2026-09-01",
+    to: "2026-09-30",
+  });
+
+  it.each([
+    ["davivienda", "Davivienda"],
+    ["other", "Otro banco"],
+  ])(
+    "names another bank's spreadsheet by the bank its mapping says: %s",
+    (bankId, bank) => {
+      expect(
+        previewTags({
+          bankId,
+          formatId: "mapped-spreadsheet",
+          accountType: "savings",
+          period: SEPTEMBER,
+          periodSource: PERIOD_SOURCE.ROWS,
+          movementCount: 10,
+        }),
+      ).toEqual([bank, "Movimientos", "Excel", "1–30 sep 2026"]);
+    },
+  );
+
+  it("recognizes another bank's spreadsheet without a bank of its format's", () => {
+    expect(recognizedText("mapped-spreadsheet", SEPTEMBER)).toBe(
+      "Movimientos · 1–30 sep 2026",
+    );
+  });
+
   it("names a quarterly statement's bank, format, file type and months", () => {
     expect(
       previewTags({
@@ -435,5 +471,29 @@ describe("problemText", () => {
     ],
   ])("explains %s", (_case, error, expected) => {
     expect(problemText(error)).toEqual(expected);
+  });
+
+  it.each(Object.values(FORMAT_PROBLEM))(
+    "explains a format the LLM couldn't settle: %s",
+    (reason) => {
+      expect(
+        problemText(problem(APP_ERROR_CODE.UNKNOWN_FORMAT, reason)),
+      ).toEqual(FORMAT_PROBLEM_COPY[reason]);
+    },
+  );
+});
+
+describe("fileRowView, for a file no parser knows", () => {
+  const FILE = new File([], "otro-banco.xlsx");
+
+  it.each([
+    [UPLOAD_STATUS.FINDING_FORMAT, UNKNOWN_FORMAT_COPY.finding],
+    [UPLOAD_STATUS.PROPOSING, UNKNOWN_FORMAT_COPY.proposing],
+    [UPLOAD_STATUS.CONFIRMED, UNKNOWN_FORMAT_COPY.confirmed],
+  ] as const)("says what %s does", (status, text) => {
+    expect(fileRowView({ id: "a", file: FILE, status })).toEqual({
+      kind: "progress",
+      text,
+    });
   });
 });

@@ -59,6 +59,11 @@ export const UPLOAD_STATUS = {
   WAITING: "waiting",
   EXTRACTING: "extracting",
   LOCKED: "locked",
+  // A file no parser knows (11.3a): looked up, proposed, confirmed.
+  FINDING_FORMAT: "finding_format",
+  PROPOSING: "proposing",
+  CONFIRMING: "confirming",
+  CONFIRMED: "confirmed",
   READY: "ready",
   SENDING: "sending",
   SENT: "sent",

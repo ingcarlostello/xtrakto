@@ -14,6 +14,10 @@ import {
 } from "@/utils/statement-label.helpers";
 import { isPdfName } from "./file-checks.helpers";
 import {
+  FORMAT_PROBLEM_COPY,
+  UNKNOWN_FORMAT_COPY as FORMAT_COPY,
+} from "./unknown-format.constants";
+import {
   FILE_PROBLEM,
   FORMAT_BANKS,
   JOB_PROBLEMS,
@@ -89,11 +93,15 @@ export const fileKindOf = (item: UploadItem): FileKind => {
   return isPdfName(item.file.name) ? "pdf" : "excel";
 };
 
-/** What the server recognized in a job's file: bank, format and period. */
+/**
+ * What the server recognized in a job's file: bank, format and period. A
+ * spreadsheet read through a mapping has no bank of its format's (Stage 11).
+ */
 export const recognizedText = (formatId: string, period: Period): string => {
   const banks: Labels = FORMAT_BANKS;
+  const bankId = banks[formatId];
   return [
-    labelOf(BANK_LABELS, labelOf(banks, formatId)),
+    ...(bankId === undefined ? [] : [labelOf(BANK_LABELS, bankId)]),
     labelOf(FORMAT_LABELS, formatId),
     statementPeriodText(formatId, period),
   ].join(" · ");
@@ -129,6 +137,18 @@ const inputProblem = (reason: unknown): ProblemText =>
   (typeof reason === "string" ? INPUT_PROBLEMS[reason] : undefined) ??
   PROBLEM_COPY.tooLarge;
 
+const FORMAT_PROBLEMS: Readonly<Partial<Record<string, ProblemText>>> =
+  FORMAT_PROBLEM_COPY;
+
+// A file that isn't a spreadsheet or a PDF, one whose format couldn't be
+// settled (11.3a), or one that holds no table.
+const unknownFormatProblem = (reason: unknown): ProblemText => {
+  if (reason === FILE_PROBLEM.TYPE) return PROBLEM_COPY.wrongType;
+  const formatProblem =
+    typeof reason === "string" ? FORMAT_PROBLEMS[reason] : undefined;
+  return formatProblem ?? PROBLEM_COPY.notAStatement;
+};
+
 // SheetJS and pdf.js give no reason when they can't open a file; a parser
 // always says which part of a statement it couldn't read.
 const parseProblem = (reason: unknown): ProblemText => {
@@ -142,9 +162,7 @@ export const problemText = ({ code, details }: AppError): ProblemText => {
   const reason = details?.reason;
   switch (code) {
     case APP_ERROR_CODE.UNKNOWN_FORMAT:
-      return reason === FILE_PROBLEM.TYPE
-        ? PROBLEM_COPY.wrongType
-        : PROBLEM_COPY.notAStatement;
+      return unknownFormatProblem(reason);
     case APP_ERROR_CODE.INVALID_INPUT:
       return inputProblem(reason);
     case APP_ERROR_CODE.PARSE_FAILED:
@@ -227,6 +245,14 @@ export const fileRowView = (item: UploadItem, job?: UploadJob): FileRowView => {
         : { kind: "progress", text: COPY.stage[item.stage] };
     case UPLOAD_STATUS.LOCKED:
       return lockedView(item.isWrong, false);
+    case UPLOAD_STATUS.FINDING_FORMAT:
+      return { kind: "progress", text: FORMAT_COPY.finding };
+    case UPLOAD_STATUS.PROPOSING:
+      return { kind: "progress", text: FORMAT_COPY.proposing };
+    case UPLOAD_STATUS.CONFIRMING:
+      return { kind: "progress", text: FORMAT_COPY.confirming };
+    case UPLOAD_STATUS.CONFIRMED:
+      return { kind: "progress", text: FORMAT_COPY.confirmed };
     case UPLOAD_STATUS.READY:
       return item.sendProblem
         ? { kind: "problem", ...sendProblemText(item.sendProblem) }
