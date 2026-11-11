@@ -1,7 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { formatFingerprint } from "./format-mapping.helpers";
+import { COLUMN_ROLE } from "./format-mapping.constants";
+import {
+  columnRolesProblem,
+  formatFingerprint,
+} from "./format-mapping.helpers";
 
 const HEADER = ["FECHA TRANS", "DETALLE", "DEBITOS", "CREDITOS", "SALDO"];
+
+const {
+  DATE,
+  DESCRIPTION,
+  AMOUNT,
+  MONEY_OUT,
+  MONEY_IN,
+  BALANCE,
+  REFERENCE,
+  DIRECTION,
+  NONE,
+} = COLUMN_ROLE;
+
+describe("columnRolesProblem", () => {
+  it.each([
+    [DATE, DESCRIPTION, AMOUNT],
+    [DATE, NONE, DESCRIPTION, MONEY_OUT, MONEY_IN, BALANCE],
+    [DIRECTION, DATE, DESCRIPTION, REFERENCE, AMOUNT],
+  ])("reads money one way with %j", (...columns) => {
+    expect(columnRolesProblem(columns)).toBeUndefined();
+  });
+
+  it.each([
+    { problem: "one date column", columns: [DATE, DATE, DESCRIPTION, AMOUNT] },
+    { problem: "one description column", columns: [DATE, NONE, AMOUNT] },
+    {
+      problem: "one balance column at most",
+      columns: [DATE, DESCRIPTION, AMOUNT, BALANCE, BALANCE],
+    },
+    {
+      problem: "one reference column at most",
+      columns: [DATE, DESCRIPTION, REFERENCE, AMOUNT, REFERENCE],
+    },
+    {
+      problem: "money read one way",
+      columns: [DATE, DESCRIPTION, AMOUNT, MONEY_OUT, MONEY_IN],
+    },
+    { problem: "money read one way", columns: [DATE, DESCRIPTION, MONEY_IN] },
+    { problem: "money read one way", columns: [DATE, DESCRIPTION, DIRECTION] },
+  ])("says $problem", ({ problem, columns }) => {
+    expect(columnRolesProblem(columns)).toBe(problem);
+  });
+});
 
 describe("formatFingerprint", () => {
   it("gives a header 64 hex characters, the same each time", async () => {

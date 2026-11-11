@@ -258,7 +258,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.1a Read a spreadsheet with a mapping
 - [x] 11.1b Saved mappings
 - [x] 11.2a Invented formats to evaluate with
-- [ ] 11.2b The mapping proposal
+- [x] 11.2b The mapping proposal
 - [ ] 11.3a Confirm how to read it
 - [ ] 11.3b Correct the columns
 - [ ] 11.3c Other banks across the app
@@ -2267,7 +2267,11 @@ It came out at about 760 lines of code, past the 400 a phase should hold: about 
 
 **Done when:** the first run's figures and cost per model are in the phase log, both models meet the thresholds, and tests prove that a sample holds no value of its file.
 
-**Commits:** `feat(parsers): an unknown format's sample, dates and numbers`, `feat(web): the mapping proposal`, then `feat(web): the mapping proposal's eval`
+Found while building it (2026-11-11): a shape can't say which of a direction column's words is money in, so the code reads them from the cells, by the words banks use ("D" and "C", "Débito" and "Crédito", "+" and "-"), and leaves any other to the person (11.3b); a mapping from the LLM's roles (`mappingFromRoles`) takes, with them, the dates' and numbers' formats and those words. The sample's names are the fingerprint's (uppercase, without accents, each digit a 9), and a shape keeps 40 ASCII characters. The prompt's schema checks the roles with core's `columnRolesProblem` and their count, so an answer that reads no table makes the fallback model answer. The eval scores the roles a model gave apart from the mapping the code made with them, which 11.2a's scorer joined. The first run found the prompt calling a "saldo disponible" none even as the only balance, and `deepseek-v4-pro` missing direction columns named "TIPO": v1 was corrected before the thresholds, set with the human from the corrected run (0.85 of the files with every role right, 0.90 read whole and added up). A user's first proposal creates their row, since their ledger keeps what it used.
+
+It came out at about 600 lines of code added and 22 deleted (600 to 800 estimated), past the 400 a phase should hold, in commits of one pull request: core's sample and roles' check, the parsers' tests sharing 11.1a's mappings, the parsers' sample and formats, the proposal, its eval, and the documents; `CLAUDE.md` gains the eval's cost in a commit of its own.
+
+**Commits:** `feat(core): a format's sample and the check of its roles`, `test(parsers): share the invented banks' mappings among tests`, `feat(parsers): an unknown format's sample, dates and numbers`, `feat(web): the mapping proposal`, `feat: the mapping proposal's eval`, `docs: the mapping proposal`, then `docs: the evals' cost per run`
 
 #### 11.3 Mapping confirmation screen
 

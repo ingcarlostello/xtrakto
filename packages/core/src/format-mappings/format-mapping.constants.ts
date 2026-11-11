@@ -17,6 +17,13 @@ export const COLUMN_ROLE = {
   NONE: "none",
 } as const;
 
+/** The most rows of its table a format's sample shows the LLM (11.2b). */
+export const MAX_SAMPLE_ROWS = 10;
+/** The longest a cell's shape gets: a text's first words say what it is. */
+export const MAX_SHAPE_LENGTH = 40;
+/** The longest a header's name gets in a sample. */
+export const MAX_SAMPLE_NAME_LENGTH = 60;
+
 /** The most words a direction column may use for each way. */
 export const MAX_DIRECTION_WORDS = 10;
 /** Longest word a direction column may use: "Débito", "CREDITO". */

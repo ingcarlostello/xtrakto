@@ -111,13 +111,26 @@ export type {
   SpreadsheetCell,
   SpreadsheetContent,
 } from "./extracted-content/extracted-content.types";
-export { COLUMN_ROLE } from "./format-mappings/format-mapping.constants";
-export { formatFingerprint } from "./format-mappings/format-mapping.helpers";
+export {
+  COLUMN_ROLE,
+  MAX_SAMPLE_NAME_LENGTH,
+  MAX_SAMPLE_ROWS,
+  MAX_SHAPE_LENGTH,
+} from "./format-mappings/format-mapping.constants";
+export {
+  columnRolesProblem,
+  formatFingerprint,
+} from "./format-mappings/format-mapping.helpers";
 export { formatMappingSchema } from "./format-mappings/format-mapping.schemas";
 export type {
   ColumnRole,
   FormatMapping,
+  FormatSample,
 } from "./format-mappings/format-mapping.types";
+export {
+  CELL_SHAPE_PATTERN,
+  formatSampleSchema,
+} from "./format-mappings/format-sample.schemas";
 export { CURRENCY, DECIMAL_SEPARATOR } from "./money/money.constants";
 export {
   amountFromNumber,

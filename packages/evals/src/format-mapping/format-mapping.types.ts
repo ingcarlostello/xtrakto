@@ -62,12 +62,20 @@ export type MappingCase = {
 };
 
 /**
- * What a model proposed for a case, as the mapping the code assembles from
- * its roles; nothing when it gave no answer.
+ * What a model proposed for a case: the role it gave each column, nothing
+ * when it gave no answer; and the mapping the code made with those roles,
+ * when it could read the file's formats with them (11.2b).
  */
 export type MappingPrediction = {
   readonly testCase: MappingCase;
+  readonly roles?: readonly ColumnRole[];
   readonly proposed?: FormatMapping;
+};
+
+/** The shares of the set a model must get right. */
+export type MappingThresholds = {
+  readonly rolesRightShare: number;
+  readonly readRightShare: number;
 };
 
 /** How a model did on the set, in figures only. */

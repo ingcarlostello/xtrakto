@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "db:seed": "tsx scripts/seed.mts",
-    "eval": "tsx --conditions=react-server scripts/eval-categorization.mts"
+    "eval": "tsx --conditions=react-server scripts/eval-categorization.mts && tsx --conditions=react-server scripts/eval-format-mapping.mts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "3.0.75",
