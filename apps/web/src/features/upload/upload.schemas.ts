@@ -1,4 +1,4 @@
-import { extractedContentSchema } from "@xtrakto/core";
+import { extractedContentSchema, formatMappingSchema } from "@xtrakto/core";
 import { z } from "zod";
 import { ACCOUNT_KEY_PREFIX, MAX_TRACKED_JOBS } from "./upload.constants";
 
@@ -15,10 +15,15 @@ const accountChoiceSchema = z.union([
     .transform((key) => ({ accountLast4: key.slice(LAST4.length) })),
 ]);
 
-/** What the upload screen sends for each file: never the file or its name. */
+/**
+ * What the upload screen sends for each file: never the file or its name.
+ * A spreadsheet no parser knows comes with the mapping the person confirmed
+ * for it (Stage 11), when its format has none saved.
+ */
 export const submitStatementSchema = z.strictObject({
   content: extractedContentSchema,
   account: accountChoiceSchema.optional(),
+  mapping: formatMappingSchema.optional(),
 });
 
 /** The jobs the upload screen asks about: its own, at most the month's. */

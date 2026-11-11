@@ -1,5 +1,17 @@
-import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
-import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
+import { readFileSync } from "node:fs";
+import {
+  APP_ERROR_CODE,
+  err,
+  extractedContentSchema,
+  formatMappingSchema,
+  ok,
+} from "@xtrakto/core";
+import type {
+  ExtractedContent,
+  FormatMapping,
+  SpreadsheetCell,
+} from "@xtrakto/core";
+import { mappingParser } from "@xtrakto/parsers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTENT_TOO_LARGE } from "./upload.constants";
 import {
@@ -19,6 +31,9 @@ const mocks = vi.hoisted(() => ({
   createIngestionJobWithinLimit: vi.fn(),
   deletePendingIngestionJob: vi.fn(),
   withUserContext: vi.fn(),
+  findFormatMapping: vi.fn(),
+  saveOwnFormatMapping: vi.fn(),
+  shareFormatMapping: vi.fn(),
   send: vi.fn(),
 }));
 
@@ -30,6 +45,9 @@ vi.mock("@xtrakto/db", () => ({
   createIngestionJobWithinLimit: mocks.createIngestionJobWithinLimit,
   deletePendingIngestionJob: mocks.deletePendingIngestionJob,
   withUserContext: mocks.withUserContext,
+  findFormatMapping: mocks.findFormatMapping,
+  saveOwnFormatMapping: mocks.saveOwnFormatMapping,
+  shareFormatMapping: mocks.shareFormatMapping,
 }));
 vi.mock("@/lib/db", () => ({ getDb: () => "db" }));
 vi.mock("@/lib/inngest", async (importOriginal) => ({
@@ -92,6 +110,27 @@ const BUDGET: ExtractedContent = {
     },
   ],
 };
+
+// v8-14's invented "Banco Horizonte" (Phase 11.1a's fixture), and how the
+// person confirmed its columns.
+const HORIZONTE = extractedContentSchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../../../packages/parsers/fixtures/mapped-out-in.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ),
+);
+const OUT_AND_IN: FormatMapping = formatMappingSchema.parse({
+  header: ["FECHA TRANS", "DETALLE", "OFICINA", "DEBITOS", "CREDITOS", "SALDO"],
+  columns: ["date", "description", "none", "money_out", "money_in", "balance"],
+  dateOrder: "dmy",
+  decimalSeparator: ",",
+  bankId: "other",
+});
 
 const queue = (account?: { accountId: string } | { accountLast4: string }) =>
   queueStatement("user_clerk", { content: SENT, account });
@@ -249,6 +288,62 @@ describe("queueStatement", () => {
       CONTEXT,
       JOB_ID,
     );
+  });
+
+  describe("another bank's spreadsheet (Stage 11)", () => {
+    const queueHorizonte = (mapping?: FormatMapping) =>
+      queueStatement("user_clerk", { content: HORIZONTE, mapping });
+
+    it("queues it read with the mapping saved for its format, minimized under the mapped format", async () => {
+      mocks.findFormatMapping.mockResolvedValue({
+        mapping: OUT_AND_IN,
+        isShared: true,
+      });
+
+      expect(await queueHorizonte()).toEqual(ok({ jobId: JOB_ID }));
+      expect(mocks.createIngestionJobWithinLimit).toHaveBeenCalledWith(
+        CONTEXT,
+        {
+          formatId: "mapped-spreadsheet",
+          extractedContent: mappingParser(OUT_AND_IN).minimize(HORIZONTE),
+        },
+        expect.anything(),
+      );
+    });
+
+    it("queues it read with the mapping the person confirmed, which is saved", async () => {
+      expect(await queueHorizonte(OUT_AND_IN)).toEqual(ok({ jobId: JOB_ID }));
+      expect(mocks.saveOwnFormatMapping).toHaveBeenCalledWith(
+        CONTEXT,
+        OUT_AND_IN,
+      );
+      expect(mocks.createIngestionJobWithinLimit).toHaveBeenCalledOnce();
+    });
+
+    it("pins it to the user's account of its bank", async () => {
+      mocks.listAccounts.mockResolvedValue([
+        account("a"),
+        { ...account("b"), bankId: "other" },
+      ]);
+
+      await queueHorizonte(OUT_AND_IN);
+
+      expect(mocks.createIngestionJobWithinLimit).toHaveBeenCalledWith(
+        CONTEXT,
+        expect.objectContaining({ accountId: "b" }),
+        expect.anything(),
+      );
+    });
+
+    it("queues nothing when its format has no mapping", async () => {
+      mocks.findFormatMapping.mockResolvedValue(undefined);
+
+      expect(await queueHorizonte()).toEqual(
+        err({ code: APP_ERROR_CODE.UNKNOWN_FORMAT }),
+      );
+      expect(mocks.createIngestionJobWithinLimit).not.toHaveBeenCalled();
+      expect(mocks.send).not.toHaveBeenCalled();
+    });
   });
 
   it("throws a database error without the content its message carried", async () => {
