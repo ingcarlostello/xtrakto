@@ -1,7 +1,7 @@
 import { sha256Hex } from "../hashing/web-crypto.utils";
 import { foldText } from "../text/text.utils";
-import { COLUMN_ROLE } from "./format-mapping.constants";
-import type { ColumnRole } from "./format-mapping.types";
+import { COLUMN_ROLE, ROLES_PROBLEM } from "./format-mapping.constants";
+import type { ColumnRole, RolesProblem } from "./format-mapping.types";
 
 /**
  * A format's fingerprint, by which its mapping is saved and found: the
@@ -60,12 +60,12 @@ const readsMoneyOneWay = (columns: readonly ColumnRole[]): boolean =>
  */
 export const columnRolesProblem = (
   columns: readonly ColumnRole[],
-): string | undefined => {
-  if (countOf(columns, DATE) !== 1) return "one date column";
-  if (countOf(columns, DESCRIPTION) !== 1) return "one description column";
-  if (countOf(columns, BALANCE) > 1) return "one balance column at most";
-  if (countOf(columns, REFERENCE) > 1) return "one reference column at most";
-  return readsMoneyOneWay(columns) ? undefined : "money read one way";
+): RolesProblem | undefined => {
+  if (countOf(columns, DATE) !== 1) return ROLES_PROBLEM.DATE;
+  if (countOf(columns, DESCRIPTION) !== 1) return ROLES_PROBLEM.DESCRIPTION;
+  if (countOf(columns, BALANCE) > 1) return ROLES_PROBLEM.BALANCE;
+  if (countOf(columns, REFERENCE) > 1) return ROLES_PROBLEM.REFERENCE;
+  return readsMoneyOneWay(columns) ? undefined : ROLES_PROBLEM.MONEY;
 };
 
 const wordsProblem = ({

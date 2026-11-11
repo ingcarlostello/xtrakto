@@ -117,6 +117,7 @@ export {
   MAX_SAMPLE_NAME_LENGTH,
   MAX_SAMPLE_ROWS,
   MAX_SHAPE_LENGTH,
+  ROLES_PROBLEM,
 } from "./format-mappings/format-mapping.constants";
 export {
   columnRolesProblem,
@@ -130,6 +131,7 @@ export type {
   ColumnRole,
   FormatMapping,
   FormatSample,
+  RolesProblem,
 } from "./format-mappings/format-mapping.types";
 export {
   CELL_SHAPE_PATTERN,
