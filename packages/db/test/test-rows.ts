@@ -2,6 +2,7 @@ import { createHash, randomInt, randomUUID } from "node:crypto";
 import type { AmountMinor, LocalDate } from "@xtrakto/core";
 import type { Database } from "../src/client/db-client.types";
 import { accounts } from "../src/accounts/account.schemas";
+import { userFormatMappings } from "../src/format-mappings/format-mapping.schemas";
 import { ingestionJobs } from "../src/ingestion-jobs/ingestion-job.schemas";
 import { llmUsage } from "../src/llm-usage/llm-usage.schemas";
 import { statements } from "../src/statements/statement.schemas";
@@ -124,6 +125,11 @@ export const seedUser = async (db: Database): Promise<SeededUser> => {
     categoryId: "investment",
   });
   await db.insert(llmUsage).values({ userId, ...LLM_USAGE });
+  await db.insert(userFormatMappings).values({
+    userId,
+    fingerprint: sha256Hex(),
+    mapping: { header: ["FECHA", "DETALLE", "VALOR"] },
+  });
   return { userId, accountId, statementId, transactionId: movement.id };
 };
 
