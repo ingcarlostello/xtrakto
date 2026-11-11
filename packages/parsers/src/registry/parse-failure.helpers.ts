@@ -26,7 +26,12 @@ export type ParseFailureReason =
   /** The content isn't of the parser's type: a spreadsheet or a PDF. */
   | "content_type"
   /** The statement read doesn't satisfy the parsed statement schema. */
-  | "invalid_output";
+  | "invalid_output"
+  /**
+   * Roles that read no table (Stage 11): a column without one, no date, or
+   * money read two ways.
+   */
+  | "invalid_mapping";
 
 /**
  * Where a file couldn't be read: the printed block and column names, a
