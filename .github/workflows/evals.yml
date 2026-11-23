@@ -1,9 +1,10 @@
 name: Evals
 
 # Runs the LLM evals against DeepSeek when what they measure changes: the
-# prompts and their services, the AI module, the sets or how a sample of an
-# unknown format is read (8.4, 11.2b). A run of both evals costs about
-# USD 0.13 of the project's DeepSeek credits, so it doesn't run on every pull
+# prompts and their services, the AI module, the sets, how a sample of an
+# unknown format is read, or the format agent's loop and the repairs its
+# worker tries (8.4, 11.2b, 11.5). A run of the three evals costs about
+# USD 0.15 of the project's DeepSeek credits, so it doesn't run on every pull
 # request; `workflow_dispatch` runs it on demand.
 on:
   pull_request:
@@ -11,6 +12,7 @@ on:
       - apps/web/src/lib/ai.ts
       - apps/web/src/features/llm-categories/**
       - apps/web/src/features/format-mappings/**
+      - apps/web/src/features/upload/statement-extraction.helpers.ts
       - apps/web/scripts/eval-*.mts
       - packages/evals/**
       - packages/parsers/src/format-mapping/**
