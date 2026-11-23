@@ -46,7 +46,8 @@ const NUMBER_STYLES: readonly NumberStyle[] = [
   "number_cell",
 ];
 
-const column = (
+/** A layout's column: its role, its name, and what it holds when ignored. */
+export const column = (
   role: ColumnRole,
   name: string,
   holds?: IgnoredValue,

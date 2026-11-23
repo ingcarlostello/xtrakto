@@ -15,6 +15,25 @@ export type {
   CategorizationThresholds,
   ThresholdFigure,
 } from "./categorization/categorization.types";
+export {
+  FORMAT_AGENT_CASES,
+  MISLEADING_CASES,
+} from "./format-agent/format-agent-cases.constants";
+export { agentReport } from "./format-agent/format-agent-report.helpers";
+export {
+  isBelowAgentThresholds,
+  scoreAgent,
+} from "./format-agent/format-agent-score.helpers";
+export {
+  AGENT_THRESHOLDS,
+  MISLEADING_THRESHOLDS,
+} from "./format-agent/format-agent.constants";
+export type {
+  AgentRun,
+  AgentScore,
+  AgentStage,
+  AgentThresholds,
+} from "./format-agent/format-agent.types";
 export { FORMAT_MAPPING_CASES } from "./format-mapping/format-mapping-cases.constants";
 export { mappingReport } from "./format-mapping/format-mapping-report.helpers";
 export {
