@@ -395,7 +395,9 @@ describe("repairReading", () => {
   });
 
   it("gives the roles as they were when no repair adds up", () => {
-    const roles = RIGHT.map((role) => (role === "balance" ? "none" : role));
+    // Two mistakes at once, which no single repair undoes: money in and out
+    // swapped, and the balance left out.
+    const roles = SWAPPED.map((role) => (role === "balance" ? "none" : role));
 
     expect(repairReading(HORIZONTE, { roles })).toEqual(
       reviewReading(HORIZONTE, { roles }),
