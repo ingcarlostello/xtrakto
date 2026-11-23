@@ -102,13 +102,18 @@ const monthOf = (random: Random, month: number): Month => {
   return { opening, movements };
 };
 
-type CellContext = { readonly layout: Layout; readonly index: number };
+type CellContext = {
+  readonly layout: Layout;
+  readonly index: number;
+  /** The balance the month opens with. */
+  readonly opening: number;
+};
 
 // What a column no mapping reads holds on a movement's row.
 const ignoredCell = (
   { holds }: LayoutColumn,
   movement: Movement,
-  { layout, index }: CellContext,
+  { layout, index, opening }: CellContext,
 ): SpreadsheetCell => {
   if (holds === "second_date") {
     return dateCell(dayAfter(movement.date, index % 2), layout.dates);
@@ -120,6 +125,10 @@ const ignoredCell = (
   if (holds === "available_balance") {
     const hold = index % 4 === 1 ? 5_000_000 : 0;
     return amountCell(movement.balance - hold, layout.numbers);
+  }
+  if (holds === "frozen_balance") return amountCell(opening, layout.numbers);
+  if (holds === "previous_balance") {
+    return amountCell(movement.balance - movement.amount, layout.numbers);
   }
   return holds === "channel"
     ? (CHANNELS[index % CHANNELS.length] ?? null)
@@ -179,7 +188,11 @@ const openingRow = (layout: Layout, month: Month): Row => {
 const tableRows = (layout: Layout, month: Month): Row[] => {
   const movements = month.movements.map((movement, index) =>
     layout.columns.map((column) =>
-      movementCell(column, movement, { layout, index }),
+      movementCell(column, movement, {
+        layout,
+        index,
+        opening: month.opening,
+      }),
     ),
   );
   const opening = layout.openingRow ? [openingRow(layout, month)] : [];

@@ -263,7 +263,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.3b Correct the columns
 - [x] 11.3c Other banks across the app
 - [x] 11.4 The agent: repair and retry before asking
-- [ ] 11.5 Agent evals
+- [x] 11.5 Agent evals
 
 **Stage 12 — Credit cards** _(outline)_
 
@@ -2372,7 +2372,11 @@ It came out at about 545 lines of code added and 60 deleted, without tests, comm
 
 **Done when:** the first run's figures are in the phase log, ready for the final README (16.2), and the loop meets the thresholds.
 
-**Commit:** `feat(web): the format agent's eval`
+Decided with the human when it started (2026-11-23): 11.2a's 48 files read right with the first proposal almost always, so 5 invented files whose names mislead, which only their balances settle, join them in a set of the agent's own, and the mapping eval's set and thresholds stay; the loop runs as the upload screen runs it, the first proposal through lib/ai's models and the second through `deepseek-v4-pro` alone; and a file is right when it reads the movements the person's mapping reads, each one's date, amount and description, with balances that reconcile where it prints them. Found while building it: the first run left to the person two of 11.2a's files whose only balance, "Saldo disponible", the first proposal left out, since a reading without balances told the agent nothing failed and the confirmation said the file prints none. A reading without a balance now gets the repairs too, which try each column left out as the balance (decided with the human), and ADR 0039 is amended. The thresholds, set with the human from the run with that repair: 0.94 of the whole set, and 3 of the 5 misleading files.
+
+It came out at about 460 lines of code, without tests, comments or blank lines (350 to 500 estimated, besides the repair), in commits of one pull request: the repair in the parsers, the agent trying it, the set with its metrics, the eval, and the documents; `CLAUDE.md` gains the eval in a commit of its own.
+
+**Commits:** `feat(parsers): repair a balance the roles left out`, `feat(web): repair a reading without balances before asking`, `feat(evals): files whose names mislead, and the format agent's metrics`, `feat(web): the format agent's eval`, `docs: the format agent's eval`, then `docs: run the format agent's eval`
 
 ### Stage 12 — Credit cards _(outline)_
 

@@ -20,7 +20,15 @@ export type NumberStyle = "comma" | "point" | "comma_peso" | "number_cell";
 
 /** What a column no mapping reads holds. */
 export type IgnoredValue =
-  "second_date" | "branch" | "fee" | "available_balance" | "channel";
+  | "second_date"
+  | "branch"
+  | "fee"
+  | "available_balance"
+  | "channel"
+  /** The month's opening balance on every row (11.5). */
+  | "frozen_balance"
+  /** Each movement's balance before it (11.5). */
+  | "previous_balance";
 
 export type LayoutColumn = {
   readonly role: ColumnRole;
@@ -28,6 +36,11 @@ export type LayoutColumn = {
   readonly name: string;
   /** What a column of role `none` holds. */
   readonly holds?: IgnoredValue;
+  /**
+   * The role a reading by the names alone gives it, when that isn't its
+   * role: a column whose name misleads (11.5).
+   */
+  readonly looksLike?: ColumnRole;
 };
 
 /** An invented bank's spreadsheet, as the set writes it. */

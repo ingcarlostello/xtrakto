@@ -373,10 +373,10 @@ flowchart LR
     L -- "no, or it doesn't read" --> M["LLM proposes roles<br/>names + shapes of 10 rows"]
     M --> R["Read in the worker"]
     R --> V{"Balances chain?"}
-    V -- "yes, or none to check" --> C["Person confirms<br/>the best reading"]
-    V -- "they break" --> X["Code repairs:<br/>in and out swapped,<br/>a direction left out"]
+    V -- "yes" --> C["Person confirms<br/>the best reading"]
+    V -- "they break, or there are none" --> X["Code repairs:<br/>in and out swapped,<br/>a direction or a balance left out"]
     X --> W{"A repair chains?"}
-    W -- "yes" --> C
+    W -- "yes, or none to check" --> C
     W -- "no" --> T{"Second proposal?"}
     R -- "doesn't read the file" --> T
     T -- "not yet" --> P["deepseek-v4-pro alone<br/>told what failed, in codes"]
@@ -385,9 +385,10 @@ flowchart LR
 ```
 
 - **The LLM names roles, the code reads formats:** each column's role from the header's names and the shapes of the table's first rows ("99/99/9999", "-99.999,99"), never a value, through `proposeFormatMapping`; the worker reads the dates', numbers' and directions' formats from the cells and makes the mapping (`mappingFromRoles`, [ADR 0038](adr/0038-the-llm-sees-a-formats-shapes-never-its-values.md)).
-- **The balances prove a repair:** money in and out the other way round, or, for an amount read as signed, a column left out whose words say each movement's way (`repairChoices`, `@xtrakto/parsers`). A file without balances gets none, since nothing proves it.
+- **The balances prove a repair:** money in and out the other way round; for an amount read as signed, a column left out whose words say each movement's way; or, for a reading without a balance, a column left out read as it (11.5) (`repairChoices`, `@xtrakto/parsers`). A file without balances gets none, since nothing proves it.
 - **A second proposal knows what failed:** `deepseek-v4-pro` alone gets the same sample, the roles it was given and what failed, in codes: a column by its number and why it doesn't read, no movement, or the share of movements whose balance doesn't follow (`propose-mapping-retry` v1). The person's month pays for both calls.
 - **The person has the last word:** the reading that verifies, else the latest that reads the whole file, else the one that reads furthest down it, opens "Confirma cómo leer tu extracto" (11.3a), which the person corrects (11.3b) and confirms; the server proves it again by reconciling before saving it ([ADR 0037](adr/0037-other-banks-formats-proven-where-the-file-is.md)).
+- **Its eval runs the whole loop (11.5):** a script drives `nextStep` over 11.2a's 48 invented formats and 5 whose names mislead, which only their balances settle, with the same proposal, readings and repairs as the upload screen, and counts the files read right after each step and those left to the person; it fails under its thresholds.
 
 Reconciliation is the agent's ground truth. Saved mappings hold column roles and formats, never user data.
 
@@ -446,7 +447,7 @@ flowchart LR
 
 Vercel deploys `main` while the migrations job runs, so migrations must stay backward compatible: expand the schema, deploy, then remove what old code used.
 
-A pull request that changes a prompt, `lib/ai` or an eval's set also runs the LLM evals against DeepSeek, with the project's key as a GitHub secret: only the sets' invented texts go, the report holds figures only, and a model under a threshold fails it (8.4).
+A pull request that changes a prompt, `lib/ai`, an eval's set or the format agent's loop also runs the LLM evals against DeepSeek, with the project's key as a GitHub secret: only the sets' invented texts go, the report holds figures only, and a model or the agent's loop under a threshold fails it (8.4, 11.5).
 
 ---
 

@@ -8,7 +8,8 @@ import type { MappingReview } from "./mapping-review.helpers";
 import type { MappingChoices } from "./mapping-roles.helpers";
 import { findTable } from "./mapping-table.helpers";
 
-const { DATE, AMOUNT, MONEY_OUT, MONEY_IN, DIRECTION, NONE } = COLUMN_ROLE;
+const { DATE, AMOUNT, MONEY_OUT, MONEY_IN, BALANCE, DIRECTION, NONE } =
+  COLUMN_ROLE;
 
 type Roles = readonly ColumnRole[];
 
@@ -41,13 +42,22 @@ const withDirection = (content: ExtractedContent, roles: Roles): Roles[] => {
   });
 };
 
+// For roles without a balance, each column left out read as the balance.
+const withBalance = (roles: Roles): Roles[] =>
+  roles.includes(BALANCE)
+    ? []
+    : roles.flatMap((role, column) =>
+        role === NONE ? [roles.with(column, BALANCE)] : [],
+      );
+
 const isVerified = ({ reading }: MappingReview): boolean =>
   reading.ok && reading.value.test.balances?.isVerified === true;
 
 /**
  * How a file reads with the first repair of the choices whose balances chain
- * to the cent (11.4): money in and out the other way round, or, for an amount
- * read as signed, a column they left out that says each movement's way.
+ * to the cent (11.4): money in and out the other way round; for an amount
+ * read as signed, a column they left out that says each movement's way; or,
+ * when they read no balance, a column they left out read as it (11.5).
  * Undefined when none does, or the file prints no balances: only its
  * balances prove a repair.
  */
@@ -59,6 +69,7 @@ export const repairChoices = (
   for (const repaired of [
     ...swapped(roles),
     ...withDirection(content, roles),
+    ...withBalance(roles),
   ]) {
     const review = reviewChoices(content, { ...choices, roles: repaired });
     if (review.ok && isVerified(review.value)) return review.value;

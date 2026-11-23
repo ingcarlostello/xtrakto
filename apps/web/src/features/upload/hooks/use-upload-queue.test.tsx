@@ -620,6 +620,9 @@ describe("useUploadQueue, for a file no parser knows", () => {
     await unknownFile();
     await askedOf(2);
     workers[0]?.post({ type: "reviewed", revision: 0, result: ok(REVIEW) });
+    // A reading without balances gets the code's repairs first (11.5).
+    await askedOf(3);
+    workers[0]?.post({ type: "repaired", result: ok(REVIEW) });
   };
 
   it("reads it with the mapping saved for its format", async () => {
@@ -653,6 +656,10 @@ describe("useUploadQueue, for a file no parser knows", () => {
     expect(workers[0]?.requests[1]?.request).toEqual({
       type: "review",
       revision: 0,
+      choices: { roles: MAPPING.columns },
+    });
+    expect(workers[0]?.requests[2]?.request).toEqual({
+      type: "repair",
       choices: { roles: MAPPING.columns },
     });
     expect(queue.items[0]).toMatchObject({
@@ -689,7 +696,7 @@ describe("useUploadQueue, for a file no parser knows", () => {
     act(() => queue.correctFormat(idOf(0), first));
     act(() => queue.correctFormat(idOf(0), latest));
 
-    expect(workers[0]?.requests.slice(2).map(({ request }) => request)).toEqual(
+    expect(workers[0]?.requests.slice(3).map(({ request }) => request)).toEqual(
       [
         { type: "review", revision: 1, choices: first },
         { type: "review", revision: 2, choices: latest },
@@ -715,7 +722,7 @@ describe("useUploadQueue, for a file no parser knows", () => {
     act(() => queue.confirmFormat(idOf(0), CONFIRMED));
 
     expect(statuses()).toEqual([UPLOAD_STATUS.CONFIRMED]);
-    expect((await askedOf(3))?.request).toEqual({
+    expect((await askedOf(4))?.request).toEqual({
       type: "read",
       mapping: CONFIRMED,
     });
@@ -733,7 +740,7 @@ describe("useUploadQueue, for a file no parser knows", () => {
   it("keeps the mapping of a file whose send got no answer, to send it again", async () => {
     await proposedFor();
     act(() => queue.confirmFormat(idOf(0), CONFIRMED));
-    await askedOf(3);
+    await askedOf(4);
     workers[0]?.post({ type: "read", result: ok(STATEMENT) });
     submit.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     const input = { content: STATEMENT.content, mapping: CONFIRMED };

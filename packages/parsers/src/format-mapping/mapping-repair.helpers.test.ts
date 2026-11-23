@@ -13,7 +13,7 @@ import {
 import { repairChoices } from "./mapping-repair.helpers";
 import type { MappingReview } from "./mapping-review.helpers";
 
-const { DATE, DESCRIPTION, MONEY_OUT, MONEY_IN, NONE } = COLUMN_ROLE;
+const { DATE, DESCRIPTION, MONEY_OUT, MONEY_IN, BALANCE, NONE } = COLUMN_ROLE;
 
 const OUT_IN = MAPPED_FIXTURES["mapped-out-in"];
 const OUT_IN_ROLES: readonly ColumnRole[] =
@@ -73,6 +73,24 @@ describe("repairChoices", () => {
         roles: DIRECTION_ROLES.with(2, NONE),
       }),
     ).toBeUndefined();
+  });
+
+  it("reads a column left out as the balance when its balances chain", () => {
+    // Its "SALDO" ignored: the reading has no balance to check.
+    const roles = OUT_IN_ROLES.with(OUT_IN_ROLES.indexOf(BALANCE), NONE);
+
+    const repaired = repairChoices(fixtureContent(OUT_IN), { roles });
+
+    expect(repaired?.roles).toEqual(OUT_IN_ROLES);
+    expect(balancesOf(repaired)?.isVerified).toBe(true);
+  });
+
+  it("reads no column left out as the balance when none chains", () => {
+    const rows = fixtureRows(OUT_IN).map((row) => [...row]);
+    rows[10] = rows[10]?.with(5, "1,00") ?? [];
+    const roles = OUT_IN_ROLES.with(OUT_IN_ROLES.indexOf(BALANCE), NONE);
+
+    expect(repairChoices(spreadsheet(rows), { roles })).toBeUndefined();
   });
 
   it("repairs nothing in a file without balances, which nothing proves", () => {

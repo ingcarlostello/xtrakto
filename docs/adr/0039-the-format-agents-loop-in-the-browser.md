@@ -1,6 +1,6 @@
 # 0039. The format agent's loop runs in the browser, without LangGraph.js
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by Phase 11.5, where a reading without a balance gets the repairs too, which may find one the roles left out
 - **Date:** 2026-11-11
 
 ## Context
@@ -12,7 +12,7 @@ The loop needs the file at every step, to read a proposal, try a repair and choo
 ## Decision
 
 - **A pure transition function in `features/format-mappings`** (`nextStep`): from where the agent is and what the page tells it, the next command. It looks up the mapping saved for the format and reads the file with it; without one, or when it doesn't read the file, it asks the LLM for roles and reads the file with them; when their balances don't chain, it tries the code's repairs; when neither verifies, it proposes once more; then it asks the person, with the best reading. The page carries out each command (`use-file-readers`): the worker reads and repairs, the server actions look up and propose. Tests run the transitions without a browser, and the eval (11.5) can too.
-- **Repairs the balances prove, in the worker** (`repairChoices`, `@xtrakto/parsers`): money in and out the other way round, and, for an amount read as signed, a column left out whose words say each movement's way, as banks write them ("D" and "C"). A repair counts only when every balance chains to the cent; a file without balances gets none, since nothing proves it.
+- **Repairs the balances prove, in the worker** (`repairChoices`, `@xtrakto/parsers`): money in and out the other way round, and, for an amount read as signed, a column left out whose words say each movement's way, as banks write them ("D" and "C"). A repair counts only when every balance chains to the cent; a file without balances gets none, since nothing proves it. Since Phase 11.5, whose eval found the LLM leaving out a file's only balance ("Saldo disponible"), a reading without a balance gets the repairs too: a column left out read as the balance, which counts only when every balance then chains.
 - **A second proposal told what failed, in codes** (`propose-mapping-retry` v1): `deepseek-v4-pro` alone gets the same sample, the roles it was given and what failed: a column by its number and why it doesn't read, no movement, or the share of movements whose balance doesn't follow. `proposeFormatMapping` validates the retry with a strict schema of roles and codes, so no value of the file rides along.
 - **The person always has the last word:** the reading that verifies, else the latest that reads the whole file, else the one that reads furthest down it, opens "Confirma cómo leer tu extracto" as before. A new format is still confirmed once, as v8-14 draws it.
 
@@ -27,4 +27,4 @@ The loop needs the file at every step, to read a proposal, try a repair and choo
 
 - A format whose balances prove a repair costs one call and opens already adding up; one the first proposal misreads costs two, the second about USD 0.0016 of the person's month.
 - DeepSeek receives, beside names and shapes, the roles it proposed and what failed, in codes: a column's number, a cause, a whole percent. Never a date, an amount or a text of the file.
-- The loop is plain TypeScript the page drives, so it adds no dependency. Its figures, after the first proposal, the repairs and the second, come with its eval (11.5).
+- The loop is plain TypeScript the page drives, so it adds no dependency. Its figures, after the first proposal, the repairs and the second, come with its eval (11.5): of 53 invented formats, 47 read right after the first proposal, 50 after the repairs and 52 after the second.
