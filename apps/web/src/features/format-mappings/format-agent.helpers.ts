@@ -136,7 +136,8 @@ const notProposed = (state: AgentState, noProposal?: NoProposal): AgentStep => {
   return to({ ...state, noProposal }, { type: "review" });
 };
 
-// A reading whose balances don't chain gets the code's repairs first.
+// A reading whose balances don't chain, or that has none, gets the code's
+// repairs first: they may find a balance the roles left out (11.5).
 const reviewed = (
   state: AgentState,
   result: Result<MappingReview>,
@@ -148,7 +149,7 @@ const reviewed = (
     const why = noProposal === undefined ? {} : { noProposal };
     return to(state, { type: "ask", review, ...why });
   }
-  return balancesOf(review)?.isVerified === false
+  return review.reading.ok && balancesOf(review)?.isVerified !== true
     ? to(state, { type: "repair", choices: { roles } })
     : attempted(state, review);
 };

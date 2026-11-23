@@ -169,9 +169,30 @@ describe("nextStep", () => {
     ]);
   });
 
-  it("asks the person about a file without balances, which nothing proves", () => {
+  it("tries the code's repairs on a reading without balances, which may find one left out", () => {
+    const left = ROLES.with(ROLES.indexOf(BALANCE), NONE);
+
     expect(
-      lastAfter([NOTHING_SAVED, proposed(ROLES), reviewed(WITHOUT_BALANCES)]),
+      commandsAfter([
+        NOTHING_SAVED,
+        proposed(left),
+        reviewed(readingOf(left)),
+        repaired(VERIFIED),
+      ]).slice(-2),
+    ).toEqual([
+      { type: "repair", choices: { roles: left } },
+      { type: "ask", review: VERIFIED },
+    ]);
+  });
+
+  it("asks the person about a file without balances when no repair finds one, since nothing proves it", () => {
+    expect(
+      lastAfter([
+        NOTHING_SAVED,
+        proposed(ROLES),
+        reviewed(WITHOUT_BALANCES),
+        repaired(WITHOUT_BALANCES),
+      ]),
     ).toEqual({ type: "ask", review: WITHOUT_BALANCES });
   });
 
