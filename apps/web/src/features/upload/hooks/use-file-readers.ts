@@ -1,9 +1,18 @@
-import { APP_ERROR_CODE, err } from "@xtrakto/core";
-import type { FormatMapping, FormatSample, Result } from "@xtrakto/core";
+import { APP_ERROR_CODE, err, ok } from "@xtrakto/core";
+import type { FormatMapping, Result } from "@xtrakto/core";
 import type { MappingChoices } from "@xtrakto/parsers";
 import { useEffect, useRef } from "react";
 import type { Dispatch } from "react";
-import type { NoProposal } from "@/features/format-mappings/format-mapping.types";
+import {
+  AGENT_START,
+  nextStep,
+} from "@/features/format-mappings/format-agent.helpers";
+import type {
+  AgentCommand,
+  AgentEvent,
+  AgentState,
+} from "@/features/format-mappings/format-agent.types";
+import type { MappingRetry } from "@/features/format-mappings/mapping-retry.schemas";
 import { noProposalOf } from "../format-queue.helpers";
 import { itemsToStart } from "../upload-queue.helpers";
 import type { UploadQueueAction } from "../upload-queue.helpers";
@@ -31,16 +40,19 @@ const unreadable: Result<never> = err({
 });
 
 // One file's reading, and what its worker answers for: a file no parser
-// knows keeps its format, the latest correction's number and why there's no
-// proposal, if there isn't, then the mapping the person confirmed.
+// knows keeps its format and, while it's settled, where the format agent is
+// (11.4); then the latest correction's number, and the mapping the person
+// confirmed.
 type Reading = {
   readonly id: string;
   readonly worker: ExtractionWorker;
   readonly dispatch: Dispatch<UploadQueueAction>;
   readonly services: FormatServices;
   unknown?: UnknownFormat;
+  agent?: AgentState;
+  /** What the saved mapping read, which finishes the file when it reads it. */
+  saved?: Result<ExtractedStatement>;
   revision: number;
-  noProposal?: NoProposal;
   confirmed?: FormatMapping;
 };
 
@@ -59,47 +71,111 @@ const review = (reading: Reading, choices?: MappingChoices) => {
   worker.postMessage({ type: "review", revision, ...chosen }, []);
 };
 
-// No mapping is saved for the format, or the saved one no longer reads the
-// file: the LLM proposes roles from its sample, which the worker reads.
-// Without them the person chooses (11.3b), unless the session ended.
-const propose = async (reading: Reading, sample: FormatSample) => {
-  const { id, dispatch, services } = reading;
-  dispatch({ type: "formatProposing", id });
-  const answer = await services
-    .propose(sample)
-    .catch((): typeof NO_ANSWER => NO_ANSWER);
+// The format agent's next step from what the page heard, and what it asks.
+const step = (reading: Reading, event: AgentEvent) => {
+  if (reading.agent === undefined) return;
+  const next = nextStep(reading.agent, event);
+  reading.agent = next.state;
+  run(reading, next.command);
+};
+
+// The mapping saved for the file's format, the person's or everyone's.
+const lookUp = async (reading: Reading, header: readonly string[]) => {
+  const saved = await reading.services.findSaved(header).catch(() => undefined);
+  const mapping = saved?.ok ? saved.value.mapping : null;
+  step(reading, { type: "lookedUp", mapping });
+};
+
+// The LLM's roles for the file's sample, or again told what failed (11.4);
+// without them, why, or nothing once the session ended.
+const propose = async (reading: Reading, retry?: MappingRetry) => {
+  const { id, dispatch, services, unknown } = reading;
+  if (unknown === undefined) return;
+  const again = retry === undefined ? {} : { isAgain: true };
+  dispatch({ type: "formatProposing", id, ...again });
+  const asked =
+    retry === undefined
+      ? services.propose(unknown.sample)
+      : services.propose(unknown.sample, retry);
+  const answer = await asked.catch((): typeof NO_ANSWER => NO_ANSWER);
   if (answer !== NO_ANSWER && answer.ok) {
-    review(reading, { roles: answer.value.roles });
+    step(reading, { type: "proposed", roles: answer.value.roles });
     return;
   }
   const noProposal = noProposalOf(answer === NO_ANSWER ? answer : answer.error);
-  if (noProposal === undefined) {
-    const error = { code: APP_ERROR_CODE.UNAUTHORIZED };
-    dispatch({ type: "formatFailed", id, error });
-    return;
-  }
-  reading.noProposal = noProposal;
-  review(reading);
+  const why = noProposal === undefined ? {} : { noProposal };
+  step(reading, { type: "notProposed", ...why });
 };
 
-// A file no parser knows: read with the mapping saved for its format, when
-// someone confirmed it, else proposed.
-const settle = async (reading: Reading, format: UnknownFormat) => {
-  const { id, worker, dispatch, services } = reading;
-  reading.unknown = format;
-  dispatch({ type: "formatUnknown", id });
-  const saved = await services.findSaved(format.header).catch(() => undefined);
-  const mapping = saved?.ok ? saved.value.mapping : null;
-  if (mapping) worker.postMessage({ type: "read", mapping }, []);
-  else await propose(reading, format.sample);
+// Once the agent asks the person or ends, the file's next answers are the
+// person's corrections.
+const settled = (reading: Reading, command: AgentCommand) => {
+  const { id, dispatch } = reading;
+  reading.agent = undefined;
+  if (command.type === "finish") finish(reading, reading.saved ?? unreadable);
+  if (command.type === "fail") {
+    dispatch({ type: "formatFailed", id, error: command.error });
+  }
+  if (command.type === "ask") {
+    const { noProposal } = command;
+    const why = noProposal === undefined ? {} : { noProposal };
+    const result = ok(command.review);
+    dispatch({ type: "formatReviewed", id, revision: 0, result, ...why });
+  }
+};
+
+// Does what the format agent asks (11.4).
+const run = (reading: Reading, command: AgentCommand) => {
+  const { worker, unknown } = reading;
+  switch (command.type) {
+    case "lookUp":
+      void lookUp(reading, unknown?.header ?? []);
+      return;
+    case "readSaved":
+      worker.postMessage({ type: "read", mapping: command.mapping }, []);
+      return;
+    case "propose":
+    case "proposeAgain":
+      void propose(reading, "retry" in command ? command.retry : undefined);
+      return;
+    case "review":
+      review(reading, command.choices);
+      return;
+    case "repair":
+      worker.postMessage({ type: "repair", choices: command.choices }, []);
+      return;
+    default:
+      settled(reading, command);
+  }
 };
 
 // What a mapping read: the person's confirmed one ends the file either way;
-// a saved one that no longer reads it makes way for a proposal.
+// a saved one, as the agent says.
 const onRead = (reading: Reading, result: Result<ExtractedStatement>) => {
-  const { confirmed, unknown } = reading;
-  if (confirmed || result.ok || !unknown) finish(reading, result);
-  else void propose(reading, unknown.sample);
+  if (reading.agent === undefined) {
+    finish(reading, result);
+    return;
+  }
+  reading.saved = result;
+  step(reading, { type: "savedRead", isRead: result.ok });
+};
+
+// A review answers the agent while it settles the format, then the person's
+// latest correction.
+const onReviewed = (
+  reading: Reading,
+  { revision, result }: Extract<ExtractionMessage, { type: "reviewed" }>,
+) => {
+  if (reading.agent !== undefined) {
+    step(reading, { type: "reviewed", result });
+    return;
+  }
+  reading.dispatch({
+    type: "formatReviewed",
+    id: reading.id,
+    revision,
+    result,
+  });
 };
 
 const onMessage = (reading: Reading, message: ExtractionMessage) => {
@@ -112,17 +188,19 @@ const onMessage = (reading: Reading, message: ExtractionMessage) => {
       finish(reading, message.result);
       return;
     case "unknown":
-      void settle(reading, message.format);
+      reading.unknown = message.format;
+      reading.agent = AGENT_START.state;
+      dispatch({ type: "formatUnknown", id });
+      run(reading, AGENT_START.command);
       return;
     case "read":
       onRead(reading, message.result);
       return;
-    case "reviewed": {
-      const { revision, result } = message;
-      const { noProposal } = reading;
-      const why = noProposal === undefined ? {} : { noProposal };
-      dispatch({ type: "formatReviewed", id, revision, result, ...why });
-    }
+    case "reviewed":
+      onReviewed(reading, message);
+      return;
+    case "repaired":
+      step(reading, { type: "repaired", result: message.result });
   }
 };
 
@@ -179,8 +257,9 @@ type FileReadersOptions = {
 /**
  * The workers that read the chosen files, one per file, at most three at a
  * time. A worker ends when its file is read, removed, or the screen closes;
- * one whose file no parser knows keeps it while its format is looked up,
- * proposed and confirmed (11.3a), so the file never leaves it.
+ * one whose file no parser knows keeps it while the format agent settles its
+ * format (11.4) and the person confirms it (11.3a), so the file never leaves
+ * it.
  */
 export const useFileReaders = ({
   items,

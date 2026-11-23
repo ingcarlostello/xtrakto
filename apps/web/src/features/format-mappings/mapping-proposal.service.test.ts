@@ -96,6 +96,28 @@ describe("proposeColumnRoles", () => {
     expect(calls()[0]?.input.split("\n")[0]).toBe('1. FECHA: ["99/99/9999"]');
   });
 
+  it("asks again with the second proposal's prompt, told what failed, of the stronger model alone", async () => {
+    const retry = {
+      roles: ROLES,
+      failure: { kind: "balances_break", percent: 40 },
+    } as const;
+
+    await proposeColumnRoles({ sample: SAMPLE, ledger: LEDGER, retry });
+
+    expect(calls()[0]).toMatchObject({
+      prompt: { name: "propose-mapping-retry", version: 1 },
+      ledger: LEDGER,
+      models: ["deepseek-v4-pro"],
+    });
+    expect(calls()[0]?.input.split("\n").slice(-2)).toEqual([
+      `Your roles before: ${ROLES.map((role, index) => `${index + 1}. ${role}`).join("; ")}`,
+      "What failed: the balance doesn't follow the movements in 40% of the rows.",
+    ]);
+    expect(
+      calls()[0]?.prompt.schema.safeParse({ roles: ROLES.slice(1) }).success,
+    ).toBe(false);
+  });
+
   it("asks for a role for each of the sample's columns", async () => {
     await proposeColumnRoles({ sample: SAMPLE, ledger: LEDGER });
     const schema = calls()[0]?.prompt.schema;
@@ -164,5 +186,21 @@ describe.skipIf(!testDatabase)("proposeRolesFor", () => {
     mocks.generateStructured.mockResolvedValue(err(FAILED));
 
     expect(await proposeRolesFor(newClerkId(), SAMPLE)).toEqual(err(FAILED));
+  });
+
+  it("asks again told what failed, the user's ledger paying for it too", async () => {
+    const clerkUserId = newClerkId();
+    const failure = { kind: "no_movements" } as const;
+
+    await proposeRolesFor(clerkUserId, SAMPLE, { roles: ROLES, failure });
+
+    expect(calls()[0]).toMatchObject({
+      prompt: { name: "propose-mapping-retry" },
+      models: ["deepseek-v4-pro"],
+    });
+    expect(calls()[0]?.input).toContain(
+      "What failed: no row read as a movement.",
+    );
+    expect(mocks.ledgerUsers).toEqual([await findUserId(app.db, clerkUserId)]);
   });
 });

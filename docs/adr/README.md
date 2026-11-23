@@ -56,3 +56,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0036](0036-one-click-unsubscribe-without-a-session.md)            | One-click unsubscribe without a session                                                 | Accepted |
 | [0037](0037-other-banks-formats-proven-where-the-file-is.md)       | Another bank's formats: proven where the file is, shared once their balances prove them | Accepted |
 | [0038](0038-the-llm-sees-a-formats-shapes-never-its-values.md)     | The LLM sees a format's shapes, never its values                                        | Accepted |
+| [0039](0039-the-format-agents-loop-in-the-browser.md)              | The format agent's loop runs in the browser, without LangGraph.js                       | Accepted |

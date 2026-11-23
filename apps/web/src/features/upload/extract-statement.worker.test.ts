@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   extractStatement: vi.fn(),
   readWithMapping: vi.fn(),
   reviewReading: vi.fn(),
+  repairReading: vi.fn(),
 }));
 
 vi.mock("./statement-extraction.helpers", () => mocks);
@@ -194,5 +195,22 @@ describe("extract-statement worker", () => {
       UNKNOWN_CONTENT,
       MAPPING,
     );
+  });
+
+  it("tries a proposal's repairs on the file it keeps (11.4)", async () => {
+    mocks.extractStatement.mockResolvedValue(
+      ok({ kind: "unknown", content: UNKNOWN_CONTENT, format: FORMAT }),
+    );
+    mocks.repairReading.mockReturnValue(err({ code: "PARSE_FAILED" }));
+    extract();
+    await answered("unknown");
+    const choices = { roles: MAPPING.columns };
+
+    receive({ data: { type: "repair", choices } });
+
+    expect(posted.slice(1)).toEqual([
+      { type: "repaired", result: err({ code: "PARSE_FAILED" }) },
+    ]);
+    expect(mocks.repairReading).toHaveBeenCalledWith(UNKNOWN_CONTENT, choices);
   });
 });

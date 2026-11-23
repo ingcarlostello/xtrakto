@@ -27,6 +27,7 @@ import type {
   UPLOAD_STATUS,
 } from "./upload.constants";
 import type { FormatConfirmation } from "@/features/format-mappings/format-mapping.types";
+import type { MappingRetry } from "@/features/format-mappings/mapping-retry.schemas";
 import type { TodaysBalanceOffer } from "@/features/todays-balance/todays-balance.types";
 import type { submitStatementSchema } from "./upload.schemas";
 
@@ -103,7 +104,9 @@ export type ExtractRequest =
       readonly choices?: MappingChoices;
       /** The correction it answers. */
       readonly revision: number;
-    };
+    }
+  /** A proposal's roles, repaired where the balances prove it (11.4). */
+  | { readonly type: "repair"; readonly choices: MappingChoices };
 
 /** The kind of file a row shows, by its icon. */
 export type FileKind = "excel" | "pdf";
@@ -131,7 +134,8 @@ export type ExtractionMessage =
       readonly type: "reviewed";
       readonly revision: number;
       readonly result: Result<MappingReview>;
-    };
+    }
+  | { readonly type: "repaired"; readonly result: Result<MappingReview> };
 
 /** What the upload queue needs from a worker, so tests can pass a fake one. */
 export type ExtractionWorker = {
@@ -173,9 +177,13 @@ export type ProposalError = {
   readonly limit?: string;
 };
 
-/** The server action that asks the LLM for a format's roles, or a stand-in in tests. */
+/**
+ * The server action that asks the LLM for a format's roles, or again told
+ * what failed (11.4), or a stand-in in tests.
+ */
 export type ProposeFormat = (
   sample: FormatSample,
+  retry?: MappingRetry,
 ) => Promise<Result<{ roles: ColumnRole[] }, ProposalError>>;
 
 /** A file ready to send, with what goes up for it. */
@@ -217,9 +225,12 @@ type UploadState =
       readonly isWrong: boolean;
     }
   // A file no parser knows (11.3a), while a mapping saved for its format is
-  // looked up and read, then while the LLM proposes one.
+  // looked up and read, then while the LLM proposes one, or again (11.4).
   | { readonly status: typeof UPLOAD_STATUS.FINDING_FORMAT }
-  | { readonly status: typeof UPLOAD_STATUS.PROPOSING }
+  | {
+      readonly status: typeof UPLOAD_STATUS.PROPOSING;
+      readonly isAgain?: boolean;
+    }
   | {
       // Waiting for the person to correct and confirm how to read it.
       readonly status: typeof UPLOAD_STATUS.CONFIRMING;

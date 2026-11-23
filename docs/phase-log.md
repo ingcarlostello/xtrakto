@@ -1840,3 +1840,35 @@ Checked in a local browser with a fresh Clerk test user and invented files: the 
 - **`ingestion-job.queries.ts`** was already past the 300 lines the lint warns about, and grew by its account's join: a later phase can split its reads from its writes.
 - **No evals in CI** for this pull request: it changes neither `features/format-mappings` nor the parsers.
 - **Human:** reading a real export from another bank in production (11.3a), once deployed.
+
+## 11.4 The agent: repair and retry before asking
+
+_2026-11-11_
+
+When the LLM's first reading of another bank's file doesn't add up, the app now tries to fix it before asking the person. An invented CSV whose debits sit under "CREDITOS" and its credits under "DEBITOS" was read by the names, every balance broke, and the code swapped money in and out: the confirmation opened on "Cuadra con tu extracto" after one call. Another, whose "SALDO" never changes while "SALDO DISPONIBLE" follows the movements, broke 88% of its balances with "SALDO" as the balance and no repair helped, so `deepseek-v4-pro` got the same names and shapes again with `{"kind":"balances_break","percent":88}`, chose "SALDO DISPONIBLE", and the file added up.
+
+- **The loop** (`nextStep`, `features/format-mappings`): a pure transition function from where the agent is and what the page tells it to the next command: look up the saved mapping and read the file with it, propose, read in the worker, repair, propose again, then finish the file, ask the person or leave it unread. The upload screen's file readers carry out each command (`use-file-readers`), in the worker or through a server action, and turn its answer into the next event ([ADR 0039](adr/0039-the-format-agents-loop-in-the-browser.md)).
+- **The repairs** (`repairChoices`, `@xtrakto/parsers`): money in and out the other way round, and, for an amount read as signed, a column left out whose words say each movement's way as banks write it. One counts only when every balance chains to the cent, so a file without balances gets none. The worker answers a repair with the first that chains, else the reading as it was (`repairReading`). A review now counts the movements whose balance doesn't follow (`brokenRows`).
+- **What failed, in codes** (`failureOf`): a column by its number from 1 and why it doesn't read (dates, amounts, direction words, an empty cell, both amounts in a row), no movement, or the share of movements whose balance doesn't follow, in percent.
+- **The second proposal** (`propose-mapping-retry` v1): `deepseek-v4-pro` alone gets the sample, the roles it was given and what failed in words. `proposeFormatMapping` takes the retry through a strict schema of roles and codes (`mappingRetrySchema`) and checks it fits the sample, so no value rides along; the person's month pays for it.
+- **The best reading** (`bestReading`): the first whose balances chain, else the latest that reads the whole file, else the one that reads furthest down it; it opens "Confirma cómo leer tu extracto" as one proposal's did. When the second proposal gets no answer, the first's reading opens.
+- **Its row** says "Formato nuevo: la primera lectura no cuadró; lo intentamos otra vez…" while the second proposal runs (`isAgain`); a repair takes no time and shows nothing.
+- **The documents:** ADR 0039; system design §1, §3, §4, §7 (rewritten, with its flowchart), §10 and §12; `docs/data-flow.md` and the privacy page (DeepSeek also gets what failed, in codes); the design rules.
+
+65 new tests: 6 in parsers (567 there) and 59 in the app (1,624):
+
+- parsers: money in and out swapped and a direction column left out, each repaired when the balances prove it and keeping the formats chosen; no direction from words that aren't a bank's; no repair in a file without balances, or when none makes the balances chain; and the movements whose balance doesn't follow, counted.
+- app: every transition, from the saved mapping to the person (a saved mapping read or not, a reading that verifies, one without balances, a repair that adds up, a second proposal told what failed after a repair that didn't, and without one after a column that doesn't read, the second's reading repaired too, two proposals at most, the first's reading when the second gets none, the date alone with its reason, a session ended, a worker that lost its file); each failure's code and share; the best reading's order; the retry's prompt, its input in words for each failure, and its fit; the stronger model alone with the user's ledger, against the database; the action refusing a retry with a value, another field, a role more or unknown, a column past the sample, an unknown cause or a share past 100; and the queue, the row's words, the worker's repair and the hook through a repair and a second proposal.
+
+Checked: thirty-six deliberate bugs, one at a time, and every one failed a test: among them a third proposal, asking again after a reading that verifies, the best reading's order, a repair counted without balances, columns numbered from 0, the retry on the first prompt or lib/ai's models, the action skipping the retry's fit, and the hook sending the reviews past the agent or the retry without what failed.
+
+Checked in a local browser with a fresh Clerk test user, DeepSeek and the two invented CSVs above: the repaired file with one proposal call, its "CREDITOS" as money out and "DEBITOS" as money in; the other with two, its row saying it tried again, the second carrying the roles and `balances_break` alone; no value of either file in any request (eight searched for in each); no page errors. The test user and its rows were deleted afterwards. The calls cost about USD 0.002.
+
+**Deviations and follow-ups:**
+
+- **Size:** about 545 lines of code added and 60 deleted, without tests, comments or blank lines (650 to 800 estimated), in one phase as the human chose. It lands in four commits of one pull request: the parsers' repairs carry the one app fixture their new count needs, so each commit passes alone.
+- **The amount's sign turned isn't repaired** (decided with the human): the saved mapping can't say a bank writes its debits positive without a field of its own, and no file has shown it. A direction column left out takes its place among the repairs.
+- **The loop includes the saved mapping** ("look up" in the roadmap), so the upload screen settles every new format through it, not only the proposals.
+- **A prompt of its own for the retry**, rather than v2 of `propose-mapping`: v1 keeps answering first proposals, with the figures 11.2b measured; the retry's are 11.5's.
+- **The evals run in CI** for this pull request, about USD 0.13, since it changes a prompt, its service and the parsers' mapping code; they don't measure the retry yet (11.5).
+- **Human:** reading a real export from another bank in production (11.3a), once deployed.

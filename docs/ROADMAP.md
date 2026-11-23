@@ -262,7 +262,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.3a Confirm how to read it
 - [x] 11.3b Correct the columns
 - [x] 11.3c Other banks across the app
-- [ ] 11.4 The agent: repair and retry before asking
+- [x] 11.4 The agent: repair and retry before asking
 - [ ] 11.5 Agent evals
 
 **Stage 12 — Credit cards** _(outline)_
@@ -2355,7 +2355,13 @@ It came out at about 460 lines of code added and 135 deleted, without tests, com
 
 **Done when:** tests cover each transition and repair, a second proposal that verifies, and a loop that ends with the person after two proposals; no transition sends a value.
 
-**Commit:** `feat(web): the format agent repairs and retries before asking`
+Decided with the human when it started (2026-11-11): one phase, though estimated at 650 to 800 lines; and the amount's sign turned waits for a file that shows it, since the saved mapping can't say it without a field of its own, while a direction column the proposal left out joins the repairs, as `deepseek-v4-pro` left out the "TIPO" columns of 11.2b's eval.
+
+Found while building it (2026-11-11): the loop starts at the saved mapping, so every step of a new format goes through the transition function, which the upload screen's file readers drive. The worker answers a repair with the first one whose balances chain, else the reading as it was, so the agent keeps no reading between its steps. A second proposal has a prompt of its own, `propose-mapping-retry` v1, v1's instructions with the roles before and what failed, so v1's eval figures hold. The person sees the first reading whose balances chain, else the latest that reads the whole file, else the one that reads furthest down it. A repair shows nothing; the row says "lo intentamos otra vez" while the second proposal runs. Checked in a local browser with DeepSeek: a file whose credits and debits are labeled the other way round added up after one proposal and the code's repair, and one whose "SALDO" never changes added up after the second proposal.
+
+It came out at about 545 lines of code added and 60 deleted, without tests, comments or blank lines (650 to 800 estimated), in commits of one pull request: the design rules, the parsers' repairs, the agent with the app, and the documents.
+
+**Commits:** `docs(rules): the format agent before asking the person`, `feat(parsers): repair a reading where its balances prove it`, `feat: the format agent repairs and retries before asking`, then `docs: the format agent repairs and retries before asking`
 
 #### 11.5 Agent evals
 

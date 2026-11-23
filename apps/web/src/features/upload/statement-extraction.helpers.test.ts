@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   extractStatement,
   readWithMapping,
+  repairReading,
   reviewReading,
 } from "./statement-extraction.helpers";
 import { EXTRACTION_STAGE } from "./upload.constants";
@@ -370,5 +371,34 @@ describe("reviewReading", () => {
         },
       },
     });
+  });
+});
+
+describe("repairReading", () => {
+  const RIGHT = HORIZONTE_MAPPING.columns;
+  const SWAPPED = RIGHT.map((role) => {
+    if (role === "money_out") return "money_in";
+    return role === "money_in" ? "money_out" : role;
+  });
+
+  it("gives the repair whose balances chain", () => {
+    expect(repairReading(HORIZONTE, { roles: SWAPPED })).toMatchObject({
+      ok: true,
+      value: {
+        roles: RIGHT,
+        reading: {
+          ok: true,
+          value: { test: { balances: { isVerified: true } } },
+        },
+      },
+    });
+  });
+
+  it("gives the roles as they were when no repair adds up", () => {
+    const roles = RIGHT.map((role) => (role === "balance" ? "none" : role));
+
+    expect(repairReading(HORIZONTE, { roles })).toEqual(
+      reviewReading(HORIZONTE, { roles }),
+    );
   });
 });

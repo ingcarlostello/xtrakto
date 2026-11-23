@@ -19,7 +19,12 @@ type ReviewedAction = {
 /** What settling the format of a file no parser knows does to it (11.3a, 11.3b). */
 export type FormatAction =
   | { readonly type: "formatUnknown"; readonly id: string }
-  | { readonly type: "formatProposing"; readonly id: string }
+  | {
+      readonly type: "formatProposing";
+      readonly id: string;
+      /** The second proposal, told what failed in the first (11.4). */
+      readonly isAgain?: boolean;
+    }
   | ReviewedAction
   | {
       readonly type: "formatCorrected";
@@ -93,8 +98,9 @@ const reviewed = (item: ConfirmingItem, action: ReviewedAction): UploadItem => {
 
 /**
  * A file's next state as its format is settled: looked up once no parser
- * knows it, proposed when none is saved, waiting for the person with what
- * the proposal or only the date the code found make of it, read again with
+ * knows it, proposed when none is saved, and again when the first proposal
+ * doesn't read it or add up (11.4), waiting for the person with what the
+ * best reading or only the date the code found make of it, read again with
  * each correction, then read with the mapping they confirmed. An action that
  * doesn't fit its state changes nothing.
  */
@@ -109,8 +115,10 @@ export const formatItem = (
         ? { id, file, status: FINDING_FORMAT }
         : item;
     case "formatProposing":
-      return item.status === FINDING_FORMAT
-        ? { id, file, status: PROPOSING }
+      if (item.status === FINDING_FORMAT)
+        return { id, file, status: PROPOSING };
+      return item.status === PROPOSING && action.isAgain === true
+        ? { id, file, status: PROPOSING, isAgain: true }
         : item;
     case "formatReviewed":
       if (item.status === PROPOSING) return confirming(item, action);

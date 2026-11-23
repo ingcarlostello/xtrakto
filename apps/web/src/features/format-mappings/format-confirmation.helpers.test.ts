@@ -54,6 +54,7 @@ const BALANCES = {
   closingMinor: minor(582_641_215),
   closingOn: localDateSchema.parse("2026-09-30"),
   isVerified: true,
+  brokenRows: 0,
 };
 
 const reviewOf = (review: Partial<MappingReview>): MappingReview => ({

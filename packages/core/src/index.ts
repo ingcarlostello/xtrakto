@@ -103,7 +103,10 @@ export type {
   LocalDate,
   Period,
 } from "./dates/date.types";
-export { MAX_PDF_PAGES } from "./extracted-content/extracted-content.constants";
+export {
+  MAX_PDF_PAGES,
+  MAX_ROW_CELLS,
+} from "./extracted-content/extracted-content.constants";
 export { extractedContentSchema } from "./extracted-content/extracted-content.schemas";
 export type {
   ExtractedContent,

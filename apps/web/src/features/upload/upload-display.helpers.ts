@@ -238,6 +238,11 @@ const lockedView = (isWrong: boolean, isOpening: boolean): FileRowView => ({
   isOpening,
 });
 
+// The LLM proposes the columns of a file no parser knows, or proposes them
+// again, told what failed in the first proposal's reading (11.4).
+const proposingText = (isAgain = false): string =>
+  isAgain ? FORMAT_COPY.proposingAgain : FORMAT_COPY.proposing;
+
 // While a password the person typed is tried, the row keeps asking for it,
 // so the field and its focus stay; another PDF's password is tried quietly.
 export const fileRowView = (item: UploadItem, job?: UploadJob): FileRowView => {
@@ -255,7 +260,7 @@ export const fileRowView = (item: UploadItem, job?: UploadJob): FileRowView => {
     case UPLOAD_STATUS.FINDING_FORMAT:
       return { kind: "progress", text: FORMAT_COPY.finding };
     case UPLOAD_STATUS.PROPOSING:
-      return { kind: "progress", text: FORMAT_COPY.proposing };
+      return { kind: "progress", text: proposingText(item.isAgain) };
     case UPLOAD_STATUS.CONFIRMING:
       return { kind: "progress", text: FORMAT_COPY.confirming };
     case UPLOAD_STATUS.CONFIRMED:
