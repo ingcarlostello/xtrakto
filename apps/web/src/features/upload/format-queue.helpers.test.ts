@@ -71,6 +71,28 @@ describe("formatItem", () => {
     ).toBe(UPLOAD_STATUS.CONFIRMED);
   });
 
+  it("marks a file the LLM proposes again for, told what failed (11.4)", () => {
+    const proposing = item({ status: UPLOAD_STATUS.PROPOSING });
+    const again = formatItem(proposing, {
+      type: "formatProposing",
+      id: "a",
+      isAgain: true,
+    });
+
+    expect(again).toEqual({
+      id: "a",
+      file: FILE,
+      status: UPLOAD_STATUS.PROPOSING,
+      isAgain: true,
+    });
+    expect(formatItem(proposing, { type: "formatProposing", id: "a" })).toBe(
+      proposing,
+    );
+    expect(formatItem(again, reviewed(0)).status).toBe(
+      UPLOAD_STATUS.CONFIRMING,
+    );
+  });
+
   it("opens the confirmation without a proposal, saying why", () => {
     const proposing = item({ status: UPLOAD_STATUS.PROPOSING });
     const action = reviewed(0, ok(REVIEW), NO_PROPOSAL.AI_OFF);

@@ -3,6 +3,7 @@ import type { ExtractedContent, Result } from "@xtrakto/core";
 import {
   extractStatement,
   readWithMapping,
+  repairReading,
   reviewReading,
 } from "./statement-extraction.helpers";
 import { FILE_PROBLEM } from "./upload.constants";
@@ -30,8 +31,8 @@ const unreadable = err({
 });
 
 // A file no parser knows stays here, never in the page, while its format is
-// settled (11.3a): the page gets its sample, and what each mapping or the
-// person's choices make of it (11.3b).
+// settled (11.3a): the page gets its sample, and what each mapping, proposal
+// and its repairs (11.4) or the person's choices (11.3b) make of it.
 let held: ExtractedContent | undefined;
 
 const post = (reading: Result<FileReading>) => {
@@ -72,6 +73,12 @@ scope.onmessage = ({ data }) => {
         type: "reviewed",
         revision: data.revision,
         result: held ? reviewReading(held, data.choices) : unreadable,
+      });
+      return;
+    case "repair":
+      scope.postMessage({
+        type: "repaired",
+        result: held ? repairReading(held, data.choices) : unreadable,
       });
   }
 };

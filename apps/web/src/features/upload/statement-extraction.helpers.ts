@@ -16,6 +16,7 @@ import {
   type MappingChoices,
   mappingParser,
   type MappingReview,
+  repairChoices,
   reviewChoices,
 } from "@xtrakto/parsers";
 import { fitsInUpload } from "./upload-size.helpers";
@@ -143,3 +144,17 @@ export const reviewReading = (
   content: ExtractedContent,
   choices?: MappingChoices,
 ): Result<MappingReview> => reviewChoices(content, choices);
+
+/**
+ * What a proposal's roles read once the code tried its repairs (11.4): the
+ * first whose balances chain to the cent, else the roles as they were.
+ */
+export const repairReading = (
+  content: ExtractedContent,
+  choices: MappingChoices,
+): Result<MappingReview> => {
+  const repaired = repairChoices(content, choices);
+  return repaired === undefined
+    ? reviewChoices(content, choices)
+    : ok(repaired);
+};

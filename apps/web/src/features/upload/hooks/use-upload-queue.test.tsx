@@ -4,6 +4,7 @@ import {
   APP_ERROR_CODE,
   err,
   formatMappingSchema,
+  localDateSchema,
   ok,
   PERIOD_SOURCE,
   periodSchema,
@@ -825,5 +826,117 @@ describe("useUploadQueue, for a file no parser knows", () => {
 
     expect(queue.items).toEqual([]);
     expect(workers[0]?.isTerminated).toBe(true);
+  });
+
+  describe("before asking the person (11.4)", () => {
+    const AGAIN: MappingChoices["roles"] = ["date", "description", "amount"];
+
+    // What some roles read of a file with balances, `broken` of whose
+    // movements don't follow.
+    const withBalances = (
+      broken: number,
+      roles: MappingChoices["roles"] = MAPPING.columns,
+    ): MappingReview => ({
+      ...REVIEW,
+      roles,
+      reading: ok({
+        mapping: MAPPING,
+        test: {
+          movementCount: 1,
+          moneyIn: { count: 0, totalMinor: ZERO },
+          moneyOut: { count: 1, totalMinor: ZERO },
+          balances: {
+            openingMinor: ZERO,
+            computedClosingMinor: ZERO,
+            closingMinor: ZERO,
+            closingOn: localDateSchema.parse("2026-09-30"),
+            isVerified: broken === 0,
+            brokenRows: broken,
+          },
+        },
+      }),
+    });
+    const BROKEN = withBalances(1);
+
+    // The first proposal read, its balances off, and its repairs tried.
+    const firstBroken = async (repaired: MappingReview = BROKEN) => {
+      findSaved.mockResolvedValue(ok({ mapping: null }));
+      await unknownFile();
+      await askedOf(2);
+      workers[0]?.post({ type: "reviewed", revision: 0, result: ok(BROKEN) });
+      expect((await askedOf(3))?.request).toEqual({
+        type: "repair",
+        choices: { roles: MAPPING.columns },
+      });
+      workers[0]?.post({ type: "repaired", result: ok(repaired) });
+    };
+
+    it("repairs a reading whose balances don't chain, and opens the repair that adds up", async () => {
+      const repaired = withBalances(0);
+      propose.mockResolvedValue(ok({ roles: [...MAPPING.columns] }));
+
+      await firstBroken(repaired);
+
+      expect(queue.items[0]).toMatchObject({
+        status: UPLOAD_STATUS.CONFIRMING,
+        confirmation: { review: repaired, choices: { roles: repaired.roles } },
+      });
+      expect(propose).toHaveBeenCalledTimes(1);
+    });
+
+    it("proposes again, told what failed, when no repair adds up, saying so in its row", async () => {
+      let answerAgain: (
+        answer: Awaited<ReturnType<ProposeFormat>>,
+      ) => void = () => {};
+      propose
+        .mockResolvedValueOnce(ok({ roles: [...MAPPING.columns] }))
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            answerAgain = resolve;
+          }),
+        );
+      const verified = withBalances(0, AGAIN);
+
+      await firstBroken();
+
+      await vi.waitFor(() => expect(propose).toHaveBeenCalledTimes(2));
+      expect(propose).toHaveBeenLastCalledWith(FORMAT.sample, {
+        roles: MAPPING.columns,
+        failure: { kind: "balances_break", percent: 100 },
+      });
+      expect(queue.items[0]).toMatchObject({
+        status: UPLOAD_STATUS.PROPOSING,
+        isAgain: true,
+      });
+
+      await act(async () => answerAgain(ok({ roles: [...AGAIN] })));
+      expect((await askedOf(4))?.request).toEqual({
+        type: "review",
+        revision: 0,
+        choices: { roles: AGAIN },
+      });
+      workers[0]?.post({ type: "reviewed", revision: 0, result: ok(verified) });
+
+      expect(queue.items[0]).toMatchObject({
+        status: UPLOAD_STATUS.CONFIRMING,
+        confirmation: { review: verified, choices: { roles: AGAIN } },
+      });
+    });
+
+    it("opens the first proposal's reading when the second gets none", async () => {
+      propose
+        .mockResolvedValueOnce(ok({ roles: [...MAPPING.columns] }))
+        .mockResolvedValueOnce(err({ code: "AI_FAILED" }));
+
+      await firstBroken();
+
+      await vi.waitFor(() =>
+        expect(queue.items[0]).toMatchObject({
+          status: UPLOAD_STATUS.CONFIRMING,
+          confirmation: { review: BROKEN },
+        }),
+      );
+      expect(queue.items[0]).not.toHaveProperty("confirmation.noProposal");
+    });
   });
 });

@@ -1,10 +1,14 @@
 import { COLUMN_ROLE } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
 import {
+  isRetryOf,
   proposalInput,
   proposalPromptFor,
   redactedSample,
+  retryInput,
+  retryPromptFor,
 } from "./mapping-proposal.helpers";
+import type { MappingFailure } from "./mapping-retry.schemas";
 
 const { DATE, DESCRIPTION, AMOUNT, MONEY_OUT, MONEY_IN, BALANCE, NONE } =
   COLUMN_ROLE;
@@ -87,5 +91,87 @@ describe("proposalPromptFor", () => {
       name: "propose-mapping",
       version: 1,
     });
+  });
+});
+
+describe("retryPromptFor", () => {
+  it("is version 1 of the second proposal's prompt, with a role for each column", () => {
+    const prompt = retryPromptFor(5);
+    const roles = [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN];
+
+    expect(prompt).toMatchObject({ name: "propose-mapping-retry", version: 1 });
+    expect(prompt.instructions).toContain(proposalPromptFor(5).instructions);
+    expect(prompt.schema.safeParse({ roles }).success).toBe(true);
+    expect(prompt.schema.safeParse({ roles: roles.slice(1) }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("retryInput", () => {
+  const ROLES = [DATE, DESCRIPTION, NONE, MONEY_IN, MONEY_OUT];
+  const linesFor = (failure: MappingFailure) =>
+    retryInput(SAMPLE, { roles: ROLES, failure }).split("\n");
+
+  it("writes the sample's columns, then the roles before and what failed", () => {
+    expect(linesFor({ kind: "balances_break", percent: 40 })).toEqual([
+      ...proposalInput(SAMPLE).split("\n"),
+      "",
+      "Your roles before: 1. date; 2. description; 3. none; 4. money_in; 5. money_out",
+      "What failed: the balance doesn't follow the movements in 40% of the rows.",
+    ]);
+  });
+
+  it.each<[MappingFailure, string]>([
+    [
+      { kind: "unread", column: 1, cause: "date" },
+      "column 1's cells don't read as dates.",
+    ],
+    [
+      { kind: "unread", column: 4, cause: "amount" },
+      "column 4's cells don't read as amounts.",
+    ],
+    [
+      { kind: "unread", column: 3, cause: "direction" },
+      "column 3's words don't say which way the money went.",
+    ],
+    [
+      { kind: "unread", column: 2, cause: "empty" },
+      "column 2 is empty in a row with a movement.",
+    ],
+    [
+      { kind: "unread", column: 5, cause: "both_amounts" },
+      "a row has money in and money out at once.",
+    ],
+    [
+      { kind: "unread", cause: "amount" },
+      "a column's cells don't read as amounts.",
+    ],
+    [{ kind: "no_movements" }, "no row read as a movement."],
+    [
+      { kind: "balances_break", percent: 0 },
+      "the movements don't add up to the closing balance.",
+    ],
+  ])("says what failed in words: %j", (failure, words) => {
+    expect(linesFor(failure).at(-1)).toBe(`What failed: ${words}`);
+  });
+});
+
+describe("isRetryOf", () => {
+  const failure = { kind: "unread", column: 5, cause: "date" } as const;
+  const roles = [DATE, DESCRIPTION, NONE, MONEY_OUT, MONEY_IN];
+
+  it("takes a role for each of the sample's columns, and a failure in one of them", () => {
+    expect(isRetryOf({ roles, failure }, SAMPLE)).toBe(true);
+    expect(
+      isRetryOf({ roles, failure: { kind: "no_movements" } }, SAMPLE),
+    ).toBe(true);
+  });
+
+  it("refuses a role more or less, or a column the sample doesn't have", () => {
+    expect(isRetryOf({ roles: roles.slice(1), failure }, SAMPLE)).toBe(false);
+    expect(
+      isRetryOf({ roles, failure: { ...failure, column: 6 } }, SAMPLE),
+    ).toBe(false);
   });
 });

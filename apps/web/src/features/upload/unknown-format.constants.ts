@@ -6,6 +6,9 @@
 export const UNKNOWN_FORMAT_COPY = {
   finding: "Buscando cómo leer este formato…",
   proposing: "Formato nuevo: estamos entendiendo sus columnas…",
+  // The first proposal didn't read the file or add up (11.4).
+  proposingAgain:
+    "Formato nuevo: la primera lectura no cuadró; lo intentamos otra vez…",
   confirming: "Formato nuevo: confirma cómo leerlo.",
   confirmed: "Leyendo con el formato que confirmaste…",
 } as const;

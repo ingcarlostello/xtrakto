@@ -1,5 +1,6 @@
 import { COLUMN_ROLE, MAX_SAMPLE_ROWS } from "@xtrakto/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { MappingRetry } from "../mapping-retry.schemas";
 import { proposeFormatMapping } from "./propose-format-mapping.action";
 
 const mocks = vi.hoisted(() => ({
@@ -82,5 +83,53 @@ describe("proposeFormatMapping", () => {
     mocks.proposeRolesFor.mockResolvedValue(failure);
 
     expect(await proposeFormatMapping(SAMPLE)).toEqual(failure);
+  });
+});
+
+describe("proposeFormatMapping, a second time (11.4)", () => {
+  const RETRY: MappingRetry = {
+    roles: [DATE, DESCRIPTION, AMOUNT],
+    failure: { kind: "balances_break", percent: 40 },
+  };
+
+  // The retry's type says it's codes; the action checks it all the same.
+  const proposeAgain = (retry: unknown) =>
+    proposeFormatMapping(SAMPLE, retry as MappingRetry);
+
+  it("asks again with the roles before and what failed", async () => {
+    expect(await proposeFormatMapping(SAMPLE, RETRY)).toMatchObject({
+      ok: true,
+    });
+    expect(mocks.proposeRolesFor).toHaveBeenCalledWith(
+      "user_clerk",
+      SAMPLE,
+      RETRY,
+    );
+  });
+
+  it.each([
+    [
+      "a value of the file",
+      { ...RETRY, failure: { ...RETRY.failure, cell: "-85.400,00" } },
+    ],
+    ["another field", { ...RETRY, sample: SAMPLE }],
+    ["a role more", { ...RETRY, roles: [...RETRY.roles, AMOUNT] }],
+    ["a role no table has", { ...RETRY, roles: [DATE, DESCRIPTION, "fee"] }],
+    [
+      "a column the sample doesn't have",
+      { ...RETRY, failure: { kind: "unread", column: 4, cause: "date" } },
+    ],
+    [
+      "a cause it doesn't know",
+      { ...RETRY, failure: { kind: "unread", column: 1, cause: "COMPRA" } },
+    ],
+    [
+      "a share past every row",
+      { ...RETRY, failure: { kind: "balances_break", percent: 140 } },
+    ],
+    ["something else", "the balance broke at $85.400"],
+  ])("refuses a retry with %s, and asks nothing", async (_case, retry) => {
+    expect(await proposeAgain(retry)).toEqual(INVALID);
+    expect(mocks.proposeRolesFor).not.toHaveBeenCalled();
   });
 });

@@ -518,4 +518,15 @@ describe("fileRowView, for a file no parser knows", () => {
       text,
     });
   });
+
+  it("says it tries again when the first proposal didn't read the file or add up", () => {
+    expect(
+      fileRowView({
+        id: "a",
+        file: FILE,
+        status: UPLOAD_STATUS.PROPOSING,
+        isAgain: true,
+      }),
+    ).toEqual({ kind: "progress", text: UNKNOWN_FORMAT_COPY.proposingAgain });
+  });
 });
