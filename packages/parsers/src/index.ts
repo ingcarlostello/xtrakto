@@ -10,6 +10,7 @@ export type { PdfExtractionOptions } from "./extraction/pdf-extraction.helpers";
 export { extractSpreadsheet } from "./extraction/spreadsheet-extraction.helpers";
 export { MAPPED_FORMAT_ID } from "./format-mapping/format-mapping.constants";
 export { mappingParser } from "./format-mapping/mapping-parser.helpers";
+export { repairChoices } from "./format-mapping/mapping-repair.helpers";
 export {
   type MappingReading,
   type MappingReview,

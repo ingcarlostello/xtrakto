@@ -99,7 +99,27 @@ describe("reviewChoices", () => {
         closingMinor: 582_641_215,
         closingOn: "2026-09-30",
         isVerified: true,
+        brokenRows: 0,
       },
+    });
+  });
+
+  it("counts the movements whose balance doesn't follow the one before", () => {
+    // Its debits read as money in and its credits as money out.
+    const swapped = OUT_IN_ROLES.roles.map((role) => {
+      if (role === COLUMN_ROLE.MONEY_OUT) return COLUMN_ROLE.MONEY_IN;
+      return role === COLUMN_ROLE.MONEY_IN ? COLUMN_ROLE.MONEY_OUT : role;
+    });
+    const rows = fixtureRows(OUT_IN).map((row) => [...row]);
+    // A balance off: it and the next don't follow.
+    rows[10] = rows[10]?.with(5, "1,00") ?? [];
+
+    expect(
+      testOf(fixtureContent(OUT_IN), { roles: swapped }).balances,
+    ).toMatchObject({ isVerified: false, brokenRows: 10 });
+    expect(testOf(spreadsheet(rows), OUT_IN_ROLES).balances).toMatchObject({
+      isVerified: false,
+      brokenRows: 2,
     });
   });
 

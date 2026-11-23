@@ -17,6 +17,7 @@ import type {
   Result,
   SpreadsheetCell,
 } from "@xtrakto/core";
+import { RECONCILIATION_ISSUE } from "../reconciliation/reconciliation.constants";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
 import { firstSheetRows, isBlankRow } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
@@ -52,6 +53,8 @@ export type MappingTest = {
     readonly closingOn: LocalDate;
     /** Whether every balance chains to the cent. */
     readonly isVerified: boolean;
+    /** The movements whose balance doesn't follow the one before (11.4). */
+    readonly brokenRows: number;
   };
 };
 
@@ -122,6 +125,7 @@ const balancesOf = (
   if (openingBalanceMinor === undefined || closingBalanceMinor === undefined) {
     return undefined;
   }
+  const { balanceVerified, issues } = reconcile(statement);
   return {
     openingMinor: openingBalanceMinor,
     computedClosingMinor: sumAmounts([
@@ -130,7 +134,10 @@ const balancesOf = (
     ]),
     closingMinor: closingBalanceMinor,
     closingOn: statement.period.to,
-    isVerified: reconcile(statement).balanceVerified,
+    isVerified: balanceVerified,
+    brokenRows: issues.filter(
+      ({ code }) => code === RECONCILIATION_ISSUE.ROW_BALANCE,
+    ).length,
   };
 };
 
