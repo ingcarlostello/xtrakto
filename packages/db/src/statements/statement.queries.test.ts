@@ -31,6 +31,10 @@ import type { BalanceCheck, SaveStatementInput } from "./statement.types";
 
 const NEQUI = "TRANSFERENCIAS A NEQUI";
 
+// Saving thousands of movements takes seconds on CI's shared runner, beside
+// the other packages' tests: Vitest's 5 s ran out at 5,038 ms (2026-11-24).
+const BULK_SAVE_TIMEOUT_MS = 30_000;
+
 // An export across a quarter's edges: its first and last movement belong to
 // the quarters before and after July to September 2026.
 const EXPORT_ACROSS_EDGES: TestMovement[] = [
@@ -273,39 +277,47 @@ describe.skipIf(!testDatabase)("saveStatement", () => {
     expect(await statementsOf(account.accountId)).toHaveLength(2);
   });
 
-  it("saves a statement longer than one insert, and nothing more the second time", async () => {
-    const account = await newAccount();
-    const statement = await preparedExport(manyMovements(2_500));
+  it(
+    "saves a statement longer than one insert, and nothing more the second time",
+    async () => {
+      const account = await newAccount();
+      const statement = await preparedExport(manyMovements(2_500));
 
-    expect(await saveIn(account, statement, UNCHECKED)).toMatchObject({
-      added: 2_500,
-    });
-    expect(await saveIn(account, statement, UNCHECKED)).toMatchObject({
-      added: 0,
-      skipped: 2_500,
-    });
-  });
+      expect(await saveIn(account, statement, UNCHECKED)).toMatchObject({
+        added: 2_500,
+      });
+      expect(await saveIn(account, statement, UNCHECKED)).toMatchObject({
+        added: 0,
+        skipped: 2_500,
+      });
+    },
+    BULK_SAVE_TIMEOUT_MS,
+  );
 
-  it("saves nothing when the last insert fails", async () => {
-    const { userId, accountId } = await newAccount();
-    const statement = await preparedExport(manyMovements(1_500));
-    const last = statement.transactions[1_499];
-    if (!last) throw new Error("Missing movement.");
-    // Unreachable through parsing: forces a CHECK failure in the second insert.
-    const tooLarge = (2 ** 53) as AmountMinor;
-    const broken = {
-      ...statement,
-      transactions: [
-        ...statement.transactions.slice(0, 1_499),
-        { ...last, amountMinor: tooLarge },
-      ],
-    };
+  it(
+    "saves nothing when the last insert fails",
+    async () => {
+      const { userId, accountId } = await newAccount();
+      const statement = await preparedExport(manyMovements(1_500));
+      const last = statement.transactions[1_499];
+      if (!last) throw new Error("Missing movement.");
+      // Unreachable through parsing: forces a CHECK failure in the second insert.
+      const tooLarge = (2 ** 53) as AmountMinor;
+      const broken = {
+        ...statement,
+        transactions: [
+          ...statement.transactions.slice(0, 1_499),
+          { ...last, amountMinor: tooLarge },
+        ],
+      };
 
-    await expect(
-      save(userId, { accountId, statement: broken, balance: UNCHECKED }),
-    ).rejects.toThrow();
-    expect(await statementsOf(accountId)).toEqual([]);
-  });
+      await expect(
+        save(userId, { accountId, statement: broken, balance: UNCHECKED }),
+      ).rejects.toThrow();
+      expect(await statementsOf(accountId)).toEqual([]);
+    },
+    BULK_SAVE_TIMEOUT_MS,
+  );
 
   it("refuses a statement that repeats a fingerprint", async () => {
     const { userId, accountId } = await newAccount();

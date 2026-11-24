@@ -25,4 +25,6 @@ export const PARSE_WARNING_CODE = {
   UNEXPECTED_ROW: "UNEXPECTED_ROW",
   /** A description a PDF wrapped over two lines, joined again. */
   WRAPPED_DESCRIPTION: "WRAPPED_DESCRIPTION",
+  /** A card's movement in dollars, which a statement in pesos doesn't count (12.2b). */
+  FOREIGN_CURRENCY: "FOREIGN_CURRENCY",
 } as const;

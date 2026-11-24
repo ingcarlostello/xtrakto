@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { ok } from "@xtrakto/core";
 import { extractSpreadsheet } from "../src/extraction/spreadsheet-extraction.helpers";
 import { fixtureContent } from "./fixture.utils";
+import cardBasic from "./card-basic.json";
+import cardBroken from "./card-broken.json";
+import cardDollars from "./card-dollars.json";
 import mappedDirection from "./mapped-direction.json";
 import mappedNewestFirst from "./mapped-newest-first.json";
 import mappedNoBalance from "./mapped-no-balance.json";
@@ -31,6 +34,9 @@ const FIXTURES = {
   "mapped-direction": mappedDirection,
   "mapped-no-balance": mappedNoBalance,
   "mapped-title-rows": mappedTitleRows,
+  "card-basic": cardBasic,
+  "card-dollars": cardDollars,
+  "card-broken": cardBroken,
 };
 
 describe("contentToXlsx", () => {

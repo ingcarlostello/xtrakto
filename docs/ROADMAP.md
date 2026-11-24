@@ -269,7 +269,7 @@ The human decides before the phase starts. The agent may propose options with tr
 
 - [x] 12.1 [HUMAN] Card statement sample and phase refinement
 - [x] 12.2a Card statements in core
-- [ ] 12.2b Bancolombia's card statement in Excel
+- [x] 12.2b Bancolombia's card statement in Excel
 - [ ] 12.2c Bancolombia's card statement in PDF
 - [ ] 12.2d Nu's card statement in PDF
 - [ ] 12.3a Card accounts saved
@@ -2441,12 +2441,16 @@ It came out at about 335 lines of code, without tests, comments or blank lines (
 - `bancolombiaCardParser` (`bancolombia-credit-card`) reads Appendix A.4: the `PESOS` sheet's blocks by their labels, its summaries and both tables of movements, each field in the number format it writes; the `DOLARES` sheet only to count its movements, as a warning of its own.
 - `minimize` keeps only what `parse` reads: the holder's name, the card's last 4 digits, the summaries and the movements; never the address, the city or the department.
 - Synthetic fixtures in its layout, written as XLSX by a script: purchases in one and several installments, a balance transfer, the card's fee, an advance, late interest, a payment, a month with movements in dollars, and one that doesn't reconcile.
-- `canParse`, the default registry, `FormatId` and the web's maps keyed by it.
+- `canParse`, the default registry, `FormatId` and the web's maps keyed by it (the registry and the maps moved to 12.3a, below).
 - A private test: the human's file parses, reconciles and keeps no personal data once minimized (counts only).
 
 **Done when:** each fixture gives its expected statement and reconciles where it should, `parse(minimize(content))` equals `parse(content)`, and the private test passes.
 
-**Commit:** `feat(parsers): Bancolombia credit card statement`
+Found while building it (2026-11-24): the parser isn't in the default registry yet, nor its id in `FormatId` and the web's maps: registered now, a card's Excel uploaded before 12.3a would be read and saved as any account's, without its card block, so the three card parsers join the registry when the app saves a card (12.3a), and until then the file goes to the format agent as it did. Each sheet is found by its "Moneda:", whatever its name or order, and each amount is read by the separator its cents say (`decimalSeparatorOf`, 11.2b), so the minimum's `123,456.00` and the rest's `1.234,56` read alike. The holder's name comes from the quarterly statement's own reader, since the card prints the same block. The private tests now leave the card statements' folders out of the savings account's files, which had made them fail since 12.1, and the card's Excel has a reader of its own.
+
+It came out at about 690 lines of code, without tests, comments or blank lines (about 400 estimated), as the quarterly statement's parser did in Stage 2: blocks by their labels, two summaries side by side, two tables and a sheet per currency; besides a fixtures' script of about 330. It lands in commits of one pull request: the private tests' folders, the invented card statements, the parser, and the documents; `CLAUDE.md` gains the card folders in a commit of its own.
+
+**Commits:** `test(parsers): keep the card statements apart in the private tests`, `test(parsers): invented Bancolombia card statements`, `feat: Bancolombia credit card statement in Excel`, `docs: Bancolombia credit card statement in Excel`, then `docs: the card statements' private folders`
 
 #### 12.2c Bancolombia's card statement in PDF
 
@@ -2477,6 +2481,7 @@ It came out at about 335 lines of code, without tests, comments or blank lines (
 
 **Tasks**
 
+- The card parsers of 12.2b to 12.2d in the default registry, with their ids in `FormatId` and the web's maps keyed by it, moved from 12.2b so no card reaches the app before it saves one.
 - A card's account: its bank, `credit_card` and the card's last 4 digits, found or created as a quarterly statement's account is, with the holder's name.
 - A card's statement keeps its card block (decided when it starts: columns or JSON its schema reads back) and its reconciliation; its Excel and its PDF are versions of one period, and the second adds nothing.
 - A card's movements in Xtrakto's signs, each with its installment when it has one; a purchase a later statement lists again adds nothing.
