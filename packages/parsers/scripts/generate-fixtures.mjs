@@ -4,7 +4,8 @@
 // of docs/ROADMAP.md, from the invented data in fixture-data.mjs. Balances
 // and totals are computed here, so every statement reconciles except
 // quarterly-broken-balance, and a fixed seed makes quarterly-large repeatable.
-// It also writes the invented banks' spreadsheets of mapped-fixtures.mjs.
+// It also writes the invented banks' spreadsheets of mapped-fixtures.mjs, and
+// the Bancolombia card statements of card-fixtures.mjs.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -17,6 +18,8 @@ import {
   PREVIOUS_MOVEMENTS,
   ROLLOVER_MOVEMENTS,
 } from "./fixture-data.mjs";
+import { cardFixtures } from "./card-fixtures.mjs";
+import { renderBook } from "./render-fixture.mjs";
 import { mappedFixtures } from "./mapped-fixtures.mjs";
 import { movementsPdfPages } from "./movements-pdf-layout.mjs";
 import { quarterlyPdfPages, renderPdf } from "./quarterly-pdf-layout.mjs";
@@ -258,29 +261,7 @@ const largeMovements = (opening) => {
   return movements;
 };
 
-const renderCell = (cell) =>
-  cell !== null && typeof cell === "object"
-    ? `{ "excelSerial": ${cell.excelSerial} }`
-    : JSON.stringify(cell);
-
-// One spreadsheet row per line, so a fixture reads like the sheet.
-const render = (rows) =>
-  [
-    "{",
-    '  "type": "spreadsheet",',
-    '  "sheets": [',
-    "    {",
-    `      "name": ${JSON.stringify(SHEET_NAME)},`,
-    '      "rows": [',
-    rows
-      .map((row) => `        [${row.map(renderCell).join(", ")}]`)
-      .join(",\n"),
-    "      ]",
-    "    }",
-    "  ]",
-    "}",
-    "",
-  ].join("\n");
+const render = (rows) => renderBook([{ name: SHEET_NAME, rows }]);
 
 const basic = {
   period: QUARTER,
@@ -348,6 +329,9 @@ const pdfFixtures = {
 mkdirSync(FIXTURES_DIR, { recursive: true });
 for (const [name, rows] of Object.entries(fixtures)) {
   writeFileSync(join(FIXTURES_DIR, `${name}.json`), render(rows));
+}
+for (const [name, sheets] of Object.entries(cardFixtures())) {
+  writeFileSync(join(FIXTURES_DIR, `${name}.json`), renderBook(sheets));
 }
 for (const [name, pages] of Object.entries(pdfFixtures)) {
   writeFileSync(join(FIXTURES_DIR, `${name}.json`), renderPdf(pages));
