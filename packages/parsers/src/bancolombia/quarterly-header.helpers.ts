@@ -169,7 +169,12 @@ const readBlock = <K extends string, T>(
   return readValues(rows[labelRow + 2] ?? [], columns.value, spec);
 };
 
-const readHolderName = (rows: SheetRows): Result<string> => {
+/**
+ * The holder's name from the "Información Cliente:" block, which the card's
+ * statement prints as the quarterly statement does (12.2b); never the
+ * address or the city.
+ */
+export const readHolderName = (rows: SheetRows): Result<string> => {
   const client = readBlock(rows, {
     label: QUARTERLY_BLOCK.CLIENT,
     columns: CLIENT_COLUMN,
