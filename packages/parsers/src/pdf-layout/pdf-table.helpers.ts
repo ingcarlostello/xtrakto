@@ -228,7 +228,15 @@ export const linesAboveTable = (
   return lines.slice(0, tableStart === -1 ? lines.length : tableStart);
 };
 
-const toCells = ({ line, columns }: PdfTableLine, width: number): Cells => {
+/**
+ * A table's line as a spreadsheet's row would hold it: a text cell for each of
+ * the table's `width` columns, `null` when empty, its segments joined in the
+ * columns `pdfTables` gives them.
+ */
+export const tableLineCells = (
+  { line, columns }: PdfTableLine,
+  width: number,
+): Cells => {
   const cells: Cells = Array.from({ length: width }, () => null);
   line.segments.forEach(({ text }, index) => {
     const column = columns[index] ?? 0;
@@ -337,7 +345,7 @@ export const pdfTableRows = (
     assembly.rows.push(rowOf(table.header.map(({ text }) => text)));
     const page: PageCells = {
       lines: table.lines.map(({ line }) => line),
-      cells: table.lines.map((placed) => toCells(placed, names.length)),
+      cells: table.lines.map((placed) => tableLineCells(placed, names.length)),
       anchor: anchorIndex,
     };
     page.cells.forEach((cells, index) =>

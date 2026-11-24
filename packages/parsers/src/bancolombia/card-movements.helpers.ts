@@ -38,14 +38,26 @@ import {
 type Row = readonly SpreadsheetCell[];
 type MovementKey = keyof typeof CARD_MOVEMENTS_COLUMN;
 
-/** Where a table of movements is: its label, its first row and its columns. */
-export type CardTable = {
+/**
+ * What reading a table's rows needs: its label, where its columns are, and
+ * the names its header gives them, for a failure to say which.
+ */
+export type CardTableColumns = {
   readonly label: string;
-  readonly start: number;
   readonly columns: Readonly<Record<MovementKey, number>>;
+  readonly names: Readonly<Record<MovementKey, string>>;
 };
 
-type RowContext = { readonly table: CardTable; readonly sourceRow: number };
+/** Where a table of movements is in a sheet: its columns and its first row. */
+export type CardTable = CardTableColumns & { readonly start: number };
+
+/** The movements of a statement's tables and the rows that weren't. */
+export type CardMovements = Pick<ParsedStatement, "transactions" | "warnings">;
+
+type RowContext = {
+  readonly table: CardTableColumns;
+  readonly sourceRow: number;
+};
 
 const formatError = (): Result<never> =>
   err({ code: APP_ERROR_CODE.PARSE_FAILED, details: { reason: "format" } });
@@ -76,6 +88,7 @@ export const findCardTable = (
     label,
     start: labelRow + 2,
     columns: columnPositions(columns.value),
+    names: CARD_MOVEMENTS_COLUMN,
   });
 };
 
@@ -132,7 +145,7 @@ const cellReader =
   <T>(key: MovementKey, read: (text: string) => Result<T>): Result<T> => {
     const location = {
       block: table.label,
-      column: CARD_MOVEMENTS_COLUMN[key],
+      column: table.names[key],
       row: sourceRow,
     };
     const text = cellText(row[table.columns[key]]);
@@ -199,16 +212,17 @@ const readCardMovement = (
   });
 };
 
-type CardMovements = Pick<ParsedStatement, "transactions" | "warnings">;
-
-// A table's movements; a row that isn't one becomes a warning.
-const readTable = (
-  rows: SheetRows,
-  table: CardTable,
+/**
+ * A table's movements from its rows, each with its position; a row whose date
+ * cell doesn't make it a movement becomes a warning.
+ */
+export const readCardTableRows = (
+  rows: readonly (readonly [number, Row])[],
+  table: CardTableColumns,
 ): Result<CardMovements> => {
   const transactions: ParsedTransaction[] = [];
   const warnings: ParseWarning[] = [];
-  for (const [sourceRow, row] of tableRows(rows, table)) {
+  for (const [sourceRow, row] of rows) {
     if (!looksLikeCardMovement(row[table.columns.DATE])) {
       warnings.push({ code: PARSE_WARNING_CODE.UNEXPECTED_ROW, sourceRow });
       continue;
@@ -241,7 +255,7 @@ export const readCardMovements = (rows: SheetRows): Result<CardMovements> => {
   if (!tables.ok) return tables;
   const movements: CardMovements = { transactions: [], warnings: [] };
   for (const table of tables.value) {
-    const read = readTable(rows, table);
+    const read = readCardTableRows(tableRows(rows, table), table);
     if (!read.ok) return read;
     movements.transactions.push(...read.value.transactions);
     movements.warnings.push(...read.value.warnings);
