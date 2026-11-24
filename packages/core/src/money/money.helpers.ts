@@ -253,3 +253,12 @@ export const formatSignedCompactAmount = (
   const formatted = formatCompactAmount(amount, currency, locale);
   return amount > 0 ? `+${formatted}` : formatted;
 };
+
+/**
+ * An amount rounded up to the next whole unit, as a card statement rounds
+ * what's due: `123430` ($1.234,30) is `123500`, and a whole amount stays.
+ */
+export const roundUpToWholeUnit = (amount: AmountMinor): AmountMinor => {
+  const cents = ((amount % MINOR_PER_UNIT) + MINOR_PER_UNIT) % MINOR_PER_UNIT;
+  return toAmountMinor(cents === 0 ? amount : amount - cents + MINOR_PER_UNIT);
+};

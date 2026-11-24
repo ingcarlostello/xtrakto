@@ -10,4 +10,14 @@ export const RECONCILIATION_ISSUE = {
   TOTAL_DEBITS: "TOTAL_DEBITS",
   /** The statement prints no balances to check, as in a movements export. */
   NO_BALANCE_DATA: "NO_BALANCE_DATA",
+  /** A card's previous balance and charges aren't the charges it prints (12.2a). */
+  CARD_CHARGES: "CARD_CHARGES",
+  /** A card's total to pay isn't what its summary leaves. */
+  CARD_TOTAL: "CARD_TOTAL",
+  /** A card's minimum isn't what its summary says it's made of. */
+  CARD_MINIMUM: "CARD_MINIMUM",
+  /** What a card's installments leave isn't the debt its summary gives. */
+  CARD_INSTALLMENTS: "CARD_INSTALLMENTS",
+  /** A card's movements of the period don't take its previous balance to its debt. */
+  CARD_MOVEMENTS: "CARD_MOVEMENTS",
 } as const;

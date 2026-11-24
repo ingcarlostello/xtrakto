@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cardStatementSchema, installmentSchema } from "../cards/card.schemas";
 import { localDateSchema, periodSchema } from "../dates/date.schemas";
 import {
   MAX_SHEET_ROWS,
@@ -39,6 +40,8 @@ export const parsedTransactionSchema = z.strictObject({
   /** Kept only until persistence, where identifiers are hashed. */
   referenceRaw: textSchema.optional(),
   referenceKind: z.enum(REFERENCE_KIND).optional(),
+  /** A card's purchase in installments (12.2a). */
+  installment: installmentSchema.optional(),
   sourceRow: sourceRowSchema,
 });
 
@@ -52,24 +55,33 @@ const statementTotalsSchema = z.strictObject({
   averageBalanceMinor: amountMinorSchema.optional(),
 });
 
-// At most one transaction or warning per source row.
-export const parsedStatementSchema = z.strictObject({
-  bankId: idSchema,
-  formatId: idSchema,
-  accountType: z.enum(ACCOUNT_TYPE),
-  /** Only the last 4 digits: the full account number is never kept. */
-  accountLast4: z
-    .string()
-    .regex(/^\d{4}$/)
-    .optional(),
-  currency: currencySchema,
-  period: periodSchema,
-  periodSource: z.enum(PERIOD_SOURCE),
-  openingBalanceMinor: amountMinorSchema.optional(),
-  closingBalanceMinor: amountMinorSchema.optional(),
-  totals: statementTotalsSchema.optional(),
-  /** Used to detect transfers between the holder's own accounts. */
-  holderName: textSchema.optional(),
-  transactions: z.array(parsedTransactionSchema).max(MAX_SHEET_ROWS),
-  warnings: z.array(parseWarningSchema).max(MAX_SHEET_ROWS),
-});
+// At most one transaction or warning per source row. A card's statement has
+// its card's figures, and no other statement does.
+export const parsedStatementSchema = z
+  .strictObject({
+    bankId: idSchema,
+    formatId: idSchema,
+    accountType: z.enum(ACCOUNT_TYPE),
+    /** Only the last 4 digits: the full account number is never kept. */
+    accountLast4: z
+      .string()
+      .regex(/^\d{4}$/)
+      .optional(),
+    currency: currencySchema,
+    period: periodSchema,
+    periodSource: z.enum(PERIOD_SOURCE),
+    openingBalanceMinor: amountMinorSchema.optional(),
+    closingBalanceMinor: amountMinorSchema.optional(),
+    totals: statementTotalsSchema.optional(),
+    /** A credit card's limit, what's due and its summary (12.2a). */
+    card: cardStatementSchema.optional(),
+    /** Used to detect transfers between the holder's own accounts. */
+    holderName: textSchema.optional(),
+    transactions: z.array(parsedTransactionSchema).max(MAX_SHEET_ROWS),
+    warnings: z.array(parseWarningSchema).max(MAX_SHEET_ROWS),
+  })
+  .refine(
+    ({ accountType, card }) =>
+      (accountType === ACCOUNT_TYPE.CREDIT_CARD) === (card !== undefined),
+    { message: "A card's figures exactly on a credit card's statement" },
+  );
