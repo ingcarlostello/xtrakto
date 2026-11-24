@@ -12,6 +12,7 @@ import {
   parseAmountWithSeparator,
   parsePesoAmountText,
   parseTypedAmount,
+  roundUpToWholeUnit,
   sumAmounts,
 } from "./money.helpers";
 import type { AmountMinor } from "./money.types";
@@ -405,5 +406,23 @@ describe("formatSignedCompactAmount", () => {
     expect(formatSignedCompactAmount(amount(value), CURRENCY.COP)).toBe(
       display,
     );
+  });
+});
+
+describe("roundUpToWholeUnit", () => {
+  const minor = (value: number): AmountMinor => {
+    if (!isAmountMinor(value)) throw new Error(`Not minor units: ${value}`);
+    return value;
+  };
+
+  it.each([
+    [123_430, 123_500],
+    [123_401, 123_500],
+    [123_400, 123_400],
+    [1, 100],
+    [0, 0],
+    [-123_430, -123_400],
+  ])("rounds %d minor units up to %d", (value, rounded) => {
+    expect(roundUpToWholeUnit(minor(value))).toBe(rounded);
   });
 });
