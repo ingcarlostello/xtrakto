@@ -71,6 +71,27 @@ describe("pdfLines", () => {
     expect(texts(content)).toEqual([[0, "Compañía", "CANAL"]]);
   });
 
+  it("reads once a text drawn over itself a fraction of a character to the right, as bold, keeping its first item", () => {
+    const bold = item("Moneda: PESOS", [90, 100]);
+    // A character apart: as wide as its one character, in exact points.
+    const sign = { str: "$", x: 200, y: 100, width: 5, height: 8 };
+    const content = pdf([
+      bold,
+      { ...bold, x: 90.1 },
+      { ...bold, x: 90.2 },
+      sign,
+      { ...sign, x: 205 },
+      { ...bold, y: 112 },
+    ]);
+    const [line] = pdfLines(content);
+
+    expect(texts(content)).toEqual([
+      [0, "Moneda: PESOS", "$$"],
+      [0, "Moneda: PESOS"],
+    ]);
+    expect(line?.segments[0]?.items).toEqual([bold]);
+  });
+
   it("keeps the line's baseline, its tallest text and its page", () => {
     const content = pdf(
       [item("ESTADO", [50, 40])],
