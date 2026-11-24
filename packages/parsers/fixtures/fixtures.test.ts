@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { extractedContentSchema } from "@xtrakto/core";
 import cardBasic from "./card-basic.json";
+import cardBasicPdf from "./card-basic-pdf.json";
 import cardBroken from "./card-broken.json";
+import cardBrokenPdf from "./card-broken-pdf.json";
 import cardDollars from "./card-dollars.json";
+import cardDollarsPdf from "./card-dollars-pdf.json";
 import mappedDirection from "./mapped-direction.json";
 import mappedNewestFirst from "./mapped-newest-first.json";
 import mappedNoBalance from "./mapped-no-balance.json";
@@ -42,6 +45,9 @@ const FIXTURES = {
   "card-basic": cardBasic,
   "card-dollars": cardDollars,
   "card-broken": cardBroken,
+  "card-basic-pdf": cardBasicPdf,
+  "card-dollars-pdf": cardDollarsPdf,
+  "card-broken-pdf": cardBrokenPdf,
 };
 
 describe("synthetic fixtures", () => {

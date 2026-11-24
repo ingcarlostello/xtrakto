@@ -1973,3 +1973,65 @@ Checked: seventeen deliberate bugs, one at a time, and every one failed a test: 
 - **Bancolombia's purchase rows are still inferred:** the human's statement has none, so the fixtures write them in the columns the interest, the payments and the balance transfer use; a statement with a purchase checks them.
 - **Size:** about 690 lines of code, without tests, comments or blank lines (about 400 estimated), past the 400 a phase should hold, as the quarterly statement's parser was; besides a fixtures' script of about 330. It lands in commits of one pull request.
 - **CI failed on 11.2b's intermittent test of `@xtrakto/db`,** `saveStatement` saving 2,500 movements twice: 5,038 ms against Vitest's 5 seconds, while every package tested at once on CI's runner. It and its sibling of 1,500 movements now have 30 seconds, in a commit of their own.
+
+## 12.2c Bancolombia's card statement in PDF
+
+_2026-11-24_
+
+Bancolombia's card statement in PDF now reads as its Excel does. An invented September laid out as the bank prints it gives the same statement as its spreadsheet twin, every field but where each movement sits. So do the month with movements in dollars and the one whose payment was misread. The human's real PDF gives the same statement as its Excel, reconciles to the cent, and sends nothing personal once minimized (116 of its 472 text items). No screen reads it yet: 12.3a registers it.
+
+- **Text drawn over itself** (`pdfLines`): the card's PDF draws its bold text three times, each copy a fraction of a point further right. A text repeated on its baseline less than a character from an earlier one is now read once, for every PDF; the savings account's draw none, and their tests and private files read as before.
+- **Fields by their labels** (`findField`): a value beside its label, the rest of its segment or the next segment that isn't a lone `$`, or under it, the first segment below that overlaps it within three heights. A label can go on under itself in its column, until a line with an amount, as the minimum's two "+ Cuota transacciones" do.
+- **The header** (`findCardPdfHeader`, `readCardPdfHeader`), on the first page in pesos:
+  - the holder's name, the line under the bank's NIT;
+  - the card's last 4 digits, and the period, the due date and what's due under their labels;
+  - the limit and what's available beside theirs;
+  - each summary in its half of the page, by its title, the charges' total under "Cargos".
+  - Each field reads as the spreadsheet's do, and `---` reads as nothing due, as the sheet's `-`.
+- **The movements** (`cardPdfPages`, `cardPdfTables`, `readCardPdfMovements`):
+  - each page in the currency it says, beside "Moneda:" or "ESTADO DE CUENTA EN:", and a page that says none in the previous page's;
+  - each table found by its title, its two header lines joined to name its columns, and its lines but the pages' footers read with the spreadsheet's row reader, now shared (`readCardTableRows`), so a line that isn't a movement warns the same;
+  - the pages in dollars only counted.
+- **Minimizing** (`minimizeCardPdf`):
+  - It keeps each page's currency; the holder's name and the NIT over it; the card's last 4 digits; the labels, words and values read; and the summaries' titles.
+  - From each table, it keeps the title, the header's two lines, and each movement's cells read, its description's long numbers masked. A line that isn't a movement is kept masked; of the pages in dollars, only each movement's date.
+  - Never sent: the address, the city or the department, the rates, the authorization numbers, the debt at the cut, the footers, or a bold copy.
+- **The fixtures** (`card-basic-pdf`, `card-dollars-pdf`, `card-broken-pdf`, from `scripts/card-pdf-layout.mjs`): 12.2b's statements laid out as Appendix A.4b says, from the same figures, so each is its Excel's twin.
+- **The private tests:** the human's card PDF is paired with its Excel by card and period: the same statement, field by field (names only), reconciled, parsed the same once minimized, and sending none of the client block's texts the Excel holds, nor a long number.
+
+43 new tests in parsers (661 there), and 4 private ones:
+
+- the parser:
+  - each fixture read as its Excel; a statement written to a real PDF read as from its text items;
+  - nothing due and a period across New Year; a page without a currency read in the previous page's;
+  - a stray line warned of, and one among the dollars not counted;
+  - failures without pages in pesos, the holder's name, a card number, a minimum that reads, the summaries' titles, a summary's line, a header's column, an installment within its count or a date that is one;
+  - a spreadsheet refused; only card statements' PDFs recognized, by none of the registered parsers;
+- the field finder: a value beside or under its label; a label's words under it, and none past two heights, a line out of its column, an amount or a page; a search within a half; nothing when the label or its value is missing;
+- minimizing: each fixture parsed the same once minimized, and minimized once and for all; a stray line kept masked; none of the client block, the rates, the authorizations, the debt or the footers; a bold text once; no long number; the dollars down to their currency, tables' titles and headers, and dates; content it doesn't recognize returned;
+- `pdfLines`: a text drawn over itself read once, but not one a character away or on another baseline;
+- the fixtures: each valid;
+- private: the human's PDF recognized, read as its Excel and reconciled to the cent, parsed the same once minimized, and its client block's address, city and department never sent, nor any long number.
+
+Checked: twenty-eight deliberate bugs, one at a time.
+
+- The first run left three uncaught, each now with a test:
+  - a boundary a character apart, which the overprint test checked in points floating point doesn't hold exactly;
+  - a label's words joined past a line out of its column;
+  - every line among the dollars counted.
+- Every one now fails a test, among them:
+  - the bold copies kept, or dropped on any baseline;
+  - a label's words joined at any distance, beside an amount or across pages;
+  - the `$` read as a value, a value under its label taken out of its column;
+  - the total read in the minimum's half, the address read as the holder, the charges read beside "Cargos";
+  - a page without a currency dropped, the header's second line or a footer read as a row, the tables read in reverse;
+  - in minimizing, a description unmasked, columns not read sent, stray lines, the NIT, the titles or the currencies dropped, the dollars sent whole;
+  - `---` read as a date, and any content recognized.
+
+**Deviations and follow-ups:**
+
+- **`pdfLines` reads a text drawn over itself once for every PDF** (decided while building it), not only the card's: it is what such a PDF means, and the quarterly statement's and the movements export's, which draw none, read as before.
+- **The holder's name is the line under the bank's NIT,** which prints no label for it: a statement laid out otherwise could read another line as the name. The private test checks the human's, and the parity tests the fixtures'.
+- **Movements over more than one page are untested:** the human's fit in one. The parser expects each page to repeat the table's header, as the quarterly statement's does; a page that doesn't would lose its movements, and the statement wouldn't reconcile.
+- **Not registered yet,** as the Excel's (12.2b): 12.3a registers both.
+- **Size:** about 780 lines of code, without tests, comments or blank lines (500 to 600 estimated), besides a fixtures' layout script of about 300 (about 200 estimated). It lands in commits of one pull request.

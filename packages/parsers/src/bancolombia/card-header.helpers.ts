@@ -94,13 +94,15 @@ export const cardSheets = (
 export const readCardAmount = (text: string): Result<AmountMinor> =>
   parseAmountWithSeparator(text, decimalSeparatorOf([text]));
 
-const lastFourOf = (text: string): Result<string> => {
+/** The card's last 4 digits, from its number masked but them. */
+export const lastFourOf = (text: string): Result<string> => {
   const [, lastFour] = CARD_NUMBER_PATTERN.exec(text) ?? [];
   return lastFour === undefined ? formatError() : ok(lastFour);
 };
 
-const dueDateOf = (text: string): Result<LocalDate | undefined> =>
-  text === NOTHING_DUE ? ok(undefined) : parseCardDate(text);
+/** When the card is due, or nothing when nothing is. */
+export const dueDateOf = (text: string): Result<LocalDate | undefined> =>
+  NOTHING_DUE.test(text) ? ok(undefined) : parseCardDate(text);
 
 // The texts right of a label in the first column, read together.
 const readBeside = <T>(
@@ -205,8 +207,8 @@ const readSummary = (rows: SheetRows): Result<CardSummary> => {
   });
 };
 
-// The values of several readers in turn, or the first failure.
-const readAll = <T extends object>(readers: {
+/** The values of several readers in turn, or the first failure. */
+export const readAll = <T extends object>(readers: {
   readonly [K in keyof T]: () => Result<T[K]>;
 }): Result<T> => {
   const values: Partial<T> = {};

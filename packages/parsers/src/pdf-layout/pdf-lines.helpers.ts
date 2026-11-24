@@ -53,6 +53,24 @@ const toSegments = (items: readonly PdfTextItem[]): PdfSegment[] => {
   return segments.map((segment) => ({ ...segment, text: segment.text.trim() }));
 };
 
+// A text drawn again over itself, on its baseline and less than a character
+// to the right, as some PDFs draw bold: the card statement's titles and
+// figures come three times, each a fraction of a point further. Read once.
+const withoutOverprints = (items: readonly PdfTextItem[]): PdfTextItem[] => {
+  const drawn = new Map<string, PdfTextItem[]>();
+  return items.filter((item) => {
+    const key = `${item.y}\u0000${item.str}`;
+    const same = drawn.get(key) ?? [];
+    if (
+      same.some((other) => Math.abs(item.x - other.x) < characterWidth(other))
+    ) {
+      return false;
+    }
+    drawn.set(key, [...same, item]);
+    return true;
+  });
+};
+
 // Items by baseline, each joining the line of the item above while it stays
 // within the tolerance of that line's first baseline.
 const groupByBaseline = (items: readonly PdfTextItem[]): PdfTextItem[][] => {
@@ -85,9 +103,12 @@ const toLine = (items: readonly PdfTextItem[], page: number): PdfLine => ({
 /**
  * The lines of every page, in reading order: page after page, top to bottom,
  * whatever order the PDF wrote its text in. Each line joins its items into
- * segments, the text that sits together, with the spaces their gaps hold.
+ * segments, the text that sits together, with the spaces their gaps hold; a
+ * text drawn over itself, as bold, is read once.
  */
 export const pdfLines = (content: PdfContent): readonly PdfLine[] =>
   content.pages.flatMap(({ items }, page) =>
-    groupByBaseline(items).map((group) => toLine(group, page)),
+    groupByBaseline(withoutOverprints(items)).map((group) =>
+      toLine(group, page),
+    ),
   );

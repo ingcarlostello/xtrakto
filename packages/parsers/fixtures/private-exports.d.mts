@@ -16,3 +16,10 @@ export declare const readPrivatePdfs: () => Promise<Uint8Array[]>;
  * are none.
  */
 export declare const readPrivateCardExports: () => Promise<Uint8Array[]>;
+
+/**
+ * The bytes of each real Bancolombia card statement in PDF, in
+ * `fixtures/private/tarjeta/` (Stage 12), in path order; empty when there
+ * are none.
+ */
+export declare const readPrivateCardPdfs: () => Promise<Uint8Array[]>;

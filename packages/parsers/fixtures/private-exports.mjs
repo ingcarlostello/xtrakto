@@ -50,3 +50,5 @@ export const readPrivatePdfs = () => readPrivateFiles(PDF_FILE);
 
 export const readPrivateCardExports = () =>
   readPrivateFiles(EXPORT_FILE, "tarjeta");
+
+export const readPrivateCardPdfs = () => readPrivateFiles(PDF_FILE, "tarjeta");

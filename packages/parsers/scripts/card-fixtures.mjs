@@ -1,8 +1,10 @@
 // Invented Bancolombia credit card statements in Excel (Appendix A.4), for
 // generate-fixtures.mjs: a sheet in pesos and one in dollars, as the bank's
-// "Extracto Mastercard Detallado" lays them out, from card-fixture-data.mjs.
+// "Extracto Mastercard Detallado" lays them out, from card-fixture-data.mjs;
+// and the same statements as their PDF prints them (card-pdf-layout.mjs).
 // The summaries are computed from the movements, so every statement
 // reconciles but card-broken. Names, numbers and amounts are invented.
+import { cardPdfPages } from "./card-pdf-layout.mjs";
 import {
   CARD,
   CLIENT,
@@ -173,6 +175,69 @@ const book = (pesos, dollars) => [
   { name: "DOLARES", rows: dollars.map(withoutTrailingNulls) },
 ];
 
+// "$ 1.234.567,89" as the PDF writes amounts, the minimum included.
+const inPesos = (amount) => `$ ${comma(amount)}`;
+
+// A movement's cells as the PDF prints them, with an annual rate.
+const pdfRow = ([date, text, amount, , authorization, installment]) => [
+  authorization ?? null,
+  date,
+  text,
+  inPesos(amount),
+  installment ? `${installment[0]}/${installment[1]}` : null,
+  inPesos(installment?.[2] ?? amount),
+  installment ? `${installment[3]} %` : null,
+  installment ? "25,3400 %" : null,
+  inPesos(installment?.[4] ?? 0),
+];
+
+// A currency's figures as its PDF prints them: both summaries' amounts in
+// their lines' order, with the payments and nothing in favor.
+const pdfCurrency = ({ currency, words, due, figures, during, earlier }) => ({
+  currency,
+  words,
+  due,
+  payment: {
+    total: inPesos(figures.totalPayment),
+    debt: `$${comma(figures.totalPayment)}`,
+    minimum: inPesos(figures.minimumPayment),
+    limit: inPesos(CREDIT_LIMIT),
+    available: inPesos(figures.available),
+  },
+  summary: {
+    total: [...figures.total, figures.payments, 0].map(comma),
+    charges: `$ ${trimmed(figures.charges)}`,
+    credits: inPesos(figures.payments),
+    minimum: [...figures.minimum, 0, 0].map(comma),
+  },
+  tables: { during: during.map(pdfRow), earlier: earlier.map(pdfRow) },
+});
+
+const pdfPages = ({ period, earlier, misprint }, dollars) =>
+  cardPdfPages({
+    card: CARD.slice(-4),
+    client: CLIENT,
+    period: PERIOD,
+    currencies: [
+      pdfCurrency({
+        currency: "PESOS",
+        words: "pesos",
+        due: DUE_DATE,
+        figures: figuresOf(period, earlier),
+        during: misprint?.(period) ?? period,
+        earlier,
+      }),
+      pdfCurrency({
+        currency: "DOLARES",
+        words: "dolares",
+        due: "---",
+        figures: { ...figuresOf([], []), available: 0 },
+        during: dollars,
+        earlier: [],
+      }),
+    ],
+  });
+
 // The payment read as $10.000 less than the summary counts.
 const misprintPayment = (movements) =>
   movements.map(([date, text, amount, kind, ...rest]) =>
@@ -181,22 +246,30 @@ const misprintPayment = (movements) =>
       : [date, text, amount, kind, ...rest],
   );
 
+// Each card fixture: its movements in pesos, and those in dollars.
+const STATEMENTS = {
+  "card-basic": [{ period: SEPTEMBER, earlier: EARLIER }, []],
+  "card-dollars": [{ period: SEPTEMBER, earlier: EARLIER }, IN_DOLLARS],
+  "card-broken": [
+    { period: SEPTEMBER, earlier: EARLIER, misprint: misprintPayment },
+    [],
+  ],
+};
+
 /** Each card fixture's sheets, by name. */
-export const cardFixtures = () => ({
-  "card-basic": book(
-    pesosSheet({ period: SEPTEMBER, earlier: EARLIER }),
-    dollarsSheet([]),
-  ),
-  "card-dollars": book(
-    pesosSheet({ period: SEPTEMBER, earlier: EARLIER }),
-    dollarsSheet(IN_DOLLARS),
-  ),
-  "card-broken": book(
-    pesosSheet({
-      period: SEPTEMBER,
-      earlier: EARLIER,
-      misprint: misprintPayment,
-    }),
-    dollarsSheet([]),
-  ),
-});
+export const cardFixtures = () =>
+  Object.fromEntries(
+    Object.entries(STATEMENTS).map(([name, [pesos, dollars]]) => [
+      name,
+      book(pesosSheet(pesos), dollarsSheet(dollars)),
+    ]),
+  );
+
+/** Each card fixture's PDF pages, by name. */
+export const cardPdfFixtures = () =>
+  Object.fromEntries(
+    Object.entries(STATEMENTS).map(([name, [pesos, dollars]]) => [
+      `${name}-pdf`,
+      pdfPages(pesos, dollars),
+    ]),
+  );

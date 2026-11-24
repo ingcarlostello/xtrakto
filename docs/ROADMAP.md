@@ -270,7 +270,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.1 [HUMAN] Card statement sample and phase refinement
 - [x] 12.2a Card statements in core
 - [x] 12.2b Bancolombia's card statement in Excel
-- [ ] 12.2c Bancolombia's card statement in PDF
+- [x] 12.2c Bancolombia's card statement in PDF
 - [ ] 12.2d Nu's card statement in PDF
 - [ ] 12.3a Card accounts saved
 - [ ] 12.3b Cards on the upload screen and in the welcome
@@ -2462,7 +2462,22 @@ It came out at about 690 lines of code, without tests, comments or blank lines (
 
 **Done when:** every PDF fixture and the human's file give the same statement as their Excel twins, every field but `sourceRow`.
 
-**Commit:** `feat(parsers): Bancolombia credit card statement PDF`
+Decided with the human when it started (2026-11-24): one phase, though estimated at 500 to 600 lines of code besides a fixtures' layout script of about 200.
+
+Found while building it (2026-11-24), on the human's file:
+
+- The PDF draws its bold text three times, each a fraction of a point further right, so `pdfLines` now reads a text drawn over itself once, for every PDF; the savings account's draw none, and read as before.
+- A value sits under its label in "Información de pago", and the charges' total under "Cargos"; everywhere else it sits beside its label, after a lone `$` in the summaries. The summaries repeat labels ("+ Intereses de mora"), so each is read in its half of the page, by its title.
+- The minimum's detail prints "+ Cuota transacciones" twice, told apart by the words under each ("entre 31 ago - 30 sep. 2026", "anteriores"), which a label's text joins.
+- The holder's name has no label: it's the line under the bank's NIT.
+- The movements' header takes two lines, joined to name its columns, and every cell is centered under its title.
+- Nothing due prints `---`, which now reads as the sheet's `-`.
+
+The human's PDF gives the same statement as its Excel, and the parser stays out of the registry until 12.3a, as the Excel's does.
+
+It came out at about 780 lines of code, without tests, comments or blank lines (500 to 600 estimated), besides a fixtures' layout script of about 300. It lands in commits of one pull request: reading a PDF's overprinted text once, the card's row reader and a PDF table's cells shared, the invented statements in PDF, the parser, and the documents.
+
+**Commits:** `feat(parsers): read text a PDF draws over itself once`, `refactor(parsers): share the card's row reader and a PDF table's cells`, `test(parsers): invented Bancolombia card statements in PDF`, `feat(parsers): Bancolombia credit card statement PDF`, then `docs: Bancolombia credit card statement in PDF`
 
 #### 12.2d Nu's card statement in PDF
 
@@ -2759,9 +2774,24 @@ Observed on real files. Values below are illustrative; no real data.
 ### A.4b Bancolombia — credit card statement (PDF)
 
 - The same statement in four pages, two per currency, pesos first. It opened without a password; another may ask for one, as a quarterly statement's.
-- The first page of each currency: the bank's and Mastercard's logos, `Tarjeta: *********1234`, the holder's name, address, city and department (never read), `Información de la Tarjeta *1234` and `Moneda: PESOS`; then "Cupo de tu tarjeta" (`Deuda a la fecha de corte`, `Cupo total`, `Disponible`), "Información de pago en pesos" (`Periodo facturado` as `31 ago - 30 sep. 2026`, `Pago Total`, `Pagar antes de`, `Pago mínimo`), "Resumen saldo total", "Detalle del pago mínimo" and "Tasas de Interés vigente", with the Excel's figures and some labels worded otherwise (`Compra a una cuota` for `Compra un mes`, `(+) En mora` for `(+) Saldo en mora`).
-- Amounts are written `$ 1.234.567,89` everywhere, the minimum included, a payment's sign after the `$` (`$ -150.000,00`); rates `1.9000%`, and in the movements `1,2000 %`. In the summaries, the labels and the values are printed in separate columns, so a reader pairs them by position.
-- The second page of each currency: "Nuevos movimientos entre 31 ago hasta 30 sep. 2026" and "Movimientos antes de 31 ago", with the Excel's columns (its header writes `Valor Couta/Abono`); a currency without movements prints neither table.
+- Bold text (titles, the card, the currency, what's due, the headers) is drawn three times, each a fraction of a point further right: a reader that keeps the copies reads each word three times.
+- Every page starts with `Tarjeta: *********1234` and the bank's NIT under its logo, and ends with the bank's contact (`DCF:…`).
+- The first page of each currency:
+  - The holder's name, address, city and department under the NIT, without labels (only the name is read).
+  - `Información de la Tarjeta *1234` and `Moneda: PESOS`.
+  - "Cupo de tu tarjeta": `Deuda a la fecha de corte:` with the debt under it, and `Cupo total:` and `Disponible:`, each with its amount beside it.
+  - "Información de pago en pesos": `Periodo facturado` (`31 ago - 30 sep. 2026`), `Pago Total:`, `Pagar antes de:` and `Pago mínimo:`, each value under its label. Nothing due prints `---`.
+  - "Resumen saldo total" at the left and "Detalle del pago mínimo" at the right, then "Tasas de Interés vigente", with the Excel's figures and some labels worded otherwise (`Compra a una cuota` for `Compra un mes`, `(+) En mora` for `(+) Saldo en mora`, `Otros Cargos` for the minimum's `Otros cargos`).
+- Each summary has a header `Categoría | Transacción | Valor`, and each line its label, a lone `$` and the amount:
+  - The total's categories, `Cargos` and `Abonos`, have their totals under them.
+  - The minimum's categories are `Cuotas`, `Intereses`, `Otros Cargos` (with its amount beside it) and `Saldos`.
+  - The minimum prints `+ Cuota transacciones` twice: this period's, with `entre 31 ago` and `- 30 sep. 2026` under it, and the earlier ones', with `anteriores`.
+- Amounts are written `$ 1.234.567,89` everywhere, the minimum included, a payment's sign after the `$` (`$ -150.000,00`); rates `1.9000%`, and in the movements `1,2000 %`.
+- The second page of each currency:
+  - "Nuevos movimientos entre 31 ago hasta 30 sep. 2026" and "Movimientos antes de 31 ago", with the Excel's columns.
+  - The header takes two lines (`Valor` over `movimiento`, `Valor` over `Couta/Abono`), and every cell is centered under its title.
+  - A currency without movements prints neither table.
+  - Untested: movements over more than one page, which the parser expects to repeat their header, as the quarterly statement's do.
 
 ### A.5 Nu — credit card statement (PDF)
 
