@@ -1921,3 +1921,28 @@ Stage 12 now has its plan, made from real statements. The human placed their Ban
 - **Nu as a second card** (decided with the human): the roadmap's sample allowed Bancolombia or Nu, and the human's Bancolombia card has no purchase, which only Nu's statements show.
 - **Bancolombia's purchase rows are inferred** from its columns and Nu's: a later statement with a purchase checks them (12.2b).
 - **Nu's password** is the human's ID number, which they typed in the chat: it was passed only as an environment variable to a temporary script, deleted afterwards, and a search found it in no file of the repository or the agent's memory. The private tests of 12.2d read it from the environment when the human runs them.
+
+## 12.2a Card statements in core
+
+_2026-11-24_
+
+A card statement now has a contract and its sums. "31 ago - 30 sep. 2026" reads as 31 August to 30 September, "16 dic - 15 ene. 2027" with its first day in 2026, "oct. 15, 2026" as Bancolombia's due date, and "1.9000 %" as 19,000 parts per million. An invented month of each card reconciles by its bank's own sums, and the checks find a total not rounded up, a minimum short by a peso, a payment misread by $10.000, or installments that leave another debt. No parser gives a card's statement yet: 12.2b to 12.2d do.
+
+- **The contract** (`@xtrakto/core`, `cards/`): `ParsedStatement` gains a card block (`cardStatementSchema`): the credit limit and what's available, the minimum and the total to pay, the due date (none when nothing is due), the cut date where a bank prints it apart from the period, and each bank's summary as it prints it, each line a positive amount: Bancolombia's total and minimum (`total`, `minimum`), and Nu's month's due, interest, fees, conversion charges, payments, refunds and remaining debt. A movement may carry its installment (`installmentSchema`): its number and count, the month's installment, its monthly rate and what remains. The schema refuses a credit card's statement without its card block and any other statement with one.
+- **The readers:** `parseCardDate` (day first, or month first with a comma), `parseCardPeriod` (its first day in the year it falls, so a period across New Year reads), `parsePercentText` (a point or a comma, up to four decimals, the percent sign optional), and `roundUpToWholeUnit`, as card statements round what's due.
+- **The sums** (`reconcileCard`, `@xtrakto/parsers`): Bancolombia's charges, debt and total rounded up, minimum rounded up, installments beside the minimum, and the movements of the period, which take the previous balance to the debt, leaving out the purchases earlier statements listed; Nu's minimum, total, and remaining debt from what the installments leave, late interest counted once. Each failure is a code of its own (`CARD_CHARGES`, `CARD_TOTAL`, `CARD_MINIMUM`, `CARD_INSTALLMENTS`, `CARD_MOVEMENTS`), never a value, and `reconcile` hands a card's statement to it, so ingestion won't change.
+
+75 new tests: 60 in core (1,055 there) and 15 in parsers (584):
+
+- core: every date form and its failures (a dash, no year, a 32nd, an unknown month, year first); periods within a year, across New Year and without spaces around the dash, and their failures; rates with a point or a comma, two or four decimals or none, with and without the sign, and their failures (five decimals, a minus, thousands separators, letters, nothing); rounding up, a whole amount kept and a negative one; both banks' summaries, late interest printed or not, nothing due and a cut of its own; a card block refused on a savings statement and missing on a card's, with another bank's kind, a line left out or added, cents' fractions, or a field such as an address; installments past their count, the 0th, of more than 120, fractions, negative rates and another field.
+- parsers: each bank's invented month verified; Bancolombia's charges, totals off by a peso or not rounded up, a minimum rounded down, installments, movements with their difference, a purchase of an earlier statement moved into the period, and what's in the person's favor off the debt and the minimum; Nu's late interest counted once, a minimum, a total with its difference, and installments; and `reconcile` handing a card's statement over.
+
+Checked: twenty-five deliberate bugs, one at a time; every one failed a test once a test of what's in the person's favor was added, which a bug leaving it out of the minimum had passed.
+
+**Deviations and follow-ups:**
+
+- **Amounts needed no reader of their own:** `parseAmountWithSeparator` (11.1a) already reads every form both cards print, as the roadmap's task had listed them.
+- **Rates as whole parts per million,** as amounts are minor units, so no rate is a float.
+- **The debt at the cut is no field:** Bancolombia's is worked out from its summary, and what clears either card is its total to pay.
+- **Two of Nu's sums wait for its parser (12.2d),** which knows its rows: that the conversion charges add up to their sub-rows, and whether the month's due is the month's installments, which held in two of the human's three months and not in the other, by exactly that month's conversion charges.
+- **Size:** about 335 lines of code, without tests, comments or blank lines (about 300 estimated), in three commits of one pull request.

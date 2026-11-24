@@ -268,7 +268,7 @@ The human decides before the phase starts. The agent may propose options with tr
 **Stage 12 — Credit cards**
 
 - [x] 12.1 [HUMAN] Card statement sample and phase refinement
-- [ ] 12.2a Card statements in core
+- [x] 12.2a Card statements in core
 - [ ] 12.2b Bancolombia's card statement in Excel
 - [ ] 12.2c Bancolombia's card statement in PDF
 - [ ] 12.2d Nu's card statement in PDF
@@ -2428,7 +2428,11 @@ Planned with the human on 2026-11-23 from real statements (12.1): thirteen sub-p
 
 **Done when:** table-driven tests cover each reader's forms and failures, and each sum holds and fails on hand-made statements.
 
-**Commits:** `feat(core): card statements and how they write dates and amounts`, then `feat(parsers): reconcile a card statement`
+Found while building it (2026-11-24): amounts needed no reader of their own, since `parseAmountWithSeparator` (11.1a) already reads every form both cards print; rates are kept as whole parts per million (`1.9000 %` is 19,000), as amounts are minor units; and the debt at the cut is no field of its own: Bancolombia's is worked out from its summary, and what clears either card is its total to pay. `reconcile` hands a card's statement to `reconcileCard`, so ingestion won't change, and a card's difference is the movements' for Bancolombia and the total's for Nu. Two of Nu's sums wait for its parser (12.2d), which knows its rows: that the conversion charges add up to their sub-rows, and whether the month's due is the month's installments, which held in two of the human's three months and not in the other, by exactly that month's conversion charges.
+
+It came out at about 335 lines of code, without tests, comments or blank lines (about 300 estimated), in three commits of one pull request: core, the parsers' sums, and the documents.
+
+**Commits:** `feat(core): card statements and how they write dates and rates`, `feat(parsers): reconcile a card statement`, then `docs: card statements in core`
 
 #### 12.2b Bancolombia's card statement in Excel
 
