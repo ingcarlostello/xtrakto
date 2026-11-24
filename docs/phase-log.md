@@ -1903,3 +1903,21 @@ The first run (53 files), before the balance repair: 21.9 seconds for USD 0.0227
 - **The balance repair** belongs to the agent (11.4); its eval found it, and it came here (decided with the human).
 - **Every run gave the same figures,** DeepSeek answering the same samples alike; a model's update may move them, which the thresholds leave some room for.
 - **Invented, not real:** the human's read of a real export from another bank in production (11.3a) still waits.
+
+## 12.1 Card statement sample and phase refinement
+
+_2026-11-24_
+
+Stage 12 now has its plan, made from real statements. The human placed their Bancolombia Mastercard statement of one month, in Excel and in PDF, and three consecutive statements of their Nu card, in PDF with a password, in the git-ignored `packages/parsers/fixtures/private/tarjeta/` and `tarjeta-nu/`. They were read locally with the project's own extraction, reporting shapes and counts only: Bancolombia's Excel holds two sheets (pesos and dollars) and its PDF four pages, with 3 movements in the month, 1 purchase of an earlier statement still in installments and nothing in dollars; Nu's three PDFs hold 2 or 3 pages and 7, 14 and 7 rows, with 1, 2 and 3 conversion charges as sub-rows and late interest in one of them.
+
+- **The formats** are Appendix A.4 (Bancolombia's Excel), A.4b (its PDF) and A.5 (Nu's PDF), with invented values only; a scan of the diff found none of the real files' digits, amounts, rates, payees or places.
+- **Both reconcile to the cent by their own sums:** Bancolombia's summary gives the debt, which the installments left plus this month's installments and interest also give, with the minimum and the total rounded up to the peso; in each of Nu's months, the minimum and the total follow from the month's due, interest, fees and payments, and the conversion charges add up to their sub-rows.
+- **The plan** (ROADMAP, Stage 12), approved by the human: thirteen sub-phases after this one, about 4,500 lines of code, with the decisions taken with the human: two cards with Bancolombia first; a purchase counts in full on the day it was made; payments only move money; pesos only, saying when dollars aren't counted; and screens built from v8's pieces.
+
+**Deviations and follow-ups:**
+
+- **The outline changed:** its parser becomes four sub-phases; saving a card and showing it, which it didn't name, take four more; its 12.3 becomes 12.3e; and paying only the minimum is worded by the code rather than the LLM.
+- **The welcome's credit card option** moves from this phase to 12.3b, once a card can be read, so its copy stays true.
+- **Nu as a second card** (decided with the human): the roadmap's sample allowed Bancolombia or Nu, and the human's Bancolombia card has no purchase, which only Nu's statements show.
+- **Bancolombia's purchase rows are inferred** from its columns and Nu's: a later statement with a purchase checks them (12.2b).
+- **Nu's password** is the human's ID number, which they typed in the chat: it was passed only as an environment variable to a temporary script, deleted afterwards, and a search found it in no file of the repository or the agent's memory. The private tests of 12.2d read it from the environment when the human runs them.
