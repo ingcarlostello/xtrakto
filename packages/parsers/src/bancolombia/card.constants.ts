@@ -24,8 +24,8 @@ export const CARD_LABEL = {
 /** What each sheet's currency says: pesos are read, dollars only counted. */
 export const CARD_CURRENCY = { PESOS: "PESOS", DOLLARS: "DOLARES" } as const;
 
-/** What a due date says when nothing is due. */
-export const NOTHING_DUE = "-";
+/** What a due date says when nothing is due: the sheet's "-", the PDF's "---". */
+export const NOTHING_DUE = /^-+$/;
 
 /** The card's number, masked but its last 4 digits, as the sheet prints it. */
 export const CARD_NUMBER_PATTERN = /^\**(\d{4})$/;
@@ -84,3 +84,78 @@ export const INSTALLMENTS_PATTERN = /^(\d{1,3})\s*\/\s*(\d{1,3})$/;
 
 /** A movement's date, day first: "15/09/2026". */
 export const CARD_DATE_PATTERN = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+
+// The same statement as a PDF (Appendix A.4b): the pages of each currency,
+// pesos first, each value under its label or beside it.
+
+/** Stored with each statement as its format. */
+export const CARD_PDF_FORMAT_ID = "bancolombia-credit-card-pdf";
+
+/** Labels of the first page of each currency, each before its value. */
+export const CARD_PDF_LABEL = {
+  /** The bank's tax id under its logo: the holder's name is the next line. */
+  BANK_ID: "NIT:",
+  CARD: "Información de la Tarjeta",
+  CURRENCY: "Moneda:",
+  PERIOD: "Periodo facturado",
+  TOTAL: "Pago Total:",
+  DUE_DATE: "Pagar antes de:",
+  MINIMUM: "Pago mínimo:",
+  CREDIT_LIMIT: "Cupo total:",
+  AVAILABLE: "Disponible:",
+} as const;
+
+/** What the pages of movements say their currency is in, beside it. */
+export const CARD_PDF_PAGE_CURRENCY = "ESTADO DE CUENTA EN:";
+
+/** The summaries' titles, each over its half of the page. */
+export const CARD_PDF_SUMMARY_TITLE = {
+  TOTAL: "Resumen saldo total",
+  MINIMUM: "Detalle del pago mínimo",
+} as const;
+
+/**
+ * The minimum's detail as the PDF words it, by the field each line fills:
+ * "+ Cuota transacciones" twice, this period's with its dates under it, the
+ * earlier ones' with "anteriores".
+ */
+export const CARD_PDF_MINIMUM_LABEL = {
+  installmentsMinor: "+ Cuota transacciones entre",
+  earlierInstallmentsMinor: "+ Cuota transacciones anteriores",
+  advanceInstallmentsMinor: "+ Cuota avances",
+  lateInterestMinor: "+ Intereses de mora",
+  interestMinor: "+ Intereses corrientes",
+  otherChargesMinor: "Otros Cargos",
+  overdueMinor: "(+) En mora",
+  inFavorMinor: "(-) A favor",
+} as const satisfies Record<keyof BancolombiaSummary["minimum"], string>;
+
+/** The titles over the tables of movements, before their dates. */
+export const CARD_PDF_TABLE_TITLE = {
+  PERIOD: "Nuevos movimientos entre",
+  EARLIER: "Movimientos antes de",
+} as const;
+
+/** The first line of the movements' header, which takes two. */
+export const CARD_PDF_COLUMNS = [
+  "Número de",
+  "Fecha",
+  "Movimientos",
+  "Valor",
+  "Número",
+  "Valor",
+  "% Interés",
+  "% Interés",
+  "Saldo",
+] as const;
+
+/** Header names of the columns read, their two lines joined. */
+export const CARD_PDF_MOVEMENTS_COLUMN = {
+  DATE: "Fecha",
+  DESCRIPTION: "Movimientos",
+  AMOUNT: "Valor movimiento",
+  INSTALLMENTS: "Número cuotas",
+  MONTHLY: "Valor Couta/Abono",
+  MONTHLY_RATE: "% Interés mensual",
+  REMAINING: "Saldo pendiente",
+} as const satisfies Record<keyof typeof CARD_MOVEMENTS_COLUMN, string>;
