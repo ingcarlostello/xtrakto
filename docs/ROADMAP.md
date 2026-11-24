@@ -93,7 +93,7 @@ The human decides before the phase starts. The agent may propose options with tr
 | PostgreSQL provider | 3.1   | Neon (recommended: serverless, database branches for previews) or Supabase.                                                                                                                           |
 | Design direction    | 4.3   | Resolved: v8 (October 2026), v7 (the layout of v4 with the style of v6) adjusted after checking real Bancolombia files (`.claude/rules/design-system.md`); screenshots of every screen in `docs/ui/`. |
 | LLM providers       | 8.1   | Resolved: DeepSeek's own API, `deepseek-flash` with `deepseek-v4-pro` as fallback (October 2026; a personal, non-commercial project whose users accept that their redacted bank texts go to China).   |
-| Credit card sample  | 12.1  | An anonymized card statement provided by the human.                                                                                                                                                   |
+| Credit card sample  | 12.1  | Resolved: the human's Bancolombia Mastercard statement (one month, Excel and PDF) and three Nu statements (PDF), November 2026, read locally and never committed (Appendix A.4 and A.5).              |
 | Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                                                                          |
 
 ---
@@ -265,13 +265,22 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 11.4 The agent: repair and retry before asking
 - [x] 11.5 Agent evals
 
-**Stage 12 — Credit cards** _(outline)_
+**Stage 12 — Credit cards**
 
-- [ ] 12.1 [HUMAN] Card statement sample and phase refinement
-- [ ] 12.2 Card statement parser
-- [ ] 12.3 Account and card reconciliation
-- [ ] 12.4 Usury rate pipeline and check
-- [ ] 12.5 Card insights
+- [x] 12.1 [HUMAN] Card statement sample and phase refinement
+- [ ] 12.2a Card statements in core
+- [ ] 12.2b Bancolombia's card statement in Excel
+- [ ] 12.2c Bancolombia's card statement in PDF
+- [ ] 12.2d Nu's card statement in PDF
+- [ ] 12.3a Card accounts saved
+- [ ] 12.3b Cards on the upload screen and in the welcome
+- [ ] 12.3c Your card
+- [ ] 12.3d A card's movements and installments
+- [ ] 12.3e Card payments across accounts
+- [ ] 12.4a [HUMAN] Usury rates by month
+- [ ] 12.4b The card's rate against usury
+- [ ] 12.5a What a card costs and what's due
+- [ ] 12.5b Paying only the minimum
 
 **Stage 13 — "Pregúntale a tu extracto": chat agent** _(outline)_
 
@@ -2378,13 +2387,195 @@ It came out at about 460 lines of code, without tests, comments or blank lines (
 
 **Commits:** `feat(parsers): repair a balance the roles left out`, `feat(web): repair a reading without balances before asking`, `feat(evals): files whose names mislead, and the format agent's metrics`, `feat(web): the format agent's eval`, `docs: the format agent's eval`, then `docs: run the format agent's eval`
 
-### Stage 12 — Credit cards _(outline)_
+### Stage 12 — Credit cards
 
-- **12.1 [HUMAN] Sample:** an anonymized card statement (Bancolombia or Nu); expand this stage's phases from it. Onboarding's second step gains the credit card option, left out in 5.8.
-- **12.2 Parser:** with reconciliation (previous balance + purchases + interest + fees − payments = new balance).
-- **12.3 Account and card reconciliation:** match payments from the savings account with the payments in the card statement, without double counting.
-- **12.4 Usury rate:** a monthly Inngest cron reads the official publication (source confirmed at the gate), stores the rate per month with its source, and compares it with the card's rates.
-- **12.5 Card insights:** interest paid, fees, insurance, and a minimum-payment simulation (deterministic math; the LLM only explains it); and, moved from 6.6, the savings account's card payments without a card statement, with an invitation to upload it.
+**Goal:** read a credit card's statement as Xtrakto reads a savings account's: its purchases are the real spending the savings account sees only as a payment to the card, its installments say what's left to pay, and its interest and fees say what the card costs.
+
+Planned with the human on 2026-11-23 from real statements (12.1): thirteen sub-phases after it (about 4,500 lines of code), with these decisions.
+
+- **Two cards, Bancolombia first** (decided with the human): Bancolombia's Mastercard statement in Excel, then in PDF, then Nu's in PDF. The human's Bancolombia card shows interest, payments and a balance transfer in installments, but no purchase; their Nu card shows purchases in one and 24 installments, in pesos and abroad, with interest and late interest. Appendix A.4 and A.5 describe both.
+- **A purchase counts in full on the day it was made** (decided with the human): one in 24 installments is real spending of its whole value in its month, as the bank's "Compras del mes" counts it; each installment after only pays the debt, and its interest is spending. A purchase each later statement lists again ("2 de 24", "Movimientos antes del periodo") is saved once, by its fingerprint.
+- **A card's payments only move money:** a payment to the card ("ABONO SUCURSAL VIRTUAL", "Gracias por tu pago") is the person's money coming back to it, moved and never income, as the savings account's payment to the card already is (`credit_card_payment`). A balance transfer ("COMPRA DE CARTERA") moves a debt from another bank: moved, never spending. Interest, late interest, the card's fees and conversion charges are what the card costs: real spending.
+- **Xtrakto's signs:** the bank prints a purchase positive and a payment negative; Xtrakto stores money that leaves through the card as negative, so a purchase is −, a payment +, as in a savings account.
+- **Each bank's own sums reconcile a statement,** since a card prints no balance after each movement: Bancolombia's previous balance, charges and payments give the debt, which the installments left and this month's also give, with the minimum and the total rounded up to the peso; Nu's minimum and total follow from this month's due, its interest, fees and payments, and its conversion charges from their sub-rows. A statement that doesn't reconcile counts nowhere, as a savings one.
+- **Pesos only** (decided with the human): a card's section in dollars is read only to count its movements; when it has some, the result says they aren't counted yet. Several currencies stay out of scope.
+- **What never leaves the browser:** the address, Nu's ID number ("CC …") and the card's whole number, of which only the last 4 digits travel. Nu's PDF opens with its password as any PDF does (9.4a); the private tests read the human's from the environment when they run, never from a file.
+- **One account per credit limit:** Nu's physical and virtual cards share one limit, so they are one account, by the physical card's last 4 digits.
+- **Screens from v8's pieces** (decided with the human): v8 draws only "Tarjeta de crédito · Pronto" in the welcome, so each card screen is built from v8's components and shown to the human before its phase closes.
+- **The outline changes:** its parser becomes four (12.2a to 12.2d); saving a card and showing it, which it didn't name, take 12.3a to 12.3d; its 12.3, the payments between accounts, becomes 12.3e; and paying only the minimum is explained in the code's words, as "Tu extracto, traducido" is (8.6c), rather than the LLM's.
+- **Left out:** movements in dollars; another bank's card (Stage 11's agent reads savings spreadsheets only); a card in the monthly email (10.5); the chat (13).
+
+#### 12.1 [HUMAN] Card statement sample and phase refinement
+
+**Human:** the human's Bancolombia Mastercard statement of one month, in Excel and PDF, and three consecutive Nu statements in PDF, in the git-ignored `packages/parsers/fixtures/private/tarjeta/` and `tarjeta-nu/` (2026-11-23).
+
+**Tasks**
+
+- Read them locally to learn both formats, reporting counts only: Appendix A.4 and A.5, with invented values.
+- Expand this stage's phases from them. The welcome's credit card option, which the outline gave this phase, goes to 12.3b, once a card can be read.
+
+**Done when:** the human approves the plan.
+
+**Commit:** `docs: plan Stage 12 from real card statements`
+
+#### 12.2a Card statements in core
+
+**Tasks**
+
+- `ParsedStatement` for a card (`accountType: "credit_card"`): a card block, validated with Zod: the credit limit and what's available, the debt at the cut, the minimum and the total to pay, the due date (none when nothing is due) and the cut date. A movement may carry its installment: its number and count ("3 de 24"), the month's installment, the monthly rate as printed, and what remains to pay.
+- Readers for what card statements print: dates such as `31 ago` with `30 sep. 2026`, `oct. 15, 2026`, `11 SEP 2026` and `12 AGO - 10 SEP 2026`; amounts such as `$ -150.000,00`, `- $1.234,56`, `+ $333,04`, `1.234.567,8` and `123,456.00`; rates such as `1.9000 %` and `1,2000 %`.
+- `reconcileCard` in `@xtrakto/parsers`: each bank's sums (Appendix A.4, A.5), exact in minor units, with the minimum and the total rounded up to the peso where the bank does; a failure names its sum, never a value.
+
+**Done when:** table-driven tests cover each reader's forms and failures, and each sum holds and fails on hand-made statements.
+
+**Commits:** `feat(core): card statements and how they write dates and amounts`, then `feat(parsers): reconcile a card statement`
+
+#### 12.2b Bancolombia's card statement in Excel
+
+**Tasks**
+
+- `bancolombiaCardParser` (`bancolombia-credit-card`) reads Appendix A.4: the `PESOS` sheet's blocks by their labels, its summaries and both tables of movements, each field in the number format it writes; the `DOLARES` sheet only to count its movements, as a warning of its own.
+- `minimize` keeps only what `parse` reads: the holder's name, the card's last 4 digits, the summaries and the movements; never the address, the city or the department.
+- Synthetic fixtures in its layout, written as XLSX by a script: purchases in one and several installments, a balance transfer, the card's fee, an advance, late interest, a payment, a month with movements in dollars, and one that doesn't reconcile.
+- `canParse`, the default registry, `FormatId` and the web's maps keyed by it.
+- A private test: the human's file parses, reconciles and keeps no personal data once minimized (counts only).
+
+**Done when:** each fixture gives its expected statement and reconciles where it should, `parse(minimize(content))` equals `parse(content)`, and the private test passes.
+
+**Commit:** `feat(parsers): Bancolombia credit card statement`
+
+#### 12.2c Bancolombia's card statement in PDF
+
+**Tasks**
+
+- `bancolombiaCardPdfParser` (`bancolombia-credit-card-pdf`) reads Appendix A.4b: the pages in pesos, the summaries' labels paired with their values by position, and the movements' tables through 9.2's rows; the pages in dollars only to count their movements.
+- `minimize` keeps only what `parse` reads, at its position: never the address, the city or the department, and the card as its last 4 digits.
+- PDF fixtures from 12.2b's, laid out as the bank prints them.
+
+**Done when:** every PDF fixture and the human's file give the same statement as their Excel twins, every field but `sourceRow`.
+
+**Commit:** `feat(parsers): Bancolombia credit card statement PDF`
+
+#### 12.2d Nu's card statement in PDF
+
+**Tasks**
+
+- `nuCardPdfParser` (`nu-credit-card-pdf`) reads Appendix A.5: page 1's dates, limit and summary by their labels, the physical card's last 4 digits, and the movements' rows rebuilt from their positions: dates over one or two lines, descriptions over two, a conversion charge's sub-row as a movement of its own, a payment's parts as no movement, and the month's interest and late interest as movements (decided when it starts: one per statement or one per purchase).
+- `minimize` never keeps the ID number, the address or the greeting.
+- Encrypted PDF fixtures in Nu's layout, with an invented password in `fixtures/README.md`: purchases in one and 24 installments, abroad, one prepaid, a payment, interest and late interest.
+- A private test of the human's three statements, its password from an environment variable the human sets when running it; counts only.
+
+**Done when:** each fixture gives its expected statement and reconciles, and the three private statements parse and reconcile.
+
+**Commit:** `feat(parsers): Nu credit card statement`
+
+#### 12.3a Card accounts saved
+
+**Tasks**
+
+- A card's account: its bank, `credit_card` and the card's last 4 digits, found or created as a quarterly statement's account is, with the holder's name.
+- A card's statement keeps its card block (decided when it starts: columns or JSON its schema reads back) and its reconciliation; its Excel and its PDF are versions of one period, and the second adds nothing.
+- A card's movements in Xtrakto's signs, each with its installment when it has one; a purchase a later statement lists again adds nothing.
+- The table's rules for a card's texts: interest, late interest, the card's fee, conversion charges, payments, a balance transfer and refunds, each only for a card's account; a purchase no rule names is real spending ("Otros") the LLM may name (8.5).
+- An ADR: a card's purchases count in full when made, and its payments only move money.
+
+**Done when:** database tests save a statement of each card, and prove the versions, the purchase listed again, the signs, the categories, and that a card's rules never touch a savings account's movements.
+
+**Commit:** `feat: card accounts saved`
+
+#### 12.3b Cards on the upload screen and in the welcome
+
+**Tasks**
+
+- The upload screen (`v8-07`): "Bancolombia: lo que ya leemos" gains its card's statement (Excel and PDF), and Nu's card (PDF, which asks for its password) gets a block of its own; the subtitle and "Cómo cuidamos tus datos" are true for a card.
+- A card statement's result: its counts, "Cuadra con tu extracto" or "No cuadra por $12.400", and "Tu tarjeta tiene 3 movimientos en dólares que aún no contamos." when it has some; "Archivos subidos" names it ("Extracto de tu tarjeta sep 2026").
+- "Lo que tienes" and the profile's "Tus datos" draw a card's months, verified where a statement that reconciles covers them.
+- The welcome's second step (`v8-16`): "Tarjeta de crédito" ("Compras, cuotas e intereses."), no longer "Pronto", with Nu among the banks, and its guide in the third step.
+- The design rules.
+
+**Done when:** every screen reads right with a card beside a savings account, at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): cards on the upload screen and in the welcome`
+
+#### 12.3c Your card
+
+**Tasks**
+
+- A card in the account switch ("Tarjeta Mastercard ••••1234", "Tarjeta Nu ••••5678"), its periods by its statements' months.
+- A card's summary, "Resumen de tu tarjeta": the glance's kinds (purchases, interest and fees as real spending, payments as moved, refunds as income); "Tu tarjeta" instead of "Tu cuenta": the debt at the cut, the minimum and the total to pay by their date, the limit and what's available, and the pill that says whether it reconciles; the chart with the real spending's line alone, as files without balances draw it.
+- The design rules; shown to the human before the phase closes.
+
+**Done when:** a card's summary reads right for each bank from seeded data, at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): your card`
+
+#### 12.3d A card's movements and installments
+
+**Tasks**
+
+- Movimientos for a card: each purchase with its installments ("3 de 24 · $41.667 al mes"), its interest and its payments, with the period's tiles.
+- "Cuotas que te faltan": the purchases the card's latest statement still charges, each with what's left and its last month, and their total.
+- Pagos fijos and Categorías read a card's movements as any account's.
+- The design rules.
+
+**Done when:** a card's movements and installments read right from seeded data, at 390px and 360px and with the keyboard.
+
+**Commit:** `feat(web): a card's movements and installments`
+
+#### 12.3e Card payments across accounts
+
+**Tasks**
+
+- A savings account's payment to a card (`PAGO SUC VIRT TC`, a PSE payment to Nu) meets the card's payment of the same amount, the same day or one apart (decided when it starts: worked out when read, or kept).
+- A matched payment is the person's own: it waits for no review, and each detail names the other side ("Llegó a tu tarjeta Nu ••••5678", "Salió de tu cuenta de ahorros ••••8901"); Categorías's "Pago de tarjetas" leads to the card.
+
+**Done when:** tests cover a match, one a day apart, two payments of the same amount, one without its card's statement, and another user's that never matches.
+
+**Commit:** `feat: card payments across accounts`
+
+#### 12.4a [HUMAN] Usury rates by month
+
+**Human:** confirm the official publication (gate 12.4).
+
+**Tasks**
+
+- `usury_rates`: a month, its usury rate for consumer credit as an effective annual rate, and its source; any user's context reads it, and only the cron adds to it, through a `SECURITY DEFINER` function as the daily cleanup's (ADR 0014).
+- A monthly Inngest cron in Bogotá reads the publication, saves the month's rate and alerts Sentry when it can't; the months already published, seeded once.
+
+**Done when:** tests cover a month saved, one already there, and a publication that can't be read.
+
+**Commit:** `feat: usury rates by month`
+
+#### 12.4b The card's rate against usury
+
+**Tasks**
+
+- Each card's purchase rate as an effective annual rate (Bancolombia prints it; Nu prints a monthly one, converted), against its month's usury rate: under it, as the law requires, or on the attention surface when not; in "Tu tarjeta" and a purchase's detail.
+
+**Done when:** the conversion and the comparison are tested.
+
+**Commit:** `feat(web): the card's rate against usury`
+
+#### 12.5a What a card costs and what's due
+
+**Tasks**
+
+- Insights for a card, as 6.6's: the interest and late interest paid, the card's fee, conversion charges and insurance where a statement charges it, and what's due by when.
+- Moved from 6.6: a savings account's card payments without that card's statement, with the way to upload it, now that a card reads.
+
+**Done when:** each insight is tested and says nothing when its data is missing.
+
+**Commit:** `feat: what a card costs and what's due`
+
+#### 12.5b Paying only the minimum
+
+**Tasks**
+
+- From the installments and their rates, what paying only the minimum costs: the months until the card is paid and the interest in all, computed and worded in code, as 8.6c's explanations are.
+
+**Done when:** the simulation is tested against schedules computed by hand.
+
+**Commit:** `feat: paying only the minimum`
 
 ### Stage 13 — "Pregúntale a tu extracto": chat agent _(outline)_
 
@@ -2538,9 +2729,47 @@ Observed on real files. Values below are illustrative; no real data.
 - Where the Excel's description has two spaces in a row (`COMPRA EN  TIENDA`), the PDF prints one; about a fifth of the real rows (9.3).
 - The spreadsheet export of the same statement is the ground truth for the PDF parser's tests.
 
-### A.4 Credit cards
+### A.4 Bancolombia — credit card statement (spreadsheet)
 
-No sample yet (Phase 12.1).
+- "Extracto Mastercard Detallado", downloaded from the online banking. Checked on one real statement with its PDF (2026-11-23): one month whose movements are interest, payments and a balance transfer in installments, without a purchase, so a purchase's row is learned from Nu's and from the columns, until a statement with one checks it.
+- Two sheets, `PESOS` and `DOLARES`, each with the same blocks for its currency. Every cell is text. Blocks are found by the label in the first column:
+  1. `Información Cliente:` → header `Cliente | (empty) | Dirección | Ciudad | Departamento` → one values row. Use only the holder's name; never read the address, city or department.
+  2. `Información de la Tarjeta` with the card's number masked in the next cell (`************1234`): keep its last 4 digits.
+  3. `Moneda: ` with `PESOS` or `DOLARES`.
+  4. `Periodo facturado: ` with two cells: its first day without a year (`31 ago`) and its last day with it (`30 sep. 2026`), the months in lowercase.
+  5. `Pagar antes de: ` with the month first and a comma before the year (`oct. 15, 2026`), or `-` when nothing is due.
+  6. `Pago mínimo`, `Pago total`, `Cupo total: ` and `Cupo disponible: `: amounts as text with a period for thousands and a comma for decimals (`1.234.567,89`), but the minimum the other way round (`123,456.00`) in the same file.
+- Then the header row `Tasas de interés vigente | Tasa Mes Vencido | Tasa Efectivo Anual | Resumen Saldo Total | (empty) | Resumen Pago Mínimo`, an empty row, and three tables side by side:
+  - the rates by kind (`Compra un mes`, `Compra 2 - 36 meses`, `Impuestos`, `Avances`, `Mora` in pesos; `Compra Internacional`, `Avance Internacional`, `Mora` in dollars), each written `1.9000 %` with a period for decimals;
+  - the total's summary: `+ Saldo anterior`, `+ Compras del mes`, `+ Intereses de mora`, `+ Intereses corrientes`, `+ Avances`, `+ Otros cargos`, `Cargos` (their sum, written without its trailing zero: `1.234.567,8`), `(-) Pagos / abonos`, `(-) Saldo a favor` and `Abono` (their sum);
+  - the minimum's detail: `Cuota transacciones`, `Cuota Transacciones anteriores`, `Cuota avances`, `+ Intereses de mora`, `+ Intereses corrientes`, `Otros cargos`, `(+) Saldo en mora` and `(-) A favor`.
+- `Movimientos durante el periodo`, then the header `Número de autorización | Fecha | Movimientos | Valor Movimiento | Número de cuotas | Valor cuota/abono | Interés mensual (%) | Interés anual (%) | Saldo pendiente` and a row per movement: an authorization code (`C01234`, empty for interest), the date as `dd/mm/yyyy`, the text (`INTERESES CORRIENTES`, `ABONO SUCURSAL VIRTUAL`), its amount (a charge positive, a payment negative: `-150.000,00`), its installments (`3/12`), the month's installment, the rates (`1,2000`, with a comma here) and what remains to pay.
+- `Movimientos antes del periodo`: the same columns for purchases of earlier statements whose installments go on (`COMPRA DE CARTERA Y/O D`, `9/48`): each is listed again every month until paid.
+- **Invariants checked on the real file:** the previous balance plus purchases, late interest, interest, advances and other charges is `Cargos`; `Cargos` minus payments and credit in favor is the debt, which what remains of the installments plus this month's installments and interest also gives; the bank rounds `Pago mínimo` and `Pago total` up to the peso. The payments' movements add up to `(-) Pagos / abonos`, and the interest's movement is `+ Intereses corrientes`.
+
+### A.4b Bancolombia — credit card statement (PDF)
+
+- The same statement in four pages, two per currency, pesos first. It opened without a password; another may ask for one, as a quarterly statement's.
+- The first page of each currency: the bank's and Mastercard's logos, `Tarjeta: *********1234`, the holder's name, address, city and department (never read), `Información de la Tarjeta *1234` and `Moneda: PESOS`; then "Cupo de tu tarjeta" (`Deuda a la fecha de corte`, `Cupo total`, `Disponible`), "Información de pago en pesos" (`Periodo facturado` as `31 ago - 30 sep. 2026`, `Pago Total`, `Pagar antes de`, `Pago mínimo`), "Resumen saldo total", "Detalle del pago mínimo" and "Tasas de Interés vigente", with the Excel's figures and some labels worded otherwise (`Compra a una cuota` for `Compra un mes`, `(+) En mora` for `(+) Saldo en mora`).
+- Amounts are written `$ 1.234.567,89` everywhere, the minimum included, a payment's sign after the `$` (`$ -150.000,00`); rates `1.9000%`, and in the movements `1,2000 %`. In the summaries, the labels and the values are printed in separate columns, so a reader pairs them by position.
+- The second page of each currency: "Nuevos movimientos entre 31 ago hasta 30 sep. 2026" and "Movimientos antes de 31 ago", with the Excel's columns (its header writes `Valor Couta/Abono`); a currency without movements prints neither table.
+
+### A.5 Nu — credit card statement (PDF)
+
+- Downloaded from Nu's app, protected with the holder's ID number. Two or three pages. Checked on three consecutive real statements (2026-11-23).
+- Page 1: a greeting with the first names and "Llegó tu extracto de Septiembre"; the holder's whole name; `CC` and their ID number, and the address (personal data, never read); "Tus tarjetas": `Tarjeta física` and `Tarjeta virtual`, each `• • • • 1234`. Then `Fecha límite de pago` (`04 OCT 2026`), `Fecha de corte` (`11 SEP 2026`) and `Periodo facturado` (`12 AGO - 10 SEP 2026`), months in uppercase and the first day without a year.
+- "Tu cupo definido" (`$5.000.000,00`), `Usado` and `Disponible`; and "Abonaste $250.000,00", split into "a tu pago mínimo" and "a tu pago total".
+- "Resumen de tu extracto", each line with its sign: `Deuda a pagar este mes`, `Intereses de mora` (only when charged), `Intereses` (`+ $0,00`), `Comisiones de avances`, `Comisiones por servicio`, `Cargos por conversión`, `Abonos` (`- $1.234,56`), `Devoluciones o ajustes a favor`, `PAGO MÍNIMO`, `Abonos`, `Deuda restante`, and `PAGO HASTA EL 10 SEPTIEMBRE 2026` with the total to pay, its month written whole.
+- From page 2: the header `Fecha | Descripción | Valor | Cuotas | Valor del mes | Interés del mes (Porcentaje y valor) | Total a pagar este mes | Restante por pagar`, some names over two lines, and a row per movement, newest first:
+  - the date as `31 AGO` over `2026`, or `11 SEP 2026` on one line;
+  - the description over one or two lines (`Tienda Ejemplo` over `Suscripción`);
+  - a purchase's value, `1 de 24` or `1 de 1`, the month's installment, the monthly rate, which changes month to month (`2.05%`), and the month's interest, what to pay this month and what remains;
+  - under a purchase abroad, a sub-row `↪ Comisión por cambio de moneda` with its charge under "Total a pagar este mes";
+  - a payment, `Gracias por tu pago`, with its whole value and its parts to the minimum and to the total (negative), and sub-rows `↪ A capital`, `↪ A intereses` and `↪ A cargos y comisiones` (`•` instead of `↪` in some months), which aren't movements;
+  - a row's interest of the month, and late interest as a sub-row `Intereses en mora` with its value.
+- A purchase in installments comes back in each later statement with its next installment (`2 de 24`), its date and value unchanged, until paid; the person can pay it all before.
+- After the movements, the minimum again; then Nu's contact, a note on the charge for international purchases, and each page's number (`1 / 3`).
+- **Invariants checked on the three real files:** the minimum is this month's due plus interest, fees and conversion charges, minus the payments to the minimum and the refunds; the total is the minimum plus the remaining debt minus the payments to the total; the conversion charges add up to their sub-rows. pdf.js reads every row's items with their positions, as 9.2 rebuilds rows.
 
 ---
 
