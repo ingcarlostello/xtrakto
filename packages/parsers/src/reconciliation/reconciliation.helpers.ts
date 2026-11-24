@@ -1,5 +1,6 @@
 import { isAmountMinor, sumAmounts } from "@xtrakto/core";
 import type { AmountMinor, ParsedStatement } from "@xtrakto/core";
+import { reconcileCard } from "./card-reconciliation.helpers";
 import { RECONCILIATION_ISSUE } from "./reconciliation.constants";
 import type {
   Reconciliation,
@@ -82,8 +83,12 @@ const totalIssues = ({
  * integer sums, and says by how much the closing balance is off and at which
  * movements the chain of balances breaks. A statement that prints no balances
  * can't be verified; that isn't an error, just the `NO_BALANCE_DATA` issue.
+ * A card's statement is checked by its bank's own sums (12.2a).
  */
 export const reconcile = (statement: ParsedStatement): Reconciliation => {
+  if (statement.card !== undefined) {
+    return reconcileCard(statement, statement.card);
+  }
   if (!hasBalanceData(statement)) {
     const issues = [{ code: RECONCILIATION_ISSUE.NO_BALANCE_DATA }];
     return { balanceVerified: false, issues };
