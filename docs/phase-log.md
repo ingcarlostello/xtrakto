@@ -1946,3 +1946,29 @@ Checked: twenty-five deliberate bugs, one at a time; every one failed a test onc
 - **The debt at the cut is no field:** Bancolombia's is worked out from its summary, and what clears either card is its total to pay.
 - **Two of Nu's sums wait for its parser (12.2d),** which knows its rows: that the conversion charges add up to their sub-rows, and whether the month's due is the month's installments, which held in two of the human's three months and not in the other, by exactly that month's conversion charges.
 - **Size:** about 335 lines of code, without tests, comments or blank lines (about 300 estimated), in three commits of one pull request.
+
+## 12.2b Bancolombia's card statement in Excel
+
+_2026-11-24_
+
+Bancolombia's "Extracto Mastercard Detallado" now reads. An invented September of a card gives its holder, its last 4 digits, 31 August to 30 September, a minimum written `574,501.00` beside a total written `3.284.501,00`, both summaries, and nine movements in Xtrakto's signs: a purchase in 12 installments is −$120.000 with "1 de 12", $10.000 this month and $110.000 left; a payment is +$500.000; and two purchases of earlier statements come with what their installments leave. The month reconciles by 12.2a's sums. The human's real statement reads and reconciles the same, and sends nothing personal once minimized. No screen reads it yet: 12.3a registers it.
+
+- **The parser** (`bancolombiaCardParser`, `bancolombia-credit-card`): each sheet by its "Moneda:", whatever its name or order; the sheet in pesos read by the labels of its first column (the card, the period with its first day's year, the due date or a dash, what's due, the limit), the two summaries by their header's columns, and both tables of movements, each row with its installment when it has one; the sheet in dollars only counted, a warning (`FOREIGN_CURRENCY`, core) for each movement. Each amount reads by the separator its cents say, and a row in a table that isn't a movement is a warning, as in the quarterly statement.
+- **Minimizing** (`minimizeCard`): the holder's name, the card's last 4 digits, the labels' values, the summaries' lines without the rates beside them, and each movement's cells read with its description's long numbers masked; of the sheet in dollars, its currency and each movement's date. Never the address, the city or the department, the authorization numbers or the annual rates. Rows keep their positions and sheets lose their names.
+- **The fixtures** (`card-basic`, `card-dollars`, `card-broken`, from `scripts/card-fixtures.mjs`): a month with a purchase in installments, one in a single installment, an advance, the card's fee, interest, late interest and a payment, beside two purchases of earlier statements, one a balance transfer; the same with movements in dollars; and its payment printed $10.000 short. The summaries are computed from the movements, written as the bank writes them.
+- **The private tests:** the card statements' folders are left out of the savings account's files, which had made those tests fail since 12.1 put the card statements there; `real-card-statements.private.test.ts` reads the human's card Excel.
+
+34 new tests in parsers (618 there), and 4 private ones:
+
+- the parser: the header, both summaries and every movement of the basic month, with its installments and a masked long number; the basic month verified and the broken one off by its payment; the movements in dollars counted, the pesos read the same; the sheets in either order; nothing due and a period across New Year; a stray row warned of; failures without a sheet in pesos, with a card's number that isn't one, a minimum that doesn't read, without the summaries' header or a line, without a column of the movements' header, with an installment past its count or a date that isn't one, and on a PDF; and only card statements recognized, by none of the registered parsers;
+- minimizing: each fixture parsed the same once minimized, and minimized once and for all; a stray row kept, so it warns at the same row; no address, city, department, rate or authorization, and no long number; the sheet in dollars down to its currency and its movements' dates; content it doesn't recognize returned;
+- the fixtures: each valid, and each written as XLSX and read back unchanged;
+- private: the human's file recognized, parsed and reconciled to the cent without warnings, parsed the same once minimized, and its address, city and department never sent, nor any long number.
+
+Checked: seventeen deliberate bugs, one at a time, and every one failed a test: among them the bank's signs kept, installments or rates left out, a table that never ends at a blank row, no dollars counted, the first sheet taken as the pesos', a dash read as a date, the summary searched from the top, and, in minimizing, the card's number, the address, the rates, the authorizations or the descriptions' long numbers kept, stray rows dropped, and the sheet in dollars kept whole.
+
+**Deviations and follow-ups:**
+
+- **Not registered yet** (decided while building it): registered now, a card's Excel uploaded before 12.3a would be saved as any account's, without its card block; the registry, `FormatId` and the web's maps move to 12.3a, and until then the file goes to the format agent as it did.
+- **Bancolombia's purchase rows are still inferred:** the human's statement has none, so the fixtures write them in the columns the interest, the payments and the balance transfer use; a statement with a purchase checks them.
+- **Size:** about 690 lines of code, without tests, comments or blank lines (about 400 estimated), past the 400 a phase should hold, as the quarterly statement's parser was; besides a fixtures' script of about 330. It lands in commits of one pull request.
