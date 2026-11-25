@@ -52,3 +52,6 @@ export const readPrivateCardExports = () =>
   readPrivateFiles(EXPORT_FILE, "tarjeta");
 
 export const readPrivateCardPdfs = () => readPrivateFiles(PDF_FILE, "tarjeta");
+
+export const readPrivateNuCardPdfs = () =>
+  readPrivateFiles(PDF_FILE, "tarjeta-nu");

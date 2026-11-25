@@ -11,6 +11,7 @@ import type {
   CardSummary,
   ParsedStatement,
 } from "@xtrakto/core";
+import { NU_INTEREST_TEXT, NU_ROW_TEXT } from "../nu/nu.constants";
 import { RECONCILIATION_ISSUE } from "./reconciliation.constants";
 import type {
   Reconciliation,
@@ -121,9 +122,41 @@ const bancolombiaChecks = (
   };
 };
 
+// What the movements Nu's parser words as `text` charge, as a positive amount.
+const chargedAs = (
+  { transactions }: ParsedStatement,
+  text: string,
+): AmountMinor =>
+  amount(
+    -sumAmounts(
+      transactions
+        .filter(({ descriptionNormalized }) => descriptionNormalized === text)
+        .map(({ amountMinor }) => amountMinor),
+    ),
+  );
+
+// Nu's sums the rows' movements give (12.2d): the conversion charges, and the
+// month's interest and late interest, each the summary's line.
+const nuMovementChecks = (
+  statement: ParsedStatement,
+  summary: NuSummary,
+): CardChecks["checks"] => [
+  [
+    RECONCILIATION_ISSUE.CARD_CONVERSION,
+    chargedAs(statement, NU_ROW_TEXT.CONVERSION) ===
+      summary.conversionChargesMinor,
+  ],
+  [
+    RECONCILIATION_ISSUE.CARD_INTEREST,
+    chargedAs(statement, NU_INTEREST_TEXT.INTEREST) === summary.interestMinor &&
+      chargedAs(statement, NU_INTEREST_TEXT.LATE) ===
+        (summary.lateInterestMinor ?? 0),
+  ],
+];
+
 // Nu's sums (Appendix A.5): the minimum from the month's due, interest, fees
-// and payments; the total from the minimum and the remaining debt; and the
-// remaining debt from what the installments leave.
+// and payments; the total from the minimum and the remaining debt; the
+// remaining debt from what the installments leave; and the movements' charges.
 const nuChecks = (
   statement: ParsedStatement,
   card: CardStatement,
@@ -153,6 +186,7 @@ const nuChecks = (
         RECONCILIATION_ISSUE.CARD_INSTALLMENTS,
         remainingOf(statement) === summary.remainingDebtMinor,
       ],
+      ...nuMovementChecks(statement, summary),
     ],
     differenceMinor: amount(card.totalPaymentMinor - total),
   };
@@ -161,8 +195,8 @@ const nuChecks = (
 /**
  * Checks a card statement by its bank's own sums (12.2a), exact in minor
  * units, since a card prints no balance after each movement: Bancolombia's
- * charges, debt, minimum, installments and movements, and Nu's minimum, total
- * and installments. Its difference is by how much the debt is off: the
+ * charges, debt, minimum, installments and movements, and Nu's minimum, total,
+ * installments, conversion charges and interest. Its difference is by how much the debt is off: the
  * movements' for Bancolombia, the total's for Nu.
  */
 export const reconcileCard = (

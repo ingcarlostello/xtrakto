@@ -11,6 +11,8 @@ const {
   CARD_MINIMUM,
   CARD_INSTALLMENTS,
   CARD_MOVEMENTS,
+  CARD_CONVERSION,
+  CARD_INTEREST,
 } = RECONCILIATION_ISSUE;
 
 const VERIFIED = {
@@ -88,7 +90,8 @@ const bancolombiaStatement = {
 };
 
 // An invented month of a Nu card: a purchase in 24 installments, one of an
-// earlier statement, one in a single installment and a payment.
+// earlier statement, one in a single installment abroad with its conversion
+// charge, and a payment.
 const nuStatement = {
   ...bancolombiaStatement,
   bankId: "nu",
@@ -126,9 +129,17 @@ const nuStatement = {
       ...movement("2026-08-20", "APP DE TRANSPORTE", -1_500_000),
       installment: { number: 1, count: 1, remainingMinor: 0 },
     },
+    movement("2026-08-20", "Comisión por cambio de moneda", -25_000),
     movement("2026-08-30", "Gracias por tu pago", 27_000_000),
   ],
 };
+
+// The Nu month with movements added after its own.
+const withNuMovements = (...added: ReturnType<typeof movement>[]) =>
+  parsed({
+    ...nuStatement,
+    transactions: [...nuStatement.transactions, ...added],
+  });
 
 const parsed = (statement: unknown): ParsedStatement =>
   parsedStatementSchema.parse(statement);
@@ -265,8 +276,29 @@ describe("reconcileCard, by Nu's sums", () => {
 
   it("counts late interest within the month's due, not twice", () => {
     const summary = { ...nuStatement.card.summary, lateInterestMinor: 4_000 };
+    const late = movement("2026-09-10", "Intereses de mora", -4_000);
 
-    expect(checked(withCard(nuStatement, { summary }))).toEqual(VERIFIED);
+    expect(
+      checked(
+        withCard(
+          { ...nuStatement, transactions: [late, ...nuStatement.transactions] },
+          { summary },
+        ),
+      ),
+    ).toEqual(VERIFIED);
+  });
+
+  it("finds conversion charges the summary doesn't count", () => {
+    const charge = movement("2026-08-21", "Comisión por cambio de moneda", -1);
+
+    expect(codesOf(withNuMovements(charge))).toEqual([CARD_CONVERSION]);
+  });
+
+  it.each([
+    ["interest", movement("2026-09-10", "Intereses", -5_000)],
+    ["late interest", movement("2026-09-10", "Intereses de mora", -4_000)],
+  ])("finds %s the summary doesn't charge", (_, charge) => {
+    expect(codesOf(withNuMovements(charge))).toEqual([CARD_INTEREST]);
   });
 
   it("finds a minimum its summary doesn't give", () => {

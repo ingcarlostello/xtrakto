@@ -20,4 +20,8 @@ export const RECONCILIATION_ISSUE = {
   CARD_INSTALLMENTS: "CARD_INSTALLMENTS",
   /** A card's movements of the period don't take its previous balance to its debt. */
   CARD_MOVEMENTS: "CARD_MOVEMENTS",
+  /** A card's conversion charges aren't what its summary counts (12.2d). */
+  CARD_CONVERSION: "CARD_CONVERSION",
+  /** A card's interest or late interest isn't what its summary charges. */
+  CARD_INTEREST: "CARD_INTEREST",
 } as const;
