@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { localDateSchema } from "../dates/date.schemas";
+import { MAX_SHEET_ROWS } from "../extracted-content/extracted-content.constants";
 import { amountMinorSchema } from "../money/money.schemas";
 import {
   CARD_SUMMARY_KIND,
@@ -12,22 +13,38 @@ import {
 
 const installmentCountSchema = z.int().min(1).max(MAX_INSTALLMENTS);
 
+// A purchase's installment before the check of its number, which each schema
+// made from it adds.
+const installmentShape = z.strictObject({
+  /** "3 de 24" is the 3rd of 24. */
+  number: installmentCountSchema,
+  count: installmentCountSchema,
+  /** This month's installment. */
+  monthlyMinor: amountMinorSchema.optional(),
+  /** The purchase's monthly rate, in parts per million: 1.9% is 19,000. */
+  monthlyRatePpm: z.int().nonnegative().max(MAX_RATE_PPM).optional(),
+  /** What remains to pay after this month's installment. */
+  remainingMinor: amountMinorSchema.optional(),
+});
+
+const isWithinCount = ({ number, count }: { number: number; count: number }) =>
+  number <= count;
+const WITHIN_COUNT = { message: "An installment within its count" };
+
 /** A purchase's installment, as its card's statement prints it. */
-export const installmentSchema = z
-  .strictObject({
-    /** "3 de 24" is the 3rd of 24. */
-    number: installmentCountSchema,
-    count: installmentCountSchema,
-    /** This month's installment. */
-    monthlyMinor: amountMinorSchema.optional(),
-    /** The purchase's monthly rate, in parts per million: 1.9% is 19,000. */
-    monthlyRatePpm: z.int().nonnegative().max(MAX_RATE_PPM).optional(),
-    /** What remains to pay after this month's installment. */
-    remainingMinor: amountMinorSchema.optional(),
-  })
-  .refine(({ number, count }) => number <= count, {
-    message: "An installment within its count",
-  });
+export const installmentSchema = installmentShape.refine(
+  isWithinCount,
+  WITHIN_COUNT,
+);
+
+/**
+ * An installment a card statement charges, by the fingerprint of the
+ * purchase it belongs to (12.3a). Each statement keeps its own, so a purchase
+ * an earlier statement saved still shows what a later one charges of it.
+ */
+export const chargedInstallmentSchema = installmentShape
+  .extend({ fingerprint: z.string().regex(/^[0-9a-f]{64}$/) })
+  .refine(isWithinCount, WITHIN_COUNT);
 
 // Bancolombia's "Resumen saldo total": the debt, from the previous balance,
 // the month's charges and its payments.
@@ -95,4 +112,13 @@ export const cardStatementSchema = z.strictObject({
     bancolombiaSummarySchema,
     nuSummarySchema,
   ]),
+});
+
+/**
+ * A card statement's figures and the installments it charges, as its
+ * statement keeps them (12.3a): what a prepared statement carries, and what
+ * reading it back from the database checks.
+ */
+export const preparedCardSchema = cardStatementSchema.extend({
+  installments: z.array(chargedInstallmentSchema).max(MAX_SHEET_ROWS),
 });

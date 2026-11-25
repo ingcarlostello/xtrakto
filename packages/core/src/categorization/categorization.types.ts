@@ -1,5 +1,6 @@
 import type { CategoryId, CategorySource } from "../categories/category.types";
 import type {
+  AccountType,
   ParsedTransaction,
   PreparedStatement,
   PreparedTransaction,
@@ -40,6 +41,11 @@ export type UserCategoryRule =
 
 /** What the rules know about the movement's account and its user. */
 export type CategorizationContext = {
+  /**
+   * The account's type, a savings account's when left out. A card has rules
+   * of its own, and writes a purchase as its merchant's name (12.3a).
+   */
+  readonly accountType?: AccountType;
   /** The holder's name, as `normalizeHolderName` writes it; unknown until a quarterly statement prints it. */
   readonly holderName?: string;
   /** The user's own rules, which come before the table's. */
@@ -80,6 +86,8 @@ export type CategorizationRule = TextPattern & {
   readonly namesHolder?: HolderNameMatch;
   /** The movement's reference holds this, such as the number a Nequi send went to. */
   readonly withReference?: ReferenceKind;
+  /** Only on this type of account, such as a card's own texts; on any when left out. */
+  readonly accountType?: AccountType;
   readonly direction: MoneyDirection;
   readonly categoryId: CategoryId;
   /** The category is only a best guess, which the quick review asks about. */

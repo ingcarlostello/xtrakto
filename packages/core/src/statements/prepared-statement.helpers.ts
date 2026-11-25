@@ -1,3 +1,4 @@
+import type { PreparedCard } from "../cards/card.types";
 import { hashIdentifier } from "../hashing/identifier-hash.helpers";
 import {
   occurrenceIndexes,
@@ -58,10 +59,30 @@ const prepareTransaction = async (
   ...order,
 });
 
+// A card statement keeps the installments it charges with its figures, each
+// by its purchase's fingerprint (12.3a).
+const preparedCardOf = (
+  { card, transactions }: ParsedStatement,
+  prepared: readonly PreparedTransaction[],
+): PreparedCard | undefined =>
+  card === undefined
+    ? undefined
+    : {
+        ...card,
+        installments: transactions.flatMap(({ installment }, position) => {
+          const fingerprint = prepared[position]?.fingerprint;
+          return installment === undefined || fingerprint === undefined
+            ? []
+            : [{ ...installment, fingerprint }];
+        }),
+      };
+
 // Identifies the upload: the same statement uploaded twice gives the same
-// hash; a corrected one for the same period doesn't.
+// hash; a corrected one for the same period doesn't. A card's figures and
+// installments count too, and any other statement's hash stays as it was.
 const contentHashOf = (
   statement: ParsedStatement,
+  card: PreparedCard | undefined,
   fingerprints: readonly string[],
 ): Promise<string> =>
   sha256Hex(
@@ -74,14 +95,15 @@ const contentHashOf = (
       statement.closingBalanceMinor ?? null,
       statement.totals ?? null,
       fingerprints,
+      ...(card === undefined ? [] : [card]),
     ]),
   );
 
 /**
  * Readies a parsed statement for saving: fingerprints, occurrence indexes and
  * positions for its movements, HMACs and last 4 digits instead of raw
- * references, and a content hash. Nothing that could identify a third party
- * is left in plain text.
+ * references, a card's installments by fingerprint, and a content hash.
+ * Nothing that could identify a third party is left in plain text.
  */
 export const prepareStatement = async (
   statement: ParsedStatement,
@@ -97,11 +119,14 @@ export const prepareStatement = async (
       ),
     ),
   );
+  const card = preparedCardOf(statement, transactions);
   return {
     ...statement,
+    card,
     transactions,
     contentHash: await contentHashOf(
       statement,
+      card,
       transactions.map((movement) => movement.fingerprint),
     ),
   };

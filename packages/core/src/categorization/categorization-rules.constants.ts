@@ -7,6 +7,7 @@ import {
   UTILITY_WORDS,
 } from "./categorization-words.constants";
 import { REFERENCE_KIND } from "../statements/statement.constants";
+import { CARD_RULES } from "./card-rules.constants";
 import { MONEY_DIRECTION, NO_DESCRIPTION } from "./categorization.constants";
 import { MERCHANT_RULES } from "./merchant-rules.constants";
 import type { CategorizationRule } from "./categorization.types";
@@ -14,9 +15,9 @@ import type { CategorizationRule } from "./categorization.types";
 const { IN, OUT } = MONEY_DIRECTION;
 
 /**
- * Bancolombia's descriptions (ROADMAP Appendix B) and the category each one
- * gives. The first rule a movement matches wins, so a specific text comes
- * before a general one.
+ * Bancolombia's descriptions (ROADMAP Appendix B) and a credit card's, and
+ * the category each one gives. The first rule a movement matches wins, so a
+ * specific text comes before a general one.
  */
 export const CATEGORIZATION_RULES = [
   {
@@ -37,6 +38,8 @@ export const CATEGORIZATION_RULES = [
     isGuess: true,
     reasonEs: "el banco no escribió qué fue este movimiento",
   },
+  // Only on a card's account, before anything a card's text could match.
+  ...CARD_RULES,
   // Texts the bank always writes the same way.
   {
     id: "savings_interest",

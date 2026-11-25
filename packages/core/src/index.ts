@@ -10,11 +10,14 @@ export {
   parseCardPeriod,
   parsePercentText,
 } from "./cards/card-text.helpers";
+export { preparedCardSchema } from "./cards/card.schemas";
 export type {
   CardStatement,
   CardSummary,
   CardSummaryKind,
+  ChargedInstallment,
   Installment,
+  PreparedCard,
 } from "./cards/card.types";
 export { CATEGORIES, CATEGORY_KINDS } from "./categories/categories.constants";
 export { CATEGORY_SOURCE } from "./categories/category-source.constants";
