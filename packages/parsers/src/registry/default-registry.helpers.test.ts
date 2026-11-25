@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { APP_ERROR_CODE, err } from "@xtrakto/core";
 import type { ExtractedContent, SpreadsheetCell } from "@xtrakto/core";
+import cardBasic from "../../fixtures/card-basic.json";
+import cardBasicPdf from "../../fixtures/card-basic-pdf.json";
+import cardBroken from "../../fixtures/card-broken.json";
+import cardBrokenPdf from "../../fixtures/card-broken-pdf.json";
+import cardDollars from "../../fixtures/card-dollars.json";
+import cardDollarsPdf from "../../fixtures/card-dollars-pdf.json";
 import { fixtureContent, fixtureRows } from "../../fixtures/fixture.utils";
 import movementsBasic from "../../fixtures/movements-basic.json";
 import movementsBasicPdf from "../../fixtures/movements-basic-pdf.json";
 import movementsOverlap from "../../fixtures/movements-overlap.json";
 import movementsOverlapPdf from "../../fixtures/movements-overlap-pdf.json";
+import nuCardBasicPdf from "../../fixtures/nu-card-basic-pdf.json";
+import nuCardBrokenPdf from "../../fixtures/nu-card-broken-pdf.json";
+import nuCardLatePdf from "../../fixtures/nu-card-late-pdf.json";
 import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "../../fixtures/quarterly-broken-balance.json";
@@ -20,6 +29,9 @@ const QUARTERLY = "bancolombia-savings-quarterly";
 const QUARTERLY_PDF = "bancolombia-savings-quarterly-pdf";
 const EXPORT = "bancolombia-movements-export";
 const EXPORT_PDF = "bancolombia-movements-export-pdf";
+const CARD = "bancolombia-credit-card";
+const CARD_PDF = "bancolombia-credit-card-pdf";
+const NU_CARD = "nu-credit-card-pdf";
 
 const spreadsheet = (rows: SpreadsheetCell[][]): ExtractedContent => ({
   type: "spreadsheet",
@@ -108,6 +120,15 @@ const FIXTURES = [
     fixture: movementsOverlapPdf,
     id: EXPORT_PDF,
   },
+  { name: "card-basic", fixture: cardBasic, id: CARD },
+  { name: "card-dollars", fixture: cardDollars, id: CARD },
+  { name: "card-broken", fixture: cardBroken, id: CARD },
+  { name: "card-basic-pdf", fixture: cardBasicPdf, id: CARD_PDF },
+  { name: "card-dollars-pdf", fixture: cardDollarsPdf, id: CARD_PDF },
+  { name: "card-broken-pdf", fixture: cardBrokenPdf, id: CARD_PDF },
+  { name: "nu-card-basic-pdf", fixture: nuCardBasicPdf, id: NU_CARD },
+  { name: "nu-card-late-pdf", fixture: nuCardLatePdf, id: NU_CARD },
+  { name: "nu-card-broken-pdf", fixture: nuCardBrokenPdf, id: NU_CARD },
 ];
 
 describe("format detection", () => {

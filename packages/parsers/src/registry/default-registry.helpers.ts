@@ -1,7 +1,10 @@
+import { bancolombiaCardParser } from "../bancolombia/card-parser.helpers";
+import { bancolombiaCardPdfParser } from "../bancolombia/card-pdf-parser.helpers";
 import { bancolombiaMovementsExportParser } from "../bancolombia/movements-export-parser.helpers";
 import { bancolombiaMovementsPdfParser } from "../bancolombia/movements-pdf-parser.helpers";
 import { bancolombiaQuarterlyParser } from "../bancolombia/quarterly-parser.helpers";
 import { bancolombiaQuarterlyPdfParser } from "../bancolombia/quarterly-pdf-parser.helpers";
+import { nuCardPdfParser } from "../nu/nu-card-parser.helpers";
 import type { BankParser } from "./bank-parser.types";
 import { createParserRegistry } from "./parser-registry.helpers";
 
@@ -11,6 +14,10 @@ export const DEFAULT_PARSERS: readonly BankParser[] = [
   bancolombiaQuarterlyPdfParser,
   bancolombiaMovementsExportParser,
   bancolombiaMovementsPdfParser,
+  // Credit cards' statements (Stage 12).
+  bancolombiaCardParser,
+  bancolombiaCardPdfParser,
+  nuCardPdfParser,
 ];
 
 /**

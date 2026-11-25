@@ -19,6 +19,9 @@ export const FORMAT_LABELS = {
   "bancolombia-savings-quarterly-pdf": "Extracto trimestral",
   "bancolombia-movements-export": "Movimientos",
   "bancolombia-movements-export-pdf": "Movimientos",
+  "bancolombia-credit-card": "Extracto de tu tarjeta",
+  "bancolombia-credit-card-pdf": "Extracto de tu tarjeta",
+  "nu-credit-card-pdf": "Extracto de tu tarjeta",
   "mapped-spreadsheet": "Movimientos",
 } as const satisfies Record<LabeledFormat, string>;
 
@@ -31,6 +34,9 @@ export const FORMAT_FILE_TYPES = {
   "bancolombia-savings-quarterly-pdf": FILE_TYPE.PDF,
   "bancolombia-movements-export": FILE_TYPE.EXCEL,
   "bancolombia-movements-export-pdf": FILE_TYPE.PDF,
+  "bancolombia-credit-card": FILE_TYPE.EXCEL,
+  "bancolombia-credit-card-pdf": FILE_TYPE.PDF,
+  "nu-credit-card-pdf": FILE_TYPE.PDF,
   "mapped-spreadsheet": FILE_TYPE.EXCEL,
 } as const satisfies Record<
   LabeledFormat,
@@ -43,5 +49,8 @@ export const FORMAT_PERIOD_SOURCE = {
   "bancolombia-savings-quarterly-pdf": PERIOD_SOURCE.STATEMENT,
   "bancolombia-movements-export": PERIOD_SOURCE.ROWS,
   "bancolombia-movements-export-pdf": PERIOD_SOURCE.ROWS,
+  "bancolombia-credit-card": PERIOD_SOURCE.STATEMENT,
+  "bancolombia-credit-card-pdf": PERIOD_SOURCE.STATEMENT,
+  "nu-credit-card-pdf": PERIOD_SOURCE.STATEMENT,
   "mapped-spreadsheet": PERIOD_SOURCE.ROWS,
 } as const satisfies Record<LabeledFormat, PeriodSource>;

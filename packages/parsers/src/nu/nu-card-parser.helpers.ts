@@ -41,8 +41,7 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
 /**
  * Nu's credit card statement, a PDF from its app (Appendix A.5), read from its
  * text's positions: one account for the physical and the virtual card, which
- * share their limit, by the physical one's last 4 digits. Not in the default
- * registry until the app saves a card's statement (12.3a).
+ * share their limit, by the physical one's last 4 digits.
  */
 export const nuCardPdfParser: BankParser = {
   id: NU_CARD_FORMAT_ID,
