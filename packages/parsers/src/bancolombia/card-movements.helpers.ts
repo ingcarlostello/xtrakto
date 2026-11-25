@@ -27,7 +27,7 @@ import {
   isBlankRow,
 } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
-import { readCardAmount } from "./card-header.helpers";
+import { readCardAmount } from "../cards/card-readers.helpers";
 import {
   CARD_DATE_PATTERN,
   CARD_MOVEMENTS_COLUMN,

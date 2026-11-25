@@ -2035,3 +2035,75 @@ Checked: twenty-eight deliberate bugs, one at a time.
 - **Movements over more than one page are untested:** the human's fit in one. The parser expects each page to repeat the table's header, as the quarterly statement's does; a page that doesn't would lose its movements, and the statement wouldn't reconcile.
 - **Not registered yet,** as the Excel's (12.2b): 12.3a registers both.
 - **Size:** about 780 lines of code, without tests, comments or blank lines (500 to 600 estimated), besides a fixtures' layout script of about 300 (about 200 estimated). It lands in commits of one pull request.
+
+## 12.2d Nu's card statement in PDF
+
+_2026-11-24_
+
+Nu's card statement now reads. An invented September gives the holder, the physical card's last 4 digits, 12 August to 10 September with its cut on the 11th, what's due by 4 October, the limit and what's available, and the summary. Its movements come in Xtrakto's signs:
+
+- the month's interest, one movement on the period's last day;
+- a payment of +$500.000;
+- purchases with their installments, among them one of an earlier statement in its second of 6;
+- a purchase abroad, and its conversion charge as a movement of its own.
+
+The month reconciles by Nu's own sums, now with the conversion charges and the interest. The human's three real statements, opened with their password from the keychain, read without warnings, reconcile to the cent, and send nothing personal once minimized. No screen reads them yet: 12.3a registers the parser.
+
+- **What both banks share** moves to `src/cards/`: the PDF field finder (`findField`, `readField`, `readAmounts`), the amount reader and `readAll`, and the card's header type. A header over two lines is named by `twoLineHeaderNames` (`pdf-layout`).
+- **The first page** (`findNuCardHeader`, `readNuCardHeader`):
+  - the holder's name, left of "Tus tarjetas";
+  - the physical card's digits, the dates, the limit and what's available, each under its label;
+  - "Resumen de tu extracto" read line by line, each label whole and beside its amount, the two "Abonos" by whether they sit over or under "PAGO MÍNIMO", and late interest only when printed. Each amount is kept positive.
+- **The movements** (`nuTable`, `readNuCardMovements`):
+  - The table is found by its header's first line, its second joined to name its columns, and ends at the page's footer and at "Pago mínimo", on its page or the next.
+  - A payment's parts are left out first, and a rate is joined to what it charges in one cell.
+  - A row starts at a date, and the lines under it give its year, the end of its description, a conversion charge or late interest.
+  - A payment comes back to the card. A purchase leaves through it with its installment (its number and count, the month's installment, its rate and what remains), and each conversion charge is a movement on its purchase's day.
+  - The month's interest and late interest are one movement each on the period's last day, at the line of the first row that charges them. A line that's none of these warns.
+- **Nu's sums** (`reconcileCard`): the conversion charges' movements against "Cargos por conversión" (`CARD_CONVERSION`), and the interest's and late interest's against theirs (`CARD_INTEREST`), beside 12.2a's minimum, total and installments.
+- **Minimizing** (`minimizeNuCard`):
+  - It keeps the holder's name and "Tus tarjetas", the physical card's digits, the dates, the limit and what's available, the summary's title and lines, the table's header, and each row's cells read, its description's long numbers masked.
+  - It keeps each conversion charge and late interest's rate and value. A line that isn't a movement is kept masked.
+  - Never sent: the greeting, the ID number, the address, the virtual card, what was used or paid, a payment's parts, what each purchase pays this month, "Pago mínimo", Nu's contact or the footers.
+- **The fixtures** (`nu-card-basic-pdf`, `nu-card-late-pdf`, `nu-card-broken-pdf`, from `scripts/nu-card-fixtures.mjs`):
+  - September with a payment marked `↪`.
+  - October with a date on one line, September's purchases listed again, late interest under one, a payment marked `•` without its part to the total, and its minimum on a third page.
+  - September with its conversion charge printed $10 over.
+  - Each summary is computed from the movements. `generate:pdf` also writes September locked with the invented password, and the PDF writer draws `↪`, which Courier lacks, as `•`.
+- **The private test** (`real-nu-card-statements.private.test.ts`) reads `NU_PDF_PASSWORD`, skipped without it. The human's three statements are recognized, read without warnings, reconciled to the cent, and parsed the same once minimized. Nothing of the first page's holder block but the name is sent, nor the virtual card, nor a long number.
+
+35 new tests in parsers (696 there), and 4 private ones:
+
+- the parser:
+  - the first page's fields;
+  - each month's movements in order;
+  - the sums held and a conversion charge misprinted;
+  - a statement written to a real PDF, locked, read as from its text items;
+  - a stray line warned of in an amount's column and the date's;
+  - no table, no movement;
+  - failures without the summary's title, the holder, the card's number, a summary's line or amount, a header's column, an installment within its count, a date or a rate that reads;
+  - a spreadsheet refused, and only Nu's statements recognized, by none of the registered parsers;
+- minimizing: each fixture parsed the same once minimized and minimized once and for all; a stray line kept masked; none of what's never sent; no long number; content it doesn't recognize returned;
+- Nu's sums: a conversion charge, interest and late interest the summary doesn't count;
+- the fixtures: each valid.
+
+Checked: thirty-two deliberate bugs, one at a time, with the private tests.
+
+- The first run left two uncaught, each now with a test: any text in the date's column read as a row's year, and a late interest's words joined to its purchase's description.
+- Every one now fails a test, among them:
+  - a rate read apart from what it charges, a payment's parts read, a footer or what follows "Pago mínimo" read as rows;
+  - a payment read as money out, a purchase as money in;
+  - conversion charges or late interest left out, the month's charges on the period's first day;
+  - the summary's first segments or a label's start read, the payments to the minimum read under it, its signs kept;
+  - in minimizing, stray lines, conversion charges or late interest dropped, descriptions unmasked, what a purchase pays sent;
+  - either new sum unchecked, `•` not a sub-row's mark, and a two-line header's second line ignored.
+
+**Deviations and follow-ups:**
+
+- **The month's interest is dated on the period's last day,** not on the cut, which is the day after it (found while building it): on the cut, it would fall in the next statement's period.
+- **"Deuda a pagar este mes" has no check of its own:** it is the month's installments, with late interest when charged, in two of the human's months, but not in the third, by exactly its conversion charges. It is still checked through the minimum.
+- **A payment's value isn't "Abonaste":** in none of the three months. The movement keeps the payment's value, the money that reached the card, and the summary's "Abonos" are the parts the payment's row prints.
+- **What the human's months don't show stays untested:** movements over more than one page, a refund's row, a purchase paid ahead (the fixtures leave out the "prepaid" the plan named), and a due date when nothing is due.
+- **Before this phase, a masking script printed the holder's name and the words of their address** (digits hidden) in the agent's session, since they share a line with "Tus tarjetas". The script was fixed before its next run. Nothing reached a file, and the human was told.
+- **Not registered yet,** as Bancolombia's card parsers: 12.3a registers all three.
+- **Size:** about 910 lines of code, without tests, comments or blank lines (800 to 900 estimated), besides about 175 moved to `src/cards/` and a layout script and its data of about 390 (about 300 estimated). It lands in commits of one pull request.

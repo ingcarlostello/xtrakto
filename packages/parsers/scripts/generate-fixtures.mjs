@@ -5,7 +5,8 @@
 // and totals are computed here, so every statement reconciles except
 // quarterly-broken-balance, and a fixed seed makes quarterly-large repeatable.
 // It also writes the invented banks' spreadsheets of mapped-fixtures.mjs, and
-// the Bancolombia card statements of card-fixtures.mjs, in Excel and PDF.
+// the Bancolombia card statements of card-fixtures.mjs, in Excel and PDF, and
+// Nu's of nu-card-fixtures.mjs, in PDF.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -21,6 +22,7 @@ import {
 import { cardFixtures, cardPdfFixtures } from "./card-fixtures.mjs";
 import { renderBook } from "./render-fixture.mjs";
 import { mappedFixtures } from "./mapped-fixtures.mjs";
+import { nuCardPdfFixtures } from "./nu-card-fixtures.mjs";
 import { movementsPdfPages } from "./movements-pdf-layout.mjs";
 import { quarterlyPdfPages, renderPdf } from "./quarterly-pdf-layout.mjs";
 
@@ -309,7 +311,7 @@ const fixtures = {
 
 // The PDFs of four files above: a quarterly statement over two pages and one
 // over eight, and both movements exports, over two pages each; and the card
-// statements', over four pages each.
+// statements', over four pages each, and Nu's, over two or three.
 const pdfFixtures = {
   "quarterly-basic-pdf": quarterlyPdf(basic),
   "quarterly-large-pdf": quarterlyPdf({
@@ -326,6 +328,7 @@ const pdfFixtures = {
     "Sábado, 1 de agosto de 2026, 10:42 a. m.",
   ),
   ...cardPdfFixtures(),
+  ...nuCardPdfFixtures(),
 };
 
 mkdirSync(FIXTURES_DIR, { recursive: true });

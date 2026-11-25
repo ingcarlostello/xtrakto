@@ -5,7 +5,7 @@ import type { PdfSegment, PdfTableLine } from "../pdf-layout/pdf-layout.types";
 import { tableLineCells } from "../pdf-layout/pdf-table.helpers";
 import { looksLikeCardMovement } from "./card-movements.helpers";
 import type { CardTableColumns } from "./card-movements.helpers";
-import type { PdfField } from "./card-pdf-fields.helpers";
+import type { PdfField } from "../cards/card-pdf-fields.helpers";
 import { findCardPdfHeader } from "./card-pdf-header.helpers";
 import type { CardPdfHeaderParts } from "./card-pdf-header.helpers";
 import {

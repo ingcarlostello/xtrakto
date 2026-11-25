@@ -79,6 +79,13 @@ const lockedFiles = async () => [
       userPassword: PASSWORD,
     }),
   ),
+  // Nu locks every statement with the holder's document number.
+  writeOutput(
+    "nu-card-basic-locked.pdf",
+    await contentToPdf(readFixture("nu-card-basic-pdf"), {
+      userPassword: PASSWORD,
+    }),
+  ),
   writeOutput(
     "quarterly-large-other-password.pdf",
     await contentToPdf(readFixture("quarterly-large-pdf"), {

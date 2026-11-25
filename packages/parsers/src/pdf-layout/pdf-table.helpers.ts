@@ -246,6 +246,22 @@ export const tableLineCells = (
   return cells;
 };
 
+/**
+ * A header's names when it takes two lines: each title of its first line with
+ * the words its second line prints under it, as `"Valor movimiento"` for
+ * `"Valor"` over `"movimiento"`.
+ */
+export const twoLineHeaderNames = (
+  header: readonly PdfSegment[],
+  second: PdfTableLine | undefined,
+): string[] => {
+  const under =
+    second === undefined ? [] : tableLineCells(second, header.length);
+  return header.map(({ text }, index) =>
+    [text, under[index] ?? null].filter((part) => part !== null).join(" "),
+  );
+};
+
 const rowOf = (cells: Cells): Row => ({ cells, wrapped: new Set() });
 
 // A line's cells into a row: a cell where the row has one goes on its line.

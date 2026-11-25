@@ -6,7 +6,11 @@ import type {
   PdfTable,
   PdfTableLine,
 } from "../pdf-layout/pdf-layout.types";
-import { pdfTables, tableLineCells } from "../pdf-layout/pdf-table.helpers";
+import {
+  pdfTables,
+  tableLineCells,
+  twoLineHeaderNames,
+} from "../pdf-layout/pdf-table.helpers";
 import { parseFailed } from "../registry/parse-failure.helpers";
 import {
   columnPositions,
@@ -18,8 +22,8 @@ import {
   readCardTableRows,
 } from "./card-movements.helpers";
 import type { CardMovements, CardTableColumns } from "./card-movements.helpers";
-import { findField } from "./card-pdf-fields.helpers";
-import type { PdfField } from "./card-pdf-fields.helpers";
+import { findField } from "../cards/card-pdf-fields.helpers";
+import type { PdfField } from "../cards/card-pdf-fields.helpers";
 import {
   CARD_CURRENCY,
   CARD_PDF_COLUMNS,
@@ -137,21 +141,13 @@ export const cardPdfTables = (
   });
 };
 
-// The header's names, its two lines joined: "Valor" over "movimiento".
-const headerNames = ({ header, second }: CardPdfTablePage): string[] => {
-  const under = second === undefined ? [] : tableLineCells(second, WIDTH);
-  return header.map(({ text }, index) =>
-    [text, under[index] ?? null].filter((part) => part !== null).join(" "),
-  );
-};
-
 /** Where a table's columns are read, by its first page's header. */
 export const cardPdfColumns = (
   table: CardPdfTable,
 ): Result<CardTableColumns> => {
   const [first] = table.pages;
   const columns = findColumns(
-    first === undefined ? [] : headerNames(first),
+    first === undefined ? [] : twoLineHeaderNames(first.header, first.second),
     CARD_PDF_MOVEMENTS_COLUMN,
   );
   if (!columns.ok) {

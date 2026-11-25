@@ -23,3 +23,10 @@ export declare const readPrivateCardExports: () => Promise<Uint8Array[]>;
  * are none.
  */
 export declare const readPrivateCardPdfs: () => Promise<Uint8Array[]>;
+
+/**
+ * The bytes of each real Nu card statement, a locked PDF, in
+ * `fixtures/private/tarjeta-nu/` (Stage 12), in path order; empty when there
+ * are none.
+ */
+export declare const readPrivateNuCardPdfs: () => Promise<Uint8Array[]>;
