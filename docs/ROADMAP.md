@@ -271,7 +271,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.2a Card statements in core
 - [x] 12.2b Bancolombia's card statement in Excel
 - [x] 12.2c Bancolombia's card statement in PDF
-- [ ] 12.2d Nu's card statement in PDF
+- [x] 12.2d Nu's card statement in PDF
 - [ ] 12.3a Card accounts saved
 - [ ] 12.3b Cards on the upload screen and in the welcome
 - [ ] 12.3c Your card
@@ -2490,7 +2490,31 @@ It came out at about 780 lines of code, without tests, comments or blank lines (
 
 **Done when:** each fixture gives its expected statement and reconciles, and the three private statements parse and reconcile.
 
-**Commit:** `feat(parsers): Nu credit card statement`
+Decided with the human when it started (2026-11-24):
+
+- One phase, though estimated at 800 to 900 lines of code besides a fixtures' layout script of about 300.
+- The month's interest and late interest are one movement each per statement, as Bancolombia prints its own.
+- Nu's password lives in the macOS keychain (`xtrakto-nu-pdf`), which the human filled in their own terminal: commands read it into `NU_PDF_PASSWORD` when they run, so it reaches no chat, command or file.
+
+Found while building it (2026-11-24), on the human's three statements:
+
+- The cut date is the day after the period's last, so the month's interest and late interest are dated on the period's last day, within their statement's period, rather than on the cut.
+- "Resumen de tu extracto" is read line by line: the last two segments of each line, since the page's left column comes first; each label whole, since "Intereses" begins "Intereses de mora"; and its two "Abonos" by where they sit, over or under "PAGO MÍNIMO".
+- The holder's name is the text left of "Tus tarjetas", which has no label.
+- The movements:
+  - A row starts at a date; its year, its description's end, a conversion charge and late interest go on under it.
+  - A rate and what it charges, a little apart in one column, read as one cell, so each segment finds its own column.
+  - A payment's parts are left out before the table is read, as the quarterly statement's footers are, so a movement's line doesn't depend on whether they were sent.
+  - The table ends at "Pago mínimo", on its page or the next, and each page at its footer, "Nu Financiera".
+- The sums 12.2a left for this phase:
+  - The conversion charges add up to their sub-rows (`CARD_CONVERSION`), and the interest and late interest to their summary lines (`CARD_INTEREST`), in all three months.
+  - "Deuda a pagar este mes" isn't the month's installments in every month, so it stays checked through the minimum alone.
+  - A payment's value isn't "Abonaste" in any of the three: the summary's "Abonos" are the parts its row prints.
+- The PDF field finder, the amount reader and the card's header type move to `src/cards/`, which both banks share.
+
+It came out at about 910 lines of code, without tests, comments or blank lines (800 to 900 estimated), besides about 175 moved to `src/cards/` and a layout script and its data of about 390 (about 300 estimated). It lands in commits of one pull request: what the cards share, the invented statements, the parser with its sums, and the documents; `CLAUDE.md` gains the keychain in a commit of its own.
+
+**Commits:** `refactor(parsers): share the card statements' PDF fields and readers`, `test(parsers): invented Nu card statements in PDF`, `feat(parsers): Nu credit card statement PDF`, `docs: Nu credit card statement in PDF`, then `docs: Nu's password from the keychain`
 
 #### 12.3a Card accounts saved
 
@@ -2796,19 +2820,26 @@ Observed on real files. Values below are illustrative; no real data.
 ### A.5 Nu — credit card statement (PDF)
 
 - Downloaded from Nu's app, protected with the holder's ID number. Two or three pages. Checked on three consecutive real statements (2026-11-23).
-- Page 1: a greeting with the first names and "Llegó tu extracto de Septiembre"; the holder's whole name; `CC` and their ID number, and the address (personal data, never read); "Tus tarjetas": `Tarjeta física` and `Tarjeta virtual`, each `• • • • 1234`. Then `Fecha límite de pago` (`04 OCT 2026`), `Fecha de corte` (`11 SEP 2026`) and `Periodo facturado` (`12 AGO - 10 SEP 2026`), months in uppercase and the first day without a year.
-- "Tu cupo definido" (`$5.000.000,00`), `Usado` and `Disponible`; and "Abonaste $250.000,00", split into "a tu pago mínimo" and "a tu pago total".
-- "Resumen de tu extracto", each line with its sign: `Deuda a pagar este mes`, `Intereses de mora` (only when charged), `Intereses` (`+ $0,00`), `Comisiones de avances`, `Comisiones por servicio`, `Cargos por conversión`, `Abonos` (`- $1.234,56`), `Devoluciones o ajustes a favor`, `PAGO MÍNIMO`, `Abonos`, `Deuda restante`, and `PAGO HASTA EL 10 SEPTIEMBRE 2026` with the total to pay, its month written whole.
+- Page 1, its left column the holder's: a greeting with the first names and "Llegó tu extracto de Septiembre"; the holder's whole name, left of "Tus tarjetas"; `CC` and their ID number, left of `Tarjeta física` and `Tarjeta virtual`; and the address, left of each card's `• • • • 1234` (personal data but the name, never read). Then `Fecha límite de pago` (`04 OCT 2026`), `Fecha de corte` (`11 SEP 2026`, the day after the period's last) and `Periodo facturado` (`12 AGO - 10 SEP 2026`), each value under its label, months in uppercase and the first day without a year.
+- "Tu cupo definido" (`$5.000.000,00`), `Usado` and `Disponible`, each value under its label; and "Abonaste $250.000,00", split into "a tu pago mínimo" and "a tu pago total".
+- "Resumen de tu extracto", each label at the left of the page's right half and its amount at its right, with its sign: `Deuda a pagar este mes`, `Intereses de mora` (only when charged, without a sign), `Intereses` (`+ $0,00`), `Comisiones de avances`, `Comisiones por servicio`, `Cargos por conversión`, `Abonos` (`- $1.234,56`), `Devoluciones o ajustes a favor`, `PAGO MÍNIMO`, `Abonos`, `Deuda restante`, and `PAGO HASTA EL 10 SEPTIEMBRE 2026` with the total to pay, its month written whole.
 - From page 2: the header `Fecha | Descripción | Valor | Cuotas | Valor del mes | Interés del mes (Porcentaje y valor) | Total a pagar este mes | Restante por pagar`, some names over two lines, and a row per movement, newest first:
   - the date as `31 AGO` over `2026`, or `11 SEP 2026` on one line;
   - the description over one or two lines (`Tienda Ejemplo` over `Suscripción`);
-  - a purchase's value, `1 de 24` or `1 de 1`, the month's installment, the monthly rate, which changes month to month (`2.05%`), and the month's interest, what to pay this month and what remains;
+  - a purchase's value, `1 de 24` or `1 de 1`, the month's installment, the monthly rate, which changes month to month (`2.05%`), and the month's interest a little apart from it, what to pay this month and what remains;
   - under a purchase abroad, a sub-row `↪ Comisión por cambio de moneda` with its charge under "Total a pagar este mes";
-  - a payment, `Gracias por tu pago`, with its whole value and its parts to the minimum and to the total (negative), and sub-rows `↪ A capital`, `↪ A intereses` and `↪ A cargos y comisiones` (`•` instead of `↪` in some months), which aren't movements;
-  - a row's interest of the month, and late interest as a sub-row `Intereses en mora` with its value.
-- A purchase in installments comes back in each later statement with its next installment (`2 de 24`), its date and value unchanged, until paid; the person can pay it all before.
-- After the movements, the minimum again; then Nu's contact, a note on the charge for international purchases, and each page's number (`1 / 3`).
-- **Invariants checked on the three real files:** the minimum is this month's due plus interest, fees and conversion charges, minus the payments to the minimum and the refunds; the total is the minimum plus the remaining debt minus the payments to the total; the conversion charges add up to their sub-rows. pdf.js reads every row's items with their positions, as 9.2 rebuilds rows.
+  - a payment, `Gracias por tu pago`, with its whole value and its parts to the minimum and to the total (negative, the latter not always printed), and sub-rows `↪ A capital`, `↪ A intereses` and `↪ A cargos y comisiones` (`•` instead of `↪` in some months), which aren't movements; its second line sits closer under it than a purchase's;
+  - a row's interest of the month, and late interest as a sub-row without a date, `Intereses en` over `mora`, with its rate and value under "Interés del mes".
+- Every cell starts at its column's title. The movements of the human's statements fit on one page; a statement whose movements fill more is untested.
+- A purchase in installments comes back in each later statement with its next installment (`2 de 24`), its date and value unchanged, until paid; the person can pay it all before. Some rows date from before the period.
+- After the movements, `Pago mínimo` under "Total a pagar" and its value, on their page or the next; then Nu's contact, a note on the charge for international purchases, and each page's footer, starting with "Nu Financiera", and number (`1 / 3`).
+- **Invariants checked on the three real files:**
+  - the minimum is this month's due plus interest, fees and conversion charges, minus the payments to the minimum and the refunds;
+  - the total is the minimum plus the remaining debt minus the payments to the total;
+  - the conversion charges add up to their sub-rows, the rows' interest to `Intereses`, the late interest's sub-rows to `Intereses de mora`, and what the installments leave to `Deuda restante`;
+  - the summary's two `Abonos` are the parts a payment's row prints, or would print, under "Total a pagar" and "Restante", while its value isn't `Abonaste` in any of the three;
+  - `Deuda a pagar este mes` is the month's installments, with late interest when charged, in two months, but not in the third, by exactly its conversion charges.
+- pdf.js reads every row's items with their positions, as 9.2 rebuilds rows.
 
 ---
 
