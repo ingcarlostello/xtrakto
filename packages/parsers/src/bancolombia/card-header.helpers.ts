@@ -3,20 +3,18 @@ import {
   CARD_SUMMARY_KIND,
   err,
   ok,
-  parseAmountWithSeparator,
   parseCardDate,
   parseCardPeriod,
 } from "@xtrakto/core";
 import type {
   AmountMinor,
-  CardStatement,
   CardSummary,
   ExtractedContent,
   LocalDate,
-  Period,
   Result,
 } from "@xtrakto/core";
-import { decimalSeparatorOf } from "../format-mapping/mapping-formats.helpers";
+import { readAll, readCardAmount } from "../cards/card-readers.helpers";
+import type { CardHeader } from "../cards/card.types";
 import { parseFailed } from "../registry/parse-failure.helpers";
 import { cellText, findLabelRow, hasText } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
@@ -35,14 +33,6 @@ import { readHolderName } from "./quarterly-header.helpers";
 export type CardSheets = {
   readonly pesos?: SheetRows;
   readonly dollars?: SheetRows;
-};
-
-/** What the card's sheet in pesos says before its movements (Appendix A.4). */
-export type CardHeader = {
-  readonly holderName: string;
-  readonly accountLast4: string;
-  readonly period: Period;
-  readonly card: CardStatement;
 };
 
 // Where to read amounts beside their labels: below a row, in a column.
@@ -86,13 +76,6 @@ export const cardSheets = (
     ...(dollars === undefined ? {} : { dollars }),
   };
 };
-
-/**
- * An amount as the card's sheet writes it, by the separator its cents say:
- * `"1.234,56"`, `"1.234.567,8"`, and the minimum's `"123,456.00"`.
- */
-export const readCardAmount = (text: string): Result<AmountMinor> =>
-  parseAmountWithSeparator(text, decimalSeparatorOf([text]));
 
 /** The card's last 4 digits, from its number masked but them. */
 export const lastFourOf = (text: string): Result<string> => {
@@ -205,21 +188,6 @@ const readSummary = (rows: SheetRows): Result<CardSummary> => {
     total: totals.value,
     minimum: minimums.value,
   });
-};
-
-/** The values of several readers in turn, or the first failure. */
-export const readAll = <T extends object>(readers: {
-  readonly [K in keyof T]: () => Result<T[K]>;
-}): Result<T> => {
-  const values: Partial<T> = {};
-  // Safe: Object.keys types keys as string, and these are the keys of T.
-  for (const key of Object.keys(readers) as (keyof T)[]) {
-    const value = readers[key]();
-    if (!value.ok) return value;
-    values[key] = value.value;
-  }
-  // Safe: the loop set every reader's value or returned.
-  return ok(values as T);
 };
 
 /**

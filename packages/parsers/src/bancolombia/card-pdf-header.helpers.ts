@@ -1,18 +1,18 @@
 import { CARD_SUMMARY_KIND, ok, parseCardPeriod } from "@xtrakto/core";
-import type { AmountMinor, CardStatement, Result } from "@xtrakto/core";
+import type { CardStatement, Result } from "@xtrakto/core";
+import {
+  findField,
+  readAmounts,
+  readField,
+} from "../cards/card-pdf-fields.helpers";
+import type { PdfField, SegmentFilter } from "../cards/card-pdf-fields.helpers";
+import { readAll } from "../cards/card-readers.helpers";
+import type { CardHeader } from "../cards/card.types";
 import { normalizeDescription } from "../descriptions/description.helpers";
 import type { PdfLine, PdfSegment } from "../pdf-layout/pdf-layout.types";
 import { parseFailed } from "../registry/parse-failure.helpers";
 import { comparableText } from "../sheets/sheet.utils";
-import {
-  dueDateOf,
-  lastFourOf,
-  readAll,
-  readCardAmount,
-} from "./card-header.helpers";
-import type { CardHeader } from "./card-header.helpers";
-import { findField } from "./card-pdf-fields.helpers";
-import type { PdfField, SegmentFilter } from "./card-pdf-fields.helpers";
+import { dueDateOf, lastFourOf } from "./card-header.helpers";
 import {
   CARD_PDF_LABEL,
   CARD_PDF_MINIMUM_LABEL,
@@ -170,39 +170,6 @@ export const findCardPdfHeader = (
   };
 };
 
-type Where = { readonly block: string; readonly column?: string };
-
-const readField = <T>(
-  field: PdfField | undefined,
-  where: Where,
-  read: (text: string) => Result<T>,
-): Result<T> => {
-  if (field === undefined) {
-    return parseFailed({ reason: "missing_value", ...where });
-  }
-  const value = read(field.text);
-  if (value.ok) return value;
-  const cause = value.error.details?.["reason"];
-  return parseFailed({ reason: "invalid_value", ...where, cause });
-};
-
-const readAmounts = <K extends string>(
-  fields: Partial<Record<K, PdfField>>,
-  labels: Readonly<Record<K, string>>,
-  block: string,
-): Result<Record<K, AmountMinor>> => {
-  const amounts: Partial<Record<K, AmountMinor>> = {};
-  // Safe: Object.entries types keys as string, and these are the keys of K.
-  for (const [key, label] of Object.entries(labels) as [K, string][]) {
-    const where = { block, column: label };
-    const amount = readField(fields[key], where, readCardAmount);
-    if (!amount.ok) return amount;
-    amounts[key] = amount.value;
-  }
-  // Safe: the loop set every label's amount or returned.
-  return ok(amounts as Record<K, AmountMinor>);
-};
-
 const readHolder = (holder: PdfSegment | undefined): Result<string> =>
   holder === undefined
     ? parseFailed({
@@ -221,9 +188,15 @@ const readFields = (parts: CardPdfHeaderParts) => {
     accountLast4: () => readField(parts.card, { block: CARD }, lastFourOf),
     period: () => readField(parts.period, { block: PERIOD }, parseCardPeriod),
     dueDate: () => readField(parts.dueDate, { block: DUE_DATE }, dueDateOf),
-    payments: () => readAmounts(parts.payments, PAYMENT_LABEL, CARD),
-    total: () => readAmounts(parts.total, CARD_TOTAL_LABEL, TOTAL),
-    minimum: () => readAmounts(parts.minimum, CARD_PDF_MINIMUM_LABEL, MINIMUM),
+    payments: () =>
+      readAmounts(parts.payments, { labels: PAYMENT_LABEL, block: CARD }),
+    total: () =>
+      readAmounts(parts.total, { labels: CARD_TOTAL_LABEL, block: TOTAL }),
+    minimum: () =>
+      readAmounts(parts.minimum, {
+        labels: CARD_PDF_MINIMUM_LABEL,
+        block: MINIMUM,
+      }),
   });
 };
 

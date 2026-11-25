@@ -1,6 +1,9 @@
+import { ok } from "@xtrakto/core";
+import type { AmountMinor, Result } from "@xtrakto/core";
 import type { PdfLine, PdfSegment } from "../pdf-layout/pdf-layout.types";
+import { parseFailed } from "../registry/parse-failure.helpers";
 import { comparableText } from "../sheets/sheet.utils";
-import { readCardAmount } from "./card-header.helpers";
+import { readCardAmount } from "./card-readers.helpers";
 
 /**
  * A value the card's PDF prints by its label, and the segments read: the
@@ -159,4 +162,48 @@ export const findField = (
     }
   }
   return undefined;
+};
+
+/** Where a field is printed, for a failure to say: its block and column. */
+type Where = { readonly block: string; readonly column?: string };
+
+/**
+ * A field's value, read with `read`: a missing value when the field wasn't
+ * found, an invalid one with the reader's reason when it doesn't read.
+ */
+export const readField = <T>(
+  field: PdfField | undefined,
+  where: Where,
+  read: (text: string) => Result<T>,
+): Result<T> => {
+  if (field === undefined) {
+    return parseFailed({ reason: "missing_value", ...where });
+  }
+  const value = read(field.text);
+  if (value.ok) return value;
+  const cause = value.error.details?.["reason"];
+  return parseFailed({ reason: "invalid_value", ...where, cause });
+};
+
+/** How to read a group of amounts: their labels by field, their block, and the reader. */
+type AmountsSpec<K extends string> = {
+  readonly labels: Readonly<Record<K, string>>;
+  readonly block: string;
+  readonly read?: (text: string) => Result<AmountMinor>;
+};
+
+/** Each label's amount, from the fields found for it, or the first that doesn't read. */
+export const readAmounts = <K extends string>(
+  fields: Partial<Record<K, PdfField>>,
+  { labels, block, read = readCardAmount }: AmountsSpec<K>,
+): Result<Record<K, AmountMinor>> => {
+  const amounts: Partial<Record<K, AmountMinor>> = {};
+  // Safe: Object.entries types keys as string, and these are the keys of K.
+  for (const [key, label] of Object.entries(labels) as [K, string][]) {
+    const amount = readField(fields[key], { block, column: label }, read);
+    if (!amount.ok) return amount;
+    amounts[key] = amount.value;
+  }
+  // Safe: the loop set every label's amount or returned.
+  return ok(amounts as Record<K, AmountMinor>);
 };
