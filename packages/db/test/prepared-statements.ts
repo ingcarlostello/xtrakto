@@ -125,6 +125,73 @@ export const preparedQuarterly = (
   return readyToSave(parsed);
 };
 
+/** A card's movement, with the installment its statement prints. */
+export type CardMovement = TestMovement & {
+  readonly installment?: {
+    readonly number: number;
+    readonly count: number;
+    readonly remainingMinor?: number;
+  };
+};
+
+export type CardOptions = {
+  readonly from?: string;
+  readonly to?: string;
+  /** Changes the content, as another version of the same month could. */
+  readonly minimumMinor?: number;
+};
+
+// Nu's summary, every line nothing: the database never checks it.
+const NOTHING_SUMMED = {
+  kind: "nu",
+  dueThisMonthMinor: 0,
+  interestMinor: 0,
+  advanceFeesMinor: 0,
+  serviceFeesMinor: 0,
+  conversionChargesMinor: 0,
+  paymentsToMinimumMinor: 0,
+  refundsMinor: 0,
+  paymentsToTotalMinor: 0,
+  remainingDebtMinor: 0,
+};
+
+/**
+ * A Nu card's statement of card 5678 for 12 August to 10 September 2026 by
+ * default, categorized on a card's account as ingestion saves it.
+ */
+export const preparedCard = (
+  movements: readonly CardMovement[],
+  {
+    from = "2026-08-12",
+    to = "2026-09-10",
+    minimumMinor = 1_200_000,
+  }: CardOptions = {},
+): Promise<CategorizedStatement> => {
+  const parsed = parsedStatementSchema.parse({
+    bankId: "nu",
+    formatId: "nu-credit-card-pdf",
+    accountType: "credit_card",
+    accountLast4: "5678",
+    currency: "COP",
+    period: { from, to },
+    periodSource: "statement",
+    card: {
+      creditLimitMinor: 500_000_000,
+      availableMinor: 400_000_000,
+      minimumPaymentMinor: minimumMinor,
+      totalPaymentMinor: 7_000_000,
+      dueDate: "2026-10-04",
+      summary: NOTHING_SUMMED,
+    },
+    transactions: movements.map(({ installment, ...movement }, index) => ({
+      ...parsedMovement(movement, index),
+      ...(installment === undefined ? {} : { installment }),
+    })),
+    warnings: [],
+  });
+  return readyToSave(parsed, { accountType: "credit_card" });
+};
+
 /** `count` distinct purchases on consecutive days from 2026-01-01. */
 export const manyMovements = (count: number): TestMovement[] =>
   Array.from({ length: count }, (_, index) => ({

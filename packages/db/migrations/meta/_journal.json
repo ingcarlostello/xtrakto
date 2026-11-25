@@ -218,6 +218,13 @@
       "when": 1794347145952,
       "tag": "0030_format-mappings-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795625276527,
+      "tag": "0031_card-statements",
+      "breakpoints": true
     }
   ]
 }

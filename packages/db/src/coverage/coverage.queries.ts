@@ -30,12 +30,21 @@ import type { UserContext } from "../user-context/user-context.types";
 // belongs to the previous statement: its days start the next one.
 
 /**
- * The statements whose movements can count: those whose balances reconcile,
+ * The statements that print figures to check them by: a quarterly
+ * statement's balances, or a card's sums (12.3a). Use it on `statements`.
+ */
+export const withFiguresToCheck = or(
+  isNotNull(statements.openingBalanceMinor),
+  isNotNull(statements.card),
+);
+
+/**
+ * The statements whose movements can count: those whose figures reconcile,
  * and those that print none (movements files). Use it on `statements`.
  */
 export const countingStatement = or(
   eq(statements.balanceVerified, true),
-  isNull(statements.openingBalanceMinor),
+  and(isNull(statements.openingBalanceMinor), isNull(statements.card)),
 );
 
 /**
