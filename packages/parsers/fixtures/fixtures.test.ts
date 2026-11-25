@@ -15,6 +15,9 @@ import movementsBasic from "./movements-basic.json";
 import movementsBasicPdf from "./movements-basic-pdf.json";
 import movementsOverlap from "./movements-overlap.json";
 import movementsOverlapPdf from "./movements-overlap-pdf.json";
+import nuCardBasicPdf from "./nu-card-basic-pdf.json";
+import nuCardBrokenPdf from "./nu-card-broken-pdf.json";
+import nuCardLatePdf from "./nu-card-late-pdf.json";
 import quarterlyBasic from "./quarterly-basic.json";
 import quarterlyBasicPdf from "./quarterly-basic-pdf.json";
 import quarterlyBrokenBalance from "./quarterly-broken-balance.json";
@@ -48,6 +51,9 @@ const FIXTURES = {
   "card-basic-pdf": cardBasicPdf,
   "card-dollars-pdf": cardDollarsPdf,
   "card-broken-pdf": cardBrokenPdf,
+  "nu-card-basic-pdf": nuCardBasicPdf,
+  "nu-card-late-pdf": nuCardLatePdf,
+  "nu-card-broken-pdf": nuCardBrokenPdf,
 };
 
 describe("synthetic fixtures", () => {

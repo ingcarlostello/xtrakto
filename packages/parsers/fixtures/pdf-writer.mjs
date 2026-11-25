@@ -15,6 +15,10 @@ const SCAN = Buffer.from(
   "base64",
 );
 
+// Courier draws no "↪", which Nu marks its sub-rows with: the writer draws the
+// "•" Nu marks them with in other months, which reads the same.
+const drawable = (str) => str.replaceAll("↪", "•");
+
 // With a password, the file is encrypted with AES-256, which pdf.js opens.
 const newDocument = (userPassword) =>
   new PDFDocument({
@@ -38,10 +42,10 @@ export const contentToPdf = (content, { userPassword } = {}) => {
   for (const { items } of content.pages) {
     document.addPage(PAGE);
     for (const { str, x, y, height } of items)
-      document
-        .font(FONT)
-        .fontSize(height)
-        .text(str, x, y, { lineBreak: false, baseline: "alphabetic" });
+      document.font(FONT).fontSize(height).text(drawable(str), x, y, {
+        lineBreak: false,
+        baseline: "alphabetic",
+      });
   }
   return toBytes(document);
 };
