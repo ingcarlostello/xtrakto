@@ -12,13 +12,6 @@ export const QUARTERLY_PDF_FORMAT_ID = "bancolombia-savings-quarterly-pdf";
 export const MOVEMENTS_EXPORT_FORMAT_ID = "bancolombia-movements-export";
 export const MOVEMENTS_PDF_FORMAT_ID = "bancolombia-movements-export-pdf";
 
-/** The formats this package reads. */
-export type FormatId =
-  | typeof QUARTERLY_FORMAT_ID
-  | typeof QUARTERLY_PDF_FORMAT_ID
-  | typeof MOVEMENTS_EXPORT_FORMAT_ID
-  | typeof MOVEMENTS_PDF_FORMAT_ID;
-
 /** Labels that open each block, in the first column. */
 export const QUARTERLY_BLOCK = {
   CLIENT: "Información Cliente:",

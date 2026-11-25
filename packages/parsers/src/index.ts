@@ -1,4 +1,3 @@
-export type { FormatId } from "./bancolombia/bancolombia.constants";
 export {
   type MatchableMovement,
   matchMovements,
@@ -29,6 +28,7 @@ export {
 } from "./format-mapping/mapping-table.helpers";
 export type { BankParser, ParserRegistry } from "./registry/bank-parser.types";
 export { findParser } from "./registry/default-registry.helpers";
+export type { FormatId } from "./registry/default-registry.types";
 export { createParserRegistry } from "./registry/parser-registry.helpers";
 export { RECONCILIATION_ISSUE } from "./reconciliation/reconciliation.constants";
 export { reconcile } from "./reconciliation/reconciliation.helpers";

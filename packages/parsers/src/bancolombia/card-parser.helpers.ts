@@ -49,8 +49,7 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
 
 /**
  * Bancolombia's credit card statement in Excel (Appendix A.4): its sheet in
- * pesos read, its sheet in dollars only counted (12.2b). Not in the default
- * registry until the app saves a card's statement (12.3a).
+ * pesos read, its sheet in dollars only counted (12.2b).
  */
 export const bancolombiaCardParser: BankParser = {
   id: CARD_FORMAT_ID,

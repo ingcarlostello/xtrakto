@@ -58,8 +58,7 @@ const parse = (content: ExtractedContent): Result<ParsedStatement> => {
 /**
  * Bancolombia's credit card statement as a PDF (Appendix A.4b), read from its
  * text's positions into the same statement its spreadsheet gives: its pages
- * in pesos read, its pages in dollars only counted. Not in the default
- * registry until the app saves a card's statement (12.3a).
+ * in pesos read, its pages in dollars only counted.
  */
 export const bancolombiaCardPdfParser: BankParser = {
   id: CARD_PDF_FORMAT_ID,

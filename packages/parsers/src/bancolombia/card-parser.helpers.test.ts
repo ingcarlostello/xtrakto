@@ -11,7 +11,6 @@ import quarterlyBasic from "../../fixtures/quarterly-basic.json";
 import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import { RECONCILIATION_ISSUE } from "../reconciliation/reconciliation.constants";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
-import { DEFAULT_PARSERS } from "../registry/default-registry.helpers";
 import { bancolombiaCardParser } from "./card-parser.helpers";
 
 type Rows = SpreadsheetCell[][];
@@ -289,7 +288,7 @@ describe("bancolombiaCardParser", () => {
     });
   });
 
-  it("recognizes only card statements, which no registered parser does", () => {
+  it("recognizes only card statements", () => {
     const others = [
       quarterlyBasic,
       quarterlyBasicPdf,
@@ -301,10 +300,5 @@ describe("bancolombiaCardParser", () => {
 
     expect(others.some(bancolombiaCardParser.canParse)).toBe(false);
     expect(cards.every(bancolombiaCardParser.canParse)).toBe(true);
-    expect(
-      cards.some((card) =>
-        DEFAULT_PARSERS.some((parser) => parser.canParse(card)),
-      ),
-    ).toBe(false);
   });
 });

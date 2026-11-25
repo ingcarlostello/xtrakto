@@ -1,9 +1,11 @@
+import type { PreparedCard } from "@xtrakto/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
   foreignKey,
   integer,
+  jsonb,
   pgTable,
   text,
   unique,
@@ -35,6 +37,9 @@ export const statements = pgTable(
     interestMinor: amountMinor("interest_minor"),
     withholdingMinor: amountMinor("withholding_minor"),
     averageBalanceMinor: amountMinor("average_balance_minor"),
+    // A card's figures and the installments it charges (12.3a), as core's
+    // `preparedCardSchema` reads them back; none on any other statement.
+    card: jsonb("card").$type<PreparedCard>(),
     balanceVerified: boolean("balance_verified").notNull(),
     // Where it doesn't add up, as `reconcile` found it: the closing balance
     // minus the opening balance and every amount, and the positions of the
@@ -60,12 +65,19 @@ export const statements = pgTable(
     // Target of the ingestion job's key: a job and its statement share a user.
     unique("statements_id_user_key").on(t.id, t.userId),
     unique("statements_account_content_key").on(t.accountId, t.contentHash),
-    // One version of each period of a statement with balances: another one
-    // replaces it while it doesn't reconcile, and stays out once it does.
+    // One version of each period of a statement whose figures prove it, its
+    // balances or a card's sums: another one replaces it while it doesn't
+    // reconcile, and stays out once it does.
     uniqueIndex("statements_one_version_key")
       .on(t.accountId, t.periodFrom, t.periodTo)
-      .where(sql`${t.openingBalanceMinor} is not null`),
+      .where(
+        sql`${t.openingBalanceMinor} is not null or ${t.card} is not null`,
+      ),
     check("statements_period_check", sql`${t.periodFrom} <= ${t.periodTo}`),
+    check(
+      "statements_card_check",
+      sql`${t.card} is null or jsonb_typeof(${t.card}) = 'object'`,
+    ),
     // A statement that reconciles has nothing off.
     check(
       "statements_verified_balance_check",

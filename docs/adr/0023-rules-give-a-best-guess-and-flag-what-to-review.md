@@ -1,6 +1,6 @@
 # 0023. Rules give a best guess and flag what to review
 
-- **Status:** Accepted; amended by [0037](0037-other-banks-formats-proven-where-the-file-is.md), where the rules hold for every bank
+- **Status:** Accepted; amended by [0037](0037-other-banks-formats-proven-where-the-file-is.md), where the rules hold for every bank, and by [0040](0040-card-purchases-count-in-full-and-payments-only-move.md), where a card's rules hold only on a card's account
 - **Date:** 2026-10-16
 
 ## Context

@@ -5,6 +5,7 @@ import {
   extractedContentSchema,
   type FormatMapping,
   formatMappingSchema,
+  normalizeHolderName,
   type ParsedStatement,
 } from "@xtrakto/core";
 import {
@@ -12,6 +13,7 @@ import {
   createDb,
   createIngestionJobWithinLimit,
   type DbClient,
+  findAccountHolderName,
   findOrCreateUser,
   listAccounts,
   listIngestionJobResults,
@@ -99,6 +101,14 @@ const JULY_EXPORT = fixture("movements-overlap");
 const JULY_EXPORT_PDF = fixture("movements-overlap-pdf");
 const OCTOBER_EXPORT = fixture("movements-basic");
 const OCTOBER_EXPORT_PDF = fixture("movements-basic-pdf");
+// Credit cards' statements (12.3a): Bancolombia's in Excel and in PDF, and
+// Nu's September and October, which lists September's purchases again.
+const CARD = fixture("card-basic");
+const CARD_PDF = fixture("card-basic-pdf");
+const BROKEN_CARD = fixture("card-broken");
+const NU_CARD = fixture("nu-card-basic-pdf");
+const NU_CARD_OCTOBER = fixture("nu-card-late-pdf");
+const BROKEN_NU_CARD = fixture("nu-card-broken-pdf");
 // v8-14's invented "Banco Horizonte", minimized with the mapping the person
 // confirmed for it (Phase 11.1a's fixture).
 const OUT_AND_IN: FormatMapping = formatMappingSchema.parse({
@@ -619,6 +629,162 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
       });
       expect(await slotsUsedBy(userId)).toBe(0);
     });
+  });
+
+  describe("a credit card's statement (12.3a)", () => {
+    // The movements that count in the user's only account.
+    const countedIn = async (userId: UserId) => {
+      const [account] = await accountsOf(userId);
+      const { items } = await withUserContext(app.db, userId, (ctx) =>
+        listTransactions(ctx, {
+          accountId: account?.id ?? "",
+          limit: 100,
+          offset: 0,
+        }),
+      );
+      return items;
+    };
+
+    // How many of October's movements September already listed: its
+    // purchases in installments.
+    const listedAgain = () => {
+      const september = parse(NU_CARD).transactions;
+      return parse(NU_CARD_OCTOBER).transactions.filter((late) =>
+        september.some(
+          ({ date, descriptionNormalized, amountMinor }) =>
+            date === late.date &&
+            descriptionNormalized === late.descriptionNormalized &&
+            amountMinor === late.amountMinor,
+        ),
+      ).length;
+    };
+
+    it.each([
+      { name: "Bancolombia's in Excel", content: CARD, bankId: "bancolombia" },
+      {
+        name: "Bancolombia's in PDF",
+        content: CARD_PDF,
+        bankId: "bancolombia",
+      },
+      { name: "Nu's", content: NU_CARD, bankId: "nu" },
+    ])(
+      "saves $name in the card's account, its holder's name kept and every movement counted",
+      async ({ content, bankId }) => {
+        const userId = await newUser();
+        const { transactions, accountLast4, holderName } = parse(content);
+
+        expect(await run(await submit(userId, content))).toEqual({
+          status: "done",
+          stats: allNew(transactions.length),
+        });
+        const [account] = await accountsOf(userId);
+        expect(account).toMatchObject({
+          bankId,
+          accountType: "credit_card",
+          last4: accountLast4,
+        });
+        expect(
+          await withUserContext(app.db, userId, (ctx) =>
+            findAccountHolderName(ctx, account?.id ?? ""),
+          ),
+        ).toBe(normalizeHolderName(holderName ?? ""));
+        expect(await countedIn(userId)).toHaveLength(transactions.length);
+      },
+    );
+
+    it.each([
+      {
+        name: "Bancolombia's",
+        content: CARD,
+        expected: {
+          "INTERESES DE MORA": ["taxes_and_fees", -1],
+          "INTERESES CORRIENTES": ["taxes_and_fees", -1],
+          "CUOTA DE MANEJO": ["taxes_and_fees", -1],
+          "AVANCE CAJERO CENTRO": ["cash_withdrawal", -1],
+          "ABONO SUCURSAL VIRTUAL": ["credit_card_payment", 1],
+          "COMPRA DE CARTERA Y/O D": ["credit_card_payment", -1],
+          "SUPERMERCADO EL ARCO": ["groceries", -1],
+          "ALMACEN HOGAR": ["other_spending", -1],
+        },
+      },
+      {
+        name: "Nu's",
+        content: NU_CARD,
+        expected: {
+          Intereses: ["taxes_and_fees", -1],
+          "Comisión por cambio de moneda": ["taxes_and_fees", -1],
+          "Gracias por tu pago": ["credit_card_payment", 1],
+          "Supermercado Central": ["groceries", -1],
+        },
+      },
+    ])(
+      "gives $name movements the card's categories, in Xtrakto's signs",
+      async ({ content, expected }) => {
+        const userId = await newUser();
+        await run(await submit(userId, content));
+        const byText = Object.fromEntries(
+          (await countedIn(userId)).map(
+            ({ descriptionRaw, categoryId, amountMinor }) => [
+              descriptionRaw,
+              [categoryId, Math.sign(amountMinor)],
+            ],
+          ),
+        );
+
+        expect(byText).toMatchObject(expected);
+      },
+    );
+
+    it("adds nothing for the other file of the same month", async () => {
+      const userId = await newUser();
+      const total = parse(CARD_PDF).transactions.length;
+      await run(await submit(userId, CARD));
+
+      expect(await run(await submit(userId, CARD_PDF))).toEqual({
+        status: "done",
+        stats: { ...allNew(total), added: 0, skipped: total },
+      });
+      expect(await accountsOf(userId)).toHaveLength(1);
+    });
+
+    it.each([
+      ["September first", [NU_CARD, NU_CARD_OCTOBER]],
+      ["October first", [NU_CARD_OCTOBER, NU_CARD]],
+    ])(
+      "saves once the purchases October lists again, uploaded %s",
+      async (_, [first, second]) => {
+        const userId = await newUser();
+        const twice = listedAgain();
+        const all =
+          parse(NU_CARD).transactions.length +
+          parse(NU_CARD_OCTOBER).transactions.length -
+          twice;
+        await run(await submit(userId, first ?? NU_CARD));
+
+        expect(twice).toBeGreaterThan(0);
+        expect(
+          await run(await submit(userId, second ?? NU_CARD)),
+        ).toMatchObject({ status: "done", stats: { skipped: twice } });
+        expect(await countedIn(userId)).toHaveLength(all);
+      },
+    );
+
+    it.each([
+      ["Bancolombia's", BROKEN_CARD],
+      ["Nu's", BROKEN_NU_CARD],
+    ])(
+      "counts nothing of %s statement that doesn't reconcile",
+      async (_, content) => {
+        const userId = await newUser();
+        const total = parse(content).transactions.length;
+
+        expect(await run(await submit(userId, content))).toEqual({
+          status: "done",
+          stats: { ...allNew(total), added: 0 },
+        });
+        expect(await countedIn(userId)).toEqual([]);
+      },
+    );
   });
 
   it("never claims, ingests or fails another user's job", async () => {

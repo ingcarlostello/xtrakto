@@ -17,7 +17,6 @@ import movementsBasicPdf from "../../fixtures/movements-basic-pdf.json";
 import { contentToPdf } from "../../fixtures/pdf-writer.mjs";
 import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import { extractPdf } from "../extraction/pdf-extraction.helpers";
-import { DEFAULT_PARSERS } from "../registry/default-registry.helpers";
 import { bancolombiaCardParser } from "./card-parser.helpers";
 import { bancolombiaCardPdfParser } from "./card-pdf-parser.helpers";
 
@@ -231,7 +230,7 @@ describe("bancolombiaCardPdfParser", () => {
     });
   });
 
-  it("recognizes only card statements' PDFs, which no registered parser does", () => {
+  it("recognizes only card statements' PDFs", () => {
     const others = [quarterlyBasicPdf, movementsBasicPdf, cardBasic].map(
       fixtureContent,
     );
@@ -241,10 +240,5 @@ describe("bancolombiaCardPdfParser", () => {
 
     expect(others.some(bancolombiaCardPdfParser.canParse)).toBe(false);
     expect(cards.every(bancolombiaCardPdfParser.canParse)).toBe(true);
-    expect(
-      cards.some((card) =>
-        DEFAULT_PARSERS.some((parser) => parser.canParse(card)),
-      ),
-    ).toBe(false);
   });
 });

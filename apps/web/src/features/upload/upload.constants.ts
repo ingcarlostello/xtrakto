@@ -130,6 +130,9 @@ export const FORMAT_BANKS = {
   "bancolombia-savings-quarterly-pdf": "bancolombia",
   "bancolombia-movements-export": "bancolombia",
   "bancolombia-movements-export-pdf": "bancolombia",
+  "bancolombia-credit-card": "bancolombia",
+  "bancolombia-credit-card-pdf": "bancolombia",
+  "nu-credit-card-pdf": "nu",
 } as const satisfies Record<FormatId, keyof typeof BANK_LABELS>;
 
 export const UPLOAD_COPY = {

@@ -16,6 +16,7 @@ import {
 } from "../coverage/coverage.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
+import { claimOwnPeriod, type SavedOwner } from "./card-statement.queries";
 import { settlePeriodVersion } from "./statement-version.queries";
 import { statements } from "./statement.schemas";
 import type { SavedStatement, SaveStatementInput } from "./statement.types";
@@ -59,6 +60,7 @@ const statementRow = (
   interestMinor: statement.totals?.interestMinor,
   withholdingMinor: statement.totals?.withholdingMinor,
   averageBalanceMinor: statement.totals?.averageBalanceMinor,
+  card: statement.card,
   balanceVerified: balance.verified,
   balanceDifferenceMinor: balance.differenceMinor,
   balanceBreakPositions: [...balance.breakPositions],
@@ -96,12 +98,16 @@ const upsertStatement = async (
 
 // Movements already in the account, from any upload, are skipped by
 // fingerprint. A movement of a statement without balances on a verified
-// quarterly statement's days is saved hidden under it.
+// quarterly statement's days is saved hidden under it. Says which movements
+// it inserted, by fingerprint, and how many of them are hidden.
 const insertMovements = async (
   ctx: UserContext,
-  owner: Owner & { readonly statementId: string },
+  owner: SavedOwner,
   statement: CategorizedStatement,
-): Promise<{ readonly inserted: number; readonly covered: number }> => {
+): Promise<{
+  readonly inserted: ReadonlySet<string>;
+  readonly covered: number;
+}> => {
   const covering =
     statement.openingBalanceMinor === undefined
       ? await coveringStatements(ctx, owner.accountId, statement.period)
@@ -111,7 +117,7 @@ const insertMovements = async (
     ...movement,
     coveredByStatementId: coveringStatementOf(covering, movement.date),
   }));
-  let inserted = 0;
+  const inserted = new Set<string>();
   let covered = 0;
   for (let start = 0; start < rows.length; start += INSERT_CHUNK_SIZE) {
     const added = await ctx.tx
@@ -120,9 +126,14 @@ const insertMovements = async (
       .onConflictDoNothing({
         target: [transactions.accountId, transactions.fingerprint],
       })
-      .returning({ coveredBy: transactions.coveredByStatementId });
-    inserted += added.length;
-    covered += added.filter(({ coveredBy }) => coveredBy !== null).length;
+      .returning({
+        fingerprint: transactions.fingerprint,
+        coveredBy: transactions.coveredByStatementId,
+      });
+    for (const { fingerprint, coveredBy } of added) {
+      inserted.add(fingerprint);
+      if (coveredBy !== null) covered += 1;
+    }
   }
   return { inserted, covered };
 };
@@ -156,11 +167,12 @@ const nothingSaved = (statementId: string, total: number): SavedStatement => ({
  * Saves a statement and its movements in the user's account, idempotently,
  * and says what it changed. Saving the same statement again adds nothing; an
  * overlapping upload adds only the movements the account doesn't have. A
- * statement with balances follows the rules of its period's versions, and
- * once verified hides the other format's movements on its days, saved before
- * or after it (ADR 0018). `added` is the exact change in movements that
- * count. Run it inside `withUserContext`, whose transaction makes the save
- * all or nothing.
+ * statement with figures to check it by follows the rules of its period's
+ * versions; a verified quarterly statement hides the other format's
+ * movements on its days, saved before or after it (ADR 0018), and a card's
+ * statement takes back the movements of its period a later one saved (ADR
+ * 0040). `added` is the exact change in movements that count. Run it inside
+ * `withUserContext`, whose transaction makes the save all or nothing.
  */
 export const saveStatement = async (
   ctx: UserContext,
@@ -179,11 +191,13 @@ export const saveStatement = async (
   // Saved before in one transaction, so all its movements were handled then.
   if (!saved.isNew) return ok(nothingSaved(saved.id, total));
   const countedBefore = await countCountedMovements(ctx, { accountId });
+  const savedOwner = { ...owner, statementId: saved.id };
   const { inserted, covered } = await insertMovements(
     ctx,
-    { ...owner, statementId: saved.id },
+    savedOwner,
     statement,
   );
+  await claimOwnPeriod(ctx, savedOwner, { statement, inserted });
   const hidden = await hideUnderVerified(ctx, saved.id, input);
   const added =
     (await countCountedMovements(ctx, { accountId })) - countedBefore;
@@ -192,7 +206,7 @@ export const saveStatement = async (
     statementId: saved.id,
     total,
     added,
-    skipped: total - inserted,
+    skipped: total - inserted.size,
     covered,
     hidden,
     replaced,

@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { PreparedCard } from "../cards/card.types";
 import type {
   ACCOUNT_TYPE,
   PARSE_WARNING_CODE,
@@ -22,10 +23,13 @@ export type ParseWarning = z.infer<typeof parseWarningSchema>;
 export type ParsedTransaction = z.infer<typeof parsedTransactionSchema>;
 export type ParsedStatement = z.infer<typeof parsedStatementSchema>;
 
-/** A movement ready to save: no raw reference, which can be a phone number. */
+/**
+ * A movement ready to save: no raw reference, which can be a phone number.
+ * A card's installment goes with its statement's figures (12.3a).
+ */
 export type PreparedTransaction = Omit<
   ParsedTransaction,
-  "referenceRaw" | "sourceRow"
+  "referenceRaw" | "sourceRow" | "installment"
 > & {
   readonly referenceHash: string | undefined;
   /** For a phone or code reference of 6 digits or more. */
@@ -36,7 +40,12 @@ export type PreparedTransaction = Omit<
   readonly position: number;
 };
 
-export type PreparedStatement = Omit<ParsedStatement, "transactions"> & {
+export type PreparedStatement = Omit<
+  ParsedStatement,
+  "transactions" | "card"
+> & {
+  /** A card's figures and the installments it charges, by fingerprint. */
+  readonly card?: PreparedCard;
   readonly transactions: readonly PreparedTransaction[];
   readonly contentHash: string;
 };

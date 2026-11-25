@@ -2107,3 +2107,77 @@ Checked: thirty-two deliberate bugs, one at a time, with the private tests.
 - **Before this phase, a masking script printed the holder's name and the words of their address** (digits hidden) in the agent's session, since they share a line with "Tus tarjetas". The script was fixed before its next run. Nothing reached a file, and the human was told.
 - **Not registered yet,** as Bancolombia's card parsers: 12.3a registers all three.
 - **Size:** about 910 lines of code, without tests, comments or blank lines (800 to 900 estimated), besides about 175 moved to `src/cards/` and a layout script and its data of about 390 (about 300 estimated). It lands in commits of one pull request.
+
+## 12.3a Card accounts saved
+
+_2026-11-25_
+
+A card's statement is now saved. An invented September of Nu's card lands in "Tarjeta de crédito · Nu ••••5678" with its holder's name:
+
+- a purchase of $1.200.000 in 12 installments counts in full on 20 August as real spending ("Otros", until the LLM names it);
+- a payment of $500.000 comes back to the card as money that only moved;
+- the month's interest is "Costos del banco".
+
+The statement keeps its limit, what's due and by when, its bank's summary, and the installment it charges of each purchase. Its PDF after its Excel adds nothing. October lists the purchase again ("2 de 12"): it adds no movement, but keeps its own installment. No screen shows a card yet: 12.3b to 12.3d do.
+
+- **Registered** (`@xtrakto/parsers`): Bancolombia's card statement in Excel and PDF and Nu's in PDF join the default registry. `FormatId` moves to the registry (`default-registry.types.ts`), since it now spans two banks. The web's maps give each format its bank, its file type, its period and its label, "Extracto de tu tarjeta".
+- **A card's rules** (`@xtrakto/core`, `CARD_RULES`) hold only on a card's account, by `accountType` on a rule and in the categorization's context:
+  - late interest, interest, the card's fee and conversion charges are "Costos del banco";
+  - an advance is cash;
+  - a balance transfer and a payment to the card only move money;
+  - a refund is income.
+  - On a card, the rules for purchases read the whole text, so a merchant no rule names is "Otros" (`unknown_merchant`), which the LLM already waits for.
+- **The prepared statement** (`prepareStatement`): a card's figures carry the installments it charges, each by its purchase's fingerprint (`preparedCardSchema`), and the movements no longer carry theirs. The content hash takes the card in; a statement without one keeps the hash it had, which a test pins.
+- **Saved** (`@xtrakto/db`, migration 0031):
+  - `statements.card` is JSON that `preparedCardSchema` reads back.
+  - A card's statement is a version of its period: the version index and `settlePeriodVersion` cover statements with a card's figures.
+  - A card's statement that doesn't reconcile counts nowhere (`countingStatement`).
+  - A card's movement belongs to the statement of its own period (`claimOwnPeriod`): when a later statement saved it first, its own month's statement takes it back, at the position it prints.
+- **Ingestion** gives the rules the statement's account type.
+- **Privacy:** the privacy page, with its date, and `docs/data-flow.md` say what a card's statement sends and keeps: the card's last 4 digits, its figures and each purchase's installment. Never sent: the card's whole number, the holder's ID number, the address.
+- **ADR 0040:** a card's purchases count in full when made, and its payments only move money. It amends ADR 0023.
+
+73 new tests: 38 in core (1,093 there), 7 in db (301), 18 in parsers (714) and 10 in the app (1,635); and 10 private ones:
+
+- core:
+  - each card text on a card's account, as both banks' parsers write it, and the same texts finding no rule on a savings account;
+  - a card's purchases read whole by the rules for purchases;
+  - money in that's neither a refund nor a payment;
+  - the installments kept by fingerprint;
+  - the content hash, changed by a card's figures or an installment and kept for a statement without a card.
+- db:
+  - a card's figures and installments read back, and its movements' signs and rules;
+  - a second version kept out, and one that doesn't reconcile counting nothing until a version that does replaces it;
+  - a purchase listed again adding nothing while each statement keeps its installment;
+  - each movement with the statement of its period in either upload order, whether October reconciles or not;
+  - a savings account's movements taking no card rule.
+- parsers: each card fixture recognized by exactly its own parser among the registered ones, and read as its parser declares.
+- the app's ingestion:
+  - each card saved in its card's account with its holder's name, every movement counted;
+  - each bank's texts with their categories and signs;
+  - the PDF after the Excel adding nothing;
+  - October's purchases listed again saved once, in either upload order;
+  - a statement that doesn't reconcile counting nothing.
+- private: the human's card statements, Nu's opened with the password from the keychain. Every movement gets a category and the right kind, and the banks' fixed texts get their rules. The card's own rules take about half, the merchant rules about a quarter, and "Otros" the rest (percentages only).
+
+Checked: twenty-one deliberate bugs, one at a time, and every one failed a test on the first run, among them:
+
+- the purchases not read whole on a card;
+- a card's rules on any account, or a card read as a savings account;
+- late interest without its word, a payment read as income, a balance transfer as spending;
+- the installments dropped or given the next purchase's fingerprint;
+- the card left out of the content hash, or its absence written into every one;
+- a card that doesn't reconcile counted, or cards without versions;
+- no movement taken back by its period's statement, taken back without its position, or from any period;
+- the card's figures not saved;
+- the ingestion categorizing a card as a savings account;
+- Nu's parser left out of the registry.
+
+**Deviations and follow-ups:**
+
+- **A card's movement belongs to the statement of its own period** (found while building it): without it, whether a purchase counted depended on the upload order whenever one of the two statements didn't reconcile. One effect for 12.3b: when the statement taking a purchase back doesn't reconcile and the one that saved it did, the upload's `added` count can be negative, since the purchase stops counting.
+- **An advance has a rule** (cash), which the plan didn't list: the fixtures have one, and without it an advance read as a purchase.
+- **Card texts the human's statements don't show are inferred:** a refund's words (`DEVOLUCION`, `REVERSO`) and payments from other channels (`ABONO …`, `PAGO …`).
+- **In production, a card uploaded once this merges is saved,** and some screens still name it as a savings account's file until 12.3b to 12.3d: the upload result's balance check says "Sin saldo para verificar", and "Lo que tienes" and the summary read it as an account without balances.
+- **The rules' table was already past the 300 lines the lint warns at** (322 lines of code): it now has 324, the card's rules in a file of their own.
+- **Size:** about 300 lines of code added and 45 deleted, without tests, comments or blank lines (350 to 450 estimated), besides a 56-line test helper. It lands in commits of one pull request.

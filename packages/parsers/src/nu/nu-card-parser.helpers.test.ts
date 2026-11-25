@@ -12,7 +12,6 @@ import quarterlyBasicPdf from "../../fixtures/quarterly-basic-pdf.json";
 import { extractPdf } from "../extraction/pdf-extraction.helpers";
 import { RECONCILIATION_ISSUE } from "../reconciliation/reconciliation.constants";
 import { reconcile } from "../reconciliation/reconciliation.helpers";
-import { DEFAULT_PARSERS } from "../registry/default-registry.helpers";
 import { nuCardPdfParser } from "./nu-card-parser.helpers";
 
 // Invented, as the fixtures' README says: a document number's shape.
@@ -292,7 +291,7 @@ describe("nuCardPdfParser", () => {
     });
   });
 
-  it("recognizes only Nu's statements, which no registered parser does", () => {
+  it("recognizes only Nu's statements", () => {
     const others = [quarterlyBasicPdf, movementsBasicPdf, cardBasicPdf].map(
       fixtureContent,
     );
@@ -302,10 +301,5 @@ describe("nuCardPdfParser", () => {
 
     expect(others.some(nuCardPdfParser.canParse)).toBe(false);
     expect(nu.every(nuCardPdfParser.canParse)).toBe(true);
-    expect(
-      nu.some((card) =>
-        DEFAULT_PARSERS.some((parser) => parser.canParse(card)),
-      ),
-    ).toBe(false);
   });
 });

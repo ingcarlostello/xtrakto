@@ -213,6 +213,55 @@ const NO_MATCHES: readonly (readonly [description: string, amount: number])[] =
     ["ABONO INTERESES AHORROS", 0],
   ];
 
+// A card's texts (Appendix A.4 and A.5), as both banks' parsers write them,
+// on a card's account.
+const CARD_MATCHES: readonly Match[] = [
+  ["INTERESES DE MORA", OUT, "card_late_interest", "taxes_and_fees"],
+  ["Intereses de mora", OUT, "card_late_interest", "taxes_and_fees"],
+  ["INTERESES CORRIENTES", OUT, "card_interest", "taxes_and_fees"],
+  ["Intereses", OUT, "card_interest", "taxes_and_fees"],
+  ["CUOTA DE MANEJO", OUT, "card_fee", "taxes_and_fees"],
+  ["Comisión por cambio de moneda", OUT, "card_conversion", "taxes_and_fees"],
+  ["AVANCE CAJERO CENTRO", OUT, "card_advance", "cash_withdrawal"],
+  [
+    "COMPRA DE CARTERA Y/O D",
+    OUT,
+    "card_balance_transfer",
+    "credit_card_payment",
+  ],
+  ["DEVOLUCION TIENDA EJEMPLO", IN, "card_refund", "refund"],
+  ["ABONO DEVOLUCION COMPRA", IN, "card_refund", "refund"],
+  [
+    "ABONO SUCURSAL VIRTUAL",
+    IN,
+    "card_payment_received",
+    "credit_card_payment",
+  ],
+  ["Gracias por tu pago", IN, "card_payment_received", "credit_card_payment"],
+  // A purchase is its merchant's name, which the rules for purchases read
+  // whole: a store no rule knows is still spending, as "Otros".
+  ["SUPERMERCADO EL ARCO", OUT, "merchant_groceries", "groceries"],
+  ["Restaurante El Patio", OUT, "merchant_restaurants", "restaurants"],
+  ["CLARO TIENDA", OUT, "utility_payment", "utilities"],
+  ["BOLD*CAFE", OUT, "payment_gateway", "payment_gateways"],
+  ["Almacen Ropa", OUT, "unknown_merchant", "other_spending"],
+  // The rules of any account still hold on a card's.
+  ["IMPTO GOBIERNO 4X1000", OUT, "gmf_tax", "taxes_and_fees"],
+];
+
+// Money out on a card is a purchase when nothing else names it; money in
+// may be none of the card's.
+const CARD_NO_MATCHES: readonly (readonly [
+  description: string,
+  amount: number,
+])[] = [
+  // The other way round from what a card's rule expects.
+  ["Intereses", IN],
+  ["CUOTA DE MANEJO", IN],
+  // Neither a refund nor a payment.
+  ["TIENDA EJEMPLO", IN],
+];
+
 const movement = (
   description: string,
   amount: number,
@@ -262,8 +311,55 @@ describe("categorizeByRules", () => {
     },
   );
 
+  describe("on a card's account", () => {
+    const onCard = (description: string, amount: number) =>
+      categorizeByRules(movement(description, amount), {
+        accountType: "credit_card",
+        holderName: HOLDER,
+      });
+
+    it.for(CARD_MATCHES)(
+      "reads %j (%i) with %s",
+      ([description, amount, ruleId, categoryId]) => {
+        expect(onCard(description, amount)).toEqual({
+          ruleId,
+          categoryId,
+          isPendingReview: false,
+        });
+      },
+    );
+
+    it.each(CARD_NO_MATCHES)(
+      "finds no rule for %j (%i)",
+      (description, amount) => {
+        expect(onCard(description, amount)).toBeNull();
+      },
+    );
+
+    // A card's texts mean nothing on a savings account, where a purchase
+    // starts with the words that say so.
+    it.for(
+      CARD_MATCHES.filter(
+        ([, , ruleId]) =>
+          ruleId.startsWith("card_") || ruleId === "merchant_groceries",
+      ),
+    )(
+      "finds no rule for %j (%i) on a savings account",
+      ([description, amount]) => {
+        expect(categorize(description, amount)).toBeNull();
+        expect(
+          categorizeByRules(movement(description, amount), {
+            accountType: "savings",
+          }),
+        ).toBeNull();
+      },
+    );
+  });
+
   it("has a case for every rule of the table", () => {
-    const tested = new Set<string>(MATCHES.map(([, , ruleId]) => ruleId));
+    const tested = new Set<string>(
+      [...MATCHES, ...CARD_MATCHES].map(([, , ruleId]) => ruleId),
+    );
     const untested = CATEGORIZATION_RULES.map(({ id }) => id).filter(
       (id) => !tested.has(id),
     );
