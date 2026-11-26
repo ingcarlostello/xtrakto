@@ -1,4 +1,4 @@
-import { localDateSchema, periodSchema } from "@xtrakto/core";
+import { localDateSchema, type Period, periodSchema } from "@xtrakto/core";
 import type {
   AccountCoverage,
   AccountRow,
@@ -7,6 +7,7 @@ import type {
 } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import {
+  cardCoverageViewOf,
   coverageViewOf,
   coverageViews,
   hasWholeMonth,
@@ -16,6 +17,7 @@ import {
 } from "./coverage-timeline.helpers";
 
 const day = (date: string) => localDateSchema.parse(date);
+const period = (from: string, to: string) => periodSchema.parse({ from, to });
 
 const file = (from: string, to: string, isQuarterly: boolean): MonthFile => ({
   statementId: `${isQuarterly ? "q" : "m"}-${from}-${to}`,
@@ -65,6 +67,7 @@ const ANA: AccountCoverage = {
     { period: Q2.period, isChained: true },
     { period: Q3.period, isChained: true },
   ],
+  cardStatements: [],
 };
 
 describe("timelineMonths", () => {
@@ -201,6 +204,7 @@ describe("monthsHad", () => {
         accountId: "a1",
         months: [month("2026-04", [Q2])],
         quarters: [],
+        cardStatements: [],
       }),
     ).toEqual(new Set());
   });
@@ -219,7 +223,7 @@ describe("coverageViews", () => {
       [
         { ...ANA, accountId: "a2" },
         ANA,
-        { accountId: "a3", months: [], quarters: [] },
+        { accountId: "a3", months: [], quarters: [], cardStatements: [] },
       ],
       [account("a1", "8901"), account("a2", "2109"), account("a3", "5555")],
       day("2026-10-20"),
@@ -243,26 +247,96 @@ describe("coverageViews", () => {
     expect(view?.accountLabel).toBeUndefined();
   });
 
-  it("says which account is another bank's", () => {
+  it("says what verifies each account's months: another bank's, a card's", () => {
+    const card = {
+      accountId: "a3",
+      months: [],
+      quarters: [],
+      cardStatements: [period("2026-08-12", "2026-09-10")],
+    };
     const views = coverageViews(
-      [ANA, { ...ANA, accountId: "a2" }],
-      [account("a1", "8901"), { ...account("a2", ""), bankId: "davivienda" }],
+      [ANA, { ...ANA, accountId: "a2" }, card],
+      [
+        account("a1", "8901"),
+        { ...account("a2", ""), bankId: "davivienda" },
+        { ...account("a3", "5678"), bankId: "nu", accountType: "credit_card" },
+      ],
       day("2026-10-20"),
     );
 
-    expect(views.map(({ isOtherBank }) => isOtherBank)).toEqual([false, true]);
+    expect(views.map(({ verifiedBy }) => verifiedBy)).toEqual([
+      "quarterly",
+      "balances",
+      "card",
+    ]);
+  });
+
+  it("leaves out a card without a statement that reconciles", () => {
+    const views = coverageViews(
+      [{ ...ANA, accountId: "a3" }],
+      [{ ...account("a3", "5678"), bankId: "nu", accountType: "credit_card" }],
+      day("2026-10-20"),
+    );
+
+    expect(views).toEqual([]);
+  });
+});
+
+// A card's months are those its statements close in (12.3b).
+describe("cardCoverageViewOf", () => {
+  const card = (...statements: readonly Period[]): AccountCoverage => ({
+    accountId: "a3",
+    // A purchase in installments a statement listed from long before.
+    months: [month("2025-12", [movements("2025-12-05", "2025-12-05")])],
+    quarters: [],
+    cardStatements: statements,
+  });
+
+  it("verifies the month each statement that reconciles closes in, through this one", () => {
+    const view = cardCoverageViewOf(
+      card(
+        period("2026-08-12", "2026-09-10"),
+        period("2026-10-11", "2026-11-10"),
+      ),
+      day("2026-12-03"),
+    );
+
+    expect(
+      view.segments.map(({ label, status, isAlsoInMovements }) => [
+        label,
+        status,
+        isAlsoInMovements,
+      ]),
+    ).toEqual([
+      ["sep", "verified", false],
+      ["oct", "missing", false],
+      ["nov", "verified", false],
+      ["dic", "missing", false],
+    ]);
+    expect(view.sentence).toBe(
+      "Septiembre de 2026 completo y verificado. Octubre no lo tienes. Noviembre completo y verificado. Diciembre no lo tienes todavía.",
+    );
+    expect(view.isChained).toBe(false);
   });
 });
 
 describe("verifiedLegend", () => {
-  const ours = { isOtherBank: false };
-  const theirs = { isOtherBank: true };
+  const quarterly = { verifiedBy: "quarterly" } as const;
+  const balances = { verifiedBy: "balances" } as const;
+  const card = { verifiedBy: "card" } as const;
 
   it("names what verifies the months of the accounts shown", () => {
-    expect(verifiedLegend([ours])).toBe("Extracto trimestral, verificado");
-    expect(verifiedLegend([theirs])).toBe("Archivo con saldos, verificado");
-    expect(verifiedLegend([ours, theirs])).toBe(
+    expect(verifiedLegend([quarterly])).toBe("Extracto trimestral, verificado");
+    expect(verifiedLegend([balances])).toBe("Archivo con saldos, verificado");
+    expect(verifiedLegend([quarterly, balances, quarterly])).toBe(
       "Extracto trimestral o archivo con saldos, verificado",
+    );
+    expect(verifiedLegend([card])).toBe("Extracto de tu tarjeta, verificado");
+    expect(verifiedLegend([card, quarterly])).toBe(
+      "Extracto trimestral o extracto de tu tarjeta, verificado",
+    );
+    expect(verifiedLegend([card, balances, quarterly])).toBe(
+      "Extracto trimestral, archivo con saldos o extracto de tu tarjeta, verificado",
     );
   });
 });
@@ -272,7 +346,12 @@ describe("hasWholeMonth", () => {
   const of = (
     months: readonly CoverageMonth[],
     quarters: AccountCoverage["quarters"] = [],
-  ): AccountCoverage => ({ accountId: "a1", months, quarters });
+  ): AccountCoverage => ({
+    accountId: "a1",
+    months,
+    quarters,
+    cardStatements: [],
+  });
 
   it("takes a month a verified quarterly statement covers", () => {
     const quarter = {

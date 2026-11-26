@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { ExtractedContent } from "@xtrakto/core";
 import { eq, sql, TransactionRollbackError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { preparedCard } from "../../test/prepared-statements";
 import { requireTestDatabase, testDatabase } from "../../test/test-database";
 import {
   asAmount,
@@ -33,6 +34,7 @@ import {
   type NewIngestionJob,
   type SubmissionQuota,
 } from "./ingestion-job.queries";
+import { accounts } from "../accounts/account.schemas";
 import { statements } from "../statements/statement.schemas";
 import { ingestionJobs } from "./ingestion-job.schemas";
 
@@ -465,6 +467,7 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
         id: expect.any(String),
         accountId: owned.accountId,
         bankId: "davivienda",
+        accountType: "savings",
         period: { from: `2026-0${month}-01`, to: "2026-09-30" },
         balance,
         differenceMinor,
@@ -480,6 +483,58 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
         [failed, { ...job, status: "failed", errorCode: "PARSE_FAILED" }],
       ]),
     );
+  });
+
+  // A card's statement prints no balances: its bank's sums check it (12.3a).
+  it("reads a card's statement as its sums check it, on its card's account", async () => {
+    const userId = await newUser();
+    const [card] = await owner.db
+      .insert(accounts)
+      .values({
+        userId,
+        bankId: "nu",
+        accountType: "credit_card",
+        last4: "5678",
+        currency: "COP",
+      })
+      .returning({ id: accounts.id });
+    const { card: figures } = await preparedCard([]);
+    const jobIds = await Promise.all(
+      [true, false].map(async (balanceVerified) => {
+        const [row] = await owner.db
+          .insert(statements)
+          .values({
+            ...statementRow({ userId, accountId: card?.id ?? "" }),
+            formatId: "nu-credit-card-pdf",
+            periodFrom: asLocalDate(
+              balanceVerified ? "2026-08-12" : "2026-09-11",
+            ),
+            card: figures,
+            balanceVerified,
+            ...(balanceVerified
+              ? {}
+              : { balanceDifferenceMinor: asAmount(-1_000) }),
+          })
+          .returning({ id: statements.id });
+        return insertJobId(userId, { status: "done", statementId: row?.id });
+      }),
+    );
+
+    const results = await withUserContext(app.db, userId, (ctx) =>
+      listIngestionJobResults(ctx, jobIds),
+    );
+
+    expect(
+      jobIds.map((id) => results.find((result) => result.id === id)?.statement),
+    ).toMatchObject([
+      { bankId: "nu", accountType: "credit_card", balance: "verified" },
+      {
+        bankId: "nu",
+        accountType: "credit_card",
+        balance: "unverified",
+        differenceMinor: -1_000,
+      },
+    ]);
   });
 
   it("lists the user's latest jobs first, as many as asked for", async () => {
@@ -701,6 +756,17 @@ describe.skipIf(!testDatabase)("ingestion jobs", () => {
         added: 12,
       });
       expect(await claim(userId)).toBeUndefined();
+    });
+
+    // A card's statement that takes back its period's purchase without
+    // reconciling makes it stop counting (12.3a).
+    it("never counts a file as adding less than nothing", async () => {
+      const userId = await newUser();
+      const accountId = await insertAccount(owner.db, userId);
+      await insertEnded(userId, accountId, { added: 5 });
+      await insertEnded(userId, accountId, { added: -1 });
+
+      expect(await claim(userId)).toMatchObject({ files: 2, added: 5 });
     });
 
     it("waits while one of the user's files is still open", async () => {

@@ -1,4 +1,4 @@
-import { APP_ERROR_CODE, formatDayInWords } from "@xtrakto/core";
+import { ACCOUNT_TYPE, APP_ERROR_CODE, formatDayInWords } from "@xtrakto/core";
 import type { AppError, Period } from "@xtrakto/core";
 import type { StatusTone } from "@/components/status-pill/StatusPill";
 import { BANK_LABELS, MASKED_DIGITS } from "@/utils/account-label.constants";
@@ -8,7 +8,6 @@ import {
   fileTypeOf,
   isPdfFormat,
   labelOf,
-  periodText,
   statementLabel,
   statementPeriodText,
 } from "@/utils/statement-label.helpers";
@@ -75,7 +74,7 @@ export const previewTags = (
   labelOf(BANK_LABELS, preview.bankId),
   labelOf(FORMAT_LABELS, preview.formatId),
   fileTypeTag(preview.formatId, fileName),
-  periodText(preview.period, preview.periodSource),
+  statementPeriodText(preview.formatId, preview.period, preview.periodSource),
 ];
 
 /** A job's file as its icon shows it: a PDF, or a spreadsheet. */
@@ -124,12 +123,16 @@ export const jobLabel = ({ formatId, outcome }: UploadJob): string => {
   return statementLabel(formatId, outcome.period);
 };
 
-// A quarterly statement names its account; a movements export gets its
-// account below, from the destination.
+// A quarterly statement names its account, and a card's statement its card
+// (12.3b); a movements export gets its account below, from the destination.
 const readyCount = (preview: StatementPreview): string => {
   const count = countText(preview.movementCount, COPY.movements);
   if (preview.accountLast4 === undefined) return count;
-  return `${count} · ${COPY.statementAccount} ${MASKED_DIGITS}${preview.accountLast4}`;
+  const named =
+    preview.accountType === ACCOUNT_TYPE.CREDIT_CARD
+      ? COPY.statementCard
+      : COPY.statementAccount;
+  return `${count} · ${named} ${MASKED_DIGITS}${preview.accountLast4}`;
 };
 
 const INPUT_PROBLEMS: Readonly<Partial<Record<string, ProblemText>>> = {

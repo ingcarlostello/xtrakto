@@ -105,6 +105,7 @@ const OCTOBER_EXPORT_PDF = fixture("movements-basic-pdf");
 // Nu's September and October, which lists September's purchases again.
 const CARD = fixture("card-basic");
 const CARD_PDF = fixture("card-basic-pdf");
+const CARD_DOLLARS = fixture("card-dollars");
 const BROKEN_CARD = fixture("card-broken");
 const NU_CARD = fixture("nu-card-basic-pdf");
 const NU_CARD_OCTOBER = fixture("nu-card-late-pdf");
@@ -734,6 +735,20 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
         expect(byText).toMatchObject(expected);
       },
     );
+
+    it("keeps how many movements in dollars it left out, a count only (12.3b)", async () => {
+      const userId = await newUser();
+      const { transactions, warnings } = parse(CARD_DOLLARS);
+      const foreign = warnings.filter(
+        ({ code }) => code === "FOREIGN_CURRENCY",
+      ).length;
+
+      expect(foreign).toBeGreaterThan(0);
+      expect(await run(await submit(userId, CARD_DOLLARS))).toEqual({
+        status: "done",
+        stats: { ...allNew(transactions.length), foreign },
+      });
+    });
 
     it("adds nothing for the other file of the same month", async () => {
       const userId = await newUser();

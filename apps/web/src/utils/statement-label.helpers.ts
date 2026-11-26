@@ -6,6 +6,7 @@ import {
   type PeriodSource,
 } from "@xtrakto/core";
 import {
+  CARD_FORMATS,
   FILE_TYPE,
   FORMAT_FILE_TYPES,
   FORMAT_LABELS,
@@ -35,9 +36,26 @@ export const periodText = (period: Period, source: PeriodSource): string =>
 const PERIOD_SOURCES: Readonly<Partial<Record<string, PeriodSource>>> =
   FORMAT_PERIOD_SOURCE;
 
-/** A saved statement's period as its format reads it: "jul–sep 2026". */
-export const statementPeriodText = (formatId: string, period: Period): string =>
-  periodText(period, PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS);
+/** Whether a format is a card's statement's (12.3a). */
+export const isCardFormat = (formatId: string): boolean =>
+  CARD_FORMATS.has(formatId);
+
+/**
+ * A statement's period as its format reads it: "jul–sep 2026", "1–15 ago
+ * 2026", or a card's by the month it closes in, "sep 2026" (12.3b). The
+ * source the page read, when it has one, goes before the format's.
+ */
+export const statementPeriodText = (
+  formatId: string,
+  period: Period,
+  source?: PeriodSource,
+): string =>
+  isCardFormat(formatId)
+    ? formatMonthRange({ from: period.to, to: period.to })
+    : periodText(
+        period,
+        source ?? PERIOD_SOURCES[formatId] ?? PERIOD_SOURCE.ROWS,
+      );
 
 /** A saved statement by its format and period: "Extracto trimestral jul–sep 2026". */
 export const statementLabel = (formatId: string, period: Period): string =>

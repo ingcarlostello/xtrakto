@@ -1,6 +1,7 @@
 import {
   Check,
   ChevronDown,
+  CreditCard,
   FileSpreadsheet,
   Landmark,
   List,
@@ -30,6 +31,7 @@ const BANK_HINT_ID = "first-file-bank-hint";
 const OPTIONS = [
   { value: FIRST_FILE.QUARTERLY, icon: FileSpreadsheet, ...COPY.quarterly },
   { value: FIRST_FILE.MOVEMENTS, icon: List, ...COPY.movements },
+  { value: FIRST_FILE.CARD, icon: CreditCard, ...COPY.card },
 ] as const;
 
 type FirstFileOptionProps = {
@@ -81,8 +83,9 @@ function FirstFileOption({
   );
 }
 
-// Whose files: Bancolombia's, or another bank's, whose columns the person
-// confirms the first time (11.3c). A native select drawn as a white pill.
+// Whose files: Bancolombia's, Nu's card (12.3b), or another bank's, whose
+// columns the person confirms the first time (11.3c). A native select drawn
+// as a white pill; the last step shows what each file and bank need.
 function BankField() {
   const { bank } = COPY;
   return (
@@ -103,6 +106,7 @@ function BankField() {
           className="h-12 w-full appearance-none rounded-full bg-surface pr-11 pl-11 text-body text-ink shadow-chip"
         >
           <option value={FIRST_BANK.BANCOLOMBIA}>{bank.bancolombia}</option>
+          <option value={FIRST_BANK.NU}>{bank.nu}</option>
           <option value={FIRST_BANK.OTHER}>{bank.other}</option>
         </select>
         <ChevronDown
@@ -118,10 +122,10 @@ function BankField() {
 }
 
 /**
- * docs/ui/v8-16 without the credit card: the two files, the quarterly
- * statement first and chosen, and the bank, Bancolombia unless another. A
- * GET form, so both go to the last step in its URL, which puts that file's
- * guide first, or another bank's; nothing is stored.
+ * docs/ui/v8-16: the three files, the quarterly statement first and chosen,
+ * and the credit card that was "Pronto" (12.3b); and the bank, Bancolombia
+ * unless another. A GET form, so both go to the last step in its URL, which
+ * puts that file's guide first, or another bank's; nothing is stored.
  */
 export function FirstFileForm() {
   return (

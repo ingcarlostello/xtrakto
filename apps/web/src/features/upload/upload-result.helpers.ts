@@ -15,7 +15,11 @@ import {
   transactionsHref,
 } from "@/utils/transactions-url.helpers";
 import { recognizedText } from "./upload-display.helpers";
-import { RESULT_COPY as COPY, VERIFIER_COPY } from "./upload-result.constants";
+import {
+  CARD_RESULT_COPY as CARD,
+  RESULT_COPY as COPY,
+  VERIFIER_COPY,
+} from "./upload-result.constants";
 import { STATEMENT_BALANCE, UPLOAD_COPY } from "./upload.constants";
 import type { JobOutcome, PdfReading, UploadJob } from "./upload.types";
 
@@ -72,10 +76,18 @@ export const offBy = ({ differenceMinor }: JobOutcome): string | undefined => {
 const isAlreadyHad = ({ stats, matches }: JobOutcome): boolean =>
   stats.replaced === 0 && stats.added === 0 && matches.references === 0;
 
+// The words of a statement that doesn't reconcile: its closing balance, or a
+// card's statement as a whole, which prints none (12.3b).
+const notReconciledWords = ({ isCard }: JobOutcome) =>
+  isCard
+    ? { notReconciled: CARD.notReconciled, by: CARD.notReconciledBy }
+    : { notReconciled: COPY.notReconciled, by: COPY.notReconciledBy };
+
 const titleOf = (outcome: JobOutcome): string => {
   if (outcome.balance === STATEMENT_BALANCE.UNVERIFIED) {
     const amount = offBy(outcome);
-    return amount ? `${COPY.notReconciledBy} ${amount}` : COPY.notReconciled;
+    const words = notReconciledWords(outcome);
+    return amount ? `${words.by} ${amount}` : words.notReconciled;
   }
   if (outcome.stats.replaced > 0) return COPY.replaced;
   return isAlreadyHad(outcome) ? COPY.alreadyHad : COPY.read;
@@ -83,12 +95,15 @@ const titleOf = (outcome: JobOutcome): string => {
 
 // Where the result leads: what the account has, when it had all of the file
 // (10.2d, v8-13); else the file's movements, once they count (5.7b), or
-// where its balance breaks, when it doesn't reconcile (5.7d).
+// where its balance breaks, when it doesn't reconcile (5.7d), which a card's
+// statement doesn't show yet (12.3b).
 const linkOf = (
   outcome: JobOutcome,
 ): Pick<ResultView, "showsWhatYouHave" | "movementsHref" | "breaksHref"> => {
   if (outcome.balance === STATEMENT_BALANCE.UNVERIFIED)
-    return { breaksHref: breaksHref(outcome.statementId) };
+    return outcome.isCard
+      ? {}
+      : { breaksHref: breaksHref(outcome.statementId) };
   if (isAlreadyHad(outcome)) return { showsWhatYouHave: true };
   return {
     movementsHref: transactionsHref({
@@ -135,8 +150,15 @@ export const verifierOf = (bankId: string) =>
   isOtherBank(bankId) ? VERIFIER_COPY.balances : VERIFIER_COPY.quarterly;
 
 // Chained says more than verified: it also opens where the previous closed.
-const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
-  chainedTo
+// A card's statement says what checked it: its bank's sums (12.3b).
+const verifiedPill = ({
+  stats,
+  chainedTo,
+  isCard,
+}: JobOutcome): ResultView["pill"] => {
+  if (isCard)
+    return { tone: "ok", title: CARD.verified, detail: CARD.verifiedPill };
+  return chainedTo
     ? {
         tone: "ok",
         title: COPY.chained,
@@ -147,6 +169,7 @@ const verifiedPill = ({ stats, chainedTo }: JobOutcome): ResultView["pill"] =>
         title: COPY.verified,
         detail: `${countText(stats.total, UPLOAD_COPY.movements)} ${noun(stats.total, COPY.reconcile)}`,
       };
+};
 
 // A movements export prints no balances, unless its quarterly statement
 // verifies it, movement by movement (10.1b).
@@ -179,7 +202,7 @@ const pillOf = (outcome: JobOutcome): ResultView["pill"] => {
 // What the account had of the file, and where: a movements export its
 // quarterly statement repeats says so (10.1b).
 const hadSentences = (
-  { stats, balance, matches, bankId }: JobOutcome,
+  { stats, balance, matches, bankId, isCard }: JobOutcome,
   had: number,
 ): readonly string[] => {
   const movements = countText(had, UPLOAD_COPY.movements);
@@ -192,7 +215,7 @@ const hadSentences = (
           `${COPY.someInQuarterly} ${NUMBER.format(matches.matched)} ${verifier.in}`,
         ];
   return [
-    `${movements} ${COPY.hadIn}`,
+    `${movements} ${isCard ? CARD.hadIn : COPY.hadIn}`,
     ...(stats.covered > 0 ? [verifier.covered] : []),
     ...(stats.hidden > 0 ? [COPY.hiddenNote] : []),
   ];
@@ -202,7 +225,7 @@ const duplicatesText = (outcome: JobOutcome): string => {
   const { stats, balance, matches } = outcome;
   if (balance === STATEMENT_BALANCE.UNVERIFIED) return COPY.keptApart;
   const had = stats.total - stats.added;
-  if (had === 0) return COPY.noneHad;
+  if (had === 0) return outcome.isCard ? CARD.noneHad : COPY.noneHad;
   return [
     ...hadSentences(outcome, had),
     ...(matches.dayApart > 0 ? [COPY.interestDayApart] : []),
@@ -233,12 +256,14 @@ const noBalanceStep = ({
 };
 
 const balanceStep = (outcome: JobOutcome): ResultStep => {
-  const { balance } = outcome;
+  const { balance, isCard } = outcome;
   if (balance === STATEMENT_BALANCE.VERIFIED)
-    return { title: COPY.verified, detail: COPY.verifiedDetail, isOk: true };
+    return isCard
+      ? { title: CARD.verified, detail: CARD.verifiedDetail, isOk: true }
+      : { title: COPY.verified, detail: COPY.verifiedDetail, isOk: true };
   if (balance === STATEMENT_BALANCE.NONE) return noBalanceStep(outcome);
   return {
-    title: COPY.notReconciled,
+    title: notReconciledWords(outcome).notReconciled,
     detail: COPY.notReconciledDetail,
     isOk: false,
   };
@@ -262,11 +287,24 @@ const classifiedSteps = ({
 // A PDF's pages and rows while the page holds its reading: "2 páginas · 48
 // filas. Unimos 3 descripciones partidas en dos líneas." (docs/ui/v8-08).
 // Otherwise, and after a reload, the movements in the file.
-const readText = (total: number, pdf: PdfReading | undefined): string => {
+const pagesText = (total: number, pdf: PdfReading | undefined): string => {
   if (pdf === undefined) return countText(total, UPLOAD_COPY.movements);
   const read = `${countText(pdf.pageCount, COPY.pages)} · ${countText(total, COPY.rows)}`;
   if (pdf.joinedDescriptions === 0) return read;
   return `${read}. ${COPY.joined} ${countText(pdf.joinedDescriptions, COPY.joinedDescriptions)}.`;
+};
+
+// What was read, and a card's movements in another currency, which wait:
+// "Tu tarjeta tiene 3 movimientos en dólares que aún no contamos." (12.3b).
+const readText = (
+  { total, foreign = 0 }: JobOutcome["stats"],
+  pdf: PdfReading | undefined,
+): string => {
+  const read = pagesText(total, pdf);
+  if (foreign === 0) return read;
+  const waiting = `${CARD.foreign} ${countText(foreign, UPLOAD_COPY.movements)} ${CARD.foreignAfter}`;
+  // One period between the two sentences, whether the first had it or not.
+  return `${read.replace(/\.?$/, ".")} ${waiting}`;
 };
 
 const stepsOf = (
@@ -276,7 +314,7 @@ const stepsOf = (
 ): readonly ResultStep[] => [
   {
     title: COPY.stepRead,
-    detail: readText(outcome.stats.total, pdf),
+    detail: readText(outcome.stats, pdf),
     isOk: true,
   },
   {

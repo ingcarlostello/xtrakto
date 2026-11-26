@@ -491,3 +491,107 @@ describe("resultView", () => {
     });
   });
 });
+
+// A card's statement (12.3b): its bank's sums check it, and it prints no
+// balances.
+describe("a card's statement's result", () => {
+  const card: UploadJob = { ...quarterly, formatId: "nu-credit-card-pdf" };
+  const SEPTEMBER = periodSchema.parse({
+    from: "2026-08-12",
+    to: "2026-09-10",
+  });
+  const cardOutcome = (
+    counts: Partial<IngestionStats>,
+    rest: Partial<JobOutcome> = {},
+  ) =>
+    outcome(counts, {
+      bankId: "nu",
+      isCard: true,
+      period: SEPTEMBER,
+      ...rest,
+    });
+
+  it("says it reconciles with its statement, named by the month it closes in", () => {
+    const view = resultView(card, cardOutcome({ total: 12, added: 12 }));
+
+    expect(view.pill).toEqual({
+      tone: "ok",
+      title: "Cuadra con tu extracto",
+      detail: "Sus movimientos y cuotas dan lo que dice tu banco.",
+    });
+    expect(view.steps).toEqual([
+      { title: "Leído en tu navegador", detail: "12 movimientos", isOk: true },
+      {
+        title: "Reconocido",
+        detail: "Nu · Extracto de tu tarjeta · sep 2026",
+        isOk: true,
+      },
+      {
+        title: "Revisando duplicados",
+        detail: "Ninguno estaba en tu tarjeta.",
+        isOk: true,
+      },
+      {
+        title: "Cuadra con tu extracto",
+        detail:
+          "Sumamos sus movimientos y sus cuotas, al centavo: dan lo que dice tu banco.",
+        isOk: true,
+      },
+    ]);
+    expect(view.movementsHref).toBeDefined();
+  });
+
+  it("says the purchases a later statement lists again were in the card", () => {
+    const view = resultView(card, cardOutcome({ total: 12, added: 9 }));
+
+    expect(view.steps[2]?.detail).toBe(
+      "3 movimientos ya estaban en tu tarjeta: no se duplican.",
+    );
+  });
+
+  it("says how many movements in dollars it doesn't count yet", () => {
+    const dollars = cardOutcome({ total: 12, added: 12, foreign: 3 });
+
+    expect(resultView(card, dollars).steps[0]?.detail).toBe(
+      "12 movimientos. Tu tarjeta tiene 3 movimientos en dólares que aún no contamos.",
+    );
+    expect(
+      resultView(card, dollars, { pageCount: 2, joinedDescriptions: 1 })
+        .steps[0]?.detail,
+    ).toBe(
+      "2 páginas · 12 filas. Unimos 1 descripción partida en dos líneas. Tu tarjeta tiene 3 movimientos en dólares que aún no contamos.",
+    );
+    expect(
+      resultView(card, cardOutcome({ total: 12, added: 12, foreign: 1 }))
+        .steps[0]?.detail,
+    ).toBe(
+      "12 movimientos. Tu tarjeta tiene 1 movimiento en dólares que aún no contamos.",
+    );
+  });
+
+  // Where a card's statement breaks isn't shown yet: no link.
+  it("shows one that doesn't reconcile on the attention surface, without a link", () => {
+    const view = resultView(
+      card,
+      cardOutcome(
+        { total: 12, added: 0 },
+        {
+          balance: "unverified",
+          differenceMinor: amountMinorSchema.parse(1_000_000),
+        },
+      ),
+    );
+
+    expect(view).toMatchObject({
+      isOk: false,
+      title: "Tu extracto no cuadra por $10.000",
+      pill: { tone: "attention", title: "No cuadra por $10.000" },
+    });
+    expect(view.steps.at(-1)).toMatchObject({
+      title: "Tu extracto no cuadra",
+      isOk: false,
+    });
+    expect(view.breaksHref).toBeUndefined();
+    expect(view.movementsHref).toBeUndefined();
+  });
+});

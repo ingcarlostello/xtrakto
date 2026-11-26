@@ -171,6 +171,32 @@ describe("fileRowView", () => {
     });
   });
 
+  // A card's statement names its card, and its month by the day it closes
+  // (12.3b).
+  it("names a card's statement's card, and the month it closes in", () => {
+    const card = {
+      ...preview,
+      bankId: "nu",
+      formatId: "nu-credit-card-pdf",
+      accountType: "credit_card",
+      accountLast4: "5678",
+      period: periodSchema.parse({ from: "2026-08-12", to: "2026-09-10" }),
+      movementCount: 12,
+    } as const;
+    const item: UploadItem = {
+      id: "1",
+      file: new File([], "extracto-nu.pdf"),
+      status: UPLOAD_STATUS.READY,
+      statement: { ...statement, preview: card },
+    };
+
+    expect(fileRowView(item)).toMatchObject({
+      kind: "ready",
+      tags: ["Nu", "Extracto de tu tarjeta", "PDF", "sep 2026"],
+      count: "12 movimientos · tarjeta ••••5678",
+    });
+  });
+
   it.each<[string, UploadItem, string]>([
     [
       "going up",

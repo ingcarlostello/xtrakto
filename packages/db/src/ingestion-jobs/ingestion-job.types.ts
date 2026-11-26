@@ -20,6 +20,11 @@ export type IngestionStats = {
   readonly covered: number;
   readonly hidden: number;
   readonly replaced: number;
+  /**
+   * A card's movements in another currency, read but not counted (12.3b);
+   * none for any other statement, or a job done before.
+   */
+  readonly foreign?: number;
 };
 
 /** What a statement's balances say: it reconciles, it doesn't, or it has none. */

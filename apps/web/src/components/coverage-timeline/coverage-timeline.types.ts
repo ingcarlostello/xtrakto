@@ -13,13 +13,19 @@ export type CoverageSegment = {
   readonly isAlsoInMovements: boolean;
 };
 
+/**
+ * What verifies an account's months: Bancolombia's quarterly statement,
+ * another bank's spreadsheet with balances (11.3c), or a card's statement
+ * (12.3b).
+ */
+export type CoverageSource = "quarterly" | "balances" | "card";
+
 /** An account's coverage, as the upload screen and the profile show it (10.2a). */
 export type CoverageView = {
   readonly accountId: string;
   /** Its short label, when the user has several accounts with months. */
   readonly accountLabel?: string;
-  /** Another bank's: a spreadsheet with balances verifies its months (11.3c). */
-  readonly isOtherBank: boolean;
+  readonly verifiedBy: CoverageSource;
   readonly segments: readonly CoverageSegment[];
   /** What the segments show, in words. */
   readonly sentence: string;

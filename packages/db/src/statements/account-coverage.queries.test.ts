@@ -1,6 +1,7 @@
 import type { CategorizedStatement } from "@xtrakto/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  preparedCard,
   preparedExport,
   preparedQuarterly,
   type TestMovement,
@@ -45,6 +46,15 @@ const AUGUST: TestMovement[] = [
 ];
 const OCTOBER: TestMovement[] = [{ date: "2026-10-02", amount: -7 }];
 const LATER_IN_OCTOBER: TestMovement = { date: "2026-10-05", amount: -11 };
+// A card's months, by its statements: 12 August to 10 September, then 11
+// September to 10 October.
+const CARD_SEPTEMBER: TestMovement[] = [
+  { date: "2026-08-20", amount: -40_000, description: "Almacen Ropa" },
+];
+const CARD_OCTOBER: TestMovement[] = [
+  { date: "2026-09-25", amount: -9_000, description: "Restaurante El Patio" },
+];
+const OCTOBER_PERIOD = { from: "2026-09-11", to: "2026-10-10" };
 
 describe.skipIf(!testDatabase)("an account's coverage", () => {
   let app: DbClient;
@@ -80,6 +90,17 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     );
 
   type Account = Awaited<ReturnType<typeof newAccount>>;
+
+  // The user's Nu card.
+  const cardOf = ({ userId }: Account): Promise<string> =>
+    withUserContext(app.db, userId, (ctx) =>
+      resolveIdentifiedAccount(ctx, {
+        bankId: "nu",
+        accountType: "credit_card",
+        last4: "5678",
+        currency: "COP",
+      }),
+    );
 
   const save = async (
     { userId, accountId }: Account,
@@ -182,6 +203,7 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
           isChained: false,
         },
       ],
+      cardStatements: [],
     });
   });
 
@@ -304,15 +326,49 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
       ),
     };
     await save(otherBank, await preparedExport(AUGUST), UNCHECKED);
+    // A card's statements count apart, also one that doesn't reconcile.
+    const card = { userId: account.userId, accountId: await cardOf(account) };
+    await save(card, await preparedCard(CARD_SEPTEMBER), VERIFIED);
+    await save(
+      card,
+      await preparedCard(CARD_OCTOBER, OCTOBER_PERIOD),
+      UNVERIFIED,
+    );
     const stranger = await newAccount();
 
     const files = (who: Account) =>
       withUserContext(app.db, who.userId, countUserFiles);
 
     expect(await files(account)).toEqual([
-      { bankId: "bancolombia", withBalances: 2, withoutBalances: 3 },
-      { bankId: "davivienda", withBalances: 0, withoutBalances: 1 },
+      { bankId: "bancolombia", withBalances: 2, withoutBalances: 3, cards: 0 },
+      { bankId: "davivienda", withBalances: 0, withoutBalances: 1, cards: 0 },
+      { bankId: "nu", withBalances: 0, withoutBalances: 0, cards: 2 },
     ]);
     expect(await files(stranger)).toEqual([]);
+  });
+
+  it("reads a card's statements that reconcile, by their periods (12.3b)", async () => {
+    const account = await newAccount();
+    const card = { userId: account.userId, accountId: await cardOf(account) };
+    await save(card, await preparedCard(CARD_SEPTEMBER), VERIFIED);
+    await save(
+      card,
+      await preparedCard(CARD_OCTOBER, OCTOBER_PERIOD),
+      UNVERIFIED,
+    );
+    await save(account, await preparedQuarterly(JULY), VERIFIED);
+
+    const coverage = await coverageOf(account);
+
+    expect(
+      coverage.find(({ accountId }) => accountId === card.accountId),
+    ).toMatchObject({
+      cardStatements: [{ from: "2026-08-12", to: "2026-09-10" }],
+      quarters: [],
+    });
+    expect(
+      coverage.find(({ accountId }) => accountId === account.accountId)
+        ?.cardStatements,
+    ).toEqual([]);
   });
 });

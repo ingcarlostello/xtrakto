@@ -179,11 +179,13 @@ describe("missingOf", () => {
       { month: "2026-10", files: [octoberWeek], references: 0 },
     ],
     quarters: [{ period: april, isChained: false }],
+    cardStatements: [],
   };
   const OTHER: AccountCoverage = {
     accountId: "a2",
     months: [{ month: "2026-05", files: [quarterly], references: 0 }],
     quarters: [{ period: april, isChained: false }],
+    cardStatements: [],
   };
 
   it("reads the page's account, through today", () => {

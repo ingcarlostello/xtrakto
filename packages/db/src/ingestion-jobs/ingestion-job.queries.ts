@@ -1,4 +1,5 @@
 import {
+  type AccountType,
   type AmountMinor,
   type ExtractedContent,
   err,
@@ -20,6 +21,7 @@ import {
 } from "drizzle-orm";
 import { accounts } from "../accounts/account.schemas";
 import type { Database, DbTransaction } from "../client/db-client.types";
+import { withFiguresToCheck } from "../coverage/coverage.queries";
 import { chainedFrom } from "../statements/statement-chain.queries";
 import { statements } from "../statements/statement.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -67,11 +69,15 @@ export type IngestionJobResult = {
   /** Once done: the statement it saved, or the one that already held it. */
   readonly statement: {
     readonly id: string;
-    /** The account it was saved to, and its bank. */
+    /** The account it was saved to, its bank and its type. */
     readonly accountId: string;
     readonly bankId: string;
+    readonly accountType: AccountType;
     readonly period: Period;
-    /** It reconciles, it doesn't, or it prints no balances (an export). */
+    /**
+     * It reconciles, it doesn't, or it prints nothing to check it by: no
+     * balances (an export), no card's sums.
+     */
     readonly balance: StatementBalance;
     /** The closing balance minus the opening balance and every amount. */
     readonly differenceMinor: AmountMinor | null;
@@ -306,7 +312,12 @@ export const claimFinishedFiles = async (
     jobIds: claimed.map(({ id }) => id),
     files: claimed.length,
     failed: claimed.filter(({ status }) => status === FAILED).length,
-    added: claimed.reduce((sum, { stats }) => sum + (stats.added ?? 0), 0),
+    // A card's statement that takes back a purchase of its period without
+    // reconciling makes it stop counting (12.3a): that adds nothing.
+    added: claimed.reduce(
+      (sum, { stats }) => sum + Math.max(stats.added ?? 0, 0),
+      0,
+    ),
   };
 };
 
@@ -337,10 +348,12 @@ const RESULT_COLUMNS = {
   statementId: statements.id,
   accountId: statements.accountId,
   bankId: accounts.bankId,
+  accountType: accounts.accountType,
   from: statements.periodFrom,
   to: statements.periodTo,
   isVerified: statements.balanceVerified,
-  hasBalances: sql<boolean>`${statements.openingBalanceMinor} is not null`,
+  // Its balances, or a card's sums (12.3a).
+  hasBalances: withFiguresToCheck,
   differenceMinor: statements.balanceDifferenceMinor,
   chainedFrom,
 };
@@ -383,6 +396,7 @@ const toJobResult = ({
   statementId,
   accountId,
   bankId,
+  accountType,
   from,
   to,
   isVerified,
@@ -393,11 +407,12 @@ const toJobResult = ({
 }: JobResultRow): IngestionJobResult => ({
   ...job,
   statement:
-    statementId && accountId && bankId && from && to
+    statementId && accountId && bankId && accountType && from && to
       ? {
           id: statementId,
           accountId,
           bankId,
+          accountType,
           period: { from, to },
           balance: balanceOf(isVerified, hasBalances),
           differenceMinor,

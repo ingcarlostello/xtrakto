@@ -238,4 +238,32 @@ describe("listUploadedFiles", () => {
     expect(await listUploadedFiles("user_new")).toEqual([]);
     expect(mocks.withUserContext).not.toHaveBeenCalled();
   });
+
+  // A card's statement, which its bank's sums check (12.3b).
+  it("says which files are a card's statements, and keeps their dollars", async () => {
+    mocks.listRecentIngestionJobs.mockResolvedValue([
+      {
+        ...doneJob(JOB_ID, {
+          id: "s1",
+          period: QUARTER,
+          accountType: "credit_card",
+          balance: "verified",
+        }),
+        stats: { total: 9, added: 9, foreign: 2 },
+      },
+      doneJob(OTHER_JOB, {
+        id: "s2",
+        period: AUGUST_1_TO_15,
+        accountType: "savings",
+      }),
+    ]);
+
+    const [card, savings] = await listUploadedFiles("user_clerk");
+
+    expect(card?.outcome).toMatchObject({
+      isCard: true,
+      stats: { total: 9, foreign: 2 },
+    });
+    expect(savings?.outcome).not.toHaveProperty("isCard");
+  });
 });

@@ -25,10 +25,17 @@ export const COVERAGE_COPY = {
     yet: "todavía",
   },
   legend: {
-    verified: "Extracto trimestral, verificado",
-    // Another bank's months (11.3c), and both banks' together.
-    verifiedByBalances: "Archivo con saldos, verificado",
-    verifiedEither: "Extracto trimestral o archivo con saldos, verificado",
+    // What verified a month, as the accounts shown have it: "Extracto
+    // trimestral, verificado", "Extracto trimestral o archivo con saldos,
+    // verificado" beside another bank's (11.3c), or a card's statement
+    // (12.3b).
+    verifiedBy: {
+      quarterly: "extracto trimestral",
+      balances: "archivo con saldos",
+      card: "extracto de tu tarjeta",
+    },
+    or: "o",
+    verified: "verificado",
     alsoInMovements:
       "También en movimientos (rangos que se cruzan, sin duplicar)",
     unverified: "Sin saldo para verificar",
