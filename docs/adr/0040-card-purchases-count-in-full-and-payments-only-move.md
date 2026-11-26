@@ -35,6 +35,7 @@ Real spending has to count the purchase once, and the two sides of a payment can
 ## Consequences
 
 - Real spending and categories hold across a card and the savings account that pays it. 12.3e links the two sides of a payment, which both already count as moved.
+- **Amended in 12.3e (decided with the human):** the two sides are paired when either statement is saved, in either order, and the link is kept on the payment (`paid_card_movement_id`), rather than worked out when read. The same amount, out of the savings account and into the card, the same day or one apart, the oldest payment first with the closest day, each side once. A paired payment waits for no review, so the quick review, its banner, Movimientos and the email count the same; when the card's movement goes, only the link empties, and the next save pairs it again. Worked out when read, every reader that counts what waits for review would pair on its own, and two payments of the same amount on one day can't pair one to one in a query.
 - Readers of installments (12.3d, 12.5b) read the statements' `card` column and join by fingerprint, outside SQL.
 - A statement that doesn't reconcile counts none of its own period's movements, including the purchases a later statement lists again.
 - Card texts beyond those the human's statements show (another bank's refunds or fees) fall to "Otros" or no category until a rule names them; the private test reports how the rules read the real statements, in percentages only.

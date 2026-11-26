@@ -2377,3 +2377,67 @@ Checked:
 - **"Cuotas que te faltan" is the latest statement's whatever the period,** so a past month's summary shows what's left today, saying which statement it reads.
 - **The review banner** still shows on a card's summary when the savings account has groups waiting (12.3c).
 - **Size:** about 475 lines of code added and 25 deleted, without tests, comments or blank lines (550 to 700 estimated): the period plumbing 12.3c laid made Pagos fijos and Categorías free. It lands in commits of one pull request.
+
+## 12.3e Card payments across accounts
+
+_2026-11-26_
+
+A payment to a card now meets the card's. The savings account pays $500.000 by PSE to Nu on 4 September, and Nu's September statement receives it on the 5th. Once both are saved, in either order, the payment points at the card's movement and no longer waits for review: "Lo que sigue", the review's banner and Movimientos' "Por revisar" stop counting it. Its detail says "Pago de tu tarjeta: Llegó a tu tarjeta Nu ••••1234", a link to the card's movement in its cycle, whose own detail says "Salió de tu cuenta de ahorros". In Categorías, "Pago de tarjetas" adds "Ver tu tarjeta Nu ••••1234".
+
+- **Kept, not worked out when read** (decided with the human; ADR 0040 amended). The pair is found when either statement is saved, in either order, and stored on the payment (`paid_card_movement_id`), so every reader of what waits for review reads it as before.
+- **The pairing** (`pairCardPayments`, `@xtrakto/core`):
+  - a payment out of any other account and a card's payment in, of the same amount, the same day or one apart;
+  - the oldest payment first, with the closest day;
+  - each side once.
+- **Saved** (`@xtrakto/db`):
+  - `listCardPaymentCandidates` reads the payments and cards' payments not paired yet;
+  - `linkCardPayments` points each payment at its card's movement and leaves the review;
+  - `findCardPaymentPair` names a movement's other side, and `listPaidCards` the cards a period's payments reached.
+  - Migrations 0032 to 0034: a unique key on a movement's id and user, the column with its unique index, and a key that only empties the link when the card's movement goes, which Drizzle can't declare.
+- **Ingestion** pairs after each statement it saves, after 10.1a's matching, so statements saved before pair with the next upload.
+- **A movement's detail** adds "Pago de tu tarjeta" with the other side in words, a link to its detail in its own month, a card's by its cycle.
+- **Categorías** leads from "Pago de tarjetas" to each card the period's payments reached, its summary in the same period.
+
+17 new tests: 5 in core (1,098 there), 4 in db (313 there) and 8 in the app (1,712 there):
+
+- core:
+  - a pair the same day, and one a day apart either way, never two days apart;
+  - two payments of the same amount one to one, in order;
+  - the closest day whatever the order, and a card's payment paired once;
+  - another amount, or no card's payment.
+- db:
+  - what waits to pair, pairing it and leaving the review;
+  - each side's other, and the cards a period's payments reached;
+  - only the link emptied when the card's movement goes;
+  - another user's never paired.
+- the app:
+  - ingestion pairing a payment a day apart in both upload orders, and leaving one without its card's statement waiting for review;
+  - Movimientos leading to the card's movement in its cycle;
+  - Categorías naming the cards a period's payments reached, and its links;
+  - the other side in words, and as a linked fact in the detail.
+
+Checked:
+
+- **In a local browser** (headless, a fresh Clerk test user; an invented savings export with a PSE payment to Nu uploaded through the screen, then Nu's September), 12 checks, all passed:
+  - the payment without "Por revisar", its detail's link to the card, and Enter on it opening the card's movement in September with "Salió de tu cuenta de ahorros";
+  - Categorías' link to the card's summary;
+  - no review banner;
+  - Categorías fitting at 390px and 360px.
+  - The test user and its rows were deleted afterwards, and the local database's counts are back to what they were.
+- **Eighteen deliberate bugs,** one at a time. Seventeen failed a test on the first run, among them:
+  - payments two days apart, of the same sign, by the first card movement rather than the closest, paired twice or in their given order;
+  - a paired payment or card movement paired again, or a savings account's payments taken as the card's;
+  - a paired payment still waiting for review, or a card's payment without its other side;
+  - the paid cards by the period's first day;
+  - nothing paired when saved, or pairs never linked;
+  - the card's month by the calendar;
+  - each side named as the other;
+  - the card's link without its account, or on every moved row.
+  - The other bug, Categorías never reading the paid cards, was written wrong at first: an empty list is truthy, so it still read them. Rewritten to skip the read, it failed a test too.
+
+**Deviations and follow-ups:**
+
+- **Any of the user's cards may receive a payment:** the savings side's text doesn't reliably name the card, so two cards with payments of the same amount a day apart could swap. None of the human's files shows it.
+- **A paired payment's reason** still says what its rule guessed ("suele ser el pago de una tarjeta"), with the pair beside it.
+- **The local seed saves without ingestion,** so its statements don't pair; the browser check uploaded through the screen.
+- **Size:** about 430 lines of code added and 25 deleted, without tests, comments or blank lines, besides three migrations. It lands in commits of one pull request.
