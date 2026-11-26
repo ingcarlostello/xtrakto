@@ -5,16 +5,19 @@ import {
   formatShortMonth,
   type LocalDate,
 } from "@xtrakto/core";
-import type { AccountCoverage } from "@xtrakto/db";
+import type { AccountCoverage, AccountRow } from "@xtrakto/db";
 import {
   coverageGaps,
   type GapFile,
   monthsMissing,
 } from "@/components/coverage-timeline/coverage-gaps.helpers";
-import { coverageViewOf } from "@/components/coverage-timeline/coverage-timeline.helpers";
+import {
+  cardCoverageViewOf,
+  coverageViewOf,
+} from "@/components/coverage-timeline/coverage-timeline.helpers";
 import { PAGE_COPY } from "@/components/empty-state/empty-states.constants";
 import { BANK_LABELS } from "@/utils/account-label.constants";
-import { isOtherBank } from "@/utils/account-label.helpers";
+import { isCard, isOtherBank } from "@/utils/account-label.helpers";
 import { wordFor } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { labelOf } from "@/utils/statement-label.helpers";
@@ -30,12 +33,14 @@ const COPY = SUMMARY_COPY.missing;
  */
 export const missingOf = (
   coverage: readonly AccountCoverage[],
-  accountId: string,
+  account: AccountRow,
   today: LocalDate,
 ): Pick<AccountSummary, "missing" | "missingMonths"> => {
-  const found = coverage.find((account) => account.accountId === accountId);
+  const found = coverage.find(({ accountId }) => accountId === account.id);
   if (!found) return { missingMonths: [] };
-  const { segments, sentence } = coverageViewOf(found, today);
+  const { segments, sentence } = isCard(account)
+    ? cardCoverageViewOf(found, today)
+    : coverageViewOf(found, today);
   const gaps = coverageGaps(segments, today);
   return {
     missingMonths: monthsMissing(found),
@@ -112,6 +117,23 @@ export const filesText = (
   ]);
 };
 
+// A card's months come in its statements, one each (12.3c): "el extracto
+// de tu tarjeta de octubre", and the button names it when it's one.
+const cardFiles = (
+  runs: readonly (readonly CalendarMonth[])[],
+  months: string,
+) => {
+  const missing = runs.flat();
+  const [only] = missing;
+  return {
+    text: `${COPY.toSee} ${wordFor(missing.length, COPY.cardStatements)} ${months}.`,
+    action:
+      missing.length === 1 && only
+        ? `${COPY.upload} ${nameOf(only)}`
+        : PAGE_COPY.uploadAction,
+  };
+};
+
 // Another bank's months come in its own files, which only its bank names:
 // "tus movimientos de Davivienda de abril a junio" (11.3c).
 const otherBankText = (bankId: string, months: string): string => {
@@ -123,8 +145,9 @@ const otherBankText = (bankId: string, months: string): string => {
 /**
  * "Te falta abril a junio" (docs/ui/v8-13): the months the account misses,
  * which files bring them, and the way to Subir, naming the one file when
- * there is one; for another bank's account, its movements of those months.
- * `undefined` when it misses none.
+ * there is one; for another bank's account, its movements of those months;
+ * for a card, its statements of those months (12.3c). `undefined` when it
+ * misses none.
  */
 export const missingMonthsView = ({
   missing,
@@ -137,6 +160,12 @@ export const missingMonthsView = ({
   const months = joined(gaps.runs.flatMap((run) => runWords(run, current)));
   const [only] = gaps.files;
   const shared = { title: `${COPY.title} ${months}`, segments };
+  if (isCard(account))
+    return {
+      ...shared,
+      ...cardFiles(gaps.runs, months),
+      timelineLabel: sentence,
+    };
   if (isOtherBank(account.bankId))
     return {
       ...shared,

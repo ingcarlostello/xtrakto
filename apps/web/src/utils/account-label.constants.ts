@@ -20,5 +20,8 @@ export const ACCOUNT_TYPE_LABELS = {
   credit_card: "Tarjeta de crédito",
 } as const satisfies Record<AccountType, string>;
 
+/** A card's short label, before its bank's name: "Tarjeta Nu" (12.3c). */
+export const CARD_SHORT_LABEL = "Tarjeta";
+
 /** How an account number shows: only its last 4 digits. */
 export const MASKED_DIGITS = "••••";

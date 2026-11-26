@@ -20,7 +20,6 @@ import {
   listCategoryTotals,
   listExportMovements,
   listMovementAccounts,
-  listMovementQuarters,
   listTransactions,
   listUnreconciledStatements,
   listUserCategoryRules,
@@ -30,11 +29,11 @@ import {
   type UserContext,
   withUserContext,
 } from "@xtrakto/db";
+import { selectPagePeriod } from "@/components/period-controls/period-choices.helpers";
 import {
-  quarterChoices,
-  selectPagePeriod,
-} from "@/components/period-controls/period-choices.helpers";
-import { listYearChoices } from "@/components/period-controls/period-location.service";
+  accountPeriods,
+  listYearChoices,
+} from "@/components/period-controls/period-location.service";
 import {
   checkedDayBalances,
   checkedNote,
@@ -42,7 +41,7 @@ import {
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
-import { periodDays } from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
 import { meetsPeriod } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { rulesOfMovement } from "./own-rules.helpers";
@@ -66,7 +65,13 @@ type ListRequest = Omit<TransactionsRequest, "shown" | "movementId">;
 
 type Located = Pick<
   AccountTransactions,
-  "accounts" | "account" | "quarters" | "years" | "period" | "unreconciled"
+  | "accounts"
+  | "account"
+  | "quarters"
+  | "cycles"
+  | "years"
+  | "period"
+  | "unreconciled"
 >;
 
 // The accounts with something to show: movements that count, the latest
@@ -100,15 +105,15 @@ const locate = async (
   const unreconciled = allUnreconciled.filter(
     ({ accountId }) => accountId === account.id,
   );
-  const counted = await listMovementQuarters(ctx, account.id);
-  const quarters = quarterChoices(counted, unreconciled);
+  const { quarters, cycles } = await accountPeriods(ctx, account, unreconciled);
   const period = selectPagePeriod(request.period, quarters);
   if (!period) return undefined;
-  const days = periodDays(period);
+  const days = pageDays(period, cycles);
   return {
     accounts,
     account,
     quarters,
+    cycles,
     years: await listYearChoices(ctx, account.id, quarters),
     period,
     unreconciled: unreconciled.filter((s) => meetsPeriod(s.period, days)),
@@ -139,13 +144,13 @@ const detailOf = async (
 // or category. A category's movements are of one kind: no filter goes with
 // them.
 const listedIn = (
-  { account, period }: Located,
+  { account, period, cycles }: Located,
   { search, category, filter }: ListRequest,
 ) => {
   const shownFilter = category === undefined ? filter : undefined;
   return {
     filter: shownFilter,
-    shownPeriod: { accountId: account.id, period: periodDays(period) },
+    shownPeriod: { accountId: account.id, period: pageDays(period, cycles) },
     selection: {
       ...(search === undefined ? {} : { search: movementSearchOf(search) }),
       ...selectionOf(shownFilter, category),

@@ -46,7 +46,7 @@ type Shown = { period?: PagePeriod; categoryId?: CategoryId };
 const detailOf = (
   rows: readonly Row[],
   { period = QUARTER, categoryId = "restaurants" }: Shown = {},
-) => ({ period, categoryId, movements: rows.map(movement) });
+) => ({ period, cycles: null, categoryId, movements: rows.map(movement) });
 
 // $50.000 a week from 1 July, but none the week of 29 July and $410.000
 // in two the week of 5 August; the salary on 29 September is the account's

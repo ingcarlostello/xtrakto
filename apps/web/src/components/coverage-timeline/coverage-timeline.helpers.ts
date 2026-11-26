@@ -1,5 +1,4 @@
 import {
-  ACCOUNT_TYPE,
   addDaysTo,
   type CalendarMonth,
   formatShortMonth,
@@ -12,7 +11,11 @@ import type {
   CoverageMonth,
   CoverageQuarter,
 } from "@xtrakto/db";
-import { accountShortLabel, isOtherBank } from "@/utils/account-label.helpers";
+import {
+  accountShortLabel,
+  isCard,
+  isOtherBank,
+} from "@/utils/account-label.helpers";
 import { joined } from "@/utils/list-text.utils";
 import { coverageSentence, overlapNote } from "./coverage-sentence.helpers";
 import { COVERAGE_COPY, TIMELINE_MONTHS } from "./coverage-timeline.constants";
@@ -81,18 +84,21 @@ const verifiedMonths = (quarters: readonly CoverageQuarter[]): Set<string> =>
 
 /**
  * The months an account has, as its timeline counts them (`"2026-08"`):
- * those a verified quarterly statement covers, and those movements files
- * saved movements in.
+ * those a verified quarterly statement covers, those movements files saved
+ * movements in, and those a card's statement that reconciles closes in
+ * (12.3b, 12.3c).
  */
 export const monthsHad = ({
   months,
   quarters,
+  cardStatements,
 }: AccountCoverage): ReadonlySet<string> =>
   new Set([
     ...verifiedMonths(quarters),
     ...months
       .filter(({ files }) => files.some(({ isQuarterly }) => !isQuarterly))
       .map(({ month }) => month),
+    ...cardStatements.map(({ to }) => to.slice(0, 7)),
   ]);
 
 /**
@@ -214,9 +220,6 @@ export const cardCoverageViewOf = (
     isChained: false,
   };
 };
-
-const isCard = ({ accountType }: AccountRow): boolean =>
-  accountType === ACCOUNT_TYPE.CREDIT_CARD;
 
 const sourceOf = (account: AccountRow): CoverageSource => {
   if (isCard(account)) return "card";

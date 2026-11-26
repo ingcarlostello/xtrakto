@@ -26,7 +26,8 @@ import type {
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { boxAmount, compactSize } from "@/utils/money-text.utils";
-import { type PagePeriod, periodDays } from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
+import type { PagePeriod } from "@/utils/transactions-url.helpers";
 import { CATEGORIES_COPY, WEEK_NOUNS } from "./categories.constants";
 import type {
   CategoryDetail,
@@ -41,7 +42,10 @@ const WEEK_DAYS = 7;
 // when a normal week took nothing.
 const STANDS_OUT = 1.5;
 
-type Weekly = Pick<CategoryDetail, "period" | "categoryId" | "movements">;
+type Weekly = Pick<
+  CategoryDetail,
+  "period" | "cycles" | "categoryId" | "movements"
+>;
 
 const earlier = (a: LocalDate, b: LocalDate): LocalDate => (a < b ? a : b);
 
@@ -51,7 +55,7 @@ const earlier = (a: LocalDate, b: LocalDate): LocalDate => (a < b ? a : b);
  * category took in it and how many movements.
  */
 export const categoryWeeks = (detail: Weekly): CategoryWeek[] => {
-  const { from, to } = periodDays(detail.period);
+  const { from, to } = pageDays(detail.period, detail.cycles);
   const lastDay = detail.movements.at(-1)?.date;
   if (lastDay === undefined) return [];
   const weeks = Math.floor(daysBetween(from, earlier(lastDay, to)) / WEEK_DAYS);
@@ -159,7 +163,7 @@ const conclusionOf = ({ weeks, categoryId }: Weeks): string => {
 export const weeklyChart = (detail: Weekly): WeeklyChartView | null => {
   const weeks = categoryWeeks(detail);
   if (!weeks.some(({ count }) => count > 0)) return null;
-  const days = periodDays(detail.period);
+  const days = pageDays(detail.period, detail.cycles);
   const amounts = weeks.map(({ amountMinor }) => amountMinor);
   const ticks = amountTicks(amounts);
   const plot = plotOf(daysBetween(days.from, days.to), scaleOf(ticks));

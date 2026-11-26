@@ -4,6 +4,7 @@ import {
   type CategoryId,
   dailyBalances,
   localDateSchema,
+  periodSchema,
   summarizeMovements,
 } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
@@ -55,6 +56,7 @@ const summaryOf = (
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    cycles: null,
     years: [],
     period,
     movements: [],
@@ -63,6 +65,7 @@ const summaryOf = (
     balance: null,
     balances: dailyBalances(movements),
     bankFigures: [],
+    cardFigures: [],
     unreconciled: [],
     missingMonths: [],
   };
@@ -485,6 +488,50 @@ describe("dayByDayChart", () => {
       "$10M",
       "$0",
     ]);
+  });
+
+  it("draws a card's spending over its cycles, which its statement's days and months follow (12.3c)", () => {
+    const cycles = [
+      periodSchema.parse({ from: "2026-06-12", to: "2026-07-11" }),
+      periodSchema.parse({ from: "2026-07-12", to: "2026-08-11" }),
+      periodSchema.parse({ from: "2026-08-12", to: "2026-09-10" }),
+    ];
+    const OTHERS = ["other_spending", "unknown_merchant"] as const;
+    const card = (period: PagePeriod) => ({
+      ...summaryOf(period, [
+        { date: "2026-06-20", amount: -40_000_000, as: OTHERS, balance: null },
+        { date: "2026-08-20", amount: -110_000_000, as: OTHERS, balance: null },
+      ]),
+      cycles,
+    });
+
+    const september = dayByDayChart(
+      card({ kind: "month", year: 2026, month: 9 }),
+    );
+    expect(september).toMatchObject({
+      title: "Tu gasto real, día a día",
+      note: "Un extracto de tarjeta no trae saldo día a día.",
+    });
+    expect(september?.xTicks.map(({ label }) => label)).toEqual([
+      "11 ago",
+      "21 ago",
+      "31 ago",
+      "10 sep",
+    ]);
+
+    const quarter = dayByDayChart(card(QUARTER));
+    expect(quarter?.xTicks.map(({ label }) => label)).toEqual([
+      "11 jun",
+      "11 jul",
+      "11 ago",
+      "10 sep",
+    ]);
+    // Without August's statement, the line breaks over its cycle.
+    const broken = dayByDayChart({
+      ...card(QUARTER),
+      missingMonths: ["2026-08"],
+    });
+    expect(broken?.spending).toHaveLength(2);
   });
 
   it("draws nothing without balances or spending", () => {

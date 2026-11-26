@@ -1,10 +1,7 @@
 import { formatDayInWords, type Period } from "@xtrakto/core";
 import type { HrefOf } from "@/components/period-controls/period-controls.types";
-import {
-  type PagePeriod,
-  periodDays,
-  transactionsHref,
-} from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
+import { transactionsHref } from "@/utils/transactions-url.helpers";
 import type { ListLink } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
 import type { AccountTransactions } from "./transaction.types";
@@ -47,8 +44,14 @@ export const listHrefOf =
   (link) =>
     transactionsHref({ ...link, search, filter, category });
 
-/** `"Del 1 de julio al 30 de septiembre de 2026"`. */
-export const periodText = (period: PagePeriod): string => {
-  const { from, to } = periodDays(period);
+/**
+ * `"Del 1 de julio al 30 de septiembre de 2026"`, or a card's cycle (12.3c):
+ * `"Del 12 de agosto al 10 de septiembre de 2026"`.
+ */
+export const periodText = ({
+  period,
+  cycles,
+}: Pick<AccountTransactions, "period" | "cycles">): string => {
+  const { from, to } = pageDays(period, cycles);
   return `${COPY.from} ${formatDayInWords(from)} ${COPY.to} ${formatDayInWords(to)} ${COPY.ofYear} ${to.slice(0, 4)}`;
 };

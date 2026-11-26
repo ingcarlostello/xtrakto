@@ -347,7 +347,7 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     expect(await files(stranger)).toEqual([]);
   });
 
-  it("reads a card's statements that reconcile, by their periods (12.3b)", async () => {
+  it("reads a card's statements that reconcile, by their periods, and none of its months by its movements' days (12.3b, 12.3c)", async () => {
     const account = await newAccount();
     const card = { userId: account.userId, accountId: await cardOf(account) };
     await save(card, await preparedCard(CARD_SEPTEMBER), VERIFIED);
@@ -363,6 +363,7 @@ describe.skipIf(!testDatabase)("an account's coverage", () => {
     expect(
       coverage.find(({ accountId }) => accountId === card.accountId),
     ).toMatchObject({
+      months: [],
       cardStatements: [{ from: "2026-08-12", to: "2026-09-10" }],
       quarters: [],
     });

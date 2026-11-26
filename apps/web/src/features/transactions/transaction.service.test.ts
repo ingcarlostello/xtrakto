@@ -200,6 +200,34 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     });
   });
 
+  it("reads a card's month as its statement's cycle (12.3c)", async () => {
+    const cardUser = await uploadAs(app, [
+      "nu-card-basic-pdf",
+      "nu-card-late-pdf",
+    ]);
+    const september = await getAccountTransactions(cardUser, {
+      period: { kind: "month", year: 2026, month: 9 },
+      shown: 30,
+    });
+    const dates =
+      september?.list.days.flatMap(({ lines }) =>
+        lines.flatMap((line) =>
+          line.kind === "movement" ? [line.item.date] : [],
+        ),
+      ) ?? [];
+
+    expect(september?.cycles).toEqual([
+      { from: "2026-08-12", to: "2026-09-10" },
+      { from: "2026-09-11", to: "2026-10-10" },
+    ]);
+    expect(dates.length).toBeGreaterThan(0);
+    // From 12 August, which calendar September leaves out, to 10 September.
+    expect(dates.some((date) => date < "2026-09-01")).toBe(true);
+    expect(
+      dates.every((date) => date >= "2026-08-12" && date <= "2026-09-10"),
+    ).toBe(true);
+  });
+
   it("names the files it joined, and both files of a movement July's export repeats", async () => {
     const joinedUser = await uploadAs(app, [
       "quarterly-basic",

@@ -18,6 +18,7 @@ import {
   movementTags,
 } from "@/features/transactions/transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "@/features/transactions/transaction.constants";
+import { isCard } from "@/utils/account-label.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { formatCount } from "@/utils/count-text.utils";
 import { boxAmount } from "@/utils/money-text.utils";
@@ -46,6 +47,19 @@ const MOVED_OUT: Partial<Record<CategoryId, string>> = {
   own_account_transfer: COPY.toOwnAccount,
 };
 
+// On a card (12.3c), money that came in to it is a payment, and money that
+// moved out of it a balance transfer.
+const movedText = (
+  note: Extract<LineNote, { kind: "moved" }>,
+  onCard: boolean,
+): string => {
+  const isIn = note.direction === MONEY_DIRECTION.IN;
+  if (onCard) return isIn ? COPY.cardPayment : COPY.balanceTransfer;
+  return isIn
+    ? COPY.cameBack
+    : (MOVED_OUT[note.categoryId] ?? COPY.countsAs.internal);
+};
+
 // "el día 5", "entre el 1 y el 4".
 const daysText = ({ first, last }: { first: number; last: number }) =>
   first === last
@@ -60,8 +74,11 @@ const sumText = (note: Extract<LineNote, { kind: "sum" }>) => {
   return `${others} ${COPY.addUpTo} ${boxAmount(note.totalMinor)}.`;
 };
 
-/** What a line means, in one sentence of the code's (design-system.md §9). */
-export const noteText = (note: LineNote): string => {
+/**
+ * What a line means, in one sentence of the code's (design-system.md §9),
+ * on a card's account in its own words (12.3c).
+ */
+export const noteText = (note: LineNote, onCard = false): string => {
   switch (note.kind) {
     case "guess": {
       const guess =
@@ -72,9 +89,7 @@ export const noteText = (note: LineNote): string => {
     case "fixed":
       return `${COPY.repeats} ${daysText(note.days)} ${DAYS.eachMonth}.`;
     case "moved":
-      return note.direction === MONEY_DIRECTION.IN
-        ? COPY.cameBack
-        : (MOVED_OUT[note.categoryId] ?? COPY.countsAs.internal);
+      return movedText(note, onCard);
     case "sum":
       return sumText(note);
     case "counts":
@@ -99,12 +114,13 @@ const titleOf = (movement: PeriodMovement) => {
 const lineView = (
   { movement, note }: TranslatedLine<PeriodMovement>,
   link: PeriodLink & { readonly filter?: MovementFilter },
+  onCard: boolean,
 ): TranslatedLineView => ({
   id: movement.id,
   categoryId: movement.categoryId,
   tone: movementTone(movement, true),
   ...titleOf(movement),
-  note: noteText(note),
+  note: noteText(note, onCard),
   channel: movementTags(movement, true).channel,
   isPendingReview: movement.isPendingReview,
   amount: amountText(movement.amountMinor),
@@ -151,7 +167,11 @@ export const translatedStatementView = (
       pending: movements.filter((m) => m.isPendingReview).length,
     }),
     lines: lines.map((line) =>
-      lineView(line, { ...link, ...(filter ? { filter } : {}) }),
+      lineView(
+        line,
+        { ...link, ...(filter ? { filter } : {}) },
+        isCard(summary.account),
+      ),
     ),
     ...(kept.length === 0
       ? {}

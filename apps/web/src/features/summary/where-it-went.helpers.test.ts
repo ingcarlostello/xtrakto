@@ -59,6 +59,7 @@ const summaryOf = (
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    cycles: null,
     years: [],
     period,
     movements,
@@ -67,6 +68,7 @@ const summaryOf = (
     balance: null,
     balances: null,
     bankFigures: [],
+    cardFigures: [],
     unreconciled: [],
     missingMonths: [],
   };

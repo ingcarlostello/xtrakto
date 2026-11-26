@@ -280,6 +280,7 @@ const withLatest = (
   accounts,
   account: ACCOUNT,
   quarters: [{ year: 2026, quarter: 3, status: "verified" } as const],
+  cycles: null,
   years: [{ year: 2026, months: 3 }],
   latest,
 });

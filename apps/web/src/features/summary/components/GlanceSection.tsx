@@ -2,16 +2,18 @@ import Link from "next/link";
 import { periodLinkOf } from "@/components/period-controls/period-options.helpers";
 import { StatCard } from "@/components/stat-card/StatCard";
 import { Button } from "@/components/ui/button";
+import { isCard } from "@/utils/account-label.helpers";
 import { glanceSubtitle, glanceTiles, glanceTitle } from "../glance.helpers";
 import type { AccountSummary } from "../summary.types";
 
 /**
  * "Tu trimestre de un vistazo" (docs/ui/v8-01): what went out, and that not
  * all of it was spending, over the three KPI tiles, each with the way to
- * its movements.
+ * its movements; a card's in its own words (12.3c).
  */
 export function GlanceSection({ summary }: { summary: AccountSummary }) {
-  const tiles = glanceTiles(summary.summary, periodLinkOf(summary));
+  const onCard = isCard(summary.account);
+  const tiles = glanceTiles(summary.summary, periodLinkOf(summary), onCard);
   return (
     <section aria-labelledby="glance" className="flex flex-col gap-3.5">
       <div className="flex flex-col gap-0.5">
@@ -19,7 +21,7 @@ export function GlanceSection({ summary }: { summary: AccountSummary }) {
           {glanceTitle(summary.period)}
         </h2>
         <p className="text-caption text-ink-muted">
-          {glanceSubtitle(summary.period, summary.summary)}
+          {glanceSubtitle(summary.period, summary.summary, summary.cycles)}
         </p>
       </div>
       <ul className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">

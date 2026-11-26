@@ -346,6 +346,7 @@ describe("the list's chips", () => {
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    cycles: null,
     years: [],
     period: THIRD_QUARTER,
     month: SEPTEMBER,

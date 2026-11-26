@@ -274,7 +274,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.2d Nu's card statement in PDF
 - [x] 12.3a Card accounts saved
 - [x] 12.3b Cards on the upload screen and in the welcome
-- [ ] 12.3c Your card
+- [x] 12.3c Your card
 - [ ] 12.3d A card's movements and installments
 - [ ] 12.3e Card payments across accounts
 - [ ] 12.4a [HUMAN] Usury rates by month
@@ -2587,7 +2587,25 @@ It came out at about 420 lines of code added and 127 deleted, without tests, com
 
 **Done when:** a card's summary reads right for each bank from seeded data, at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): your card`
+Decided with the human when it started (2026-11-26):
+
+- **A card's month is its statement's cycle,** named by the month it closes in: Nu's "Septiembre" runs from 12 August to 10 September, its quarter through its three cycles, its year through those that close in it, on every page with period controls (ADR 0041).
+- **A card goes by its bank in the switch** ("Tarjeta Nu ••••5678"), since nothing the parsers read names its brand.
+- **One phase,** though estimated at 450 to 600 lines.
+
+Found while building it (2026-11-26):
+
+- **A card's quarters** are those its statements close in, verified when each one there reconciles, whatever days its movements fall on.
+- **A month without its statement** runs between its neighbors' cycles, or to its nearest cycle's cut day, so a purchase a later statement lists from it still has a month.
+- **Movimientos, Pagos fijos and Categorías read a card's cycles too:** the controls are shared, and the summary's tiles link to Movimientos.
+- **The coverage's months leave a card's statements out:** its months are those its statements close in (12.3b), so a year's "N de 12 meses" and the summary's missing months count them, and a card's missing month asks for its statement.
+- **The monthly email reads savings accounts only:** since 12.3a, a card's month asked for movements in a savings account's words, and a Nu card counted as another bank. A card stays out of it in Stage 12, as planned.
+- **"Tu extracto, traducido"** says a card's payment and balance transfer in their own words; on the card, its payment read as "en el extracto de la tarjeta".
+- **The dev seed** adds Bancolombia's card and Nu's September and October, categorized as a card's, which it didn't tell the rules.
+
+It came out at about 690 lines of code added and 125 deleted, without tests, comments or blank lines (450 to 600 estimated), in commits of one pull request: the design rules, the database, the app, and the documents with an ADR.
+
+**Commits:** `docs(rules): your card`, `feat(db): a card's periods and figures`, `feat(web): your card`, then `docs: your card`
 
 #### 12.3d A card's movements and installments
 

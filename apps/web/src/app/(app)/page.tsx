@@ -19,13 +19,16 @@ import { MissingMonths } from "@/features/summary/components/MissingMonths";
 import { SummaryViewed } from "@/features/summary/components/SummaryViewed";
 import { TranslatedStatement } from "@/features/summary/components/TranslatedStatement";
 import { WhereItWent } from "@/features/summary/components/WhereItWent";
+import { YourCard } from "@/features/summary/components/YourCard";
 import { SUMMARY_COPY } from "@/features/summary/summary.constants";
 import { summarySearchSchema } from "@/features/summary/summary.schemas";
 import { getSummary } from "@/features/summary/summary.service";
+import { summaryTitle } from "@/features/summary/your-card.helpers";
 import { UnreconciledEmpty } from "@/features/transactions/components/Unreconciled";
 import { findUnreconciledStatement } from "@/features/transactions/transaction.service";
 import { HowItWorks } from "@/features/upload/components/HowItWorks";
 import { requireViewer } from "@/lib/example-mode";
+import { isCard } from "@/utils/account-label.helpers";
 import { summaryHref } from "@/utils/transactions-url.helpers";
 
 const COPY = PAGE_COPY.summary;
@@ -90,6 +93,7 @@ function UploadAction() {
 // beside where it went, then its statement translated, under the color
 // legend and the period controls, with the review banner while groups wait
 // and the months the account misses (10.2d), which the example never does.
+// A card's summary has "Tu tarjeta" in the account's card's place (12.3c).
 // The account, the period and the translated lines live in the URL; the
 // example's, while the browser explores it (7.8).
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
@@ -105,7 +109,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
   return (
     <>
       {isExample && <ExampleBanner />}
-      <PageHeader title={SUMMARY_COPY.title} />
+      <PageHeader title={summaryTitle(summary.account)} />
       <KindLegend />
       <PeriodControls
         choices={summary}
@@ -116,7 +120,11 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
       {!isExample && <MissingMonths summary={summary} />}
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <GlanceSection summary={summary} />
-        <AccountCard summary={summary} />
+        {isCard(summary.account) ? (
+          <YourCard summary={summary} />
+        ) : (
+          <AccountCard summary={summary} />
+        )}
         <DayByDayChart summary={summary} />
         <WhereItWent summary={summary} />
         <TranslatedStatement summary={summary} filter={lines} />

@@ -7,6 +7,7 @@ import {
   listMonthlySummaryUserIds,
   readNoticePreferences,
   toUserId,
+  type UserContext,
   withUserContext,
 } from "@xtrakto/db";
 import {
@@ -19,7 +20,7 @@ import { sendEmail } from "@/lib/email";
 import { getServerEnv } from "@/lib/env";
 import { EXAMPLE_CLERK_USER_ID } from "@/lib/example-mode";
 import { inngest, monthlySummaryDue } from "@/lib/inngest";
-import { isOtherBank } from "@/utils/account-label.helpers";
+import { isCard, isOtherBank } from "@/utils/account-label.helpers";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { monthlySummaryEmail } from "./monthly-summary-email.helpers";
 import { monthlyStatusOf, monthThatEnded } from "./monthly-summary.helpers";
@@ -61,12 +62,30 @@ export const queueMonthlySummaryEmails = (): Promise<{
     return { people: userIds.length };
   });
 
+// What a person's monthly email reads: whether they want it, who they are,
+// and what their savings accounts have. A card stays out of it (12.3c):
+// its months are its statements'.
+const readMonthly = async (ctx: UserContext) => {
+  const savings = (await listAccounts(ctx)).filter(
+    (account) => !isCard(account),
+  );
+  const isSavings = ({ accountId }: { accountId: string }) =>
+    savings.some(({ id }) => id === accountId);
+  return {
+    isOn: (await readNoticePreferences(ctx)).monthlySummary,
+    clerkUserId: await findClerkUserId(ctx),
+    accounts: (await listAccountCoverage(ctx)).filter(isSavings),
+    hasOtherBank: savings.some(({ bankId }) => isOtherBank(bankId)),
+  };
+};
+
 /**
- * Emails a person the month that ended: its summary when an account has it
- * through its last day, else which file it needs. Read when it's sent, so a
- * notice turned off meanwhile sends nothing, and never to the example's
- * user. A failure that may pass is thrown for Inngest to retry; Resend's
- * idempotency key keeps a retry from sending it twice.
+ * Emails a person the month that ended: its summary when a savings account
+ * has it through its last day, else which file it needs; a card stays out
+ * of it (12.3c). Read when it's sent, so a notice turned off meanwhile
+ * sends nothing, and never to the example's user. A failure that may pass
+ * is thrown for Inngest to retry; Resend's idempotency key keeps a retry
+ * from sending it twice.
  */
 export const sendMonthlySummary = (
   userId: string,
@@ -76,14 +95,7 @@ export const sendMonthlySummary = (
     const { isOn, clerkUserId, accounts, hasOtherBank } = await withUserContext(
       getDb(),
       toUserId(userId),
-      async (ctx) => ({
-        isOn: (await readNoticePreferences(ctx)).monthlySummary,
-        clerkUserId: await findClerkUserId(ctx),
-        accounts: await listAccountCoverage(ctx),
-        hasOtherBank: (await listAccounts(ctx)).some(({ bankId }) =>
-          isOtherBank(bankId),
-        ),
-      }),
+      readMonthly,
     );
     if (!isOn) return notSent("NOTICE_OFF");
     if (clerkUserId === EXAMPLE_CLERK_USER_ID) return notSent("EXAMPLE");

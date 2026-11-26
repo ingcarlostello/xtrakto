@@ -2,6 +2,7 @@ import {
   amountMinorSchema,
   type CategoryId,
   type PeriodSummary,
+  periodSchema,
 } from "@xtrakto/core";
 import { describe, expect, it } from "vitest";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
@@ -218,5 +219,106 @@ describe("glanceTiles", () => {
       "No entró plata de otros en este periodo. No incluye $300 mil que volvió de tus cuentas.",
     );
     expect(moved?.note).toBe("Volvieron $300 mil.");
+  });
+});
+
+describe("a card's glance (12.3c)", () => {
+  // Nu's September: $1,5M charged, $500 mil paid and a $60 mil refund.
+  const CARD: PeriodSummary = {
+    ...SUMMARY,
+    outflows: total(-150_000_000, 6),
+    kinds: {
+      income: total(6_000_000, 1),
+      spending: total(-150_000_000, 6),
+      moved: { out: NOTHING, back: total(50_000_000, 2) },
+    },
+    spendingByCategory: [
+      of("other_spending", -120_000_000, 4),
+      of("taxes_and_fees", -30_000_000, 2),
+    ],
+    incomeByCategory: [of("refund", 6_000_000, 1)],
+    movedByCategory: [
+      {
+        categoryId: "credit_card_payment",
+        out: NOTHING,
+        back: total(50_000_000, 2),
+      },
+    ],
+  };
+  const SEPTEMBER = { kind: "month", year: 2026, month: 9 } as const;
+  const cycles = [
+    periodSchema.parse({ from: "2025-12-12", to: "2026-01-10" }),
+    periodSchema.parse({ from: "2026-08-12", to: "2026-09-10" }),
+  ];
+
+  it("says its cycle's days and what went out with the card", () => {
+    expect(glanceSubtitle(SEPTEMBER, CARD, cycles)).toBe(
+      "12 de agosto a 10 de septiembre de 2026. Con tu tarjeta salieron $1,5M.",
+    );
+    expect(
+      glanceSubtitle({ kind: "month", year: 2026, month: 1 }, ONLY_IN, cycles),
+    ).toBe(
+      "12 de diciembre de 2025 a 10 de enero de 2026. No salió plata con tu tarjeta.",
+    );
+    expect(glanceSubtitle({ kind: "year", year: 2026 }, CARD, cycles)).toBe(
+      "En 2026 con tu tarjeta salieron $1,5M.",
+    );
+  });
+
+  it("reads its payments as money that only moved, and its refunds as income", () => {
+    const [income, spending, moved] = glanceTiles(
+      CARD,
+      { period: SEPTEMBER },
+      true,
+    );
+
+    expect(income?.note).toBe("El 100% llegó en 1 devolución.");
+    expect(spending?.note).toBe(
+      "El 100% de lo que salió. Otros y costos del banco.",
+    );
+    expect(moved).toEqual({
+      tone: "moved",
+      label: "Movido",
+      percent: 100,
+      amount: "$500 mil",
+      note: "El 100% fueron 2 pagos a tu tarjeta. No es ingreso: es tu plata.",
+      action: {
+        label: "Ver tus pagos",
+        href: {
+          pathname: "/transactions",
+          query: { period: "2026-09", filter: "moved" },
+        },
+      },
+    });
+  });
+
+  it("says what a balance transfer brought, and when nothing was paid or refunded", () => {
+    const transfer = total(-200_000_000, 1);
+    const withTransfer = {
+      ...CARD,
+      kinds: {
+        ...CARD.kinds,
+        moved: { out: transfer, back: total(50_000_000, 1) },
+      },
+    };
+    const [, , moved] = glanceTiles(withTransfer, { period: SEPTEMBER }, true);
+    expect(moved?.percent).toBe(20);
+    expect(moved?.amount).toBe("$2,5M");
+    expect(moved?.note).toBe(
+      "El 20% fue 1 pago a tu tarjeta. Además trajiste $2,0M de deuda de otro banco.",
+    );
+
+    const unpaid = {
+      ...CARD,
+      kinds: {
+        ...CARD.kinds,
+        income: NOTHING,
+        moved: { out: NOTHING, back: NOTHING },
+      },
+      incomeByCategory: [],
+    };
+    const [income, , none] = glanceTiles(unpaid, { period: SEPTEMBER }, true);
+    expect(income?.note).toBe("No hubo devoluciones en este periodo.");
+    expect(none?.note).toBe("No hubo pagos a tu tarjeta en este periodo.");
   });
 });

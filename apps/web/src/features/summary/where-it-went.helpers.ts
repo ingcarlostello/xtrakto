@@ -16,7 +16,7 @@ import { channelWords, usedChannels } from "@/utils/channel-text.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { boxAmount } from "@/utils/money-text.utils";
-import { periodDays } from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { percentOf } from "@/utils/percent.utils";
 import { SUMMARY_COPY } from "./summary.constants";
@@ -103,12 +103,12 @@ const noDetailOf = (
 // bank text doesn't say, its fixed payments, or its payments and channels.
 const categoryTile = (
   row: CategoryTotal,
-  { movements, summary, fixedPayments, period }: AccountSummary,
+  { movements, summary, fixedPayments, period, cycles }: AccountSummary,
 ): SpendingTile => {
   const noDetail = noDetailOf(row.categoryId, movements);
   const fixed = paidIn(fixedPayments, {
     categoryId: row.categoryId,
-    days: periodDays(period),
+    days: pageDays(period, cycles),
   });
   const fact = noDetail
     ? `${noDetail.title}. ${noDetail.note}`

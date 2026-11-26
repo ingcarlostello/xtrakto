@@ -4,6 +4,7 @@ import type { Noun } from "@/utils/count-text.utils";
 // The summary (docs/ui/v8-01): an account's period at a glance.
 export const SUMMARY_COPY = {
   title: "Resumen de tu cuenta de ahorros",
+  cardTitle: "Resumen de tu tarjeta",
   upload: "Subir extracto",
   // What the account misses (10.2d, v8-13): "Te falta abril a junio",
   // "Para ver el año completo, sube el extracto trimestral abr–jun." and
@@ -23,6 +24,12 @@ export const SUMMARY_COPY = {
     // abril a junio", or "de tu banco" when the person chose "Otro".
     yourMovements: "tus movimientos de",
     yourBank: "tu banco",
+    // A card's months (12.3c): "sube el extracto de tu tarjeta de octubre",
+    // or "los extractos de tu tarjeta de agosto a octubre".
+    cardStatements: {
+      one: "el extracto de tu tarjeta de",
+      other: "los extractos de tu tarjeta de",
+    },
   },
   glanceTitle: {
     quarter: "Tu trimestre de un vistazo",
@@ -35,6 +42,12 @@ export const SUMMARY_COPY = {
   inYear: "En",
   notAllSpending: "pero no todo fue gasto",
   nothingOut: "No salió plata de tu cuenta.",
+  // A card's period (12.3c): "12 de agosto a 10 de septiembre de 2026. Con
+  // tu tarjeta salieron $1,5M."
+  cycleTo: "a",
+  of: "de",
+  withCard: "Con tu tarjeta salieron",
+  nothingOutOfCard: "No salió plata con tu tarjeta.",
   income: {
     label: "Ingresos",
     action: "Ver ingresos",
@@ -44,6 +57,7 @@ export const SUMMARY_COPY = {
     excludes: "No incluye",
     cameBack: "que volvió de tus cuentas.",
     none: "No entró plata de otros en este periodo.",
+    noRefund: "No hubo devoluciones en este periodo.",
   },
   spending: {
     label: "Gasto real",
@@ -60,6 +74,17 @@ export const SUMMARY_COPY = {
     also: "Además volvieron",
     cameBack: "Volvieron",
     none: "No moviste plata entre tus cuentas, tu inversión ni tus tarjetas.",
+    // A card's (12.3c): "El 100% fueron 2 pagos a tu tarjeta. No es
+    // ingreso: es tu plata." or "Además trajiste $2,0M de deuda de otro banco."
+    cardAction: "Ver tus pagos",
+    toCard: "a tu tarjeta.",
+    isYourMoney: "No es ingreso: es tu plata.",
+    alsoBrought: "Además trajiste",
+    brought: "Trajiste",
+    debtFromBank: "de deuda de otro banco.",
+    payments: { one: "pago", other: "pagos" },
+    were: { one: "fue", other: "fueron" },
+    noPayment: "No hubo pagos a tu tarjeta en este periodo.",
   },
   // "Tu cuenta": its balance, the bank's own figures, and its status.
   account: {
@@ -93,6 +118,32 @@ export const SUMMARY_COPY = {
     noBalance: "Sin saldo para verificar",
     movementsFile: "Archivo de movimientos",
   },
+  // "Tu tarjeta" (12.3c): its latest statement's debt, what's due and by
+  // when, its limit, and whether its bank's sums check it.
+  card: {
+    title: "Tu tarjeta",
+    subtitle: "Comparamos cada extracto con las sumas de tu banco.",
+    // "Deuda al 11 de septiembre", or "Saldo a favor al 11 de septiembre"
+    // when the card owes the person.
+    debtOn: "Deuda al",
+    inFavorOn: "Saldo a favor al",
+    // "Fecha límite de pago: 4 de octubre".
+    dueOn: "Fecha límite de pago:",
+    nothingDue: "No tienes pagos pendientes.",
+    minimum: "Pago mínimo",
+    total: "Pago total",
+    limit: "Cupo total",
+    available: "Disponible",
+    // As the upload result says it (12.3b).
+    verified: "Cuadra con tu extracto",
+    verifiedDetail: "Sus movimientos y cuotas dan lo que dice tu banco.",
+    // "Tu extracto no cuadra por $10.000".
+    doesNotReconcile: "Tu extracto no cuadra",
+    by: "por",
+    checkFile: "Revisa el archivo",
+    noStatement: "Sin extracto de este mes",
+    noStatementDetail: "Con él vemos tu deuda y tu pago.",
+  },
   // "Tu saldo y tu gasto real, día a día": both lines, and the day that
   // stands out.
   chart: {
@@ -100,6 +151,7 @@ export const SUMMARY_COPY = {
     spendingTitle: "Tu gasto real, día a día",
     guide: "Si la línea naranja sube rápido, estás gastando rápido.",
     noBalance: "Tus archivos de movimientos no traen saldo.",
+    noCardBalance: "Un extracto de tarjeta no trae saldo día a día.",
     balance: "Saldo de la cuenta",
     spending: "Gasto real acumulado",
     // "4 de agosto: entraron $31,5M".
@@ -168,6 +220,9 @@ export const SUMMARY_COPY = {
     toInvestment: "No es gasto: pasó a tu inversión.",
     toOwnAccount: "No es gasto: pasó a otra cuenta tuya.",
     cameBack: "No es ingreso: es tu propia plata que regresó.",
+    // On a card (12.3c): its payment, and a balance transfer.
+    cardPayment: "No es ingreso: pagaste tu tarjeta con tu plata.",
+    balanceTransfer: "No es gasto: es una deuda que trajiste de otro banco.",
     // "Con el del 30 de julio suman $39,8M.", "Con otros 3 suman $4,2M."
     withThe: "Con el del",
     withOthers: "Con otros",
