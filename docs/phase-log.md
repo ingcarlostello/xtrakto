@@ -2244,3 +2244,78 @@ Checked:
 - **The summary and the monthly email still read a card's account as before:** its missing months and its month (10.2d, 10.5) wait for 12.3c, and a card in the monthly email stays out of Stage 12.
 - **One full forced run failed one db test once:** it passed in two more full runs and twice alone; its output wasn't kept, likely the bulk saves' timing under load (12.2b).
 - **Size:** about 420 lines of code added and 127 deleted, without tests, comments or blank lines (400 to 550 estimated). It lands in commits of one pull request.
+
+## 12.3c Your card
+
+_2026-11-26_
+
+A card now has a summary of its own. "Tarjeta Nu ••••1234" in the account switch opens "Resumen de tu tarjeta". Its "Septiembre" is the cycle of its September statement, 12 August to 10 September, as Nu titles it. "Tu mes de un vistazo" says "12 de agosto a 10 de septiembre de 2026. Con tu tarjeta salieron $1,4M.":
+
+- its purchases, interest and fees are real spending;
+- its payments only moved ("El 100% fue 1 pago a tu tarjeta. No es ingreso: es tu plata.");
+- its refunds are income.
+
+Beside it, "Tu tarjeta" shows "Deuda al 11 de septiembre", "Fecha límite de pago: 4 de octubre" with the minimum and the total, the limit and what's available, and "Cuadra con tu extracto". Every screen was built from v8's pieces.
+
+- **A card's periods** ([ADR 0041](adr/0041-a-cards-months-are-its-statements-cycles.md), decided with the human):
+  - A card's month is its statement's cycle, named by the month it closes in. Its quarter runs through three cycles, and its year through the cycles that close in it.
+  - The days are worked out when read from its statements' periods (`listCardPeriods`, `pageDays`). A month without its statement runs between its neighbors' cycles, or to its nearest cycle's cut day.
+  - Its quarters to choose from are those its statements close in, "Verificado" or "No cuadra" by its bank's sums.
+  - Movimientos ("Del 12 de agosto al 10 de septiembre de 2026"), Pagos fijos and Categorías read the same days, since the controls are shared.
+- **The account switch** names a card by its bank ("Tarjeta Nu ••••1234", "Tarjeta Bancolombia ••••1234", decided with the human), so the two invented cards no longer share a timeline's label (12.3b).
+- **"Tu tarjeta"** (`yourCardView`), from the period's latest statement that reconciles (`listCardFigures`):
+  - the debt on the day it was cut: Bancolombia's worked out from its summary, Nu's its total to pay, or "Saldo a favor" when the card owes the person;
+  - what's due and by when, or "No tienes pagos pendientes.";
+  - its limit and what's available.
+  - Its pill says whether its bank's sums check its statements; one that doesn't reconcile shows no figures, and a month without its statement says so.
+- **The glance** speaks of the card: its cycle's days in the headline; its refunds as income, without its payments; its payments as what moved, the ring their share of it, with what a balance transfer brought from another bank.
+- **The chart** draws the real spending alone, with "Un extracto de tarjeta no trae saldo día a día.". Its days are its cycles' last ("11 jun", "11 jul", "11 ago", "10 sep"), and it breaks over a cycle whose statement is missing.
+- **Its missing months** (10.2d) are those no statement that reconciles closes in: "Te falta octubre" asks for "el extracto de tu tarjeta de octubre", with "Subir octubre". The coverage's months leave a card's statements out (`listMonthFiles`), so a year's "N de 12 meses" counts its statements' months too.
+- **"Tu extracto, traducido"** says a card's payment in its own words ("No es ingreso: pagaste tu tarjeta con tu plata.") and a balance transfer ("No es gasto: es una deuda que trajiste de otro banco."). Before, the card's own payment read as "en el extracto de la tarjeta".
+- **The monthly email** reads savings accounts only. Since 12.3a, a card's month asked for movements in a savings account's words, and a Nu card counted as another bank. A card stays out of it in Stage 12, as planned.
+- **The dev seed** adds Bancolombia's card and Nu's September and October, and tells the rules each statement's account type, which it didn't.
+
+30 new tests: 2 in db (306 there) and 28 in the app (1,689 there):
+
+- db: a card's periods, the oldest first, whether they reconcile, and none of a savings account's or another user's; a card's figures by the day its statement closes, also one that doesn't reconcile; a card's months not taken from its movements' days.
+- the app:
+  - a card's cycle days: a month's, one between neighbors, one past the card's statements, short months, a next cycle that starts off the cut day, and a quarter's and a year's; the month a day belongs to;
+  - a card's quarters to choose from;
+  - a card's short label by its bank;
+  - Movimientos' line and list by a card's cycle;
+  - a card's missing months and what they ask for;
+  - a card's glance (headline across a new year, refunds, payments, a balance transfer, none);
+  - "Tu tarjeta" for each bank: a debt in favor, nothing due, a statement that doesn't reconcile, a month without one; the page's title;
+  - a card's chart (note, ticks, a break);
+  - a payment's and a balance transfer's note on a card;
+  - the summary of a card's month from its uploads;
+  - a card left out of the monthly email.
+
+Checked:
+
+- **In a local browser** (headless, a fresh Clerk test user whose rows the dev seed wrote: a savings account, Bancolombia's card and Nu's card), 39 checks, all passed:
+  - each card's summary, quarter and year;
+  - Bancolombia's missing October;
+  - Movimientos' line, the savings account's summary unchanged, and the profile's two timelines;
+  - the keyboard from Nu's switch to Bancolombia's card;
+  - each page fitting at 390px and 360px.
+  - The test user and its rows were deleted afterwards, and the local database's counts are back to what they were.
+- **Thirty-one deliberate bugs,** one at a time. Thirty failed a test on the first run, among them:
+  - a month's cut day past its end, or the farthest cycle's;
+  - a day kept in its calendar month;
+  - a card's quarter by its cycle's start, or its unreconciled statement hidden;
+  - a card read as a savings account in its periods, label, timeline, missing months, headline, income, payments, chart or translated lines;
+  - Bancolombia's debt as its total, the debt off its cut, an unreconciled statement's figures, or its status unsaid;
+  - a card in the monthly email;
+  - Movimientos on calendar days;
+  - a savings account's statements among a card's;
+  - a card's figures by the day its cycle starts.
+  - The other one, a month without its statement ending at the cut day despite where the next cycle starts, passed until a test gave the next cycle another start day. Then it failed too.
+
+**Deviations and follow-ups:**
+
+- **Movimientos, Pagos fijos and Categorías read a card's cycles from this phase,** ahead of 12.3d, so the summary's links open the same days. Movimientos' list, tiles and the files it joined still read as a savings account's: 12.3d.
+- **A month without its statement is inferred** from its neighbors or its nearest cut day. The bank may have cut it on another day, which only its statement would say.
+- **A quarter's or a year's "Tu tarjeta" shows its latest statement that reconciles,** dated by its cut; the period's other statements don't add to it.
+- **The review banner** (6.3c) still shows on a card's summary when the savings account has groups waiting, since it follows the review's own account.
+- **Size:** about 690 lines of code added and 125 deleted, without tests, comments or blank lines (450 to 600 estimated). It lands in commits of one pull request.
