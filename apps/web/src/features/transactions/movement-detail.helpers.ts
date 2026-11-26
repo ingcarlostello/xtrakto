@@ -12,6 +12,13 @@ import {
 import type { MovementDetail } from "@xtrakto/db";
 import { descriptionView } from "@/components/movement-row/movement-row.helpers";
 import type { DescriptionView } from "@/components/movement-row/movement-row.types";
+import { CARD_INSTALLMENTS_COPY as CARD } from "@/features/cards/card-installments.constants";
+import {
+  installmentNote,
+  leftText,
+  statementText,
+} from "@/features/cards/card-installments.helpers";
+import type { LatestInstallment } from "@/features/cards/card-installments.types";
 import { joined } from "@/utils/list-text.utils";
 import { statementLabel } from "@/utils/statement-label.helpers";
 import { reviewHref } from "@/utils/transactions-url.helpers";
@@ -76,6 +83,22 @@ const factsOf = (detail: MovementDetail): DetailFact[] => {
   return facts;
 };
 
+// A card's purchase in installments (12.3d): which one its latest statement
+// charged, and what's left after it.
+const installmentFacts = (installment?: LatestInstallment): DetailFact[] => {
+  if (!installment) return [];
+  const { number, count } = installment;
+  return [
+    {
+      label: CARD.installment,
+      value: `${installmentNote(installment)}, ${statementText(installment)}`,
+    },
+    ...(number < count
+      ? [{ label: CARD.leftToPay, value: leftText(installment) }]
+      : []),
+  ];
+};
+
 // Why it has its category: the rule's reason, which the system gave without
 // AI, the LLM's answer from the bank's text, or the user's answer; or that
 // no rule knows it.
@@ -111,10 +134,14 @@ const reviewOf = (accountId: string, date: LocalDate) =>
     },
   });
 
-/** One of an account's movements as its detail shows it (docs/ui/v8-03). */
+/**
+ * One of an account's movements as its detail shows it (docs/ui/v8-03), a
+ * card's purchase with its installments (12.3d).
+ */
 export const movementDetailView = (
   detail: MovementDetail,
   accountId: string,
+  installment?: LatestInstallment,
 ): MovementDetailView => {
   const description = descriptionView(detail);
   const { categoryId, isPendingReview } = detail;
@@ -128,7 +155,7 @@ export const movementDetailView = (
     amount: amountText(detail.amountMinor),
     tone: movementTone(detail, true),
     categoryId,
-    facts: factsOf(detail),
+    facts: [...factsOf(detail), ...installmentFacts(installment)],
     isGuess: isPendingReview,
     reason: reasonOf(detail),
     ...(isPendingReview

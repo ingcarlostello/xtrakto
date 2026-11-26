@@ -19,6 +19,7 @@ import { transactionsSearchSchema } from "@/features/transactions/transaction.sc
 import { getAccountTransactions } from "@/features/transactions/transaction.service";
 import type { TransactionsRequest } from "@/features/transactions/transaction.types";
 import { requireViewer } from "@/lib/example-mode";
+import { isCard } from "@/utils/account-label.helpers";
 
 export const metadata: Metadata = { title: COPY.title };
 
@@ -86,7 +87,10 @@ export default async function TransactionsPage({
       {transactions.unreconciled.map((statement) => (
         <UnreconciledNotice key={statement.id} statement={statement} />
       ))}
-      <KindTiles totals={transactions.kindTotals} />
+      <KindTiles
+        totals={transactions.kindTotals}
+        onCard={isCard(transactions.account)}
+      />
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <TransactionList transactions={transactions} />
         <MovementDetailColumn

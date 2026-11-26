@@ -99,8 +99,10 @@ export const noteText = (note: LineNote, onCard = false): string => {
   }
 };
 
-// Its title in plain words over the bank's text, or the bank's text alone.
-const titleOf = (movement: PeriodMovement) => {
+/** Its title in plain words over the bank's text, or the bank's text alone. */
+export const lineTitleOf = (
+  movement: Parameters<typeof descriptionView>[0],
+) => {
   const view = descriptionView(movement);
   if (view.kind === "bank") return { title: view.text, isBankText: true };
   return {
@@ -119,7 +121,7 @@ const lineView = (
   id: movement.id,
   categoryId: movement.categoryId,
   tone: movementTone(movement, true),
-  ...titleOf(movement),
+  ...lineTitleOf(movement),
   note: noteText(note, onCard),
   channel: movementTags(movement, true).channel,
   isPendingReview: movement.isPendingReview,

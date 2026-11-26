@@ -35,6 +35,7 @@ const view = (
   cycles: null,
   years: [{ year: 2026, months: 3 }],
   unreconciled: [],
+  installmentNotes: {},
   period,
   total: 0,
   list: {

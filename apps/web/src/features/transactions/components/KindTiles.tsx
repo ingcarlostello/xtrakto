@@ -47,15 +47,22 @@ function KindTileCard({ tone, label, totals, detail }: KindTile) {
 
 /**
  * The period's totals by kind (docs/ui/v8-03): what came in, the real
- * spending, and what only moved, out and back, each with its count.
+ * spending, and what only moved, out and back, each with its count; a
+ * card's payments by their name (12.3d).
  */
-export function KindTiles({ totals }: { totals: KindTotals }) {
+export function KindTiles({
+  totals,
+  onCard,
+}: {
+  totals: KindTotals;
+  onCard: boolean;
+}) {
   return (
     <ul
       aria-label={TRANSACTIONS_COPY.kinds.tilesLabel}
       className="grid w-full gap-3 sm:grid-cols-3"
     >
-      {kindTiles(totals).map((tile) => (
+      {kindTiles(totals, onCard).map((tile) => (
         <li key={tile.tone}>
           <KindTileCard {...tile} />
         </li>

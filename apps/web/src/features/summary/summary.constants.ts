@@ -144,6 +144,20 @@ export const SUMMARY_COPY = {
     noStatement: "Sin extracto de este mes",
     noStatementDetail: "Con él vemos tu deuda y tu pago.",
   },
+  // "Cuotas que te faltan" (12.3d): what a card's latest statement still
+  // charges of its purchases in installments.
+  installments: {
+    title: "Cuotas que te faltan",
+    // "Según tu extracto de oct 2026."
+    byStatement: "Según tu extracto de",
+    // "Te faltan $833.330 en 1 compra.", or "Te faltan cuotas de 2 compras."
+    // when a statement prints no amount left.
+    left: "Te faltan",
+    inPurchases: "en",
+    installmentsOf: "Te faltan cuotas de",
+    purchases: { one: "compra", other: "compras" },
+    none: "No tienes compras a cuotas por pagar.",
+  },
   // "Tu saldo y tu gasto real, día a día": both lines, and the day that
   // stands out.
   chart: {

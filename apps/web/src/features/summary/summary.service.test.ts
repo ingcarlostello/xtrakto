@@ -602,6 +602,38 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     ]);
   });
 
+  it("lists what a card's latest statement still charges, whatever the period (12.3d)", async () => {
+    const { clerkUserId, accountId } = await userWith([
+      "nu-card-basic-pdf",
+      "nu-card-late-pdf",
+    ]);
+
+    const september = await getSummary(clerkUserId, {
+      accountId,
+      period: { kind: "month", year: 2026, month: 9 },
+    });
+
+    expect(september?.installmentsLeft?.closedOn).toBe("2026-10-10");
+    expect(
+      september?.installmentsLeft?.purchases.map(
+        ({ purchase, installment }) => ({
+          text: purchase.descriptionRaw,
+          number: installment.number,
+          count: installment.count,
+          remainingMinor: installment.remainingMinor,
+        }),
+      ),
+    ).toEqual([
+      {
+        text: "Pedido *****6789",
+        number: 2,
+        count: 24,
+        remainingMinor: 110_000_000,
+      },
+      { text: "Almacen Ropa", number: 3, count: 6, remainingMinor: 30_000_000 },
+    ]);
+  });
+
   it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {
     const { clerkUserId, accountId } = await userWith([
       "quarterly-basic",

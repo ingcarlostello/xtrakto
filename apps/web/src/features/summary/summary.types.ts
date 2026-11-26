@@ -14,6 +14,7 @@ import type {
   UnreconciledStatement,
 } from "@xtrakto/db";
 import type { CoverageGaps } from "@/components/coverage-timeline/coverage-gaps.helpers";
+import type { InstallmentsLeft } from "@/features/cards/card-installments.types";
 import type { CoverageSegment } from "@/components/coverage-timeline/coverage-timeline.types";
 import type {
   ChartEvent,
@@ -46,6 +47,11 @@ export type AccountSummary = PagePeriodChoices & {
   readonly bankFigures: readonly BankFigures[];
   /** A card's statements that close on the period's days (12.3c); none for any other account. */
   readonly cardFigures: readonly CardFigures[];
+  /**
+   * What a card's latest statement that reconciles still charges, whatever
+   * the period (12.3d); `null` for any other account, or until one reconciles.
+   */
+  readonly installmentsLeft: InstallmentsLeft | null;
   /** Its statements on the period's days that don't reconcile. */
   readonly unreconciled: readonly UnreconciledStatement[];
   /** What the balance typed says of the period's days only movements files cover (10.3). */
@@ -138,6 +144,36 @@ export type YourCardView = {
   /** Its limit and what's available. */
   readonly figures: readonly BoxFigure[];
   readonly status: AccountCardView["status"];
+};
+
+/** A purchase of "Cuotas que te faltan" (12.3d), as its row reads. */
+export type InstallmentRowView = {
+  readonly id: string;
+  readonly categoryId: CategoryId | null;
+  /** Its kind's: a balance transfer only moved a debt. */
+  readonly tone: MovementTone;
+  /** "Compra en un comercio", or the bank's text when nothing names it. */
+  readonly title: string;
+  readonly isBankText: boolean;
+  /** "ALMACEN ROPA", under a title in plain words. */
+  readonly bankText?: string;
+  /** "Cuota 2 de 12 · $83.333 al mes". */
+  readonly note: string;
+  /** "$833.330", or "10 cuotas" when its statement prints no amount left. */
+  readonly left: string;
+  /** "hasta ago 2027". */
+  readonly until: string;
+  /** Its detail in Movimientos, in its cycle. */
+  readonly href: ReturnType<typeof transactionsHref>;
+};
+
+/** "Cuotas que te faltan" (12.3d), as its card reads. */
+export type InstallmentsLeftView = {
+  /** "Según tu extracto de oct 2026." */
+  readonly subtitle: string;
+  /** "Te faltan $833.330 en 1 compra.", or that nothing is left. */
+  readonly total: string;
+  readonly rows: readonly InstallmentRowView[];
 };
 
 /** A tile of "Dónde se fue más" (docs/ui/v8-01, design-system.md §9 insight tile). */

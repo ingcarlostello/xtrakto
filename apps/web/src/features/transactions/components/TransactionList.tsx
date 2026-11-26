@@ -38,7 +38,12 @@ function ListBody({ transactions, link }: ListBodyProps) {
   });
   return (
     <>
-      <MovementDays days={list.days} currentYear={currentYear} links={links} />
+      <MovementDays
+        days={list.days}
+        currentYear={currentYear}
+        links={links}
+        notes={transactions.installmentNotes}
+      />
       <ListFooter
         shown={list.shownLines}
         status={shownText(list.shownMovements, total)}
@@ -60,7 +65,7 @@ export function TransactionList({
 }) {
   const { account } = transactions;
   const link = listLinkOf(transactions);
-  const joined = joinedFilesText(transactions.files, account.bankId);
+  const joined = joinedFilesText(transactions.files, account);
   return (
     <Card variant="card" className="w-full min-w-0 gap-0">
       <CardHeader className="pb-4">

@@ -15,6 +15,7 @@ import { PendingReviewBanner } from "@/features/review/components/PendingReviewB
 import { AccountCard } from "@/features/summary/components/AccountCard";
 import { DayByDayChart } from "@/features/summary/components/DayByDayChart";
 import { GlanceSection } from "@/features/summary/components/GlanceSection";
+import { InstallmentsLeft } from "@/features/summary/components/InstallmentsLeft";
 import { MissingMonths } from "@/features/summary/components/MissingMonths";
 import { SummaryViewed } from "@/features/summary/components/SummaryViewed";
 import { TranslatedStatement } from "@/features/summary/components/TranslatedStatement";
@@ -93,7 +94,8 @@ function UploadAction() {
 // beside where it went, then its statement translated, under the color
 // legend and the period controls, with the review banner while groups wait
 // and the months the account misses (10.2d), which the example never does.
-// A card's summary has "Tu tarjeta" in the account's card's place (12.3c).
+// A card's summary has "Tu tarjeta" in the account's card's place (12.3c),
+// and "Cuotas que te faltan" beside its translated statement (12.3d).
 // The account, the period and the translated lines live in the URL; the
 // example's, while the browser explores it (7.8).
 export default async function SummaryPage({ searchParams }: PageProps<"/">) {
@@ -128,6 +130,7 @@ export default async function SummaryPage({ searchParams }: PageProps<"/">) {
         <DayByDayChart summary={summary} />
         <WhereItWent summary={summary} />
         <TranslatedStatement summary={summary} filter={lines} />
+        <InstallmentsLeft summary={summary} />
       </div>
       {!isExample && <SummaryViewed />}
     </>

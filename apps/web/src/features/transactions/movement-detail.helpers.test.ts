@@ -243,4 +243,29 @@ describe("movementDetailView", () => {
       movementDetailView(detail({ categoryRuleId: retired }), "a1").reason,
     ).toBe("Regla del sistema, sin IA.");
   });
+
+  it("adds a card's purchase in installments, by its latest statement, and what's left (12.3d)", () => {
+    const installment = {
+      fingerprint: "a".repeat(64),
+      number: 2,
+      count: 24,
+      monthlyMinor: amountMinorSchema.parse(5_000_000),
+      remainingMinor: amountMinorSchema.parse(110_000_000),
+      closedOn: localDateSchema.parse("2026-10-10"),
+    };
+
+    expect(movementDetailView(detail(), "a1", installment).facts).toEqual(
+      expect.arrayContaining([
+        {
+          label: "Cuota",
+          value: "2 de 24 · $50.000 al mes, en tu extracto de oct 2026",
+        },
+        { label: "Te falta pagar", value: "$1.100.000, hasta ago 2028" },
+      ]),
+    );
+    const last = { ...installment, number: 24, remainingMinor: undefined };
+    expect(
+      movementDetailView(detail(), "a1", last).facts.map(({ label }) => label),
+    ).not.toContain("Te falta pagar");
+  });
 });

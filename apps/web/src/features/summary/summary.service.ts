@@ -25,6 +25,7 @@ import {
   historyRead,
   periodPayments,
 } from "@/features/recurring/recurring.helpers";
+import { readCardInstallments } from "@/features/cards/card-installments.service";
 import { checkInPeriod } from "@/features/todays-balance/todays-balance.helpers";
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
@@ -67,7 +68,8 @@ const balancesOf = (
  * with its last month with movements, as on Pagos fijos, the balance after
  * the last movement that has one and day by day, what a balance typed says
  * of the period (10.3), the bank's own figures from its quarterly
- * statements there, or a card's statements that close in it (12.3c), those
+ * statements there, or a card's statements that close in it (12.3c) and
+ * what its latest still charges of its purchases in installments (12.3d), those
  * of its statements that don't reconcile, and the months the account
  * misses. `null` until a movement counts; reading never creates the user's
  * row. The Clerk id must come from the session.
@@ -104,6 +106,7 @@ export const getSummary = async (
       cardFigures: isCard(located.account)
         ? await listCardFigures(ctx, scope)
         : [],
+      installmentsLeft: (await readCardInstallments(ctx, located.account)).left,
       unreconciled: await listUnreconciledStatements(ctx, scope),
       ...(await missingToday(ctx, located.account)),
     };

@@ -60,6 +60,20 @@ describe("kindTiles", () => {
     ]);
   });
 
+  it("names a card's payments, what came back to it (12.3d)", () => {
+    const [, , moved] = kindTiles(
+      { ...NOTHING, moved: { ...NOTHING.moved, back: total(50_000_000, 1) } },
+      true,
+    );
+
+    expect(moved).toEqual({
+      tone: "moved",
+      label: "Movido",
+      totals: ["+$500 mil"],
+      detail: "1 pago",
+    });
+  });
+
   it("shows only the way money moved, and nothing when it didn't", () => {
     const outOnly = kindTiles({
       ...NOTHING,

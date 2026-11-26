@@ -69,6 +69,7 @@ const summaryOf = (
     balances: null,
     bankFigures: [],
     cardFigures: [],
+    installmentsLeft: null,
     unreconciled: [],
     missingMonths: [],
   };
