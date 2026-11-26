@@ -12,13 +12,14 @@ import {
   type UserCategoryRule,
 } from "@xtrakto/core";
 import type { PeriodMovement } from "@xtrakto/db";
+import { accountShortLabel } from "@/utils/account-label.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
 import { channelWords, usedChannels } from "@/utils/channel-text.helpers";
 import { countText } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { boxAmount, compactSize } from "@/utils/money-text.utils";
 import { percentOf } from "@/utils/percent.utils";
-import type { PagePeriod } from "@/utils/transactions-url.helpers";
+import { type PagePeriod, summaryHref } from "@/utils/transactions-url.helpers";
 import {
   CATEGORIES_COPY as COPY,
   KIND_WORDS,
@@ -27,6 +28,7 @@ import {
 import type {
   AccountCategories,
   GatewaysTile,
+  MovedLink,
   MovedView,
   RuleRow,
   SpendingRow,
@@ -117,15 +119,33 @@ const movedSubtitle = ({ out, back }: PeriodSummary["kinds"]["moved"]) => {
 const signed = (amount: AmountMinor): string =>
   formatSignedCompactAmount(amount, CURRENCY.COP);
 
+const lowerFirst = (text: string): string =>
+  `${text.charAt(0).toLocaleLowerCase("es-CO")}${text.slice(1)}`;
+
+/**
+ * The cards a period's payments reached (12.3e), each a way to its summary
+ * in the same period: "Ver tu tarjeta Nu ••••5678".
+ */
+export const paidCardLinks = ({
+  paidCards,
+  period,
+}: Pick<AccountCategories, "paidCards" | "period">): MovedLink[] =>
+  paidCards.map((card) => ({
+    key: card.id,
+    label: `${COPY.moved.seeYour} ${lowerFirst(accountShortLabel(card, card.last4))}`,
+    href: summaryHref({ accountId: card.id, period }),
+  }));
+
 /**
  * "Movido no es gasto" (docs/ui/v8-05): where money only moved, the most
  * first, each with its bar against the most, and then what came back,
- * which isn't income.
+ * which isn't income. The card payments' row leads to the cards they
+ * reached (12.3e).
  */
-export const movedView = ({
-  kinds,
-  movedByCategory,
-}: PeriodSummary): MovedView => {
+export const movedView = (
+  { kinds, movedByCategory }: PeriodSummary,
+  cardLinks: readonly MovedLink[] = [],
+): MovedView => {
   const out = movedByCategory.filter((moved) => moved.out.count > 0);
   const most = out[0]?.out.amountMinor ?? 0;
   const { back } = kinds.moved;
@@ -138,6 +158,9 @@ export const movedView = ({
         label: MOVED_LABELS[categoryId] ?? categoryLabel(categoryId),
         amount: signed(moved.amountMinor),
         barPercent: barOf(moved.amountMinor, most),
+        ...(categoryId === "credit_card_payment" && cardLinks.length > 0
+          ? { links: cardLinks }
+          : {}),
       })),
       ...(back.count > 0
         ? [

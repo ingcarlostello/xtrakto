@@ -1,9 +1,10 @@
 import type { PeriodSummary } from "@xtrakto/core";
+import Link from "next/link";
 import { MovementIcon } from "@/components/movement-icon/MovementIcon";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { movedView } from "../categories.helpers";
 import { CATEGORIES_COPY } from "../categories.constants";
-import type { MovedRow } from "../categories.types";
+import type { MovedLink, MovedRow } from "../categories.types";
 
 const COPY = CATEGORIES_COPY.moved;
 
@@ -29,6 +30,15 @@ function Row({ row }: { row: MovedRow }) {
           </span>
         )}
         {row.note && <p className="text-meta text-ink-muted">{row.note}</p>}
+        {row.links?.map((link) => (
+          <Link
+            key={link.key}
+            href={link.href}
+            className="self-start text-sm font-semibold text-primary hover:underline"
+          >
+            {link.label}
+          </Link>
+        ))}
       </div>
     </li>
   );
@@ -36,10 +46,17 @@ function Row({ row }: { row: MovedRow }) {
 
 /**
  * "Movido no es gasto" (docs/ui/v8-05): what went out to the user's own
- * investment, accounts and cards, the most first, and what came back.
+ * investment, accounts and cards, the most first, and what came back; the
+ * card payments' row with the way to each card they reached (12.3e).
  */
-export function MovedNotSpending({ summary }: { summary: PeriodSummary }) {
-  const { subtitle, rows } = movedView(summary);
+export function MovedNotSpending({
+  summary,
+  cardLinks,
+}: {
+  summary: PeriodSummary;
+  cardLinks: readonly MovedLink[];
+}) {
+  const { subtitle, rows } = movedView(summary, cardLinks);
   return (
     <Card variant="card" className="gap-0">
       <CardHeader className="pb-2">

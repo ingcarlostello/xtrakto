@@ -5,7 +5,11 @@ import type {
   PeriodSummary,
   UserCategoryRule,
 } from "@xtrakto/core";
-import type { PeriodMovement, TransactionListItem } from "@xtrakto/db";
+import type {
+  AccountRow,
+  PeriodMovement,
+  TransactionListItem,
+} from "@xtrakto/db";
 import type { InsightTileProps } from "@/components/insight-tile/InsightTile";
 import type {
   ChartEvent,
@@ -13,7 +17,10 @@ import type {
   ChartTick,
 } from "@/components/line-chart/line-chart.types";
 import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
-import type { transactionsHref } from "@/utils/transactions-url.helpers";
+import type {
+  summaryHref,
+  transactionsHref,
+} from "@/utils/transactions-url.helpers";
 
 /** An account's categories in a period, as the page reads them. */
 export type AccountCategories = PagePeriodChoices & {
@@ -22,6 +29,16 @@ export type AccountCategories = PagePeriodChoices & {
   readonly summary: PeriodSummary;
   /** The user's own, for every account and statement. */
   readonly rules: readonly UserCategoryRule[];
+  /** The cards its payments on the period's days reached (12.3e); none on a card. */
+  readonly paidCards: readonly AccountRow[];
+};
+
+/** A way from a row of "Movido no es gasto" to where its money went (12.3e). */
+export type MovedLink = {
+  readonly key: string;
+  /** "Ver tu tarjeta Nu ••••5678". */
+  readonly label: string;
+  readonly href: ReturnType<typeof summaryHref>;
 };
 
 /** A row of "Tu gasto real por categoría" (docs/ui/v8-05). */
@@ -50,6 +67,8 @@ export type MovedRow = {
   readonly barPercent?: number;
   /** What came back says it isn't income. */
   readonly note?: string;
+  /** The cards a card payment's row reached (12.3e). */
+  readonly links?: readonly MovedLink[];
 };
 
 /** "Movido no es gasto" (docs/ui/v8-05). */

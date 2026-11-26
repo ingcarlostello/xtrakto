@@ -108,6 +108,9 @@ export const CATEGORIES_COPY = {
     none: "No moviste plata entre tus cuentas, tu inversión ni tus tarjetas.",
     back: "Volvió de tus cuentas",
     backNote: "Plata tuya que regresó: no es ingreso.",
+    // The cards the period's payments reached (12.3e): "Ver tu tarjeta Nu
+    // ••••5678".
+    seeYour: "Ver tu",
   },
   rules: {
     title: "Tus reglas",

@@ -6,7 +6,10 @@ import { InsightTile } from "@/components/insight-tile/InsightTile";
 import { KindLegend } from "@/components/kind-legend/KindLegend";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodControls } from "@/components/period-controls/PeriodControls";
-import { gatewaysTile } from "@/features/categories/categories.helpers";
+import {
+  gatewaysTile,
+  paidCardLinks,
+} from "@/features/categories/categories.helpers";
 import { getCategories } from "@/features/categories/categories.service";
 import { MovedNotSpending } from "@/features/categories/components/MovedNotSpending";
 import { SpendingByCategory } from "@/features/categories/components/SpendingByCategory";
@@ -60,7 +63,10 @@ export default async function CategoriesPage({
       <div className="grid w-full items-start gap-5.5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SpendingByCategory categories={categories} />
         <div className="flex min-w-0 flex-col gap-5.5">
-          <MovedNotSpending summary={categories.summary} />
+          <MovedNotSpending
+            summary={categories.summary}
+            cardLinks={paidCardLinks(categories)}
+          />
           {gateways && <InsightTile {...gateways} />}
           <YourRules rules={categories.rules} />
         </div>

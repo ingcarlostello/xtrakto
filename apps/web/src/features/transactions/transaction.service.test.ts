@@ -6,6 +6,8 @@ import {
   createIngestionJobWithinLimit,
   type DbClient,
   findOrCreateUser,
+  type NewIngestionJob,
+  resolveIdentifiedAccount,
   withUserContext,
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
@@ -13,6 +15,7 @@ import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { keepTodaysBalance } from "../todays-balance/todays-balance.service";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
+import { monthExport } from "../../../test/month-exports";
 import { getAccountTransactions } from "./transaction.service";
 
 // Against the test database, as the application role, after real uploads.
@@ -265,6 +268,70 @@ describe.skipIf(!testDatabase)("the movements list", () => {
       shown: 30,
     });
     expect(quarter?.files).toEqual({ quarterly: 0, movements: 1 });
+  });
+
+  it("leads a payment to a card to the card's movement, in the card's cycle (12.3e)", async () => {
+    const clerk = `test_${randomUUID()}`;
+    const userId = await findOrCreateUser(app.db, clerk);
+    const accountId = await withUserContext(app.db, userId, (ctx) =>
+      resolveIdentifiedAccount(ctx, {
+        bankId: "bancolombia",
+        accountType: "savings",
+        last4: "8901",
+        currency: "COP",
+      }),
+    );
+    // Nu's October cycle starts on 11 September: the payment of 28
+    // September is its October's.
+    const jobs: NewIngestionJob[] = [
+      {
+        formatId: "bancolombia-movements-export",
+        extractedContent: monthExport({ year: 2026, month: 9 }, [
+          [28, "PAGO PSE NU COLOMBIA", -500_000],
+        ]),
+        accountId,
+      },
+      fixtureJob("nu-card-late-pdf"),
+    ];
+    for (const job of jobs) {
+      const created = await withUserContext(app.db, userId, (ctx) =>
+        createIngestionJobWithinLimit(ctx, job, {
+          limit: 100,
+          month: {
+            start: new Date(Date.now() - HOUR_MS),
+            end: new Date(Date.now() + HOUR_MS),
+          },
+        }),
+      );
+      if (!created.ok) throw new Error("No job created.");
+      await claimJob({ jobId: created.value, userId });
+      await ingestJob({ jobId: created.value, userId });
+    }
+    const september = { kind: "month", year: 2026, month: 9 } as const;
+    const list = await getAccountTransactions(clerk, {
+      accountId,
+      period: september,
+      shown: 30,
+    });
+    const payment = list?.list.days
+      .flatMap(({ lines }) => lines)
+      .find((line) => line.kind === "movement");
+
+    const opened = await getAccountTransactions(clerk, {
+      accountId,
+      period: september,
+      shown: 30,
+      movementId: payment?.kind === "movement" ? payment.item.id : "",
+    });
+
+    expect(opened?.detail?.cardPayment).toMatchObject({
+      pair: {
+        direction: "to",
+        date: "2026-09-28",
+        account: { bankId: "nu", accountType: "credit_card" },
+      },
+      period: { kind: "month", year: 2026, month: 10 },
+    });
   });
 
   it("names the files it joined, and both files of a movement July's export repeats", async () => {

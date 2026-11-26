@@ -19,13 +19,19 @@ import {
   statementText,
 } from "@/features/cards/card-installments.helpers";
 import type { LatestInstallment } from "@/features/cards/card-installments.types";
+import { CARD_PAYMENTS_COPY } from "@/features/cards/card-payments.constants";
+import { pairedText } from "@/features/cards/card-payments.helpers";
 import { joined } from "@/utils/list-text.utils";
 import { statementLabel } from "@/utils/statement-label.helpers";
-import { reviewHref } from "@/utils/transactions-url.helpers";
+import { reviewHref, transactionsHref } from "@/utils/transactions-url.helpers";
 import { movementTone } from "./kind-view.helpers";
 import { amountText } from "./transaction-list.helpers";
 import { TRANSACTIONS_COPY } from "./transaction.constants";
-import type { DetailFact, MovementDetailView } from "./transaction.types";
+import type {
+  DetailFact,
+  MovementDetailView,
+  OpenMovement,
+} from "./transaction.types";
 
 const COPY = TRANSACTIONS_COPY.detail;
 
@@ -99,6 +105,25 @@ const installmentFacts = (installment?: LatestInstallment): DetailFact[] => {
   ];
 };
 
+// The other side of a payment to a card (12.3e), leading to its detail.
+const paymentFacts = (payment?: OpenMovement["cardPayment"]): DetailFact[] =>
+  payment
+    ? [
+        {
+          label: CARD_PAYMENTS_COPY.label,
+          value: pairedText(payment.pair),
+          href: transactionsHref({
+            accountId: payment.pair.account.id,
+            period: payment.period,
+            movementId: payment.pair.movementId,
+          }),
+        },
+      ]
+    : [];
+
+/** What a card's movement adds to its detail: its installment (12.3d), or a payment's other side (12.3e). */
+export type CardDetail = Pick<OpenMovement, "installment" | "cardPayment">;
+
 // Why it has its category: the rule's reason, which the system gave without
 // AI, the LLM's answer from the bank's text, or the user's answer; or that
 // no rule knows it.
@@ -136,12 +161,13 @@ const reviewOf = (accountId: string, date: LocalDate) =>
 
 /**
  * One of an account's movements as its detail shows it (docs/ui/v8-03), a
- * card's purchase with its installments (12.3d).
+ * card's purchase with its installments (12.3d), and a payment to a card
+ * with its other side (12.3e).
  */
 export const movementDetailView = (
   detail: MovementDetail,
   accountId: string,
-  installment?: LatestInstallment,
+  card: CardDetail = {},
 ): MovementDetailView => {
   const description = descriptionView(detail);
   const { categoryId, isPendingReview } = detail;
@@ -155,7 +181,11 @@ export const movementDetailView = (
     amount: amountText(detail.amountMinor),
     tone: movementTone(detail, true),
     categoryId,
-    facts: [...factsOf(detail), ...installmentFacts(installment)],
+    facts: [
+      ...factsOf(detail),
+      ...installmentFacts(card.installment),
+      ...paymentFacts(card.cardPayment),
+    ],
     isGuess: isPendingReview,
     reason: reasonOf(detail),
     ...(isPendingReview
