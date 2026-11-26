@@ -10,7 +10,7 @@ import {
 import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
 import { locatePagePeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
-import { periodDays } from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
 import { LATEST_MOVEMENTS } from "./categories.constants";
 import type { CategoryDetail } from "./categories.types";
 
@@ -35,7 +35,7 @@ export const getCategoryDetail = async (
     if (!located) return null;
     const shownPeriod = {
       accountId: located.account.id,
-      period: periodDays(located.period),
+      period: pageDays(located.period, located.cycles),
     };
     const movements = await listSummaryMovements(ctx, shownPeriod);
     const { items } = await listTransactions(ctx, {

@@ -24,13 +24,12 @@ const movements = (...months: CalendarMonth[]): GapFile => ({
   months,
 });
 
-const accountOf = (bankId: string): AccountRow => ({
-  id: "a1",
-  bankId,
-  accountType: "savings",
-  last4: null,
-});
+const accountOf = (
+  bankId: string,
+  accountType: AccountRow["accountType"] = "savings",
+): AccountRow => ({ id: "a1", bankId, accountType, last4: null });
 const BANCOLOMBIA = accountOf("bancolombia");
+const NU_CARD = accountOf("nu", "credit_card");
 
 // The notice reads only what the account misses, and its bank.
 const missing = (
@@ -191,7 +190,7 @@ describe("missingOf", () => {
   it("reads the page's account, through today", () => {
     const found = missingOf(
       [OTHER, ANA],
-      "a1",
+      BANCOLOMBIA,
       localDateSchema.parse("2026-11-05"),
     );
 
@@ -207,9 +206,62 @@ describe("missingOf", () => {
 
   it("misses nothing of an account without months", () => {
     expect(
-      missingOf([OTHER], "a1", localDateSchema.parse("2026-11-05")),
+      missingOf([OTHER], BANCOLOMBIA, localDateSchema.parse("2026-11-05")),
     ).toEqual({
       missingMonths: [],
+    });
+  });
+});
+
+describe("a card's missing months (12.3c)", () => {
+  const cardCoverage = (...closings: string[]): AccountCoverage => ({
+    accountId: "a1",
+    months: [],
+    quarters: [],
+    cardStatements: closings.map((to) =>
+      periodSchema.parse({
+        from: `${to.slice(0, 8)}01`,
+        to,
+      }),
+    ),
+  });
+
+  it("follows the months its statements close in, whatever days its movements fall on", () => {
+    const found = missingOf(
+      [cardCoverage("2026-07-10", "2026-10-10")],
+      NU_CARD,
+      localDateSchema.parse("2026-11-05"),
+    );
+
+    expect(found.missingMonths).toEqual(["2026-08", "2026-09"]);
+    expect(found.missing?.gaps.runs).toEqual([[month(8), month(9)]]);
+    expect(found.missing?.segments.map(({ status }) => status)).toEqual([
+      "verified",
+      "missing",
+      "missing",
+      "verified",
+      "missing",
+    ]);
+  });
+
+  it("asks for each month's statement, naming the one when it's one", () => {
+    expect(
+      missing({ runs: [[month(10)]], files: [] }, "2026-11-05", NU_CARD),
+    ).toMatchObject({
+      title: "Te falta octubre",
+      text: "Para ver el año completo, sube el extracto de tu tarjeta de octubre.",
+      action: "Subir octubre",
+    });
+    expect(
+      missing(
+        { runs: [[month(8), month(9), month(10)]], files: [] },
+        "2026-11-05",
+        NU_CARD,
+      ),
+    ).toMatchObject({
+      title: "Te falta agosto a octubre",
+      text: "Para ver el año completo, sube los extractos de tu tarjeta de agosto a octubre.",
+      action: "Ir a Subir",
     });
   });
 });

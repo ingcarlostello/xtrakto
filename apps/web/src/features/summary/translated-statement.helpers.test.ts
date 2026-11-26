@@ -57,6 +57,7 @@ const summaryOf = (
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [],
+    cycles: null,
     years: [],
     period: QUARTER,
     movements,
@@ -65,6 +66,7 @@ const summaryOf = (
     balance: null,
     balances: null,
     bankFigures: [],
+    cardFigures: [],
     unreconciled: [],
     missingMonths: [],
   };
@@ -175,6 +177,22 @@ describe("noteText", () => {
     ["Aún no sabemos qué es: no cuenta en tus totales.", { kind: "counts" }],
   ])("says %j", (text, note) => {
     expect(noteText(note)).toBe(text);
+  });
+
+  it("says on a card that a payment and a balance transfer only moved (12.3c)", () => {
+    const moved = (direction: "in" | "out") =>
+      ({
+        kind: "moved",
+        categoryId: "credit_card_payment",
+        direction,
+      }) as const;
+
+    expect(noteText(moved("in"), true)).toBe(
+      "No es ingreso: pagaste tu tarjeta con tu plata.",
+    );
+    expect(noteText(moved("out"), true)).toBe(
+      "No es gasto: es una deuda que trajiste de otro banco.",
+    );
   });
 });
 

@@ -9,6 +9,7 @@ import type {
 } from "@xtrakto/core";
 import type {
   BankFigures,
+  CardFigures,
   PeriodMovement,
   UnreconciledStatement,
 } from "@xtrakto/db";
@@ -43,6 +44,8 @@ export type AccountSummary = PagePeriodChoices & {
   readonly balances: DailyBalances | null;
   /** Of the quarterly statements whose days meet the period. */
   readonly bankFigures: readonly BankFigures[];
+  /** A card's statements that close on the period's days (12.3c); none for any other account. */
+  readonly cardFigures: readonly CardFigures[];
   /** Its statements on the period's days that don't reconcile. */
   readonly unreconciled: readonly UnreconciledStatement[];
   /** What the balance typed says of the period's days only movements files cover (10.3). */
@@ -116,6 +119,25 @@ export type AccountCardView = {
   };
   /** Where a statement that doesn't reconcile breaks. */
   readonly breaksHref?: ReturnType<typeof breaksHref>;
+};
+
+/** A figure in its small box: "Cupo total", "$5,0M". */
+type BoxFigure = { readonly label: string; readonly value: string };
+
+/** "Tu tarjeta" (12.3c), as its card reads. */
+export type YourCardView = {
+  /** "Deuda al 11 de septiembre" and "$1.234.567,89", from its latest statement that reconciles. */
+  readonly debt?: { readonly label: string; readonly amount: string };
+  /** "Fecha límite de pago: 4 de octubre" over the minimum and the total, or that nothing is due. */
+  readonly due?: {
+    readonly label: string;
+    readonly payments: readonly BoxFigure[];
+  };
+  /** "Tarjeta de crédito · Nu ••••5678". */
+  readonly account: string;
+  /** Its limit and what's available. */
+  readonly figures: readonly BoxFigure[];
+  readonly status: AccountCardView["status"];
 };
 
 /** A tile of "Dónde se fue más" (docs/ui/v8-01, design-system.md §9 insight tile). */

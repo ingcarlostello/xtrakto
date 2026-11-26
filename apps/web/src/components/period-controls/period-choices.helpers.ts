@@ -1,5 +1,9 @@
 import { type CalendarQuarter, quarterOfMonth } from "@xtrakto/core";
-import type { MovementQuarter, UnreconciledStatement } from "@xtrakto/db";
+import type {
+  CardPeriod,
+  MovementQuarter,
+  UnreconciledStatement,
+} from "@xtrakto/db";
 import {
   type MovementPeriod,
   type PagePeriod,
@@ -67,6 +71,14 @@ const quarterOfDate = (date: string): CalendarQuarter => ({
   quarter: quarterOfMonth(Number(date.slice(5, 7))),
 });
 
+const keyOf = ({ year, quarter }: CalendarQuarter): string =>
+  `${year}-${quarter}`;
+
+const latestFirst = (choices: Map<string, QuarterChoice>): QuarterChoice[] =>
+  [...choices.values()].sort(
+    (a, b) => b.year - a.year || b.quarter - a.quarter,
+  );
+
 /**
  * The quarters to choose from, the latest first: those with movements, and
  * those of a statement that doesn't reconcile, which the picker marks
@@ -78,18 +90,33 @@ export const quarterChoices = (
 ): readonly QuarterChoice[] => {
   const choices = new Map<string, QuarterChoice>();
   for (const { verified, ...quarter } of counted)
-    choices.set(`${quarter.year}-${quarter.quarter}`, {
+    choices.set(keyOf(quarter), {
       ...quarter,
       status: verified ? "verified" : "unverified",
     });
   for (const { period } of unreconciled) {
     const quarter = quarterOfDate(period.to);
-    choices.set(`${quarter.year}-${quarter.quarter}`, {
+    choices.set(keyOf(quarter), { ...quarter, status: "unreconciled" });
+  }
+  return latestFirst(choices);
+};
+
+/**
+ * A card's quarters to choose from (12.3c), the latest first: those its
+ * statements close in, verified when each one there reconciles by its
+ * bank's sums, and marked when one doesn't.
+ */
+export const cardQuarterChoices = (
+  statements: readonly CardPeriod[],
+): readonly QuarterChoice[] => {
+  const choices = new Map<string, QuarterChoice>();
+  for (const { period, isVerified } of statements) {
+    const quarter = quarterOfDate(period.to);
+    if (choices.get(keyOf(quarter))?.status === "unreconciled") continue;
+    choices.set(keyOf(quarter), {
       ...quarter,
-      status: "unreconciled",
+      status: isVerified ? "verified" : "unreconciled",
     });
   }
-  return [...choices.values()].sort(
-    (a, b) => b.year - a.year || b.quarter - a.quarter,
-  );
+  return latestFirst(choices);
 };

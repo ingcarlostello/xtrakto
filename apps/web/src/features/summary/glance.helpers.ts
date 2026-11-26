@@ -1,7 +1,14 @@
-import type { CategoryMoved, PeriodSummary } from "@xtrakto/core";
+import {
+  amountMinorSchema,
+  type CategoryMoved,
+  formatDayInWords,
+  type Period,
+  type PeriodSummary,
+} from "@xtrakto/core";
 import type { PeriodLink } from "@/components/period-controls/period-controls.types";
+import { type CardCycles, pageDays } from "@/utils/card-cycles.helpers";
 import { categoryLabel } from "@/utils/category-label.helpers";
-import { countText } from "@/utils/count-text.utils";
+import { countText, wordFor } from "@/utils/count-text.utils";
 import { joined } from "@/utils/list-text.utils";
 import { compactSize } from "@/utils/money-text.utils";
 import { percentOf } from "@/utils/percent.utils";
@@ -38,29 +45,63 @@ const outText = ({ outflows, kinds }: PeriodSummary): string => {
     : `${wentOut}.`;
 };
 
+// What went out with a card (12.3c): "Con tu tarjeta salieron $1,5M.", or
+// that nothing did.
+const cardOutText = ({ outflows, kinds }: PeriodSummary): string => {
+  if (outflows.count === 0) return COPY.nothingOutOfCard;
+  const wentOut = `${COPY.withCard} ${compactSize(outflows.amountMinor)}`;
+  return kinds.moved.out.count > 0
+    ? `${wentOut}, ${COPY.notAllSpending}.`
+    : `${wentOut}.`;
+};
+
+// A card's cycles in words (12.3c): "12 de agosto a 10 de septiembre de
+// 2026", with the first day's year too across a new year.
+const cycleWords = ({ from, to }: Period): string => {
+  const year = to.slice(0, 4);
+  const start =
+    from.slice(0, 4) === year
+      ? formatDayInWords(from)
+      : `${formatDayInWords(from)} ${COPY.of} ${from.slice(0, 4)}`;
+  return `${start} ${COPY.cycleTo} ${formatDayInWords(to)} ${COPY.of} ${year}`;
+};
+
 /**
  * "Julio a septiembre de 2026. Salieron $54,2M, pero no todo fue gasto.",
  * or for a year (10.2c): "En 2026 salieron $54,2M, pero no todo fue gasto."
+ * A card's (12.3c), by its cycles' days: "12 de agosto a 10 de septiembre
+ * de 2026. Con tu tarjeta salieron $1,5M."
  */
 export const glanceSubtitle = (
   period: PagePeriod,
   summary: PeriodSummary,
+  cycles: CardCycles = null,
 ): string => {
-  const sentence = outText(summary);
-  return period.kind === "year"
-    ? `${COPY.inYear} ${period.year} ${lowerFirst(sentence)}`
-    : `${periodWords(period)}. ${sentence}`;
+  const sentence = cycles === null ? outText(summary) : cardOutText(summary);
+  if (period.kind === "year")
+    return `${COPY.inYear} ${period.year} ${lowerFirst(sentence)}`;
+  const words =
+    cycles === null
+      ? periodWords(period)
+      : cycleWords(pageDays(period, cycles));
+  return `${words}. ${sentence}`;
 };
 
-// "El 85% llegó en 2 transferencias. No incluye $2,8M que volvió de tus cuentas."
-const incomeNote = ({ kinds, incomeByCategory }: PeriodSummary): string => {
+// "El 85% llegó en 2 transferencias. No incluye $2,8M que volvió de tus
+// cuentas." A card's money that came back is its payments, which its own
+// tile counts (12.3c).
+const incomeNote = (
+  { kinds, incomeByCategory }: PeriodSummary,
+  onCard: boolean,
+): string => {
   const { back } = kinds.moved;
   const excludes =
-    back.count > 0
+    back.count > 0 && !onCard
       ? ` ${COPY.income.excludes} ${compactSize(back.amountMinor)} ${COPY.income.cameBack}`
       : "";
   const [largest] = incomeByCategory;
-  if (largest === undefined) return `${COPY.income.none}${excludes}`;
+  if (largest === undefined)
+    return `${onCard ? COPY.income.noRefund : COPY.income.none}${excludes}`;
   const noun = INCOME_NOUNS[largest.categoryId] ?? COPY.anyIncome;
   const percent = percentOf(largest.amountMinor, kinds.income.amountMinor);
   return `${COPY.the} ${percent}% ${COPY.income.cameIn} ${countText(largest.count, noun)}.${excludes}`;
@@ -116,15 +157,49 @@ const actionOf = (label: string, link: PeriodLink, filter: MovementFilter) => ({
   href: transactionsHref({ ...link, filter }),
 });
 
+type Moved = PeriodSummary["kinds"]["moved"];
+
+// "El 100% fueron 2 pagos a tu tarjeta. No es ingreso: es tu plata.", or
+// "Además trajiste $2,0M de deuda de otro banco." after a balance transfer.
+const cardMovedNote = ({ out, back }: Moved, all: number): string => {
+  const brought = `${compactSize(out.amountMinor)} ${COPY.moved.debtFromBank}`;
+  if (back.count === 0)
+    return out.count === 0
+      ? COPY.moved.noPayment
+      : `${COPY.moved.brought} ${brought}`;
+  const payments = `${COPY.the} ${percentOf(back.amountMinor, all)}% ${wordFor(back.count, COPY.moved.were)} ${countText(back.count, COPY.moved.payments)} ${COPY.moved.toCard}`;
+  return out.count > 0
+    ? `${payments} ${COPY.moved.alsoBrought} ${brought}`
+    : `${payments} ${COPY.moved.isYourMoney}`;
+};
+
+// A card's money that only moved (12.3c): its payments, and the debt a
+// balance transfer brought from another bank; its ring the payments' share.
+const cardMovedTile = (moved: Moved, link: PeriodLink): GlanceTile => {
+  const all = amountMinorSchema.parse(
+    moved.back.amountMinor - moved.out.amountMinor,
+  );
+  return {
+    tone: "moved",
+    label: COPY.moved.label,
+    percent: percentOf(moved.back.amountMinor, all),
+    amount: compactSize(all),
+    note: cardMovedNote(moved, all),
+    action: actionOf(COPY.moved.cardAction, link, "moved"),
+  };
+};
+
 /**
  * The three KPI tiles of "Tu trimestre de un vistazo" (docs/ui/v8-01): what
  * came in, its ring the share of its largest kind; the real spending and
  * what only moved, their rings their share of what went out; each with
- * what it means and the way to its movements.
+ * what it means and the way to its movements. On a card (12.3c), what only
+ * moved is its payments, its ring their share of it.
  */
 export const glanceTiles = (
   summary: PeriodSummary,
   link: PeriodLink,
+  onCard = false,
 ): readonly GlanceTile[] => {
   const { outflows, kinds, incomeByCategory } = summary;
   return [
@@ -136,7 +211,7 @@ export const glanceTiles = (
         kinds.income.amountMinor,
       ),
       amount: compactSize(kinds.income.amountMinor),
-      note: incomeNote(summary),
+      note: incomeNote(summary, onCard),
       action: actionOf(COPY.income.action, link, "income"),
     },
     {
@@ -147,13 +222,15 @@ export const glanceTiles = (
       note: spendingNote(summary),
       action: actionOf(COPY.spending.action, link, "spending"),
     },
-    {
-      tone: "moved",
-      label: COPY.moved.label,
-      percent: percentOf(kinds.moved.out.amountMinor, outflows.amountMinor),
-      amount: compactSize(kinds.moved.out.amountMinor),
-      note: movedNote(summary),
-      action: actionOf(COPY.moved.action, link, "moved"),
-    },
+    onCard
+      ? cardMovedTile(kinds.moved, link)
+      : {
+          tone: "moved",
+          label: COPY.moved.label,
+          percent: percentOf(kinds.moved.out.amountMinor, outflows.amountMinor),
+          amount: compactSize(kinds.moved.out.amountMinor),
+          note: movedNote(summary),
+          action: actionOf(COPY.moved.action, link, "moved"),
+        },
   ];
 };

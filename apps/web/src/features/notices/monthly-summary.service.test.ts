@@ -53,12 +53,12 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 // A quarterly statement as the browser sends it, for July to September.
-const quarterlyFixture = () => {
+const fixtureContent = (name = "quarterly-basic") => {
   const content = extractedContentSchema.parse(
     JSON.parse(
       readFileSync(
         new URL(
-          "../../../../../packages/parsers/fixtures/quarterly-basic.json",
+          `../../../../../packages/parsers/fixtures/${name}.json`,
           import.meta.url,
         ),
         "utf8",
@@ -199,7 +199,7 @@ describe.skipIf(!testDatabase)("the monthly email", () => {
 
     it("takes a month a verified quarterly statement covers", async () => {
       const userId = await personWhoAsked();
-      await uploadContent(app.db, userId, quarterlyFixture());
+      await uploadContent(app.db, userId, fixtureContent());
 
       const { message } = await emailOf(userId, "2026-09");
 
@@ -252,6 +252,17 @@ describe.skipIf(!testDatabase)("the monthly email", () => {
       expect(message.text).toContain("sube tus movimientos de septiembre.");
       for (const body of [message.subject, message.text, message.html])
         expect(body.toLowerCase()).not.toContain("davivienda");
+    });
+
+    it("leaves a card out, whose months are its statements' (12.3c)", async () => {
+      const userId = await personWhoAsked();
+      // Nu's October statement, which closes on 10 October.
+      await uploadContent(app.db, userId, fixtureContent("nu-card-late-pdf"));
+
+      const { message } = await emailOf(userId);
+
+      expect(message.subject).toBe("Te falta octubre");
+      expect(message.text).toContain("sube los movimientos de octubre.");
     });
 
     it("says which file to someone with no file yet", async () => {

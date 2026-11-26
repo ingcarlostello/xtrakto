@@ -557,6 +557,51 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     });
   });
 
+  it("reads a card's month as its statement's cycle, with that statement's figures (12.3c)", async () => {
+    // Nu's September, 12 August to 10 September, then its October.
+    const { clerkUserId, accountId } = await userWith([
+      "nu-card-basic-pdf",
+      "nu-card-late-pdf",
+    ]);
+    const september = await getSummary(clerkUserId, {
+      accountId,
+      period: { kind: "month", year: 2026, month: 9 },
+    });
+
+    expect(september?.account.accountType).toBe("credit_card");
+    expect(september?.cycles).toEqual([
+      { from: "2026-08-12", to: "2026-09-10" },
+      { from: "2026-09-11", to: "2026-10-10" },
+    ]);
+    // Its quarters are those its statements close in.
+    expect(september?.quarters).toEqual([
+      { year: 2026, quarter: 4, status: "verified" },
+      { year: 2026, quarter: 3, status: "verified" },
+    ]);
+    const dates = september?.movements.map(({ date }) => date) ?? [];
+    expect(dates.length).toBeGreaterThan(0);
+    expect(
+      dates.every((date) => date >= "2026-08-12" && date <= "2026-09-10"),
+    ).toBe(true);
+    expect(
+      september?.cardFigures.map(({ period, isVerified }) => ({
+        period,
+        isVerified,
+      })),
+    ).toEqual([
+      { period: { from: "2026-08-12", to: "2026-09-10" }, isVerified: true },
+    ]);
+    expect(september?.balances).toBeNull();
+    expect(september?.bankFigures).toEqual([]);
+    // Without a period, its latest quarter: October's statement closes in
+    // the fourth.
+    const latest = await getSummary(clerkUserId, { accountId });
+    expect(latest?.period).toEqual(FOURTH_QUARTER);
+    expect(latest?.cardFigures.map(({ period }) => period.to)).toEqual([
+      "2026-10-10",
+    ]);
+  });
+
   it("opens on the latest quarter when the URL asks for none, and adds up only its days", async () => {
     const { clerkUserId, accountId } = await userWith([
       "quarterly-basic",

@@ -3,6 +3,7 @@ import type { UnreconciledStatement } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import type { MovementPeriod } from "@/utils/transactions-url.helpers";
 import {
+  cardQuarterChoices,
   quarterChoices,
   selectPagePeriod,
   selectPeriod,
@@ -103,6 +104,28 @@ describe("quarterChoices", () => {
       { year: 2026, quarter: 3, status: "unreconciled" },
       { year: 2026, quarter: 2, status: "unreconciled" },
       { year: 2026, quarter: 1, status: "verified" },
+    ]);
+  });
+});
+
+describe("cardQuarterChoices", () => {
+  const statement = (from: string, to: string, isVerified = true) => ({
+    period: periodSchema.parse({ from, to }),
+    isVerified,
+  });
+
+  it("lists the quarters a card's statements close in, marking one where a statement doesn't reconcile", () => {
+    expect(
+      cardQuarterChoices([
+        // Its movements fall in June, but it closes in July.
+        statement("2026-06-11", "2026-07-10"),
+        statement("2026-07-11", "2026-08-10", false),
+        statement("2026-08-11", "2026-09-10"),
+        statement("2026-09-11", "2026-10-10"),
+      ]),
+    ).toEqual([
+      { year: 2026, quarter: 4, status: "verified" },
+      { year: 2026, quarter: 3, status: "unreconciled" },
     ]);
   });
 });

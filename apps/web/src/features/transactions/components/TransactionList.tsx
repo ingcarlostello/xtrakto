@@ -58,7 +58,7 @@ export function TransactionList({
 }: {
   transactions: AccountTransactions;
 }) {
-  const { account, period } = transactions;
+  const { account } = transactions;
   const link = listLinkOf(transactions);
   const joined = joinedFilesText(transactions.files, account.bankId);
   return (
@@ -68,7 +68,7 @@ export function TransactionList({
           {COPY.listTitle}
         </h2>
         <CardDescription>
-          {periodText(period)}. {accountLabel(account, account.last4)}.
+          {periodText(transactions)}. {accountLabel(account, account.last4)}.
           {joined && ` ${joined}`}
           {transactions.checkedNote && ` ${transactions.checkedNote}`}
         </CardDescription>

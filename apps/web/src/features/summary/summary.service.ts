@@ -8,9 +8,11 @@ import {
   withCheckedBalances,
 } from "@xtrakto/core";
 import {
+  type AccountRow,
   findUserId,
   listAccountCoverage,
   listBankFigures,
+  listCardFigures,
   listSummaryMovements,
   listUnreconciledStatements,
   type PeriodMovement,
@@ -26,15 +28,16 @@ import {
 import { checkInPeriod } from "@/features/todays-balance/todays-balance.helpers";
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
-import { periodDays } from "@/utils/transactions-url.helpers";
+import { isCard } from "@/utils/account-label.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
 import { missingOf } from "./missing-months.helpers";
 import type { AccountSummary } from "./summary.types";
 
 // What the account misses through today in Bogotá (10.2d).
-const missingToday = async (ctx: UserContext, accountId: string) =>
+const missingToday = async (ctx: UserContext, account: AccountRow) =>
   missingOf(
     await listAccountCoverage(ctx),
-    accountId,
+    account,
     localDateFromInstant(new Date(), DEFAULT_TIME_ZONE),
   );
 
@@ -64,9 +67,10 @@ const balancesOf = (
  * with its last month with movements, as on Pagos fijos, the balance after
  * the last movement that has one and day by day, what a balance typed says
  * of the period (10.3), the bank's own figures from its quarterly
- * statements there, those of its statements that don't reconcile, and the
- * months the account misses. `null` until a movement counts; reading never
- * creates the user's row. The Clerk id must come from the session.
+ * statements there, or a card's statements that close in it (12.3c), those
+ * of its statements that don't reconcile, and the months the account
+ * misses. `null` until a movement counts; reading never creates the user's
+ * row. The Clerk id must come from the session.
  */
 export const getSummary = async (
   clerkUserId: string,
@@ -80,7 +84,7 @@ export const getSummary = async (
     if (!located) return null;
     const scope = {
       accountId: located.account.id,
-      period: periodDays(located.period),
+      period: pageDays(located.period, located.cycles),
     };
     const history = await listSummaryMovements(ctx, {
       ...scope,
@@ -97,8 +101,11 @@ export const getSummary = async (
       fixedPayments:
         periodPayments(history, scope.period)?.payments.spending ?? [],
       bankFigures: await listBankFigures(ctx, scope),
+      cardFigures: isCard(located.account)
+        ? await listCardFigures(ctx, scope)
+        : [],
       unreconciled: await listUnreconciledStatements(ctx, scope),
-      ...(await missingToday(ctx, located.account.id)),
+      ...(await missingToday(ctx, located.account)),
     };
   });
 };

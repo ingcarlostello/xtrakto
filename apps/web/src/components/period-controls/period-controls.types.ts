@@ -1,5 +1,6 @@
 import type { CalendarQuarter, CategoryId } from "@xtrakto/core";
 import type { AccountRow } from "@xtrakto/db";
+import type { CardCycles } from "@/utils/card-cycles.helpers";
 import type {
   MovementPeriod,
   PagePeriod,
@@ -19,6 +20,8 @@ type AccountChoices = {
   readonly account: AccountRow;
   /** Its quarters to choose from, the latest first. */
   readonly quarters: readonly QuarterChoice[];
+  /** A card's cycles, which its months' days follow (12.3c); `null` for any other account. */
+  readonly cycles: CardCycles;
 };
 
 /** What the controls choose among, and what the page shows. */

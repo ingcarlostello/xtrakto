@@ -6,10 +6,8 @@ import {
   formatDayInWords,
   formatShortDay,
   type LocalDate,
-  monthPeriod,
   type Period,
   quarterOfMonth,
-  quarterPeriod,
 } from "@xtrakto/core";
 import {
   amountTicks,
@@ -27,10 +25,15 @@ import type {
   ChartScale,
   ChartTick,
 } from "@/components/line-chart/line-chart.types";
-import { calendarMonthOf } from "@/features/recurring/recurring.helpers";
 import { checkedNote } from "@/features/todays-balance/todays-balance.helpers";
+import {
+  type CardCycles,
+  monthDays,
+  monthKeyOfDay,
+  pageDays,
+} from "@/utils/card-cycles.helpers";
 import { compactSize } from "@/utils/money-text.utils";
-import { type PagePeriod, periodDays } from "@/utils/transactions-url.helpers";
+import type { PagePeriod } from "@/utils/transactions-url.helpers";
 import { movedPlaces } from "./glance.helpers";
 import { SUMMARY_COPY } from "./summary.constants";
 import type { AccountSummary, DayByDayChartView } from "./summary.types";
@@ -49,31 +52,36 @@ const datesFrom = ({ from, to }: Period): LocalDate[] =>
 
 // Where the lines start: the period's opening, or a year's first quarter
 // with movements (10.2c), since its files can begin in any quarter, and a
-// balance isn't known before its quarterly statement opens.
+// balance isn't known before its quarterly statement opens. A card's
+// quarter runs through its cycles (12.3c).
 const startOf = (
-  period: PagePeriod,
+  { period, cycles }: { period: PagePeriod; cycles: CardCycles },
   opening: LocalDate,
   first: LocalDate | undefined,
 ): LocalDate => {
   if (period.kind !== "year" || first === undefined) return opening;
-  const { year, month } = calendarMonthOf(first);
-  const quarter = quarterPeriod({ year, quarter: quarterOfMonth(month) });
-  return addDaysTo(quarter.from, -1);
+  const key = monthKeyOfDay(first, cycles);
+  const month = quarterOfMonth(Number(key.slice(5, 7))) * 3 - 2;
+  const from = monthDays({ year: Number(key.slice(0, 4)), month }, cycles);
+  return addDaysTo(from.from, -1);
 };
 
 // The days in runs, broken over the months the account doesn't have
-// (10.2d): a run after them starts on their last day, as a quarterly
-// statement opens on its previous quarter's last; a run without a day with
-// movements says nothing, so it isn't drawn.
+// (10.2d), a card's by its cycles (12.3c): a run after them starts on their
+// last day, as a quarterly statement opens on its previous quarter's last;
+// a run without a day with movements says nothing, so it isn't drawn.
 const runsOfDays = (
   dates: readonly LocalDate[],
-  { missing, moved }: { missing: Set<string>; moved: Set<LocalDate> },
+  {
+    isMissing,
+    moved,
+  }: { isMissing: (date: LocalDate) => boolean; moved: Set<LocalDate> },
 ): LocalDate[][] => {
   const runs: LocalDate[][] = [[]];
   dates.forEach((date, index) => {
-    if (!missing.has(date.slice(0, 7))) return runs.at(-1)?.push(date);
+    if (!isMissing(date)) return runs.at(-1)?.push(date);
     const next = dates[index + 1];
-    runs.push(next && !missing.has(next.slice(0, 7)) ? [date] : []);
+    runs.push(next && !isMissing(next) ? [date] : []);
   });
   return runs.filter((run) => run.some((date) => moved.has(date)));
 };
@@ -126,11 +134,12 @@ type LineRun = {
 // movements, on the period's axis, which starts at its opening.
 const lineRuns = (summary: AccountSummary, opening: LocalDate): LineRun[] => {
   const { days } = summary.summary;
-  const start = startOf(summary.period, opening, days[0]?.date);
+  const start = startOf(summary, opening, days[0]?.date);
   const dates = datesFrom({ from: start, to: days.at(-1)?.date ?? start });
   const spent = spendingSoFar(dates, days);
+  const missing = new Set(summary.missingMonths);
   const runs = runsOfDays(dates, {
-    missing: new Set(summary.missingMonths),
+    isMissing: (date) => missing.has(monthKeyOfDay(date, summary.cycles)),
     moved: new Set(days.map(({ date }) => date)),
   });
   return runs.map((run) => ({
@@ -150,22 +159,19 @@ const balanceOn = (runs: readonly LineRun[], date: LocalDate): number => {
 // "30 jun", "31 jul", "31 ago", "30 sep": a quarter's opening and its
 // months' last days; a month's opening, its 10th, its 20th and its last;
 // a year's quarters' last days (10.2c), whose opening would read "31 dic"
-// twice.
-const dayTicks = (period: PagePeriod, { from, to }: Period) => {
-  if (period.kind === "year")
-    return [3, 6, 9, 12].map(
-      (month) => monthPeriod({ year: period.year, month }).to,
-    );
+// twice. A card's months end with its cycles (12.3c).
+const dayTicks = (
+  { period, cycles }: { period: PagePeriod; cycles: CardCycles },
+  { from, to }: Period,
+) => {
+  const lastOf = (month: number) =>
+    monthDays({ year: period.year, month }, cycles).to;
+  if (period.kind === "year") return [3, 6, 9, 12].map(lastOf);
   const opening = addDaysTo(from, -1);
   if (period.kind === "month")
     return [opening, addDaysTo(from, 9), addDaysTo(from, 19), to];
   const first = period.quarter * 3 - 2;
-  return [
-    opening,
-    monthPeriod({ year: period.year, month: first }).to,
-    monthPeriod({ year: period.year, month: first + 1 }).to,
-    to,
-  ];
+  return [opening, lastOf(first), lastOf(first + 1), to];
 };
 
 // The day the most income came in, when it stands out: what came in, and
@@ -244,7 +250,7 @@ const balancePieces = (runs: readonly LineRun[], plot: ChartPlot) =>
 export const dayByDayChart = (
   summary: AccountSummary,
 ): DayByDayChartView | null => {
-  const days = periodDays(summary.period);
+  const days = pageDays(summary.period, summary.cycles);
   const opening = addDaysTo(days.from, -1);
   const runs = lineRuns(summary, opening);
   const spending = runs.flatMap((run) => run.spending);
@@ -259,10 +265,10 @@ export const dayByDayChart = (
     title: balance ? COPY.title : COPY.spendingTitle,
     ...(balance
       ? { balance: balancePieces(runs, plot), ...checkedNoteOf(summary) }
-      : { note: COPY.noBalance }),
+      : { note: summary.cycles ? COPY.noCardBalance : COPY.noBalance }),
     spending: runs.map((run) => lineOf(run.spending, plot, run.at)),
     yTicks: yTicksOf(amounts, plot),
-    xTicks: dayTicks(summary.period, days).map((date): ChartTick => ({
+    xTicks: dayTicks(summary, days).map((date): ChartTick => ({
       label: formatShortDay(date),
       at: coordinate(plot.x(daysBetween(opening, date))),
     })),

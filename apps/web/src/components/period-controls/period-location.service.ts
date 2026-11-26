@@ -1,14 +1,19 @@
 import "server-only";
 import type { CalendarQuarter } from "@xtrakto/core";
 import {
+  type AccountRow,
   listAccountCoverage,
+  listCardPeriods,
   listMovementAccounts,
   listMovementQuarters,
   listUnreconciledStatements,
+  type UnreconciledStatement,
   type UserContext,
 } from "@xtrakto/db";
 import { monthsHad } from "@/components/coverage-timeline/coverage-timeline.helpers";
+import { isCard } from "@/utils/account-label.helpers";
 import {
+  cardQuarterChoices,
   quarterChoices,
   selectPagePeriod,
   selectPeriod,
@@ -19,11 +24,38 @@ import type {
   PagePeriodRequest,
   PeriodChoices,
   PeriodRequest,
+  QuarterChoice,
   YearChoice,
 } from "./period-controls.types";
 
+/**
+ * An account's quarters to choose from, and a card's cycles (12.3c): a
+ * card's quarters are those its statements close in, and its months' days
+ * follow its statements' periods. `unreconciled` holds the account's own
+ * statements that don't reconcile.
+ */
+export const accountPeriods = async (
+  ctx: UserContext,
+  account: AccountRow,
+  unreconciled: readonly UnreconciledStatement[],
+): Promise<
+  Pick<PagePeriodChoices, "cycles"> & {
+    readonly quarters: readonly QuarterChoice[];
+  }
+> => {
+  if (!isCard(account)) {
+    const counted = await listMovementQuarters(ctx, account.id);
+    return { quarters: quarterChoices(counted, unreconciled), cycles: null };
+  }
+  const statements = await listCardPeriods(ctx, account.id);
+  return {
+    quarters: cardQuarterChoices(statements),
+    cycles: statements.map(({ period }) => period),
+  };
+};
+
 // The account the URL asks when it has movements, else the one with the
-// latest, with its quarters to choose from.
+// latest, with its quarters to choose from and a card's cycles.
 const locateAccount = async (ctx: UserContext, accountId?: string) => {
   const accounts = await listMovementAccounts(ctx);
   const account = accounts.find(({ id }) => id === accountId) ?? accounts[0];
@@ -31,8 +63,11 @@ const locateAccount = async (ctx: UserContext, accountId?: string) => {
   const unreconciled = (await listUnreconciledStatements(ctx)).filter(
     (statement) => statement.accountId === account.id,
   );
-  const counted = await listMovementQuarters(ctx, account.id);
-  return { accounts, account, quarters: quarterChoices(counted, unreconciled) };
+  return {
+    accounts,
+    account,
+    ...(await accountPeriods(ctx, account, unreconciled)),
+  };
 };
 
 /**

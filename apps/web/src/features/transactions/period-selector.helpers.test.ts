@@ -32,6 +32,7 @@ const view = (
   accounts,
   account: ACCOUNT,
   quarters: [{ year: 2026, quarter: 3, status: "verified" }],
+  cycles: null,
   years: [{ year: 2026, months: 3 }],
   unreconciled: [],
   period,
@@ -100,7 +101,16 @@ describe("periodText", () => {
     ],
     [AUGUST, "Del 1 de agosto al 31 de agosto de 2026"],
   ] as const)("says the days of %o", (period, expected) => {
-    expect(periodText(period)).toBe(expected);
+    expect(periodText({ period, cycles: null })).toBe(expected);
+  });
+
+  it("says a card's cycle (12.3c)", () => {
+    const cycles = [
+      periodSchema.parse({ from: "2026-08-12", to: "2026-09-10" }),
+    ];
+    expect(
+      periodText({ period: { kind: "month", year: 2026, month: 9 }, cycles }),
+    ).toBe("Del 12 de agosto al 10 de septiembre de 2026");
   });
 });
 

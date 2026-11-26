@@ -23,12 +23,15 @@ import { balanceCheckOf } from "../src/utils/balance-check.helpers";
 const ROOT = new URL("../../../", import.meta.url);
 const ENV_FILE = new URL(".env.local", ROOT);
 const FIXTURES = new URL("packages/parsers/fixtures/", ROOT);
-// One account and no overlapping periods: matching movements across formats
-// comes in Stage 10.
+// A savings account without overlapping periods, and a card of each bank
+// (12.3c): Bancolombia's September, and Nu's September and October.
 const FIXTURE_FILES = [
   "quarterly-basic.json",
   "quarterly-year-rollover.json",
   "movements-basic.json",
+  "card-basic.json",
+  "nu-card-basic-pdf.json",
+  "nu-card-late-pdf.json",
 ];
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const DEFAULT_CLERK_USER_ID = "user_dev_seed";
@@ -91,7 +94,10 @@ try {
       const holderName = await findAccountHolderName(ctx, accountId);
       return saveStatement(ctx, {
         accountId,
-        statement: categorizeStatement(prepared, { holderName }),
+        statement: categorizeStatement(prepared, {
+          accountType: parsed.accountType,
+          holderName,
+        }),
         balance: balanceCheckOf(parsed),
       });
     });

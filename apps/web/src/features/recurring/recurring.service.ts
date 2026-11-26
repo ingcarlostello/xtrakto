@@ -3,7 +3,7 @@ import { findUserId, listSummaryMovements, withUserContext } from "@xtrakto/db";
 import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
 import { locatePagePeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
-import { periodDays } from "@/utils/transactions-url.helpers";
+import { pageDays } from "@/utils/card-cycles.helpers";
 import {
   calendarMonthOf,
   historyRead,
@@ -30,7 +30,7 @@ export const getRecurringPayments = async (
   return withUserContext(db, userId, async (ctx) => {
     const located = await locatePagePeriod(ctx, request);
     if (!located) return null;
-    const days = periodDays(located.period);
+    const days = pageDays(located.period, located.cycles);
     const history = await listSummaryMovements(ctx, {
       accountId: located.account.id,
       period: historyRead(located.period, days),

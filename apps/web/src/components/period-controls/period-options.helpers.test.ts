@@ -46,6 +46,7 @@ const choices = (accounts: AccountRow[] = [ACCOUNT]): PeriodChoices => ({
   accounts,
   account: ACCOUNT,
   quarters: QUARTERS,
+  cycles: null,
   period: AUGUST,
 });
 
@@ -130,6 +131,7 @@ describe("a year's options (10.2b)", () => {
     accounts: [ACCOUNT],
     account: ACCOUNT,
     quarters: [...QUARTERS, { year: 2025, quarter: 4, status: "verified" }],
+    cycles: null,
     years: [
       { year: 2026, months: 6 },
       { year: 2025, months: 3 },
