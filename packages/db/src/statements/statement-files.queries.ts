@@ -58,16 +58,20 @@ export type BankFiles = {
   readonly bankId: string;
   /** Those that print balances, such as a quarterly statement. */
   readonly withBalances: number;
+  /** Those that print neither balances nor a card's figures. */
   readonly withoutBalances: number;
+  /** A card's statements (12.3b). */
+  readonly cards: number;
 };
 
 /** The files the user keeps, of every account, by bank (10.2a, 11.3c). */
 export type UserFiles = readonly BankFiles[];
 
 /**
- * How many statements the user keeps of each bank's accounts, with balances
- * and without them: every file saved, also one that doesn't reconcile or
- * whose movements another saved before. A bank without files isn't listed.
+ * How many statements the user keeps of each bank's accounts, with balances,
+ * without them, and of a card: every file saved, also one that doesn't
+ * reconcile or whose movements another saved before. A bank without files
+ * isn't listed.
  */
 export const countUserFiles = async ({
   tx,
@@ -81,7 +85,11 @@ export const countUserFiles = async ({
           Number,
         ),
       withoutBalances:
-        sql<number>`count(*) filter (where ${isNull(statements.openingBalanceMinor)})`.mapWith(
+        sql<number>`count(*) filter (where ${isNull(statements.openingBalanceMinor)} and ${isNull(statements.card)})`.mapWith(
+          Number,
+        ),
+      cards:
+        sql<number>`count(*) filter (where ${isNotNull(statements.card)})`.mapWith(
           Number,
         ),
     })

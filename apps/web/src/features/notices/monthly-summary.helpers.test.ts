@@ -27,6 +27,7 @@ const account = (
     references: 0,
   })),
   quarters: [],
+  cardStatements: [],
 });
 
 const WHOLE = movements("2026-10-01", "2026-10-31");

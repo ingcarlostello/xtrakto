@@ -13,6 +13,8 @@ export const YOUR_DATA_COPY = {
   files: { one: "archivo", other: "archivos" },
   quarterly: { one: "trimestral", other: "trimestrales" },
   movements: "de movimientos",
+  // A card's statements (12.3b).
+  cards: { one: "de tarjeta", other: "de tarjetas" },
   otherBanks: "de otros bancos",
   none: "Aún no tienes archivos.",
 } as const;
@@ -105,7 +107,7 @@ export const PRIVACY_AND_DATA_COPY = {
     files: {
       title: "No guardamos tus archivos",
       detail:
-        "Se leen en tu navegador. Tampoco tu dirección, el número completo de tu cuenta ni la IP que traen algunos PDF.",
+        "Se leen en tu navegador. Tampoco tu dirección, tu número de documento, el número completo de tu cuenta o tu tarjeta ni la IP que traen algunos PDF.",
     },
     phones: {
       title: "Teléfonos de terceros protegidos",

@@ -1,7 +1,8 @@
 // The welcome a new account sees right after sign-up (docs/ui/v8-15 to
 // v8-17), with only what works today: a Bancolombia savings account's files,
-// in Excel or PDF, and another bank's, in Excel or CSV (11.3c). Later stages
-// add their lines (roadmap 5.8).
+// in Excel or PDF, and another bank's, in Excel or CSV (11.3c); a
+// Bancolombia card's statement, in Excel or PDF, and a Nu card's, in PDF
+// (12.3b). Later stages add their lines (roadmap 5.8).
 
 export const ONBOARDING_STEP_COUNT = 3;
 
@@ -9,14 +10,19 @@ export const ONBOARDING_STEP_COUNT = 3;
 export const FIRST_FILE = {
   QUARTERLY: "quarterly",
   MOVEMENTS: "movements",
+  CARD: "card",
 } as const;
 
 /** The search param that takes the choice to the last step. */
 export const FIRST_FILE_PARAM = "first";
 
-/** Whose files the second step's choice is: Bancolombia's, or another bank's. */
+/**
+ * Whose files the second step's choice is: Bancolombia's, Nu's, whose card
+ * the parsers read (12.3b), or another bank's.
+ */
 export const FIRST_BANK = {
   BANCOLOMBIA: "bancolombia",
+  NU: "nu",
   OTHER: "other",
 } as const;
 
@@ -79,12 +85,11 @@ export const WELCOME_COPY = {
   },
 } as const;
 
-// docs/ui/v8-16 without the credit card (12.1).
+// docs/ui/v8-16, with the credit card that was "Pronto" (12.3b).
 export const FIRST_FILE_COPY = {
   metaTitle: "Qué subir primero",
   title: "¿Qué vas a subir primero?",
-  subtitle:
-    "De tu cuenta de ahorros. Puedes subir los dos tipos; se complementan.",
+  subtitle: "Puedes subir varios tipos; se complementan.",
   quarterly: {
     title: "Extracto trimestral",
     badge: "Recomendado",
@@ -94,15 +99,21 @@ export const FIRST_FILE_COPY = {
     title: "Movimientos del mes",
     detail: "Sin saldos. Puedes bajar varios rangos: no se duplican.",
   },
-  // Another bank's spreadsheet is read once the person confirms it (11.3c).
+  card: {
+    title: "Tarjeta de crédito",
+    detail: "Compras, cuotas e intereses.",
+  },
+  // Another bank's spreadsheet is read once the person confirms it (11.3c);
+  // of Nu, only its card (12.3b).
   bank: {
     label: "Banco",
-    hint: "¿No está tu banco? Elige “Otro”: lo leemos y te pedimos confirmar las columnas.",
+    hint: "¿No está tu banco? Elige “Otro”: leemos los movimientos de tu cuenta de ahorros y te pedimos confirmar las columnas.",
     bancolombia: "Bancolombia",
+    nu: "Nu",
     other: "Otro",
   },
-  // The files that print the holder's name (6.2a, 9.3b).
-  name: "No te pedimos tu nombre: lo tomamos de tu extracto trimestral o del PDF de tus movimientos.",
+  // The files that print the holder's name (6.2a, 9.3b, 12.2).
+  name: "No te pedimos tu nombre: lo tomamos de tu extracto trimestral, del PDF de tus movimientos o del extracto de tu tarjeta.",
   back: "Atrás",
   next: "Continuar",
 } as const;
@@ -117,7 +128,45 @@ export const DOWNLOAD_COPY = {
       "Con el trimestral basta para empezar. Los movimientos suman referencias y meses recientes.",
     movements:
       "Con los movimientos del mes basta para empezar. El trimestral suma los saldos, que verificamos al centavo.",
+    card: "Con el extracto de tu tarjeta ves tus compras, tus cuotas y lo que te cobra. El trimestral y los movimientos suman tu cuenta de ahorros.",
   },
+  // A Bancolombia card's statement (12.3b), in Excel or PDF.
+  card: {
+    title: "Extracto de tu tarjeta de crédito",
+    steps: [
+      {
+        title: "Entra a la Sucursal Virtual Personas",
+        detail: "Desde el computador es más fácil.",
+      },
+      { title: "Ve a Documentos → Extractos" },
+      { title: "Elige tu tarjeta de crédito y el mes" },
+      {
+        title: "Descarga el Excel o el PDF",
+        detail: "Si el PDF pide contraseña, suele ser tu número de documento.",
+      },
+    ],
+  },
+  // A Nu card's statement (12.3b): a PDF with its password.
+  nu: {
+    title: "Trae tu extracto de Nu",
+    subtitle:
+      "Con el extracto de tu tarjeta ves tus compras, tus cuotas y lo que te cobra.",
+    guide: {
+      title: "Extracto de tu tarjeta Nu",
+      steps: [
+        { title: "Abre la app de Nu" },
+        { title: "Busca los extractos de tu tarjeta" },
+        {
+          title: "Descarga el PDF del mes",
+          detail:
+            "Pide contraseña: suele ser tu número de documento. No sale de tu navegador.",
+        },
+      ],
+    },
+  },
+  // Another bank's card isn't read yet (12.3b): its savings account is.
+  otherCardSubtitle:
+    "Por ahora leemos las tarjetas de Bancolombia y Nu. De otro banco, descarga los movimientos de tu cuenta de ahorros en Excel o CSV; la primera vez te mostramos qué entendimos de cada columna y lo confirmas.",
   quarterly: {
     title: "Extracto trimestral",
     steps: [

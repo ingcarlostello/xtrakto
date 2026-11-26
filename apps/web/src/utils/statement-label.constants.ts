@@ -43,6 +43,17 @@ export const FORMAT_FILE_TYPES = {
   (typeof FILE_TYPE)[keyof typeof FILE_TYPE]
 >;
 
+/**
+ * A card's statements (12.3a), named by the month they close in, as their
+ * bank titles them: Nu's from 12 August to 10 September is "sep 2026"
+ * (12.3b).
+ */
+export const CARD_FORMATS: ReadonlySet<string> = new Set<FormatId>([
+  "bancolombia-credit-card",
+  "bancolombia-credit-card-pdf",
+  "nu-credit-card-pdf",
+]);
+
 // A statement's own period reads as months, a range of movements as days.
 export const FORMAT_PERIOD_SOURCE = {
   "bancolombia-savings-quarterly": PERIOD_SOURCE.STATEMENT,

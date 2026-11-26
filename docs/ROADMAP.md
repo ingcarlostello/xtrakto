@@ -273,7 +273,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.2c Bancolombia's card statement in PDF
 - [x] 12.2d Nu's card statement in PDF
 - [x] 12.3a Card accounts saved
-- [ ] 12.3b Cards on the upload screen and in the welcome
+- [x] 12.3b Cards on the upload screen and in the welcome
 - [ ] 12.3c Your card
 - [ ] 12.3d A card's movements and installments
 - [ ] 12.3e Card payments across accounts
@@ -2558,7 +2558,24 @@ It came out at about 300 lines of code added and 45 deleted, without tests, comm
 
 **Done when:** every screen reads right with a card beside a savings account, at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): cards on the upload screen and in the welcome`
+Decided with the human when it started (2026-11-25):
+
+- **A card's statement is named by the month it closes in,** as its bank titles it: Nu's from 12 August to 10 September is "Extracto de tu tarjeta sep 2026". "Lo que tienes" draws a card's months the same way: verified when a statement that reconciles closes in it, missing otherwise.
+- **The welcome's "Banco" lists Bancolombia, Nu and Otro for any file,** and its last step shows what the file and the bank need, without code in the browser.
+- **One phase,** though estimated at 400 to 550 lines.
+
+Found while building it (2026-11-25):
+
+- **The result needs a card's own words:** a card's statement read as one without balances ("Sin saldo para verificar") until the job's result counted a card's sums. Its pill and step say "Cuadra con tu extracto". One that doesn't reconcile reads "Tu extracto no cuadra" and links nowhere, since where a card's statement breaks isn't shown yet.
+- **The movements in dollars:** the job keeps how many it left out, a count, so the result still says so after a reload.
+- **The purchases a statement lists from earlier months don't reach a card's timeline back:** its months come from its statements, not its movements.
+- **A Nu savings account reads as another bank's,** and another bank's card says that only Bancolombia's and Nu's are read.
+- **The profile counts a card's files apart** ("y 3 de tarjetas"), and its privacy fact names the ID number and the card.
+- **12.3a's negative `added`** never shows: a statement that doesn't reconcile shows no new movements, and the upload notice adds nothing below zero.
+
+It came out at about 420 lines of code added and 127 deleted, without tests, comments or blank lines (400 to 550 estimated), in commits of one pull request: the design rules, the database and the app together, since the database's change alone fails the app's type check, and the documents.
+
+**Commits:** `docs(rules): cards on the upload screen and in the welcome`, `feat: cards on the upload screen and in the welcome`, then `docs: cards on the upload screen and in the welcome`
 
 #### 12.3c Your card
 

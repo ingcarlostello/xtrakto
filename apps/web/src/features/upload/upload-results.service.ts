@@ -1,5 +1,9 @@
 import "server-only";
-import { DEFAULT_TIME_ZONE, localDateFromInstant } from "@xtrakto/core";
+import {
+  ACCOUNT_TYPE,
+  DEFAULT_TIME_ZONE,
+  localDateFromInstant,
+} from "@xtrakto/core";
 import {
   countCountedMovements,
   findUserId,
@@ -137,6 +141,9 @@ const outcomeOf = (
     statementId: statement.id,
     accountId: statement.accountId,
     bankId: statement.bankId,
+    ...(statement.accountType === ACCOUNT_TYPE.CREDIT_CARD
+      ? { isCard: true }
+      : {}),
     period: statement.period,
     balance: statement.balance,
     ...(statement.differenceMinor === null

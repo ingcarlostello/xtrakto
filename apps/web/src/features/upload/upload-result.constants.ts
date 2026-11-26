@@ -70,6 +70,22 @@ export const RESULT_COPY = {
   and: "y",
 } as const;
 
+// A card's statement (12.3b): its bank's sums check it, and its movements in
+// another currency wait. The rest of its result reads as any statement's.
+export const CARD_RESULT_COPY = {
+  notReconciled: "Tu extracto no cuadra",
+  notReconciledBy: "Tu extracto no cuadra por",
+  verified: "Cuadra con tu extracto",
+  verifiedPill: "Sus movimientos y cuotas dan lo que dice tu banco.",
+  verifiedDetail:
+    "Sumamos sus movimientos y sus cuotas, al centavo: dan lo que dice tu banco.",
+  noneHad: "Ninguno estaba en tu tarjeta.",
+  hadIn: "ya estaban en tu tarjeta: no se duplican.",
+  // "Tu tarjeta tiene 3 movimientos en dólares que aún no contamos."
+  foreign: "Tu tarjeta tiene",
+  foreignAfter: "en dólares que aún no contamos.",
+} as const;
+
 // What verifies a file without balances (10.1b), as its account's bank has
 // it: Bancolombia's quarterly statement, or another bank's spreadsheet with
 // balances (11.3c).

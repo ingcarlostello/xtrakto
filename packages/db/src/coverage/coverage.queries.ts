@@ -11,6 +11,7 @@ import {
   lt,
   lte,
   or,
+  sql,
 } from "drizzle-orm";
 import { statements } from "../statements/statement.schemas";
 import {
@@ -33,10 +34,7 @@ import type { UserContext } from "../user-context/user-context.types";
  * The statements that print figures to check them by: a quarterly
  * statement's balances, or a card's sums (12.3a). Use it on `statements`.
  */
-export const withFiguresToCheck = or(
-  isNotNull(statements.openingBalanceMinor),
-  isNotNull(statements.card),
-);
+export const withFiguresToCheck = sql<boolean>`(${isNotNull(statements.openingBalanceMinor)} or ${isNotNull(statements.card)})`;
 
 /**
  * The statements whose movements can count: those whose figures reconcile,

@@ -265,4 +265,57 @@ describe("uploadedFileView", () => {
       );
     });
   });
+
+  // Named by the month it closes in, with its file type: Nu's is a PDF the
+  // parsers read, never another bank's spreadsheet (12.3b).
+  describe("a card's statement", () => {
+    const card: UploadJob = { ...quarterly, formatId: "nu-credit-card-pdf" };
+    const SEPTEMBER = periodSchema.parse({
+      from: "2026-08-12",
+      to: "2026-09-10",
+    });
+    const cardDone = (
+      counts: Partial<IngestionStats>,
+      rest: Partial<JobOutcome> = {},
+    ) =>
+      done(card, counts, {
+        bankId: "nu",
+        isCard: true,
+        period: SEPTEMBER,
+        ...rest,
+      });
+
+    it.each([
+      {
+        name: "one that reconciles",
+        job: cardDone({ total: 12, added: 12 }),
+        detail: "PDF · 12 movimientos · cuadra al centavo",
+        badge: "Verificado",
+      },
+      {
+        name: "one that doesn't",
+        job: cardDone(
+          { total: 12, added: 0 },
+          {
+            balance: "unverified",
+            differenceMinor: amountMinorSchema.parse(1_000_000),
+          },
+        ),
+        detail: "PDF · 12 movimientos · no cuadra por $10.000",
+        badge: "No cuadra",
+      },
+      {
+        name: "one already saved",
+        job: cardDone({ total: 12, added: 0, skipped: 12 }),
+        detail: "PDF · 12 ya los tenías · nada nuevo",
+        badge: "Sin cambios",
+      },
+    ])("lists $name", ({ job, detail, badge }) => {
+      expect(uploadedFileView(job)).toMatchObject({
+        title: "Extracto de tu tarjeta sep 2026",
+        detail,
+        badge: { label: badge },
+      });
+    });
+  });
 });

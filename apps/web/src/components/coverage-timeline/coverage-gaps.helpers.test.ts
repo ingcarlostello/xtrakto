@@ -135,6 +135,7 @@ describe("monthsMissing", () => {
         { period: Q1.period, isChained: false },
         { period: Q3.period, isChained: false },
       ],
+      cardStatements: [],
     };
 
     expect(monthsMissing(coverage)).toEqual([
@@ -147,7 +148,12 @@ describe("monthsMissing", () => {
 
   it("finds none without months", () => {
     expect(
-      monthsMissing({ accountId: "a1", months: [], quarters: [] }),
+      monthsMissing({
+        accountId: "a1",
+        months: [],
+        quarters: [],
+        cardStatements: [],
+      }),
     ).toEqual([]);
   });
 });

@@ -8,12 +8,12 @@ import type { CoverageView } from "./coverage-timeline.types";
 
 /**
  * What each month's color means, all four as v8 draws them; what verifies a
- * month, as the accounts shown have it (11.3c).
+ * month, as the accounts shown have it (11.3c, 12.3b).
  */
 export function CoverageLegend({
   views,
 }: {
-  views: readonly Pick<CoverageView, "isOtherBank">[];
+  views: readonly Pick<CoverageView, "verifiedBy">[];
 }) {
   const legend = [
     { swatch: STATUS_CLASSES.verified, text: verifiedLegend(views) },

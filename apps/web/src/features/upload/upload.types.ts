@@ -288,6 +288,8 @@ export type JobOutcome = {
   /** The account its statement was saved to, and its bank. */
   readonly accountId: string;
   readonly bankId: string;
+  /** A card's statement, which its bank's sums check (12.3b). */
+  readonly isCard?: boolean;
   readonly period: Period;
   readonly balance: StatementBalance;
   /** When it doesn't reconcile: the closing difference. */

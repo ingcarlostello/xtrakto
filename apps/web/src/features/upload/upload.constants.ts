@@ -138,7 +138,7 @@ export const FORMAT_BANKS = {
 export const UPLOAD_COPY = {
   title: "Subir extracto",
   subtitle:
-    "Trimestral o movimientos de tu cuenta de ahorros: de Bancolombia en Excel o PDF, de otro banco en Excel o CSV.",
+    "De tu cuenta de ahorros o tu tarjeta de crédito: de Bancolombia en Excel o PDF, de tu tarjeta Nu en PDF y, de otro banco, tus movimientos en Excel o CSV.",
   chooseTitle: "Elige uno o varios archivos",
   chooseDescription:
     "Del banco tal como los descargaste. No tienes que editarlos ni renombrarlos.",
@@ -159,7 +159,7 @@ export const UPLOAD_COPY = {
     title: "Este PDF tiene contraseña",
     detail: "Escríbela para abrirlo; no sale de tu navegador.",
     label: "Contraseña del PDF",
-    hint: "En Bancolombia suele ser tu número de documento, sin puntos ni espacios. No la guardamos.",
+    hint: "En Bancolombia y en Nu suele ser tu número de documento, sin puntos ni espacios. No la guardamos.",
     wrong: "Esa contraseña no abre este PDF. Revísala y escríbela de nuevo.",
     show: "Mostrar la contraseña",
     open: "Abrir PDF",
@@ -189,6 +189,7 @@ export const UPLOAD_COPY = {
   renewsOn: "Se renuevan el",
   limitReached: "Llegaste al límite de este mes.",
   statementAccount: "cuenta",
+  statementCard: "tarjeta",
   savedIn: "Se guardará en",
   chooseAccount: "¿En qué cuenta lo guardamos?",
   chooseAccountPlaceholder: "Elige una cuenta",
@@ -207,11 +208,26 @@ export const FORMATS_COPY = {
     detail:
       "Sin saldos, pero con referencias (Nequi, PSE). Puedes bajar varios rangos del mismo mes: no se duplican.",
   },
-  // Stage 11: a spreadsheet no parser knows, read once the person confirms it.
+  // A card's statement (12.3b), checked by its bank's own sums.
+  card: {
+    title: "Extracto de tu tarjeta de crédito",
+    detail:
+      "Compras, cuotas e intereses del mes: lo verificamos con las sumas de tu banco.",
+  },
+  nuTitle: "Nu: lo que ya leemos",
+  nuCard: {
+    title: "Extracto de tu tarjeta",
+    detail:
+      "Lo descargas de la app de Nu. Compras, cuotas e intereses del mes: lo verificamos con sus sumas.",
+  },
+  // Nu's PDF always asks for its password.
+  lockedPdf: "PDF con contraseña",
+  // Stage 11: a spreadsheet no parser knows, read once the person confirms
+  // it; another bank's card isn't read (12.3b).
   otherBank: {
     title: "¿Otro banco?",
     detail:
-      "Súbelo igual. Te mostramos qué entendimos de cada columna y lo confirmas una vez.",
+      "Los movimientos de tu cuenta de ahorros: súbelos igual. Te mostramos qué entendimos de cada columna y lo confirmas una vez.",
   },
 } as const;
 
@@ -228,9 +244,9 @@ export const PRIVACY_COPY = {
     detail: "La usamos para abrirlo aquí mismo y la olvidamos.",
   },
   header: {
-    title: "Del encabezado solo usamos tu nombre y tu cuenta",
+    title: "Del encabezado solo usamos tu nombre y tu cuenta o tarjeta",
     detail:
-      "Descartamos tu dirección, tu ciudad, la sucursal y la IP que traen algunos PDF. Del número de cuenta enviamos solo los últimos 4 dígitos.",
+      "Descartamos tu dirección, tu ciudad, tu número de documento, la sucursal y la IP que traen algunos PDF. De tu cuenta o tu tarjeta enviamos solo los últimos 4 dígitos.",
   },
   references: {
     title: "De un celular guardamos solo un código",

@@ -1,4 +1,4 @@
-import { compareLocalDates, type Period } from "@xtrakto/core";
+import { compareLocalDates, type LocalDate, type Period } from "@xtrakto/core";
 import { and, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { countingStatement } from "../coverage/coverage.queries";
 import { transactions } from "../transactions/transaction.schemas";
@@ -43,6 +43,8 @@ export type AccountCoverage = {
   readonly months: readonly CoverageMonth[];
   /** Its verified quarterly statements, oldest first. */
   readonly quarters: readonly CoverageQuarter[];
+  /** A card's statements that reconcile, by their periods, oldest first (12.3b). */
+  readonly cardStatements: readonly Period[];
 };
 
 const monthOf = sql<string>`to_char(${transactions.date}, 'YYYY-MM')`;
@@ -98,6 +100,22 @@ const listQuarters = ({ tx, userId }: UserContext) =>
       ),
     );
 
+const listCardStatements = ({ tx, userId }: UserContext) =>
+  tx
+    .select({
+      accountId: statements.accountId,
+      from: statements.periodFrom,
+      to: statements.periodTo,
+    })
+    .from(statements)
+    .where(
+      and(
+        eq(statements.userId, userId),
+        eq(statements.balanceVerified, true),
+        isNotNull(statements.card),
+      ),
+    );
+
 type MonthFileRow = Awaited<ReturnType<typeof listMonthFiles>>[number];
 type ReferenceRow = Awaited<ReturnType<typeof listMonthReferences>>[number];
 
@@ -119,11 +137,17 @@ const monthsOf = (
     references: references.find((row) => row.month === month)?.references ?? 0,
   }));
 
+const byStart = (
+  a: { readonly from: LocalDate },
+  b: { readonly from: LocalDate },
+): number => compareLocalDates(a.from, b.from);
+
 /**
  * What covers each of the user's accounts that has movements or a verified
- * quarterly statement: its months with the files that saved them, and its
- * verified quarterly statements with their chain (5.6c), worked out when
- * read so the upload order doesn't matter.
+ * statement: its months with the files that saved them, its verified
+ * quarterly statements with their chain (5.6c), and a card's statements
+ * that reconcile (12.3b), worked out when read so the upload order doesn't
+ * matter.
  */
 export const listAccountCoverage = async (
   ctx: UserContext,
@@ -131,8 +155,11 @@ export const listAccountCoverage = async (
   const files = await listMonthFiles(ctx);
   const references = await listMonthReferences(ctx);
   const quarters = await listQuarters(ctx);
+  const cards = await listCardStatements(ctx);
   const accountIds = [
-    ...new Set([...files, ...quarters].map(({ accountId }) => accountId)),
+    ...new Set(
+      [...files, ...quarters, ...cards].map(({ accountId }) => accountId),
+    ),
   ];
   return accountIds.map((accountId) => {
     const ofAccount = (row: { readonly accountId: string }) =>
@@ -142,11 +169,15 @@ export const listAccountCoverage = async (
       months: monthsOf(files.filter(ofAccount), references.filter(ofAccount)),
       quarters: quarters
         .filter(ofAccount)
-        .sort((a, b) => compareLocalDates(a.from, b.from))
+        .sort(byStart)
         .map(({ from, to, chainedFrom: previous }) => ({
           period: { from, to },
           isChained: previous !== null,
         })),
+      cardStatements: cards
+        .filter(ofAccount)
+        .sort(byStart)
+        .map(({ from, to }) => ({ from, to })),
     };
   });
 };

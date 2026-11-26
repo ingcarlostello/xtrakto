@@ -5,6 +5,7 @@ import {
   err,
   normalizeHolderName,
   ok,
+  PARSE_WARNING_CODE,
   type ParsedStatement,
   prepareStatement,
   type Result,
@@ -107,6 +108,17 @@ const resolveAccount = async (
   return resolveUnidentifiedAccount(ctx, kind);
 };
 
+// A card's movements in another currency, read but not counted (12.3b): a
+// count, as the job keeps its stats, and none for any other statement.
+const foreignOf = ({
+  warnings,
+}: ParsedStatement): Pick<IngestionStats, "foreign"> => {
+  const foreign = warnings.filter(
+    ({ code }) => code === PARSE_WARNING_CODE.FOREIGN_CURRENCY,
+  ).length;
+  return foreign > 0 ? { foreign } : {};
+};
+
 const fail = async (
   ctx: UserContext,
   jobId: string,
@@ -147,7 +159,8 @@ const ingestOpenJob = async (
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");
   // Any upload matches what the account has hidden, saved before or now.
   await matchAccountMovements(ctx, account.value, { holderName, userRules });
-  const { statementId, ...stats } = saved.value;
+  const { statementId, ...counts } = saved.value;
+  const stats = { ...counts, ...foreignOf(parsed.value) };
   await finishIngestionJob(ctx, jobId, { statementId, stats });
   return { status: "done", stats };
 };

@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_TYPE,
   addDaysTo,
   type CalendarMonth,
   formatShortMonth,
@@ -12,10 +13,12 @@ import type {
   CoverageQuarter,
 } from "@xtrakto/db";
 import { accountShortLabel, isOtherBank } from "@/utils/account-label.helpers";
+import { joined } from "@/utils/list-text.utils";
 import { coverageSentence, overlapNote } from "./coverage-sentence.helpers";
 import { COVERAGE_COPY, TIMELINE_MONTHS } from "./coverage-timeline.constants";
 import type {
   CoverageSegment,
+  CoverageSource,
   CoverageStatus,
   CoverageView,
 } from "./coverage-timeline.types";
@@ -161,7 +164,7 @@ const isChainedIn = (
 export const coverageViewOf = (
   coverage: AccountCoverage,
   today: LocalDate,
-): Omit<CoverageView, "accountLabel" | "isOtherBank"> => {
+): Omit<CoverageView, "accountLabel" | "verifiedBy"> => {
   const verified = verifiedMonths(coverage.quarters);
   const known = [
     ...new Set([...coverage.months.map(({ month }) => month), ...verified]),
@@ -186,6 +189,47 @@ export const coverageViewOf = (
 };
 
 /**
+ * A card's coverage as its timeline shows it (12.3b): its months are those
+ * its statements close in, as its bank titles them, verified when one that
+ * reconciles closes in it and missing otherwise, through `today`'s month.
+ * The purchases a statement lists from earlier months don't reach back.
+ */
+export const cardCoverageViewOf = (
+  { accountId, cardStatements }: AccountCoverage,
+  today: LocalDate,
+): Omit<CoverageView, "accountLabel" | "verifiedBy"> => {
+  const verified = new Set(cardStatements.map(({ to }) => to.slice(0, 7)));
+  const segments = timelineMonths([...verified].sort(), today).map(
+    (month): CoverageSegment => ({
+      month,
+      label: formatShortMonth(month),
+      status: verified.has(monthKey(month)) ? "verified" : "missing",
+      isAlsoInMovements: false,
+    }),
+  );
+  return {
+    accountId,
+    segments,
+    sentence: coverageSentence(segments, monthOfKey(today)),
+    isChained: false,
+  };
+};
+
+const isCard = ({ accountType }: AccountRow): boolean =>
+  accountType === ACCOUNT_TYPE.CREDIT_CARD;
+
+const sourceOf = (account: AccountRow): CoverageSource => {
+  if (isCard(account)) return "card";
+  return isOtherBank(account.bankId) ? "balances" : "quarterly";
+};
+
+// Whether an account has anything its timeline draws.
+const hasMonths = (account: AccountRow, found: AccountCoverage): boolean =>
+  isCard(account)
+    ? found.cardStatements.length > 0
+    : found.months.length > 0 || found.quarters.length > 0;
+
+/**
  * The user's accounts with months, in the order of `accounts`, each named by
  * its short label when there are several (decided with the human).
  */
@@ -196,31 +240,40 @@ export const coverageViews = (
 ): CoverageView[] => {
   const shown = accounts.flatMap((account) => {
     const found = coverage.find(({ accountId }) => accountId === account.id);
-    return found && (found.months.length > 0 || found.quarters.length > 0)
-      ? [{ account, found }]
-      : [];
+    return found && hasMonths(account, found) ? [{ account, found }] : [];
   });
   return shown.map(({ account, found }) => ({
-    ...coverageViewOf(found, today),
-    isOtherBank: isOtherBank(account.bankId),
+    ...(isCard(account)
+      ? cardCoverageViewOf(found, today)
+      : coverageViewOf(found, today)),
+    verifiedBy: sourceOf(account),
     ...(shown.length > 1
       ? { accountLabel: accountShortLabel(account, account.last4) }
       : {}),
   }));
 };
 
+// The legend's order of what verifies a month.
+const SOURCES: readonly CoverageSource[] = ["quarterly", "balances", "card"];
+
 /**
  * What verified a month, as the legend says it for the accounts shown: a
- * quarterly statement, another bank's spreadsheet with balances (11.3c), or
- * either.
+ * quarterly statement, another bank's spreadsheet with balances (11.3c), a
+ * card's statement (12.3b), or several: "Extracto trimestral o extracto de
+ * tu tarjeta, verificado".
  */
 export const verifiedLegend = (
-  views: readonly Pick<CoverageView, "isOtherBank">[],
+  views: readonly Pick<CoverageView, "verifiedBy">[],
 ): string => {
   const { legend } = COVERAGE_COPY;
-  const hasOtherBank = views.some(({ isOtherBank }) => isOtherBank);
-  if (!hasOtherBank) return legend.verified;
-  return views.every(({ isOtherBank }) => isOtherBank)
-    ? legend.verifiedByBalances
-    : legend.verifiedEither;
+  const shown = SOURCES.filter((source) =>
+    views.some(({ verifiedBy }) => verifiedBy === source),
+  );
+  const sources = joined(
+    (shown.length > 0 ? shown : SOURCES.slice(0, 1)).map(
+      (source) => legend.verifiedBy[source],
+    ),
+    legend.or,
+  );
+  return `${sources.charAt(0).toUpperCase()}${sources.slice(1)}, ${legend.verified}`;
 };
