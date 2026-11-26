@@ -1,5 +1,5 @@
 import { compareLocalDates, type LocalDate, type Period } from "@xtrakto/core";
-import { and, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { countingStatement } from "../coverage/coverage.queries";
 import { transactions } from "../transactions/transaction.schemas";
 import type { UserContext } from "../user-context/user-context.types";
@@ -39,7 +39,7 @@ export type CoverageQuarter = {
 /** What covers an account's months, worked out when read (10.2a). */
 export type AccountCoverage = {
   readonly accountId: string;
-  /** Its months with movements, oldest first. */
+  /** Its months with movements, oldest first; none of a card's (12.3c). */
   readonly months: readonly CoverageMonth[];
   /** Its verified quarterly statements, oldest first. */
   readonly quarters: readonly CoverageQuarter[];
@@ -49,7 +49,9 @@ export type AccountCoverage = {
 
 const monthOf = sql<string>`to_char(${transactions.date}, 'YYYY-MM')`;
 
-// Each file that saved movements in each month of the user's accounts.
+// Each file that saved movements in each month of the user's accounts. A
+// card's months are those its statements close in (12.3b), whatever days
+// its movements fall on, so its statements stay out.
 const listMonthFiles = ({ tx, userId }: UserContext) =>
   tx
     .selectDistinct({
@@ -62,7 +64,13 @@ const listMonthFiles = ({ tx, userId }: UserContext) =>
     })
     .from(transactions)
     .innerJoin(statements, eq(statements.id, transactions.statementId))
-    .where(and(eq(transactions.userId, userId), countingStatement));
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        countingStatement,
+        isNull(statements.card),
+      ),
+    );
 
 // How many references movements files carried over in each month: their
 // matched movements with a phone's or a code's (10.1a).

@@ -79,6 +79,12 @@ export {
   type MonthFile,
 } from "./statements/account-coverage.queries";
 export {
+  type CardFigures,
+  type CardPeriod,
+  listCardFigures,
+  listCardPeriods,
+} from "./statements/card-figures.queries";
+export {
   type BankFigures,
   findLatestVerifiedClosing,
   listBankFigures,
