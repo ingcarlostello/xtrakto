@@ -452,6 +452,7 @@ As Phase 12.3c builds it (`YourCard`, on a card's summary, built from v8's piece
   - A purchase in installments shows, under its tags, "Cuota 3 de 24 · $41.667 al mes" (Caption `--text-secondary`), from the latest statement that reconciles and charges it, whatever period the list shows (decided with the human); a purchase paid in one ("1 de 1") shows none.
   - Its detail adds "Cuota" ("2 de 24 · $50.000 al mes, en tu extracto de oct 2026") and, while installments are left, "Te falta pagar" ("$1.100.000, hasta ago 2028").
   - The Movido tile counts a card's payments ("+$500 mil" · "1 pago"), and the list's line says "Juntamos 3 extractos de tu tarjeta, sin duplicar." when several of its statements saved the period's movements.
+- **A payment to a card, across accounts** (Phase 12.3e): once a savings account's payment and the card's of the same amount, the same day or one apart, are paired when saved, the payment waits for no review. Each detail names the other side as a fact, "Pago de tu tarjeta", whose value is a link (`ROW_LINK`) to that movement's detail in its own month, a card's by its cycle: "Llegó a tu tarjeta Nu ••••5678" from the savings account, "Salió de tu cuenta de ahorros ••••8901" from the card. In Categorías, "Movido no es gasto"'s "Pago de tarjetas" row adds, under its bar, a link to each card its payments reached, to the card's summary in the same period: "Ver tu tarjeta Nu ••••5678" (Manrope 600 14px, `--primary`).
 
 ### Status pill
 
