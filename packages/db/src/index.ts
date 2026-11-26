@@ -85,6 +85,10 @@ export {
   listCardPeriods,
 } from "./statements/card-figures.queries";
 export {
+  type CardPurchase,
+  listCardPurchases,
+} from "./transactions/card-purchase.queries";
+export {
   type BankFigures,
   findLatestVerifiedClosing,
   listBankFigures,

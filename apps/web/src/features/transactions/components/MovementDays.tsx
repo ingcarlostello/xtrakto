@@ -149,8 +149,10 @@ const rowLinkOf = (id: string, links?: DetailLinks): RowLink | undefined =>
 type ItemProps = {
   item: TransactionListItem;
   isCounted: boolean;
-  mark?: MovementMark;
-  links?: DetailLinks;
+  mark?: MovementMark | undefined;
+  links?: DetailLinks | undefined;
+  /** A card's purchase in installments: "Cuota 3 de 24 · $41.667 al mes" (12.3d). */
+  note?: string | undefined;
 };
 
 // The icon of its category in its kind's colors, and its amount in its
@@ -158,7 +160,7 @@ type ItemProps = {
 // a guess or missing (design-system.md §3.4). A marked row, where a
 // statement's balance breaks, sits on the attention surface with why; the
 // one whose detail is open, on the primary's soft surface.
-function TransactionItem({ item, isCounted, mark, links }: ItemProps) {
+function TransactionItem({ item, isCounted, mark, links, note }: ItemProps) {
   const tone = movementTone(item, isCounted);
   const link = rowLinkOf(item.id, links);
   return (
@@ -176,6 +178,7 @@ function TransactionItem({ item, isCounted, mark, links }: ItemProps) {
       <div className="flex min-w-0 flex-col gap-0.5">
         <Description item={item} link={link} />
         <MovementTagList tags={movementTags(item, isCounted)} />
+        {note && <p className="pt-1 text-caption text-ink-secondary">{note}</p>}
         {mark && <MarkNote note={mark.note} />}
       </div>
       <p
@@ -229,6 +232,8 @@ type DayGroupProps = {
   marks?: ReadonlyMap<string, MovementMark>;
   /** Where each row opens its detail, in Movimientos. */
   links?: DetailLinks;
+  /** A card's purchases in installments, by their movements' ids (12.3d). */
+  notes?: Readonly<Record<string, string>>;
 };
 
 function DayGroup({
@@ -237,6 +242,7 @@ function DayGroup({
   isCounted = true,
   marks,
   links,
+  notes,
 }: DayGroupProps) {
   return (
     <div>
@@ -261,6 +267,7 @@ function DayGroup({
               isCounted={isCounted}
               mark={marks?.get(line.item.id)}
               links={links}
+              note={notes?.[line.item.id]}
             />
           ),
         )}

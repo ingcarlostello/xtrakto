@@ -22,6 +22,7 @@ import type {
   reviewHref,
 } from "@/utils/transactions-url.helpers";
 import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
+import type { LatestInstallment } from "@/features/cards/card-installments.types";
 
 /** What the URL asks the movements list for. */
 export type TransactionsRequest = {
@@ -49,6 +50,11 @@ export type AccountTransactions = PagePeriodChoices & {
   readonly category?: CategoryId;
   /** The period's movements that count, by kind, whatever the list shows. */
   readonly kindTotals: KindTotals;
+  /**
+   * On a card, each purchase in installments' latest, by its movement's id:
+   * "Cuota 3 de 24 · $41.667 al mes" (12.3d); none on any other account.
+   */
+  readonly installmentNotes: Readonly<Record<string, string>>;
   /** How many of the period's movements wait for review. */
   readonly pendingReview: number;
   /** The files that saved the period's movements, which the list joined (10.1c). */
@@ -152,6 +158,8 @@ export type OpenMovement = {
   /** `null` for the bank's `0` or a movement of 0, which make no rule. */
   readonly similar: number | null;
   readonly rules: MovementRules;
+  /** On a card, the latest installment of a purchase in installments (12.3d). */
+  readonly installment?: LatestInstallment;
 };
 
 export type RuleChange = (typeof RULE_CHANGE)[keyof typeof RULE_CHANGE];

@@ -228,6 +228,45 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     ).toBe(true);
   });
 
+  it("notes a card's purchases in installments by their latest statement, in its rows and its detail (12.3d)", async () => {
+    const cardUser = await uploadAs(app, [
+      "nu-card-basic-pdf",
+      "nu-card-late-pdf",
+    ]);
+    const september = await getAccountTransactions(cardUser, {
+      period: { kind: "month", year: 2026, month: 9 },
+      shown: 30,
+    });
+    const items =
+      september?.list.days.flatMap(({ lines }) =>
+        lines.flatMap((line) => (line.kind === "movement" ? [line.item] : [])),
+      ) ?? [];
+    const idOf = (text: string) =>
+      items.find(({ descriptionRaw }) => descriptionRaw === text)?.id ?? "";
+
+    // October's statement charged its second of 24; a purchase paid in one
+    // has no note.
+    expect(september?.installmentNotes).toEqual({
+      [idOf("Pedido *****6789")]: "Cuota 2 de 24 · $50.000 al mes",
+    });
+    const opened = await getAccountTransactions(cardUser, {
+      period: { kind: "month", year: 2026, month: 9 },
+      shown: 30,
+      movementId: idOf("Pedido *****6789"),
+    });
+    expect(opened?.detail?.installment).toMatchObject({
+      number: 2,
+      count: 24,
+      closedOn: "2026-10-10",
+    });
+    // A quarter of the card joined its two statements.
+    const quarter = await getAccountTransactions(cardUser, {
+      period: { kind: "quarter", year: 2026, quarter: 4 },
+      shown: 30,
+    });
+    expect(quarter?.files).toEqual({ quarterly: 0, movements: 1 });
+  });
+
   it("names the files it joined, and both files of a movement July's export repeats", async () => {
     const joinedUser = await uploadAs(app, [
       "quarterly-basic",

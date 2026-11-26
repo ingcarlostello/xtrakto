@@ -85,6 +85,8 @@ export const TRANSACTIONS_COPY = {
     tilesLabel: "Totales del periodo por tipo",
     out: { one: "salió", other: "salieron" },
     back: { one: "volvió", other: "volvieron" },
+    // A card's money back is its payments (12.3d): "+$500 mil" · "1 pago".
+    payments: { one: "pago", other: "pagos" },
     emptyFilter: "No hay movimientos de este tipo en el periodo.",
     emptyCategory: "No hay movimientos de esta categoría en el periodo.",
   },
@@ -168,6 +170,11 @@ export const TRANSACTIONS_COPY = {
     movements: {
       one: "archivo de movimientos",
       other: "archivos de movimientos",
+    },
+    // A card's statements, which list its purchases again (12.3d).
+    cardStatements: {
+      one: "extracto de tu tarjeta",
+      other: "extractos de tu tarjeta",
     },
     after: "sin duplicar.",
   },

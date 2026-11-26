@@ -39,11 +39,15 @@ const KIND_OF_FILTER = {
 const signed = (total: MovementTotal) =>
   formatSignedCompactAmount(total.amountMinor, CURRENCY.COP);
 
-// Money that moved shows each direction it went: "−$29,8M · +$2,8M".
-const movedTile = ({ out, back }: KindTotals["moved"]): KindTile => {
+// Money that moved shows each direction it went: "−$29,8M · +$2,8M". On a
+// card (12.3d), what came back is its payments.
+const movedTile = (
+  { out, back }: KindTotals["moved"],
+  onCard: boolean,
+): KindTile => {
   const directions = [
     { total: out, noun: COPY.out },
-    { total: back, noun: COPY.back },
+    { total: back, noun: onCard ? COPY.payments : COPY.back },
   ].filter(({ total }) => total.count > 0);
   if (directions.length === 0)
     return {
@@ -62,8 +66,14 @@ const movedTile = ({ out, back }: KindTotals["moved"]): KindTile => {
   };
 };
 
-/** The tiles of a period's kinds (docs/ui/v8-03), with compact totals. */
-export const kindTiles = (totals: KindTotals): readonly KindTile[] => [
+/**
+ * The tiles of a period's kinds (docs/ui/v8-03), with compact totals; a
+ * card's payments by their name (12.3d).
+ */
+export const kindTiles = (
+  totals: KindTotals,
+  onCard = false,
+): readonly KindTile[] => [
   {
     tone: "income",
     label: COPY.income,
@@ -76,7 +86,7 @@ export const kindTiles = (totals: KindTotals): readonly KindTile[] => [
     totals: [signed(totals.spending)],
     detail: countText(totals.spending.count, TRANSACTIONS_COPY.movements),
   },
-  movedTile(totals.moved),
+  movedTile(totals.moved, onCard),
 ];
 
 /**

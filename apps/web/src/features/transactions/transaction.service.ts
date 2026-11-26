@@ -38,6 +38,9 @@ import {
   checkedDayBalances,
   checkedNote,
 } from "@/features/todays-balance/todays-balance.helpers";
+import { installmentLine } from "@/features/cards/card-installments.helpers";
+import { readCardInstallments } from "@/features/cards/card-installments.service";
+import type { CardInstallments } from "@/features/cards/card-installments.types";
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
@@ -205,19 +208,46 @@ export const getAccountTransactions = async (
     });
     const check = await readBalanceCheck(ctx, located.account.id);
     const checked = checkedDayBalances(check);
+    const installments = await readCardInstallments(ctx, located.account);
     return {
       ...located,
       total: items.length,
       list: movementList(items, request.shown, checked),
+      installmentNotes: notesOf(installments, items),
       ...checkedNoteOf(check, items, checked),
       ...(search === undefined ? {} : { search }),
       ...(filter === undefined ? {} : { filter }),
       ...(category === undefined ? {} : { category }),
       ...(await wholePeriod(ctx, shownPeriod)),
-      detail: await detailOf(ctx, located.account.id, request.movementId),
+      detail: withInstallment(
+        await detailOf(ctx, located.account.id, request.movementId),
+        installments,
+      ),
       currentYear,
     };
   });
+};
+
+// "Cuota 3 de 24 · $41.667 al mes" for each of a card's purchases in
+// installments the list holds (12.3d), by its movement's id.
+const notesOf = (
+  { byMovement }: CardInstallments,
+  items: readonly TransactionListItem[],
+) =>
+  Object.fromEntries(
+    items.flatMap(({ id }) => {
+      const installment = byMovement.get(id);
+      return installment ? [[id, installmentLine(installment)]] : [];
+    }),
+  );
+
+// A card's purchase in installments, in its open detail (12.3d).
+const withInstallment = (
+  detail: OpenMovement | null,
+  { byMovement }: CardInstallments,
+): OpenMovement | null => {
+  const installment = detail && byMovement.get(detail.movement.id);
+  return detail && installment ? { ...detail, installment } : detail;
 };
 
 // That the days a balance typed worked out add up with the bank (10.3),

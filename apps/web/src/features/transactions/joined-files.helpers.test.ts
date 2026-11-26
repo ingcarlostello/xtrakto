@@ -1,5 +1,12 @@
+import type { AccountRow } from "@xtrakto/db";
 import { describe, expect, it } from "vitest";
 import { joinedFilesText } from "./joined-files.helpers";
+
+type Kind = Pick<AccountRow, "bankId" | "accountType">;
+const savingsOf = (bankId: string): Kind => ({
+  bankId,
+  accountType: "savings",
+});
 
 describe("joinedFilesText", () => {
   it.each([
@@ -22,15 +29,19 @@ describe("joinedFilesText", () => {
   ])(
     "names the files it joined: $files.quarterly and $files.movements",
     ({ files, text }) => {
-      expect(joinedFilesText(files, "bancolombia")).toBe(text);
+      expect(joinedFilesText(files, savingsOf("bancolombia"))).toBe(text);
     },
   );
 
   it("names another bank's files with balances by what they are", () => {
-    expect(joinedFilesText({ quarterly: 1, movements: 2 }, "davivienda")).toBe(
+    expect(
+      joinedFilesText({ quarterly: 1, movements: 2 }, savingsOf("davivienda")),
+    ).toBe(
       "Juntamos tu archivo con saldos y 2 archivos de movimientos, sin duplicar.",
     );
-    expect(joinedFilesText({ quarterly: 2, movements: 1 }, "other")).toBe(
+    expect(
+      joinedFilesText({ quarterly: 2, movements: 1 }, savingsOf("other")),
+    ).toBe(
       "Juntamos 2 archivos con saldos y 1 archivo de movimientos, sin duplicar.",
     );
   });
@@ -43,7 +54,15 @@ describe("joinedFilesText", () => {
   ])(
     "says nothing with one file, or files with balances alone: $quarterly and $movements",
     (files) => {
-      expect(joinedFilesText(files, "bancolombia")).toBeUndefined();
+      expect(joinedFilesText(files, savingsOf("bancolombia"))).toBeUndefined();
     },
   );
+
+  it("names a card's statements, which list its purchases again (12.3d)", () => {
+    const nu: Kind = { bankId: "nu", accountType: "credit_card" };
+    expect(joinedFilesText({ quarterly: 0, movements: 3 }, nu)).toBe(
+      "Juntamos 3 extractos de tu tarjeta, sin duplicar.",
+    );
+    expect(joinedFilesText({ quarterly: 0, movements: 1 }, nu)).toBeUndefined();
+  });
 });

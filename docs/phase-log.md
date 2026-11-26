@@ -2319,3 +2319,61 @@ Checked:
 - **A quarter's or a year's "Tu tarjeta" shows its latest statement that reconciles,** dated by its cut; the period's other statements don't add to it.
 - **The review banner** (6.3c) still shows on a card's summary when the savings account has groups waiting, since it follows the review's own account.
 - **Size:** about 690 lines of code added and 125 deleted, without tests, comments or blank lines (450 to 600 estimated). It lands in commits of one pull request.
+
+## 12.3d A card's movements and installments
+
+_2026-11-26_
+
+A card's purchases in installments now say so. In Movimientos, Nu's September order of $1.200.000 reads "Cuota 2 de 24 · $50.000 al mes" under its tags: October's statement charged its second installment, whatever period the list shows. Its detail adds "Cuota" ("2 de 24 · $50.000 al mes, en tu extracto de oct 2026") and "Te falta pagar" ("$1.100.000, hasta ago 2028"). On the card's summary, beside "Tu extracto, traducido", "Cuotas que te faltan" lists what the latest statement still charges: "Te faltan $1.400.000 en 2 compras.", each purchase with what's left and until when. Every screen was built from v8's pieces.
+
+- **The installments** (`features/cards`):
+  - Each purchase's latest installment comes from the latest statement that reconciles and charges it, by its fingerprint (ADR 0040), read in TypeScript from all of the card's statements (`listCardFigures` without a period) and their purchases (`listCardPurchases`).
+  - A purchase paid in one ("1 de 1", which both banks print) isn't in installments.
+  - What's left comes from the latest statement that reconciles; its last month is that statement's month plus the installments left.
+- **Movimientos of a card:**
+  - each purchase in installments with its line, and its detail with which installment and what's left (decided with the human);
+  - the Movido tile names its payments ("+$500 mil" · "1 pago");
+  - the list's line joins its statements ("Juntamos 3 extractos de tu tarjeta, sin duplicar.").
+- **"Cuotas que te faltan"** (`InstallmentsLeft`, decided with the human), on the card's summary beside "Tu extracto, traducido", last on phones. What the latest statement still charges, whatever the period: "Según tu extracto de oct 2026.", their total, and a row per purchase. Each row is in its kind's colors (a balance transfer only moved a debt) and opens its detail in Movimientos, in its own cycle. When a statement prints no amount left, it counts installments instead of guessing a total.
+- **Pagos fijos and Categorías** read a card's cycles since 12.3c and needed nothing more: Categorías shows a card's categories, and Pagos fijos finds a card's fixed payments from three months of statements, as an account's.
+
+18 new tests: 3 in db (309 there) and 15 in the app (1,704 there):
+
+- db: every statement of a card without a period; a card's purchases by fingerprint, as a list shows them, and none without fingerprints or of another user.
+- the app:
+  - the latest installment of each purchase from statements that reconcile;
+  - what the latest statement still charges, without a purchase paid in one;
+  - an installment and what's left in words, across a new year, without a printed amount;
+  - "Cuotas que te faltan": rows, total, a balance transfer's tone, unprinted amounts, nothing left, none without a statement;
+  - a purchase's installment in its detail, and none left on its last;
+  - a card's payments in the Movido tile;
+  - a card's statements in the list's line;
+  - Movimientos' notes and detail from a card's uploads;
+  - the summary's installments left from a card's uploads.
+
+Checked:
+
+- **In a local browser** (headless, a fresh Clerk test user whose rows the dev seed wrote: a savings account, Bancolombia's card and Nu's card), 19 checks, all passed:
+  - Nu's September in Movimientos: the order's line, no line for a purchase paid in one, "1 pago", and the detail's installment and what's left;
+  - "Cuotas que te faltan" for Nu (2 purchases) and Bancolombia (3, a balance transfer among them), and none for the savings account;
+  - Enter on one of its rows opens the purchase's detail in Movimientos;
+  - Categorías and Pagos fijos of a card;
+  - each page fitting at 390px and 360px.
+  - The test user and its rows were deleted afterwards, and the local database's counts are back to what they were.
+- **Eighteen deliberate bugs,** one at a time, and every one failed a test on the first run, among them:
+  - an installment of a statement that doesn't reconcile, or the latest statement whatever it says;
+  - a purchase paid in one among those left, or noted in its row;
+  - an installment without its month's amount, its last month off by one, or installments counted from the first;
+  - notes for purchases the list doesn't hold, or an open purchase without its installment;
+  - what's left shown on a last installment;
+  - a card's payments as money that came back, and its statements as movements files;
+  - a total without the amounts it doesn't know, a purchase's detail in the page's period, or a balance transfer as spending;
+  - the installments left never read;
+  - a card's statements the newest first, or every movement as a purchase.
+
+**Deviations and follow-ups:**
+
+- **The browser check found a balance transfer drawn as spending** in "Cuotas que te faltan": rows now take their kind's colors, and a test pins it.
+- **"Cuotas que te faltan" is the latest statement's whatever the period,** so a past month's summary shows what's left today, saying which statement it reads.
+- **The review banner** still shows on a card's summary when the savings account has groups waiting (12.3c).
+- **Size:** about 475 lines of code added and 25 deleted, without tests, comments or blank lines (550 to 700 estimated): the period plumbing 12.3c laid made Pagos fijos and Categorías free. It lands in commits of one pull request.

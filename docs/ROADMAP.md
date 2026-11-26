@@ -275,7 +275,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.3a Card accounts saved
 - [x] 12.3b Cards on the upload screen and in the welcome
 - [x] 12.3c Your card
-- [ ] 12.3d A card's movements and installments
+- [x] 12.3d A card's movements and installments
 - [ ] 12.3e Card payments across accounts
 - [ ] 12.4a [HUMAN] Usury rates by month
 - [ ] 12.4b The card's rate against usury
@@ -2618,7 +2618,24 @@ It came out at about 690 lines of code added and 125 deleted, without tests, com
 
 **Done when:** a card's movements and installments read right from seeded data, at 390px and 360px and with the keyboard.
 
-**Commit:** `feat(web): a card's movements and installments`
+Decided with the human when it started (2026-11-26):
+
+- **"Cuotas que te faltan" goes on the card's summary,** beside "Tu extracto, traducido" and last on phones: what the card's latest statement still charges, whatever the period.
+- **A purchase's row shows its latest statement's installment** ("Cuota 3 de 24 · $41.667 al mes"), whatever period the list shows; its detail says which statement and what's left.
+- **One phase,** though estimated at 550 to 700 lines.
+
+Found while building it (2026-11-26):
+
+- **A purchase paid in one is charged "1 de 1"** by both banks' statements: it isn't in installments, so neither its row nor its detail says so.
+- **The installments come from statements that reconcile only,** as "Tu tarjeta"'s figures do. Each purchase's latest is read in TypeScript by its fingerprint (ADR 0040), from all of the card's statements (`listCardFigures` without a period) and their purchases (`listCardPurchases`).
+- **A row of "Cuotas que te faltan"** opens its purchase's detail in Movimientos, in its own cycle, in its kind's colors: a balance transfer only moved a debt.
+- **When a statement prints no amount left,** the row counts the installments left and the card how many purchases, never a total it doesn't know; both banks print it.
+- **Pagos fijos and Categorías needed nothing more:** they read a card's cycles since 12.3c. Pagos fijos finds a card's fixed payments from three months of statements, as an account's.
+- **Movimientos' Movido tile names a card's payments** ("1 pago"), and its line joins a card's statements ("Juntamos 3 extractos de tu tarjeta, sin duplicar.").
+
+It came out at about 475 lines of code added and 25 deleted, without tests, comments or blank lines (550 to 700 estimated), in commits of one pull request: the design rules, the database, the app, and the documents.
+
+**Commits:** `docs(rules): a card's movements and installments`, `feat(db): a card's statements and purchases by fingerprint`, `feat(web): a card's movements and installments`, then `docs: a card's movements and installments`
 
 #### 12.3e Card payments across accounts
 

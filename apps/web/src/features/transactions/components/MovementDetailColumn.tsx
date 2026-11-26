@@ -41,7 +41,11 @@ export function MovementDetailColumn({
       {detail ? (
         <MovementDetailPanel
           key={detail.movement.id}
-          view={movementDetailView(detail.movement, account.id)}
+          view={movementDetailView(
+            detail.movement,
+            account.id,
+            detail.installment,
+          )}
           correction={correctionView(detail, account.id)}
           own={ownRulesView(detail, account.id)}
           closeHref={close}
