@@ -89,6 +89,14 @@ export {
   listCardPurchases,
 } from "./transactions/card-purchase.queries";
 export {
+  type CardPaymentCandidates,
+  type CardPaymentPair,
+  findCardPaymentPair,
+  linkCardPayments,
+  listCardPaymentCandidates,
+  listPaidCards,
+} from "./transactions/card-payment.queries";
+export {
   type BankFigures,
   findLatestVerifiedClosing,
   listBankFigures,

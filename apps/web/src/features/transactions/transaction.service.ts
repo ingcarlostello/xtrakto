@@ -13,10 +13,12 @@ import {
   countCountedMovements,
   countMovementsOfRule,
   countPeriodFiles,
+  findCardPaymentPair,
   findMovementDetail,
   findStatementBreaks,
   findUserId,
   listAccounts,
+  listCardPeriods,
   listCategoryTotals,
   listExportMovements,
   listMovementAccounts,
@@ -44,7 +46,9 @@ import type { CardInstallments } from "@/features/cards/card-installments.types"
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
 import { type CsvFile, movementsCsv } from "@/utils/movements-csv.helpers";
-import { pageDays } from "@/utils/card-cycles.helpers";
+import { isCard } from "@/utils/account-label.helpers";
+import { monthKeyOfDay, pageDays } from "@/utils/card-cycles.helpers";
+import { parsePeriodParam } from "@/utils/transactions-url.helpers";
 import { meetsPeriod } from "./period-selector.helpers";
 import { selectionOf } from "./kind-view.helpers";
 import { rulesOfMovement } from "./own-rules.helpers";
@@ -126,6 +130,18 @@ const locate = async (
 // The movement the URL details, when it's one of the account's that count,
 // and how many others a rule for its text would change. Which movements a
 // text's rule holds for doesn't depend on its category.
+// The other side of a payment to a card (12.3e), with the month it falls
+// in, a card's by its cycles.
+const cardPaymentOf = async (ctx: UserContext, movementId: string) => {
+  const pair = await findCardPaymentPair(ctx, movementId);
+  if (!pair) return {};
+  const cycles = isCard(pair.account)
+    ? (await listCardPeriods(ctx, pair.account.id)).map(({ period }) => period)
+    : null;
+  const period = parsePeriodParam(monthKeyOfDay(pair.date, cycles));
+  return period ? { cardPayment: { pair, period } } : {};
+};
+
 const detailOf = async (
   ctx: UserContext,
   accountId: string,
@@ -140,6 +156,7 @@ const detailOf = async (
     similar:
       rule === null ? null : await countMovementsOfRule(ctx, rule, movement.id),
     rules: rulesOfMovement(movement, await listUserCategoryRules(ctx)),
+    ...(await cardPaymentOf(ctx, movement.id)),
   };
 };
 

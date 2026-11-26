@@ -6,12 +6,16 @@ import {
   createIngestionJobWithinLimit,
   type DbClient,
   findOrCreateUser,
+  type NewIngestionJob,
+  resolveIdentifiedAccount,
   saveUserCategoryRule,
+  type UserId,
   withUserContext,
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser } from "@xtrakto/parsers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { monthExport } from "../../../test/month-exports";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
 import { getCategories } from "./categories.service";
 
@@ -31,10 +35,10 @@ const FIXTURES = new URL(
 const HOUR_MS = 3_600_000;
 const THIRD_QUARTER = { kind: "quarter", year: 2026, quarter: 3 } as const;
 
-// quarterly-basic as the browser sends it: minimized by its parser.
-const quarterlyBasic = () => {
+// A fixture as the browser sends it: minimized by its parser.
+const quarterlyBasic = (name = "quarterly-basic") => {
   const json: unknown = JSON.parse(
-    readFileSync(new URL("quarterly-basic.json", FIXTURES), "utf8"),
+    readFileSync(new URL(`${name}.json`, FIXTURES), "utf8"),
   );
   const content = extractedContentSchema.parse(json);
   const parser = findParser(content);
@@ -120,6 +124,53 @@ describe.skipIf(!testDatabase)("an account's categories", () => {
     });
 
     expect(categories?.period).toEqual(THIRD_QUARTER);
+  });
+
+  it("names the cards a period's payments reached, by their pairs (12.3e)", async () => {
+    const clerkUserId = `test_${randomUUID()}`;
+    const userId: UserId = await findOrCreateUser(app.db, clerkUserId);
+    const accountId = await withUserContext(app.db, userId, (ctx) =>
+      resolveIdentifiedAccount(ctx, {
+        bankId: "bancolombia",
+        accountType: "savings",
+        last4: "8901",
+        currency: "COP",
+      }),
+    );
+    // Nu's September received $500.000 on the 5th, paid by PSE the day before.
+    const jobs: NewIngestionJob[] = [
+      {
+        formatId: "bancolombia-movements-export",
+        extractedContent: monthExport({ year: 2026, month: 9 }, [
+          [4, "PAGO PSE NU COLOMBIA", -500_000],
+        ]),
+        accountId,
+      },
+      quarterlyBasic("nu-card-basic-pdf"),
+    ];
+    for (const job of jobs) {
+      const created = await withUserContext(app.db, userId, (ctx) =>
+        createIngestionJobWithinLimit(ctx, job, {
+          limit: 100,
+          month: {
+            start: new Date(Date.now() - HOUR_MS),
+            end: new Date(Date.now() + HOUR_MS),
+          },
+        }),
+      );
+      if (!created.ok) throw new Error("No job created.");
+      await claimJob({ jobId: created.value, userId });
+      await ingestJob({ jobId: created.value, userId });
+    }
+
+    const categories = await getCategories(clerkUserId, {
+      accountId,
+      period: THIRD_QUARTER,
+    });
+
+    expect(categories?.paidCards).toMatchObject([
+      { bankId: "nu", accountType: "credit_card", last4: "1234" },
+    ]);
   });
 
   it("reads nothing for a user without movements", async () => {

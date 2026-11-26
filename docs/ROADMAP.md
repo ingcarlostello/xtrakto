@@ -276,7 +276,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.3b Cards on the upload screen and in the welcome
 - [x] 12.3c Your card
 - [x] 12.3d A card's movements and installments
-- [ ] 12.3e Card payments across accounts
+- [x] 12.3e Card payments across accounts
 - [ ] 12.4a [HUMAN] Usury rates by month
 - [ ] 12.4b The card's rate against usury
 - [ ] 12.5a What a card costs and what's due
@@ -2646,7 +2646,19 @@ It came out at about 475 lines of code added and 25 deleted, without tests, comm
 
 **Done when:** tests cover a match, one a day apart, two payments of the same amount, one without its card's statement, and another user's that never matches.
 
-**Commit:** `feat: card payments across accounts`
+Decided with the human when it started (2026-11-26): **the pair is kept,** found when either statement is saved, in either order, and stored on the payment (`paid_card_movement_id`), so the review, its banner, Movimientos and the email keep reading what waits for review as they did; worked out when read, each of them would pair on its own, and two payments of the same amount on one day can't pair one to one in a query. ADR 0040 is amended.
+
+Found while building it (2026-11-26):
+
+- **The pairing** (`pairCardPayments`, `@xtrakto/core`): a payment out of any other account and a card's payment in of the same amount, the same day or one apart; the oldest payment first, with the closest day, each side once. Any card of the user's may receive it: the savings side's text doesn't reliably name the card.
+- **The link only empties** when the card's movement goes, as another version of its statement replaces it (migration 0034, a key that sets one of its columns to null, which Drizzle can't declare); the next save pairs it again. Its key carries the user, so it needed a unique key on a movement's id and user (migration 0032).
+- **Each detail's fact links the other side's detail** in its own month, a card's by its cycle ("Llegó a tu tarjeta Nu ••••5678", "Salió de tu cuenta de ahorros ••••8901").
+- **Categorías' "Pago de tarjetas"** adds a link to each card the period's payments reached, to its summary in the same period.
+- **Statements saved before 12.3e pair with the user's next upload,** as 10.1a's matches did.
+
+It came out at about 430 lines of code added and 25 deleted, without tests, comments or blank lines, besides three migrations, in commits of one pull request: the design rules, core, the database, the app, and the documents.
+
+**Commits:** `docs(rules): card payments across accounts`, `feat(core): pair payments to a card with the card's`, `feat(db): link a payment to the card's movement that received it`, `feat(web): card payments across accounts`, then `docs: card payments across accounts`
 
 #### 12.4a [HUMAN] Usury rates by month
 

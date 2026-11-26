@@ -1,5 +1,6 @@
 import { Info, X } from "lucide-react";
 import Link from "next/link";
+import { ROW_LINK } from "@/components/movement-row/movement-row.constants";
 import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
 import { Button, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -88,13 +89,21 @@ function BankTexts({ view }: { view: MovementDetailView }) {
 function DetailFacts({ view }: { view: MovementDetailView }) {
   return (
     <dl className="flex flex-col">
-      {view.facts.map(({ label, value }) => (
+      {view.facts.map(({ label, value, href }) => (
         <div
           key={label}
           className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-divider py-2.5"
         >
           <dt className="text-meta text-ink-muted">{label}</dt>
-          <dd className="text-caption text-ink">{value}</dd>
+          <dd className="text-caption text-ink">
+            {href ? (
+              <Link href={href} className={ROW_LINK}>
+                {value}
+              </Link>
+            ) : (
+              value
+            )}
+          </dd>
         </div>
       ))}
     </dl>

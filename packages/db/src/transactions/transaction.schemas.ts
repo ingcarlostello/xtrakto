@@ -198,6 +198,9 @@ export const transactions = pgTable(
     // The statement's movement that this hidden one repeats, once matched
     // (10.1a): it took this one's reference.
     matchedTransactionId: uuid("matched_transaction_id"),
+    // On a payment to a card, the card's movement that received it, once
+    // paired (12.3e): the same amount, the same day or one apart.
+    paidCardMovementId: uuid("paid_card_movement_id"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -209,6 +212,19 @@ export const transactions = pgTable(
     }).onDelete("cascade"),
     ...coverageConstraints(t),
     ...matchConstraints(t),
+    // What a key that carries its user can reference (12.3e).
+    unique("transactions_id_user_key").on(t.id, t.userId),
+    // A payment to a card is paired with a movement of the same user's card,
+    // each one once. Migration 0034 sets only the link to null when the
+    // card's movement goes, which Drizzle can't declare.
+    foreignKey({
+      name: "transactions_paid_card_fk",
+      columns: [t.paidCardMovementId, t.userId],
+      foreignColumns: [t.id, t.userId],
+    }),
+    uniqueIndex("transactions_paid_card_key")
+      .on(t.paidCardMovementId)
+      .where(sql`${t.paidCardMovementId} is not null`),
     unique("transactions_account_fingerprint_key").on(
       t.accountId,
       t.fingerprint,

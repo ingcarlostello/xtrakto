@@ -9,6 +9,7 @@ import type {
   UserCategoryRule,
 } from "@xtrakto/core";
 import type {
+  CardPaymentPair,
   MovementDetail,
   PeriodFiles,
   TransactionListItem,
@@ -18,6 +19,7 @@ import type { MovementTone } from "@/components/movement-icon/movement-icon.type
 import type { PagePeriodChoices } from "@/components/period-controls/period-controls.types";
 import type {
   MovementFilter,
+  MovementPeriod,
   PagePeriod,
   reviewHref,
 } from "@/utils/transactions-url.helpers";
@@ -160,6 +162,11 @@ export type OpenMovement = {
   readonly rules: MovementRules;
   /** On a card, the latest installment of a purchase in installments (12.3d). */
   readonly installment?: LatestInstallment;
+  /** The other side of a payment to a card, and the month it falls in (12.3e). */
+  readonly cardPayment?: {
+    readonly pair: CardPaymentPair;
+    readonly period: MovementPeriod;
+  };
 };
 
 export type RuleChange = (typeof RULE_CHANGE)[keyof typeof RULE_CHANGE];
@@ -219,7 +226,12 @@ export type CorrectionView = {
 };
 
 /** A line of a movement's detail: "Canal" and "PSE". */
-export type DetailFact = { readonly label: string; readonly value: string };
+export type DetailFact = {
+  readonly label: string;
+  readonly value: string;
+  /** Where it leads, as the other side of a payment to a card does (12.3e). */
+  readonly href?: TransactionsHref;
+};
 
 /** A movement as its detail shows it (docs/ui/v8-03). */
 export type MovementDetailView = {

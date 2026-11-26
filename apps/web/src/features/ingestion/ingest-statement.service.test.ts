@@ -14,6 +14,7 @@ import {
   createIngestionJobWithinLimit,
   type DbClient,
   findAccountHolderName,
+  findCardPaymentPair,
   findOrCreateUser,
   listAccounts,
   listIngestionJobResults,
@@ -29,6 +30,7 @@ import {
 } from "@xtrakto/db";
 import { requireTestDatabase, testDatabase } from "@xtrakto/db/testing";
 import { findParser, MAPPED_FORMAT_ID, mappingParser } from "@xtrakto/parsers";
+import { monthExport } from "../../../test/month-exports";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   claimJob,
@@ -847,5 +849,78 @@ describe.skipIf(!testDatabase)("statement ingestion", () => {
     );
     await expect(ingestion).rejects.not.toHaveProperty("cause");
     expect(await claimJob(job)).toBe(true);
+  });
+
+  describe("a card's payments across accounts (12.3e)", () => {
+    // Nu's September receives $500.000 on 5 September: the savings account
+    // pays it by PSE the day before, which the rules ask about.
+    const PAYMENT = "PAGO PSE NU COLOMBIA";
+    const SAVINGS_EXPORT = monthExport({ year: 2026, month: 9 }, [
+      [4, PAYMENT, -500_000],
+    ]);
+
+    // The user's savings account, which the export is pinned to.
+    const savingsOf = (userId: UserId) =>
+      withUserContext(app.db, userId, (ctx) =>
+        resolveIdentifiedAccount(ctx, {
+          bankId: "bancolombia",
+          accountType: "savings",
+          last4: "8901",
+          currency: "COP",
+        }),
+      );
+
+    const paymentOf = async (userId: UserId, accountId: string) => {
+      const { items } = await withUserContext(app.db, userId, (ctx) =>
+        listTransactions(ctx, { accountId, limit: 100, offset: 0 }),
+      );
+      const payment = items.find((m) => m.descriptionRaw === PAYMENT);
+      if (!payment) throw new Error("No payment.");
+      return payment;
+    };
+
+    it.each([
+      { name: "the savings account's first", cardFirst: false },
+      { name: "the card's first", cardFirst: true },
+    ])(
+      "pairs a payment with the card's a day apart, $name, and it waits for no review",
+      async ({ cardFirst }) => {
+        const userId = await newUser();
+        const accountId = await savingsOf(userId);
+        const uploads = [
+          () => submit(userId, SAVINGS_EXPORT, { accountId }),
+          () => submit(userId, NU_CARD),
+        ];
+        for (const upload of cardFirst ? uploads.reverse() : uploads)
+          await run(await upload());
+
+        const payment = await paymentOf(userId, accountId);
+        expect(payment.isPendingReview).toBe(false);
+        expect(
+          await withUserContext(app.db, userId, (ctx) =>
+            findCardPaymentPair(ctx, payment.id),
+          ),
+        ).toMatchObject({
+          direction: "to",
+          date: "2026-09-05",
+          account: { bankId: "nu", accountType: "credit_card" },
+        });
+      },
+    );
+
+    it("leaves a payment without its card's statement waiting for review", async () => {
+      const userId = await newUser();
+      const accountId = await savingsOf(userId);
+
+      await run(await submit(userId, SAVINGS_EXPORT, { accountId }));
+
+      const payment = await paymentOf(userId, accountId);
+      expect(payment.isPendingReview).toBe(true);
+      expect(
+        await withUserContext(app.db, userId, (ctx) =>
+          findCardPaymentPair(ctx, payment.id),
+        ),
+      ).toBeUndefined();
+    });
   });
 });

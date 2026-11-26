@@ -33,6 +33,7 @@ import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { withSanitizedErrors } from "@/utils/sanitized-error.utils";
 import { balanceCheckOf } from "@/utils/balance-check.helpers";
+import { pairUserCardPayments } from "./card-payment-matching.service";
 import { matchAccountMovements } from "./movement-matching.service";
 
 /** The job a `statement/submitted` event names, and its user. */
@@ -157,8 +158,10 @@ const ingestOpenJob = async (
     balance: balanceCheckOf(parsed.value),
   });
   if (!saved.ok) throw new Error("The resolved account isn't the user's.");
-  // Any upload matches what the account has hidden, saved before or now.
+  // Any upload matches what the account has hidden, saved before or now,
+  // and pairs the payments to the user's cards with the cards' (12.3e).
   await matchAccountMovements(ctx, account.value, { holderName, userRules });
+  await pairUserCardPayments(ctx);
   const { statementId, ...counts } = saved.value;
   const stats = { ...counts, ...foreignOf(parsed.value) };
   await finishIngestionJob(ctx, jobId, { statementId, stats });

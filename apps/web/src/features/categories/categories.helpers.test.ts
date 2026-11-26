@@ -15,6 +15,7 @@ import type {
 import {
   gatewaysTile,
   movedView,
+  paidCardLinks,
   ruleRows,
   spendingRows,
   spendingSubtitle,
@@ -169,6 +170,28 @@ describe("movedView", () => {
         },
       ],
     });
+  });
+
+  it("leads the card payments' row to each card they reached, in the same period (12.3e)", () => {
+    const links = paidCardLinks({
+      paidCards: [
+        { id: "c1", bankId: "nu", accountType: "credit_card", last4: "5678" },
+      ],
+      period: { kind: "quarter", year: 2026, quarter: 3 },
+    });
+
+    expect(links).toEqual([
+      {
+        key: "c1",
+        label: "Ver tu tarjeta Nu ••••5678",
+        href: { pathname: "/", query: { account: "c1", period: "2026-q3" } },
+      },
+    ]);
+    const rows = movedView(categoriesOf(ROWS).summary, links).rows;
+    expect(
+      rows.find(({ key }) => key === "credit_card_payment")?.links,
+    ).toEqual(links);
+    expect(rows.find(({ key }) => key === "investment")?.links).toBeUndefined();
   });
 
   it.each([

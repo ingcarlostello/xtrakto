@@ -254,7 +254,7 @@ describe("movementDetailView", () => {
       closedOn: localDateSchema.parse("2026-10-10"),
     };
 
-    expect(movementDetailView(detail(), "a1", installment).facts).toEqual(
+    expect(movementDetailView(detail(), "a1", { installment }).facts).toEqual(
       expect.arrayContaining([
         {
           label: "Cuota",
@@ -265,7 +265,37 @@ describe("movementDetailView", () => {
     );
     const last = { ...installment, number: 24, remainingMinor: undefined };
     expect(
-      movementDetailView(detail(), "a1", last).facts.map(({ label }) => label),
+      movementDetailView(detail(), "a1", { installment: last }).facts.map(
+        ({ label }) => label,
+      ),
     ).not.toContain("Te falta pagar");
+  });
+
+  it("names a card payment's other side, leading to its detail in its month (12.3e)", () => {
+    const cardPayment = {
+      pair: {
+        direction: "to" as const,
+        movementId: "c1",
+        date: localDateSchema.parse("2026-09-28"),
+        account: {
+          id: "card",
+          bankId: "nu",
+          accountType: "credit_card" as const,
+          last4: "5678",
+        },
+      },
+      period: { kind: "month" as const, year: 2026, month: 10 },
+    };
+
+    expect(
+      movementDetailView(detail(), "a1", { cardPayment }).facts.at(-1),
+    ).toEqual({
+      label: "Pago de tu tarjeta",
+      value: "Llegó a tu tarjeta Nu ••••5678",
+      href: {
+        pathname: "/transactions",
+        query: { account: "card", period: "2026-10", movement: "c1" },
+      },
+    });
   });
 });

@@ -2,6 +2,7 @@ import "server-only";
 import { summarizeMovements } from "@xtrakto/core";
 import {
   findUserId,
+  listPaidCards,
   listSummaryMovements,
   listUserCategoryRules,
   withUserContext,
@@ -9,6 +10,7 @@ import {
 import type { PagePeriodRequest } from "@/components/period-controls/period-controls.types";
 import { locatePagePeriod } from "@/components/period-controls/period-location.service";
 import { getDb } from "@/lib/db";
+import { isCard } from "@/utils/account-label.helpers";
 import { pageDays } from "@/utils/card-cycles.helpers";
 import type { AccountCategories } from "./categories.types";
 
@@ -29,15 +31,22 @@ export const getCategories = async (
   return withUserContext(db, userId, async (ctx) => {
     const located = await locatePagePeriod(ctx, request);
     if (!located) return null;
+    const days = pageDays(located.period, located.cycles);
     const movements = await listSummaryMovements(ctx, {
       accountId: located.account.id,
-      period: pageDays(located.period, located.cycles),
+      period: days,
     });
     return {
       ...located,
       movements,
       summary: summarizeMovements(movements),
       rules: await listUserCategoryRules(ctx),
+      paidCards: isCard(located.account)
+        ? []
+        : await listPaidCards(ctx, {
+            accountId: located.account.id,
+            period: days,
+          }),
     };
   });
 };
