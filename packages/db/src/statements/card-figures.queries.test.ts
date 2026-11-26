@@ -163,4 +163,17 @@ describe.skipIf(!testDatabase)("a card's periods and figures", () => {
     );
     expect(await figuresOf(savings)).toEqual([]);
   });
+
+  it("reads every statement of a card without a period (12.3d)", async () => {
+    const { card } = await withTwoMonths();
+
+    const all = await withUserContext(app.db, card.userId, (ctx) =>
+      listCardFigures(ctx, { accountId: card.accountId }),
+    );
+
+    expect(all.map(({ period }) => period)).toEqual([
+      SEPTEMBER_DAYS,
+      OCTOBER_PERIOD,
+    ]);
+  });
 });

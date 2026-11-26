@@ -55,16 +55,16 @@ export type CardFigures = CardPeriod & {
 };
 
 /**
- * The figures of a card's statements that close on the period's days, the
- * oldest first, as core's schema reads them back; also those that don't
- * reconcile, which say so.
+ * The figures of a card's statements that close on the period's days, or
+ * of all of them without one (12.3d), the oldest first, as core's schema
+ * reads them back; also those that don't reconcile, which say so.
  */
 export const listCardFigures = async (
   { tx, userId }: UserContext,
   {
     accountId,
     period,
-  }: { readonly accountId: string; readonly period: Period },
+  }: { readonly accountId: string; readonly period?: Period },
 ): Promise<CardFigures[]> => {
   const rows = await tx
     .select({
@@ -80,8 +80,8 @@ export const listCardFigures = async (
         eq(statements.userId, userId),
         eq(statements.accountId, accountId),
         isNotNull(statements.card),
-        gte(statements.periodTo, period.from),
-        lte(statements.periodTo, period.to),
+        period && gte(statements.periodTo, period.from),
+        period && lte(statements.periodTo, period.to),
       ),
     )
     .orderBy(asc(statements.periodTo));
