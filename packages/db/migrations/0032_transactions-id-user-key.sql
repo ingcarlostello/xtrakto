@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_id_user_key" UNIQUE("id","user_id");
