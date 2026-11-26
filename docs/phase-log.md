@@ -2181,3 +2181,66 @@ Checked: twenty-one deliberate bugs, one at a time, and every one failed a test 
 - **In production, a card uploaded once this merges is saved,** and some screens still name it as a savings account's file until 12.3b to 12.3d: the upload result's balance check says "Sin saldo para verificar", and "Lo que tienes" and the summary read it as an account without balances.
 - **The rules' table was already past the 300 lines the lint warns at** (322 lines of code): it now has 324, the card's rules in a file of their own.
 - **Size:** about 300 lines of code added and 45 deleted, without tests, comments or blank lines (350 to 450 estimated), besides a 56-line test helper. It lands in commits of one pull request.
+
+## 12.3b Cards on the upload screen and in the welcome
+
+_2026-11-25_
+
+A card's statement now reads as one on the upload screen. Nu's September PDF shows "Nu · Extracto de tu tarjeta · PDF · sep 2026" with "7 movimientos · tarjeta ••••1234". Once read, its result says "Cuadra con tu extracto" · "Sus movimientos y cuotas dan lo que dice tu banco.", and a Bancolombia card with movements in dollars adds "Tu tarjeta tiene 2 movimientos en dólares que aún no contamos.". "Archivos subidos" names it "Extracto de tu tarjeta sep 2026", and "Lo que tienes" and the profile draw its months. The welcome offers "Tarjeta de crédito", no longer "Pronto", with Nu among the banks. Every screen was built from v8's pieces.
+
+- **What it reads** (`v8-07`):
+  - "Bancolombia: lo que ya leemos" adds "Extracto de tu tarjeta de crédito" (Excel and PDF), and "Nu: lo que ya leemos" follows as a block of its own, with "PDF con contraseña".
+  - "¿Otro banco?" says it reads a savings account's movements, since another bank's card isn't read.
+  - The subtitle names the cards, "Cómo cuidamos tus datos" the ID number and the card's digits, and the PDF password's hint both banks.
+- **A card's period** (`statementPeriodText`): the month it closes in, as its bank titles it, in a file's tags, its result and "Archivos subidos". Its row names its card ("tarjeta ••••1234").
+- **Its result** (`resultView`), which its bank's sums check:
+  - "Cuadra con tu extracto" as its pill and its balance step; "Ninguno estaba en tu tarjeta." or "ya estaban en tu tarjeta".
+  - One that doesn't reconcile reads "Tu extracto no cuadra" and links nowhere, since where a card's statement breaks isn't shown yet.
+  - The job's result now knows a card's statement (`accountType`), and that a card's sums check it, as a quarterly statement's balances do.
+- **Its movements in dollars:** ingestion keeps how many the statement left out in the job's counts (`foreign`), so the result says so after a reload too.
+- **Its months** (`cardCoverageViewOf`): those its statements close in, through this month, verified when one that reconciles closes in it and missing otherwise; the purchases a statement lists from earlier months don't reach back. The legend says what verified a month for the accounts shown ("Extracto trimestral o extracto de tu tarjeta, verificado"). The database gives each account's card statements that reconcile (`cardStatements`).
+- **The profile:** "Tus datos" counts a card's files apart, of any bank ("3 archivos: 1 trimestral y 2 de tarjetas."), and "No guardamos tus archivos" names the ID number and the card.
+- **The welcome** (`v8-16`, `v8-17`):
+  - Step 2 offers "Tarjeta de crédito" ("Compras, cuotas e intereses.") and "Banco" lists Bancolombia, Nu and Otro for any file.
+  - Step 3 shows what they need (`downloadContentOf`): Bancolombia's card guide before its savings account's two, Nu's card's guide alone, another bank's savings account for a Nu savings account, and, for another bank's card, that only Bancolombia's and Nu's are read.
+- **12.3a's negative `added`:** a statement that doesn't reconcile shows no new movements, and the upload notice counts none below zero.
+
+29 new tests: 3 in db (304 there) and 26 in the app (1,661 there):
+
+- db: a card's statement in the job's result, checked by its sums, on its card's account; the upload notice never counting a file below zero; a card's statements that reconcile, by their periods, and a card's files counted apart.
+- the app:
+  - a card's period named by the month it closes in, across New Year too, and the period the page read before the format's;
+  - a card's file row with its card;
+  - a card's result, verified, with purchases listed again, with dollars (in a PDF's reading too, and one in the singular), and one that doesn't reconcile, without a link;
+  - "Archivos subidos" for a card's statement, verified, not, and already saved;
+  - the profile's count with a card's files;
+  - a card's timeline by its statements, without the purchases listed from earlier months, and none without a statement that reconciles; what verifies each account's months, and the legend's words for every combination;
+  - each of the welcome's combinations of file and bank;
+  - ingestion keeping a statement's movements in dollars, and the service marking a card's statements.
+
+Checked:
+
+- **In a local browser** (headless, a fresh Clerk test user, invented files), with a Bancolombia quarterly statement beside a Bancolombia card (Excel with dollars, then its PDF) and a Nu card (one that doesn't reconcile, then its locked PDF):
+  - each screen fit at 390px and 360px;
+  - the arrow keys reached "Tarjeta de crédito", and Enter opened Nu's PDF with its invented password;
+  - the PDF after the Excel added nothing, and the Nu version that reconciles replaced the one that doesn't;
+  - the dollars stayed after a reload.
+  - One check expected an amount where the Nu statement that doesn't reconcile has none: its conversion charge is off, while its total adds up, so it reads "Tu extracto no cuadra", as the design rules say.
+  - The test user and its rows were deleted afterwards, and the local database's counts are back to what they were.
+- **Twenty-two deliberate bugs,** one at a time, and every one failed a test on the first run, among them:
+  - a card's period as its months, or its file naming an account;
+  - its pill, step, title or duplicates in a quarterly statement's words, or its link to where it breaks;
+  - the dollars unsaid or never kept;
+  - its months by their start or from its purchases, or verified as a quarterly statement's;
+  - the legend in the accounts' order, a card's files uncounted or counted without balances;
+  - each of the welcome's combinations;
+  - a card's sums read as no balances, a statement that doesn't reconcile covering a month, and a file adding less than nothing.
+
+**Deviations and follow-ups:**
+
+- **A card's statement that doesn't reconcile links nowhere:** "Ver dónde no cuadra" doesn't read a card's statement; a later phase decides how a card shows where it breaks.
+- **Two cards with the same last 4 digits share a timeline's label** ("Tarjeta de crédito ••••1234"), as the invented Bancolombia and Nu cards do; 12.3c names cards by their bank or brand.
+- **The guides' paths are general:** "Ve a Documentos → Extractos" and "Elige tu tarjeta de crédito y el mes" for Bancolombia's card, and "Busca los extractos de tu tarjeta" in Nu's app. The human's real statements don't show the menus, so the human should confirm them.
+- **The summary and the monthly email still read a card's account as before:** its missing months and its month (10.2d, 10.5) wait for 12.3c, and a card in the monthly email stays out of Stage 12.
+- **One full forced run failed one db test once:** it passed in two more full runs and twice alone; its output wasn't kept, likely the bulk saves' timing under load (12.2b).
+- **Size:** about 420 lines of code added and 127 deleted, without tests, comments or blank lines (400 to 550 estimated). It lands in commits of one pull request.
