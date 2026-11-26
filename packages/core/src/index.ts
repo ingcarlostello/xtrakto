@@ -6,6 +6,11 @@ export type {
 } from "./result/app-error.types";
 export { CARD_SUMMARY_KIND, MAX_INSTALLMENTS } from "./cards/card.constants";
 export {
+  type CardPaymentLink,
+  type CardPaymentSide,
+  pairCardPayments,
+} from "./cards/card-payments.helpers";
+export {
   parseCardDate,
   parseCardPeriod,
   parsePercentText,
