@@ -5,8 +5,16 @@ import {
   formatAmount,
   formatDayInWords,
   type PreparedCard,
+  purchaseRateOf,
+  USURY_STANDING,
 } from "@xtrakto/core";
 import type { AccountRow, CardFigures } from "@xtrakto/db";
+import {
+  purchaseRateLine,
+  usuryLine,
+  usuryViewOf,
+} from "@/features/cards/card-rates.helpers";
+import type { UsuryRates } from "@/features/cards/card-rates.types";
 import { accountLabel, isCard } from "@/utils/account-label.helpers";
 import { boxAmount, exactSize } from "@/utils/money-text.utils";
 import { SUMMARY_COPY } from "./summary.constants";
@@ -58,6 +66,28 @@ const figuresOf = ({ card, period }: CardFigures) => {
   };
 };
 
+// Its rate for purchases, and where it stands against the usury of the
+// month its statement closed in (12.4b), when the statement prints one.
+const rateOf = (
+  { card, period }: CardFigures,
+  usuryRates: UsuryRates,
+): YourCardView["rate"] => {
+  const rate = purchaseRateOf(card);
+  if (rate === undefined) return undefined;
+  const usury = usuryViewOf(rate, period.to, usuryRates);
+  return {
+    line: purchaseRateLine(rate.monthlyRatePpm),
+    ...(usury === undefined
+      ? {}
+      : {
+          usury: {
+            isAbove: usury.standing === USURY_STANDING.ABOVE,
+            line: usuryLine(usury),
+          },
+        }),
+  };
+};
+
 // A statement of the period that doesn't reconcile comes first: none of
 // its numbers count. Then the latest that does; else the month misses its
 // statement.
@@ -82,18 +112,24 @@ const statusOf = (
 /**
  * "Tu tarjeta" (12.3c): its latest statement of the period that reconciles,
  * with the debt on the day it was cut, what's due and by when, its limit
- * and what's available, and whether its bank's sums check its statements.
- * A statement that doesn't reconcile shows no figures, as none of its
- * numbers count.
+ * and what's available, its rate for purchases against its month's usury
+ * (12.4b), and whether its bank's sums check its statements. A statement
+ * that doesn't reconcile shows no figures, as none of its numbers count.
  */
 export const yourCardView = ({
   account,
   cardFigures,
-}: Pick<AccountSummary, "account" | "cardFigures">): YourCardView => {
+  usuryRates,
+}: Pick<
+  AccountSummary,
+  "account" | "cardFigures" | "usuryRates"
+>): YourCardView => {
   const verified = cardFigures.findLast(({ isVerified }) => isVerified);
   const broken = cardFigures.findLast(({ isVerified }) => !isVerified);
+  const rate = verified && rateOf(verified, usuryRates);
   return {
     ...(verified ? figuresOf(verified) : { figures: [] }),
+    ...(rate ? { rate } : {}),
     account: accountLabel(account, account.last4),
     status: statusOf(verified, broken),
   };

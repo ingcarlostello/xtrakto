@@ -25,6 +25,7 @@ import type {
 } from "@/utils/transactions-url.helpers";
 import type { CORRECTION_SCOPE, RULE_CHANGE } from "./transaction.constants";
 import type { LatestInstallment } from "@/features/cards/card-installments.types";
+import type { UsuryRates } from "@/features/cards/card-rates.types";
 
 /** What the URL asks the movements list for. */
 export type TransactionsRequest = {
@@ -162,6 +163,8 @@ export type OpenMovement = {
   readonly rules: MovementRules;
   /** On a card, the latest installment of a purchase in installments (12.3d). */
   readonly installment?: LatestInstallment;
+  /** The usury rate of the month its installment's statement closed in (12.4b). */
+  readonly usuryRates?: UsuryRates;
   /** The other side of a payment to a card, and the month it falls in (12.3e). */
   readonly cardPayment?: {
     readonly pair: CardPaymentPair;
@@ -252,6 +255,8 @@ export type MovementDetailView = {
   readonly categoryId: CategoryId | null;
   /** Its channel, reference, source and balance after, those it has. */
   readonly facts: readonly DetailFact[];
+  /** A purchase whose rate passes its month's usury, and what to do (12.4b). */
+  readonly attention?: string;
   /** The category is a best guess waiting for the quick review. */
   readonly isGuess: boolean;
   /** What follows "Por qué:": the rule's reason, or the user's answer. */

@@ -3,6 +3,7 @@ import {
   DEFAULT_TIME_ZONE,
   dailyBalances,
   localDateFromInstant,
+  type Period,
   type ReportedBalanceCheck,
   summarizeMovements,
   withCheckedBalances,
@@ -26,6 +27,7 @@ import {
   periodPayments,
 } from "@/features/recurring/recurring.helpers";
 import { readCardInstallments } from "@/features/cards/card-installments.service";
+import { readUsuryRates } from "@/features/cards/card-rates.service";
 import { checkInPeriod } from "@/features/todays-balance/todays-balance.helpers";
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
@@ -41,6 +43,25 @@ const missingToday = async (ctx: UserContext, account: AccountRow) =>
     account,
     localDateFromInstant(new Date(), DEFAULT_TIME_ZONE),
   );
+
+// A card's statements that close on the period's days (12.3c), the usury
+// rates of the months they close in (12.4b), and what its latest still
+// charges (12.3d); none for any other account.
+const cardPartsOf = async (
+  ctx: UserContext,
+  account: AccountRow,
+  scope: { readonly accountId: string; readonly period: Period },
+): Promise<
+  Pick<AccountSummary, "cardFigures" | "usuryRates" | "installmentsLeft">
+> => {
+  const cardFigures = isCard(account) ? await listCardFigures(ctx, scope) : [];
+  const closedOn = cardFigures.map(({ period }) => period.to);
+  return {
+    cardFigures,
+    usuryRates: await readUsuryRates(ctx, closedOn),
+    installmentsLeft: (await readCardInstallments(ctx, account)).left,
+  };
+};
 
 // The period's balances: those its statements printed, and those a balance
 // typed that adds up worked out for the days only movements files cover
@@ -68,8 +89,9 @@ const balancesOf = (
  * with its last month with movements, as on Pagos fijos, the balance after
  * the last movement that has one and day by day, what a balance typed says
  * of the period (10.3), the bank's own figures from its quarterly
- * statements there, or a card's statements that close in it (12.3c) and
- * what its latest still charges of its purchases in installments (12.3d), those
+ * statements there, or a card's statements that close in it (12.3c) with
+ * the usury rates of their months (12.4b) and what its latest still
+ * charges of its purchases in installments (12.3d), those
  * of its statements that don't reconcile, and the months the account
  * misses. `null` until a movement counts; reading never creates the user's
  * row. The Clerk id must come from the session.
@@ -103,10 +125,7 @@ export const getSummary = async (
       fixedPayments:
         periodPayments(history, scope.period)?.payments.spending ?? [],
       bankFigures: await listBankFigures(ctx, scope),
-      cardFigures: isCard(located.account)
-        ? await listCardFigures(ctx, scope)
-        : [],
-      installmentsLeft: (await readCardInstallments(ctx, located.account)).left,
+      ...(await cardPartsOf(ctx, located.account, scope)),
       unreconciled: await listUnreconciledStatements(ctx, scope),
       ...(await missingToday(ctx, located.account)),
     };

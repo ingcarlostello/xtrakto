@@ -1,12 +1,18 @@
-import type { ChargedInstallment, LocalDate } from "@xtrakto/core";
+import type {
+  CardSummaryKind,
+  ChargedInstallment,
+  LocalDate,
+} from "@xtrakto/core";
 import type { CardPurchase } from "@xtrakto/db";
 
 /**
  * What a card's latest statement that reconciles and charges a purchase
- * charged of it (12.3d), with the day that statement closed.
+ * charged of it (12.3d), with the day that statement closed, and whose it
+ * is, which says how it rounds its rate (12.4b).
  */
 export type LatestInstallment = ChargedInstallment & {
   readonly closedOn: LocalDate;
+  readonly bank: CardSummaryKind;
 };
 
 /** A purchase the card's latest statement still charges, and what's left of it. */

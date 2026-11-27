@@ -26,6 +26,10 @@ import {
   vi,
 } from "vitest";
 import { keepTodaysBalance } from "@/features/todays-balance/todays-balance.service";
+import {
+  FIXTURE_USURY_RATES,
+  saveFixtureUsuryRates,
+} from "../../../test/usury-rates";
 import type {
   MovementPeriod,
   PagePeriod,
@@ -600,6 +604,30 @@ describe.skipIf(!testDatabase)("an account's summary", () => {
     expect(latest?.cardFigures.map(({ period }) => period.to)).toEqual([
       "2026-10-10",
     ]);
+  });
+
+  it("reads the usury rates of the months a card's statements close in (12.4b)", async () => {
+    await saveFixtureUsuryRates(app.db);
+    const card = await userWith(["nu-card-basic-pdf", "nu-card-late-pdf"]);
+    const savings = await userWith(["quarterly-basic"]);
+
+    const third = await getSummary(card.clerkUserId, {
+      accountId: card.accountId,
+      period: THIRD_QUARTER,
+    });
+    const year = await getSummary(card.clerkUserId, {
+      accountId: card.accountId,
+      period: { kind: "year", year: 2026 },
+    });
+
+    expect(third?.usuryRates).toEqual(
+      new Map([["2026-09", FIXTURE_USURY_RATES.get("2026-09")]]),
+    );
+    expect(year?.usuryRates).toEqual(FIXTURE_USURY_RATES);
+    expect(
+      (await getSummary(savings.clerkUserId, { accountId: savings.accountId }))
+        ?.usuryRates,
+    ).toEqual(new Map());
   });
 
   it("lists what a card's latest statement still charges, whatever the period (12.3d)", async () => {

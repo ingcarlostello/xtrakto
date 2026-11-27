@@ -1,3 +1,4 @@
+import { AttentionLine } from "@/components/attention-line/AttentionLine";
 import { StatementIllustration } from "@/components/empty-state/StatementIllustration";
 import { StatusPill } from "@/components/status-pill/StatusPill";
 import { Card } from "@/components/ui/card";
@@ -35,11 +36,30 @@ function Due({ due }: Pick<YourCardView, "due">) {
   );
 }
 
+// "Tasa de compras: 1,90% al mes, 25,34% efectivo anual." over where it
+// stands against its month's usury (12.4b): past it, on the attention
+// surface.
+function Rate({ rate }: Pick<YourCardView, "rate">) {
+  if (!rate) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-sm font-semibold text-ink-secondary">{rate.line}</p>
+      {rate.usury &&
+        (rate.usury.isAbove ? (
+          <AttentionLine>{rate.usury.line}</AttentionLine>
+        ) : (
+          <p className="text-caption text-ink-muted">{rate.usury.line}</p>
+        ))}
+    </div>
+  );
+}
+
 /**
  * "Tu tarjeta" (12.3c, design-system.md §9 account card), in "Tu cuenta"'s
  * place: the debt on the day its latest statement was cut, the card, what's
- * due and by when, its limit and what's available, and the status pill,
- * beside the statement illustration from `sm`.
+ * due and by when, its limit and what's available, its rate for purchases
+ * against its month's usury (12.4b), and the status pill, beside the
+ * statement illustration from `sm`.
  */
 export function YourCard({ summary }: { summary: AccountSummary }) {
   const view = yourCardView(summary);
@@ -64,6 +84,7 @@ export function YourCard({ summary }: { summary: AccountSummary }) {
           <p className="text-sm text-ink-secondary">{view.account}</p>
           <Due due={view.due} />
           <Boxes figures={view.figures} />
+          <Rate rate={view.rate} />
           <StatusPill {...view.status} />
         </div>
         <StatementIllustration className="hidden w-24 shrink-0 sm:block" />

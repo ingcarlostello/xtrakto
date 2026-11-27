@@ -8,6 +8,7 @@ import {
   formatWeekdayInWords,
   type LocalDate,
   quarterOfMonth,
+  USURY_STANDING,
 } from "@xtrakto/core";
 import type { MovementDetail } from "@xtrakto/db";
 import { descriptionView } from "@/components/movement-row/movement-row.helpers";
@@ -19,6 +20,14 @@ import {
   statementText,
 } from "@/features/cards/card-installments.helpers";
 import type { LatestInstallment } from "@/features/cards/card-installments.types";
+import { CARD_RATES_COPY as RATES } from "@/features/cards/card-rates.constants";
+import {
+  rateFact,
+  usuryFact,
+  usuryLine,
+  usuryViewOf,
+} from "@/features/cards/card-rates.helpers";
+import type { UsuryRates } from "@/features/cards/card-rates.types";
 import { CARD_PAYMENTS_COPY } from "@/features/cards/card-payments.constants";
 import { pairedText } from "@/features/cards/card-payments.helpers";
 import { joined } from "@/utils/list-text.utils";
@@ -105,6 +114,31 @@ const installmentFacts = (installment?: LatestInstallment): DetailFact[] => {
   ];
 };
 
+// A purchase's rate, as its latest installment's statement printed it, and
+// the usury of the month that statement closed in (12.4b). Past the usury,
+// what to do takes the usury fact's place, on the attention surface.
+const rateOfInstallment = (
+  installment: LatestInstallment | undefined,
+  usuryRates: UsuryRates = new Map(),
+): { facts: DetailFact[]; attention?: string } => {
+  if (installment?.monthlyRatePpm === undefined) return { facts: [] };
+  const { monthlyRatePpm, bank, closedOn } = installment;
+  const rate = { label: RATES.rate, value: rateFact(monthlyRatePpm) };
+  const usury = usuryViewOf({ monthlyRatePpm, bank }, closedOn, usuryRates);
+  if (usury === undefined) return { facts: [rate] };
+  if (usury.standing === USURY_STANDING.ABOVE)
+    return { facts: [rate], attention: usuryLine(usury) };
+  return {
+    facts: [
+      rate,
+      {
+        label: `${RATES.usuryOf} ${usury.month}`,
+        value: usuryFact({ ...usury, standing: usury.standing }),
+      },
+    ],
+  };
+};
+
 // The other side of a payment to a card (12.3e), leading to its detail.
 const paymentFacts = (payment?: OpenMovement["cardPayment"]): DetailFact[] =>
   payment
@@ -122,7 +156,10 @@ const paymentFacts = (payment?: OpenMovement["cardPayment"]): DetailFact[] =>
     : [];
 
 /** What a card's movement adds to its detail: its installment (12.3d), or a payment's other side (12.3e). */
-export type CardDetail = Pick<OpenMovement, "installment" | "cardPayment">;
+export type CardDetail = Pick<
+  OpenMovement,
+  "installment" | "usuryRates" | "cardPayment"
+>;
 
 // Why it has its category: the rule's reason, which the system gave without
 // AI, the LLM's answer from the bank's text, or the user's answer; or that
@@ -161,8 +198,9 @@ const reviewOf = (accountId: string, date: LocalDate) =>
 
 /**
  * One of an account's movements as its detail shows it (docs/ui/v8-03), a
- * card's purchase with its installments (12.3d), and a payment to a card
- * with its other side (12.3e).
+ * card's purchase with its installments (12.3d) and its rate against its
+ * month's usury (12.4b), and a payment to a card with its other side
+ * (12.3e).
  */
 export const movementDetailView = (
   detail: MovementDetail,
@@ -171,6 +209,7 @@ export const movementDetailView = (
 ): MovementDetailView => {
   const description = descriptionView(detail);
   const { categoryId, isPendingReview } = detail;
+  const rate = rateOfInstallment(card.installment, card.usuryRates);
   return {
     id: detail.id,
     title: titleOf(description),
@@ -184,8 +223,10 @@ export const movementDetailView = (
     facts: [
       ...factsOf(detail),
       ...installmentFacts(card.installment),
+      ...rate.facts,
       ...paymentFacts(card.cardPayment),
     ],
+    ...(rate.attention === undefined ? {} : { attention: rate.attention }),
     isGuess: isPendingReview,
     reason: reasonOf(detail),
     ...(isPendingReview
