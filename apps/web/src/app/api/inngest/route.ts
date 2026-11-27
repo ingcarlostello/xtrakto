@@ -6,6 +6,7 @@ import {
   sendMonthlySummaryEmail,
 } from "@/features/notices/monthly-summary.function";
 import { notifyUploadsFinished } from "@/features/notices/upload-notice.function";
+import { refreshUsuryRatesDaily } from "@/features/usury-rates/usury-rates.function";
 import { inngest } from "@/lib/inngest";
 
 // Inngest syncs the app's functions (PUT) and runs them (POST) through this
@@ -22,5 +23,6 @@ export const { GET, POST, PUT } = serve({
     notifyUploadsFinished,
     queueMonthlySummaries,
     sendMonthlySummaryEmail,
+    refreshUsuryRatesDaily,
   ],
 });
