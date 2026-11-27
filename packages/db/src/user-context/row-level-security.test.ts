@@ -37,6 +37,8 @@ const EXPECTED_PRIVILEGES: Readonly<Record<string, readonly string[]>> = {
   format_mappings: ["SELECT", "INSERT"],
   // Replaced by the next confirmation; the user's deletion takes it.
   user_format_mappings: ["SELECT", "INSERT", "UPDATE"],
+  // Public figures, linked to no one: read; only the cron's function adds.
+  usury_rates: ["SELECT"],
 };
 
 // The tables that hold no user's data, each with its own policies. Every
@@ -60,6 +62,10 @@ const POLICIES_WITHOUT_USER: Readonly<Record<string, readonly string[]>> = {
   // The mappings their balances proved, which every user reads and adds to.
   format_mappings: [
     `PERMISSIVE INSERT ${APP_ROLE} same_check=false uses_setting=false`,
+    `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
+  ],
+  // Each month's usury rate, which every user reads (12.4a).
+  usury_rates: [
     `PERMISSIVE SELECT ${APP_ROLE} same_check=false uses_setting=false`,
   ],
 };
@@ -159,10 +165,11 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
 
   // A SECURITY DEFINER function runs with its owner's rights. Only the daily
   // cleanup, the platform's LLM spend and who asked for the monthly email
-  // may: without parameters, with a
+  // may, without parameters; and the cron that adds each month's usury
+  // rate, whose one parameter only adds public figures (12.4a). All with a
   // fixed search_path, an owner that bypasses Row-Level Security (or they
   // would see nothing) and only the application allowed to run them.
-  it("has three SECURITY DEFINER functions: the daily cleanup, the platform's LLM spend and the monthly email's people", async () => {
+  it("has four SECURITY DEFINER functions: the daily cleanup, the platform's LLM spend, the monthly email's people and the usury rates", async () => {
     const functions = await rowsOf(sql`
       select p.proname as name, p.pronargs as parameters, p.proconfig as settings,
         (select r.rolsuper or r.rolbypassrls from pg_roles r where r.oid = p.proowner) as "ownerBypassesRls",
@@ -174,12 +181,13 @@ describe.skipIf(!testDatabase)("Row-Level Security in the catalog", () => {
 
     expect(functions).toEqual(
       [
-        "expire_stale_ingestion_jobs",
-        "llm_platform_cost_this_month",
-        "users_with_monthly_summary",
-      ].map((name) => ({
+        ["expire_stale_ingestion_jobs", 0],
+        ["llm_platform_cost_this_month", 0],
+        ["save_usury_rates", 1],
+        ["users_with_monthly_summary", 0],
+      ].map(([name, parameters]) => ({
         name,
-        parameters: 0,
+        parameters,
         settings: ["search_path=pg_catalog, pg_temp"],
         ownerBypassesRls: true,
         appRunsIt: true,

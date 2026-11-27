@@ -59,3 +59,4 @@ Write an ADR when a decision is hard to reverse or shapes how other code is writ
 | [0039](0039-the-format-agents-loop-in-the-browser.md)               | The format agent's loop runs in the browser, without LangGraph.js                       | Accepted |
 | [0040](0040-card-purchases-count-in-full-and-payments-only-move.md) | A card's purchases count in full when made, and its payments only move money            | Accepted |
 | [0041](0041-a-cards-months-are-its-statements-cycles.md)            | A card's months are its statements' cycles                                              | Accepted |
+| [0042](0042-usury-rates-from-the-superintendencias-history.md)      | Usury rates from the Superintendencia Financiera's history, read every day              | Accepted |

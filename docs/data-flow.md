@@ -62,20 +62,21 @@ The server receives the minimized content: the rows the parser reads, the accoun
 
 ## What the database keeps
 
-| Data                                                                                                                       | Kept for                                                                |
-| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| A job's minimized content, raw references included                                                                         | Until the job ends; 24 hours at most (daily cleanup at 03:00 in Bogotá) |
-| Statements: period, balances, balance check, content hash; a card's figures and the installments it charges (12.3a)        | Until the person deletes their account                                  |
-| Movements: date, the bank's text, amount, balance, category and the LLM's answer and title; references as HMAC and last 4  | Until the person deletes their account                                  |
-| Accounts: bank, type, last 4 digits, the holder's normalized name, the latest balance typed and its day (10.3)             | Until the person deletes their account                                  |
-| The person's category rules and review answers                                                                             | Until they're undone, or the account is deleted                         |
-| Each LLM call's prompt and version, model, outcome, tokens and cost; never its content                                     | Until the account is deleted                                            |
-| The LLM's answers by redacted bank text and direction, with category, title, confidence and model; no user's id (ADR 0033) | Kept, also after an account is deleted, since none is linked to it      |
-| How the person said to read another bank's spreadsheet: its header's names, each column's role, its formats and the bank   | Until a new confirmation for the format, or the account is deleted      |
-| The same, once a file's balances proved it, for every user of the format; no user's id (ADR 0037)                          | Kept, also after an account is deleted, since none is linked to it      |
-| Which email notices the person receives, once they change one (10.4a)                                                      | Until the account is deleted                                            |
-| `users`: the Clerk id                                                                                                      | Until the account is deleted                                            |
-| The waitlist: name, normalized email, consent version and time                                                             | Until the launch notice, or until the person asks (ADR 0021)            |
+| Data                                                                                                                                                   | Kept for                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| A job's minimized content, raw references included                                                                                                     | Until the job ends; 24 hours at most (daily cleanup at 03:00 in Bogotá) |
+| Statements: period, balances, balance check, content hash; a card's figures and the installments it charges (12.3a)                                    | Until the person deletes their account                                  |
+| Movements: date, the bank's text, amount, balance, category and the LLM's answer and title; references as HMAC and last 4                              | Until the person deletes their account                                  |
+| Accounts: bank, type, last 4 digits, the holder's normalized name, the latest balance typed and its day (10.3)                                         | Until the person deletes their account                                  |
+| The person's category rules and review answers                                                                                                         | Until they're undone, or the account is deleted                         |
+| Each LLM call's prompt and version, model, outcome, tokens and cost; never its content                                                                 | Until the account is deleted                                            |
+| The LLM's answers by redacted bank text and direction, with category, title, confidence and model; no user's id (ADR 0033)                             | Kept, also after an account is deleted, since none is linked to it      |
+| How the person said to read another bank's spreadsheet: its header's names, each column's role, its formats and the bank                               | Until a new confirmation for the format, or the account is deleted      |
+| The same, once a file's balances proved it, for every user of the format; no user's id (ADR 0037)                                                      | Kept, also after an account is deleted, since none is linked to it      |
+| Each month's usury rate for consumer and ordinary credit, as the Superintendencia Financiera publishes it, and where it was read; no user's id (12.4a) | Kept: public figures, linked to no one                                  |
+| Which email notices the person receives, once they change one (10.4a)                                                                                  | Until the account is deleted                                            |
+| `users`: the Clerk id                                                                                                                                  | Until the account is deleted                                            |
+| The waitlist: name, normalized email, consent version and time                                                                                         | Until the launch notice, or until the person asks (ADR 0021)            |
 
 Every table forces Row-Level Security: a person's rows are readable only in their own context (ADR 0014). Deleting the account (`/profile`, or Clerk's `user.deleted` webhook) deletes the `users` row, and the cascades take everything else with it (ADR 0016).
 
@@ -95,6 +96,8 @@ Every table forces Row-Level Security: a person's rows are readable only in thei
 | Langfuse                  | Per LLM call: the prompt's name and version, and each attempt's model, outcome, tokens, cost and times (ADR 0032)                                                                                                                                                                                                      | A prompt, its input or an answer; anyone's id                                              | Its free plan deletes nothing                        |
 
 Every party above keeps its data in the United States but DeepSeek, in China; the privacy page tells both as international transfers.
+
+The server also downloads the Superintendencia Financiera's public usury history once a day (12.4a); the request carries nothing of anyone's.
 
 ## A person's rights
 

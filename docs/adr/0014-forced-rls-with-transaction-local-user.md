@@ -1,6 +1,6 @@
 # 0014. Forced Row-Level Security with a transaction-local user id
 
-- **Status:** Accepted; its grants on `users` are superseded by [0016](0016-users-delete-only-their-own-row.md)
+- **Status:** Accepted; its grants on `users` are superseded by [0016](0016-users-delete-only-their-own-row.md); amended by [0042](0042-usury-rates-from-the-superintendencias-history.md), whose SECURITY DEFINER function takes a parameter
 - **Date:** 2026-10-08
 
 ## Context
@@ -25,6 +25,7 @@ The app connects as `xtrakto_app`: no superuser, no `BYPASSRLS`, member of no ro
 - Every query runs inside a transaction, with one extra statement to set the user.
 - The transaction commits when `fn` resolves, even with an `err()` result: validate before writing, and throw to undo writes. It holds a pooled connection until `fn` ends, so no network calls inside.
 - After a transaction, a pooled connection reads the setting as `''`. `nullif` turns that into no user, which matches no row, instead of failing the cast.
-- Work across users, such as the daily cleanup of ingestion content (Phase 5.5), needs a `SECURITY DEFINER` function owned by the owner, explicitly allowed by the catalog test. Phase 8.3 added the second: the platform's LLM spend of the month, a sum only (`llm_platform_cost_this_month()`).
+- Work across users, such as the daily cleanup of ingestion content (Phase 5.5), needs a `SECURITY DEFINER` function owned by the owner, explicitly allowed by the catalog test. Phase 8.3 added the second: the platform's LLM spend of the month, a sum only (`llm_platform_cost_this_month()`). Phase 10.5 added the third: who asked for the monthly email, ids only (`users_with_monthly_summary()`).
+- **Amended in 12.4a ([ADR 0042](0042-usury-rates-from-the-superintendencias-history.md)):** the fourth function, `save_usury_rates(rates)`, is the first with a parameter. It only adds the months of public usury rates the table doesn't have, which its checks hold, and never changes or deletes one; the catalog test names it with its parameter.
 - On Neon, `neondb_owner` keeps only an admin membership on `xtrakto_app` (PostgreSQL 16 and later): it can set the role's password but can't act as it. Checked on a temporary branch.
 - Migrations and Drizzle Studio run as the owner, which sees every row.
