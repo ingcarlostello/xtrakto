@@ -212,6 +212,7 @@ export {
 } from "./waitlist-entries/waitlist-entry.queries";
 export {
   listUsuryRates,
+  listUsuryRatesOf,
   saveUsuryRates,
   type UsuryRate,
 } from "./usury-rates/usury-rate.queries";
