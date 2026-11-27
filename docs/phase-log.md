@@ -2441,3 +2441,61 @@ Checked:
 - **A paired payment's reason** still says what its rule guessed ("suele ser el pago de una tarjeta"), with the pair beside it.
 - **The local seed saves without ingestion,** so its statements don't pair; the browser check uploaded through the screen.
 - **Size:** about 430 lines of code added and 25 deleted, without tests, comments or blank lines, besides three migrations. It lands in commits of one pull request.
+
+## 12.4a Usury rates by month
+
+_2026-11-27_
+
+Each month's usury rate is now saved, so 12.4b can compare a card's rate with it. Every day at 06:00 in Bogotá, a cron downloads the Superintendencia Financiera's "Histórico Tasa de Usura" and adds the months the table doesn't have. Its first run adds every month since April 2007; afterwards, December's rate arrives in the last days of November, as soon as it's certified. November 2026's is 28,34 % a year for consumer and ordinary credit, where cards fall, saved as 283,400 parts per million.
+
+- **The source** (gate 12.4, decided with the human): the history's Excel 97–2003 file, which the Superintendencia's site links at one address, with every modality's rates since 2007 (ADR 0042).
+- **Reading it** (`readUsuryHistory`, `@xtrakto/parsers`):
+  - every block under "CRÉDITO DE CONSUMO Y ORDINARIO", its usury rate in the column right of the name's, under its "TASA DE USURA" header;
+  - a quarter's rate for each of its months, the later block's for a month two give, and rows with dates and no rates skipped;
+  - numbers written as text too, as a CSV writes them;
+  - a missing block or column, or a date or rate that doesn't read, fails naming where, never a value.
+- **Saved** (`@xtrakto/db`, migrations 0035 and 0036):
+  - `usury_rates`: the month's first day, the rate in parts per million and its source, with a check on each;
+  - any user's context reads it (`listUsuryRates`), and the application can't add, change or delete a row;
+  - `save_usury_rates(rates)`, a SECURITY DEFINER function, adds the months the table doesn't have and returns how many (`saveUsuryRates`). It's the first such function with a parameter, so ADR 0014 is amended and the catalog test names it.
+- **The cron** (`refresh-usury-rates`, `features/usury-rates`): daily at 06:00 in Bogotá, with 3 retries; its step returns counts only. A history that can't be read after them sends Sentry an error, and a month that started without its rate sends a warning, each day until it's there.
+
+10 new tests: 4 in parsers (718 there), 3 in db (316 there) and 3 in the app (1,715 there):
+
+- parsers:
+  - each month of a quarter, the later block's month and the rows without rates;
+  - numbers written as text;
+  - where a date or a rate doesn't read;
+  - no block, no usury column, or a PDF.
+- db:
+  - the months added, and never changed;
+  - a day that isn't a month's first, or a rate of 0, refused;
+  - read by the application, never written by it.
+  - The catalog test now expects the table's read-only grant and policy, and four SECURITY DEFINER functions, one with a parameter.
+- the app:
+  - every month added, then none, with their source;
+  - Sentry told when this month is missing;
+  - a download that fails, or a history that doesn't read, saving nothing.
+
+Checked:
+
+- **The real file,** downloaded from the Superintendencia's site: its 236 months read, April 2007 to November 2026, without a gap. Six of them match the press's reports of the certified rates (January, April, June, August, September and November 2026). Node's own `fetch`, which Vercel runs, gets it in about a second.
+- **The cron in the local Inngest Dev Server:** it synced with its daily trigger and failure handler. Run once, it added the 236 months and returned `{ read: 236, added: 236, hasThisMonth: true }`; run again, it added none. The local database keeps them, which 12.4b's checks will need.
+- **Nineteen deliberate bugs,** one at a time, each failing a test:
+  - a quarter read as its first month, the earlier block winning, the bank's current interest read as usury;
+  - a period from a month's middle, or a rate over 1,000 %, accepted;
+  - a row without rates ending its block, numbers as text left unread, any header taken for the usury rate;
+  - a month already there changed, the application adding months itself, anyone running the function;
+  - the month's day or a rate of 0 unchecked, the months added never counted;
+  - this month's missing rate never told, or taken by its year;
+  - a failed download read anyway, the source left out, an unreadable history taken as an empty one.
+  - Writing them showed that a row without rates ending its block would have passed: the newer block repeated every month after that row. The test data gained a month only the older block gives.
+
+**Deviations and follow-ups:**
+
+- **Daily, not monthly,** and no seed of its own: the first run is the seed (ADR 0042).
+- **The link** is the one the Superintendencia's page gives today. Should a new version get another, the month's warning says so on its first day, and the constant changes.
+- **The web's database tests never rebuild the database,** and the table is shared, so the service's test takes a year of its own each run; with a fixed year, its second run failed.
+- **Production:** the first run after the deploy seeds the history. It's worth a look in Inngest's dashboard that day, since the Superintendencia's site may answer Vercel differently than a development machine.
+- **The privacy page doesn't change:** neither the rates nor the download involve anyone's data; `docs/data-flow.md` names both.
+- **Size:** about 250 lines of code, without tests, comments or blank lines, besides a 23-line migration written by hand. It lands in four commits of one pull request, and `CLAUDE.md`'s line on loading the rates locally in one of its own.

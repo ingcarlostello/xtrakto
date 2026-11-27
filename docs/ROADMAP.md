@@ -94,7 +94,7 @@ The human decides before the phase starts. The agent may propose options with tr
 | Design direction    | 4.3   | Resolved: v8 (October 2026), v7 (the layout of v4 with the style of v6) adjusted after checking real Bancolombia files (`.claude/rules/design-system.md`); screenshots of every screen in `docs/ui/`. |
 | LLM providers       | 8.1   | Resolved: DeepSeek's own API, `deepseek-flash` with `deepseek-v4-pro` as fallback (October 2026; a personal, non-commercial project whose users accept that their redacted bank texts go to China).   |
 | Credit card sample  | 12.1  | Resolved: the human's Bancolombia Mastercard statement (one month, Excel and PDF) and three Nu statements (PDF), November 2026, read locally and never committed (Appendix A.4 and A.5).              |
-| Usury rate source   | 12.4  | Official publication confirmed by the human.                                                                                                                                                          |
+| Usury rate source   | 12.4  | Resolved: the Superintendencia Financiera's "Histórico Tasa de Usura", the Excel its site links with every month's certified rates since 2007 (November 2026).                                        |
 
 ---
 
@@ -277,7 +277,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.3c Your card
 - [x] 12.3d A card's movements and installments
 - [x] 12.3e Card payments across accounts
-- [ ] 12.4a [HUMAN] Usury rates by month
+- [x] 12.4a [HUMAN] Usury rates by month
 - [ ] 12.4b The card's rate against usury
 - [ ] 12.5a What a card costs and what's due
 - [ ] 12.5b Paying only the minimum
@@ -2671,7 +2671,23 @@ It came out at about 430 lines of code added and 25 deleted, without tests, comm
 
 **Done when:** tests cover a month saved, one already there, and a publication that can't be read.
 
-**Commit:** `feat: usury rates by month`
+Decided with the human when it started (2026-11-26, gate 12.4): the Superintendencia Financiera's "Histórico Tasa de Usura", an Excel 97–2003 file its site links at one address, with every modality's certified rates since 2007.
+
+Found while building it (2026-11-26):
+
+- **A daily run, not a monthly one:** a month's rate is certified in the last days of the month before, on no fixed day. So the cron reads the history every day at 06:00 in Bogotá and adds the months the table doesn't have, the coming one as soon as it's published. Its first run adds every month since April 2007, so there's no seed of its own. A history that can't be read after 3 retries sends Sentry an error; a month that started without its rate, a warning (ADR 0042).
+- **The history's layout:**
+  - blocks under each modality's name, consumer and ordinary credit's usury rate in the column right of its name's;
+  - the first years by quarter, read as each of their months;
+  - a row with dates and no rates marks another modality's quarter and is skipped;
+  - a month two blocks give takes the later one's rate.
+  - The rates are fractions, kept in parts per million, as a card's rates are. The reader also takes numbers written as text, as a CSV writes them.
+- **A SECURITY DEFINER function with a parameter,** `save_usury_rates(rates)`: the cron has no user, and the application can only read the table. So the function adds the months, as JSON, those the table doesn't have, and never changes one. ADR 0014 had only functions without parameters; ADR 0042 records the exception.
+- **Checked against the real file:** its 236 months read, April 2007 to November 2026. The cron, run from the local Inngest Dev Server, added them and returned only counts, and a second run added none. Six months match the press's reports of the certified rates.
+
+It came out at about 250 lines of code, without tests, comments or blank lines, besides a 23-line migration written by hand, in commits of one pull request: the parsers' reader, the database, the cron, and the documents; `CLAUDE.md` gains how to load the rates locally in a commit of its own.
+
+**Commits:** `feat(parsers): read the Superintendencia Financiera's usury history`, `feat(db): usury rates by month`, `feat(web): read the usury rates every day`, `docs: usury rates by month`, then `docs: load the usury rates locally`
 
 #### 12.4b The card's rate against usury
 
