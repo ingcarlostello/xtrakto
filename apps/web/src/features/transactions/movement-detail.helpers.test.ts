@@ -252,6 +252,7 @@ describe("movementDetailView", () => {
       monthlyMinor: amountMinorSchema.parse(5_000_000),
       remainingMinor: amountMinorSchema.parse(110_000_000),
       closedOn: localDateSchema.parse("2026-10-10"),
+      bank: "nu" as const,
     };
 
     expect(movementDetailView(detail(), "a1", { installment }).facts).toEqual(
@@ -269,6 +270,51 @@ describe("movementDetailView", () => {
         ({ label }) => label,
       ),
     ).not.toContain("Te falta pagar");
+  });
+
+  it("adds a purchase's rate against its statement's month's usury, and past it what to do (12.4b)", () => {
+    // Invented: October's usury, 28,34% a year, is 2.1010% a month.
+    const usuryRates = new Map([["2026-10", 283_400]]);
+    const installment = (monthlyRatePpm?: number) => ({
+      fingerprint: "a".repeat(64),
+      number: 2,
+      count: 12,
+      ...(monthlyRatePpm === undefined ? {} : { monthlyRatePpm }),
+      closedOn: localDateSchema.parse("2026-10-10"),
+      bank: "bancolombia" as const,
+    });
+    const viewOf = (monthlyRatePpm?: number, rates = usuryRates) =>
+      movementDetailView(detail(), "a1", {
+        installment: installment(monthlyRatePpm),
+        usuryRates: rates,
+      });
+
+    const below = viewOf(19_000);
+    expect(below.facts).toEqual(
+      expect.arrayContaining([
+        { label: "Tasa", value: "1,90% al mes · 25,34% efectivo anual" },
+        {
+          label: "Usura de oct 2026",
+          value: "28,34% efectivo anual · por debajo",
+        },
+      ]),
+    );
+    expect(below).not.toHaveProperty("attention");
+    const above = viewOf(21_100);
+    expect(above.facts.map(({ label }) => label)).toContain("Tasa");
+    expect(above.facts.map(({ label }) => label)).not.toContain(
+      "Usura de oct 2026",
+    );
+    expect(above.attention).toBe(
+      "Esta tasa pasa la usura de oct 2026: 28,34% efectivo anual. Por ley no puede cobrar más: pídele a tu banco que la revise.",
+    );
+    // Without the month's usury, the rate alone; without a rate, neither.
+    expect(
+      viewOf(19_000, new Map()).facts.filter(({ label }) =>
+        label.startsWith("Usura"),
+      ),
+    ).toEqual([]);
+    expect(viewOf().facts.map(({ label }) => label)).not.toContain("Tasa");
   });
 
   it("names a card payment's other side, leading to its detail in its month (12.3e)", () => {

@@ -108,6 +108,12 @@ export const cardStatementSchema = z.strictObject({
   dueDate: localDateSchema.optional(),
   /** When the bank prints it apart from the period's last day. */
   cutDate: localDateSchema.optional(),
+  /**
+   * The monthly rate the bank prints for purchases in installments, apart
+   * from its movements (12.4b): Bancolombia's "Compra 2 - 36 meses". Nu
+   * prints each purchase's rate on its row instead.
+   */
+  purchaseRatePpm: z.int().nonnegative().max(MAX_RATE_PPM).optional(),
   summary: z.discriminatedUnion("kind", [
     bancolombiaSummarySchema,
     nuSummarySchema,

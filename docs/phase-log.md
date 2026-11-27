@@ -2499,3 +2499,70 @@ Checked:
 - **Production:** the first run after the deploy seeds the history. It's worth a look in Inngest's dashboard that day, since the Superintendencia's site may answer Vercel differently than a development machine.
 - **The privacy page doesn't change:** neither the rates nor the download involve anyone's data; `docs/data-flow.md` names both.
 - **Size:** about 250 lines of code, without tests, comments or blank lines, besides a 23-line migration written by hand. It lands in four commits of one pull request, and `CLAUDE.md`'s line on loading the rates locally in one of its own.
+
+## 12.4b The card's rate against usury
+
+_2026-11-27_
+
+A card's rate now sits beside the usury of its month. Bancolombia's September statement prints 1,90% a month for purchases in 2 to 36 installments: "Tu tarjeta" reads "Tasa de compras: 1,90% al mes, 25,34% efectivo anual." over "Por debajo de la usura de sep 2026: 29,24% efectivo anual.". A card that charged 2,50% a month, 34,49% a year, would read on the attention surface "Esta tasa pasa la usura de sep 2026: 29,24% efectivo anual. Por ley no puede cobrar más: pídele a tu banco que la revise.". A purchase in installments' detail adds its own rate and that usury.
+
+- **Decided with the human:** the rate each bank prints for purchases, Bancolombia's from its rates' table and the highest Nu prints on its purchases; three states, "Por debajo", "En el tope" and past the usury; one phase.
+- **The rate** (`@xtrakto/core`, ADR 0043):
+  - `annualRateOf`: a monthly rate compounded twelve times;
+  - `usuryStanding`: past the usury only when the annual rate, at two decimals, reads past it however its bank rounded the monthly one it prints (half of Bancolombia's fourth decimal, of Nu's second); below only when it reads below; at the usury otherwise;
+  - `purchaseRateOf`: Bancolombia's printed purchase rate, Nu's highest.
+  - A card's statement keeps `purchaseRatePpm`, Bancolombia's, as its figures' JSON.
+- **Bancolombia's parsers** (`@xtrakto/parsers`) read the rates' table's monthly rate for purchases, "Compra 2 - 36 meses" in the sheet and "Compra 2 - 36 cuotas" in the PDF, and `minimize` sends that line alone, never the other rates or the annual ones. A table that doesn't print it gives none; one that doesn't read fails, naming where.
+- **The database:** `listUsuryRatesOf` reads the usury rates of the months some days fall in.
+- **The app:**
+  - the summary reads the usury of the months its card statements close in, and "Tu tarjeta" shows its latest statement that reconciles's rate against its month's;
+  - the open detail of a purchase in installments reads its installment's statement's month's, beside "Cuota" and "Te falta pagar";
+  - past the usury, `AttentionLine`, shared by both;
+  - the privacy page names the card's rate among what a statement sends, with its date.
+
+24 new tests: 13 in core (1,111 there), 3 in parsers (721 there), 1 in db (317 there) and 7 in the app (1,722 there):
+
+- core:
+  - a monthly rate compounded;
+  - each bank's rounding at, under and past the usury, the annual rate as it reads;
+  - Bancolombia's printed purchase rate, never an installment's, and Nu's highest.
+- parsers:
+  - the purchase rate in both formats;
+  - none without its line or its table;
+  - a rate that doesn't read failing;
+  - `minimize` sending the purchase line and its monthly rate alone.
+- db: the rates of the days' months, each once, without one the table lacks.
+- the app:
+  - the rate's words;
+  - "Tu tarjeta" in each state, the rate alone without its month's usury, and none without a rate;
+  - a purchase's detail below and past the usury;
+  - the summary and the detail reading their months' usury from the database, the summary for a quarter and a year.
+
+Checked:
+
+- **The human's real statements,** read locally with yes/no answers only, before deciding the month:
+  - every printed rate is under the usury of the month its statement closes in;
+  - Bancolombia's, and one of Nu's three statements, are above the usury of the month the cycle starts in;
+  - Bancolombia's annual rates are its monthly ones compounded, within a millionth;
+  - Nu prints a rate on every purchase, and two different ones in two of its statements.
+  - The private tests pass, and now say that every real Bancolombia statement reads its purchase rate.
+- **In a local browser** (headless, a fresh Clerk test user with the dev seed's invented cards; two variants of Bancolombia's invented September uploaded through the screen with other digits, one at September's usury and one past it), 23 checks, all passed:
+  - each card's "Tu tarjeta" in each state, on the attention surface only past the usury;
+  - each purchase's detail in each state;
+  - the summary and the detail past the usury fitting at 390px and 360px.
+  - The test user and its rows were deleted afterwards, and the local database's counts are back to what they were.
+- **Twenty-two deliberate bugs,** one at a time, each failing a test:
+  - the usury of the cycle's first month; past the usury drawn plain, or without what to do; the usury's fact past it;
+  - the summary or the detail reading no usury; an installment taken as Bancolombia's;
+  - the annual rate compounded eleven times or compared unrounded; a rounding up making a bank pass the usury, or one at it read as below;
+  - Nu read with four decimals; Bancolombia's installments for its purchase rate; Nu's lowest rate;
+  - another line of the rates, or the annual rate, read; an unreadable rate taken as none, in either format;
+  - either format's `minimize` dropping the rate; the PDF reading another line's;
+  - the days' months taken as their days.
+
+**Deviations and follow-ups:**
+
+- **The month is the statement's closing month,** as the real statements show (ADR 0043); the roadmap only said "its month".
+- **Bancolombia's statements saved before 12.4b keep no purchase rate:** the same file again stays out as another version of its period, so "Tu tarjeta" shows one from the next statement. Production's few card statements are the private beta's.
+- **An excess smaller than its bank's rounding** reads "En el tope", never past the usury.
+- **Size:** about 410 lines of code added and 30 deleted, without tests, comments or blank lines (350 to 450 estimated). It lands in six commits of one pull request.

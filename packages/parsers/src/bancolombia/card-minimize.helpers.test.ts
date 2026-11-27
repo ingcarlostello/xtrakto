@@ -50,7 +50,7 @@ describe("minimizeCard", () => {
     expect(bancolombiaCardParser.canParse(minimized)).toBe(true);
   });
 
-  it("keeps neither the address, the city or the department, nor the rates or the authorizations", () => {
+  it("keeps neither the address, the city or the department, nor the authorizations, nor any rate but the monthly one for purchases", () => {
     const sent = JSON.stringify(minimizeCard(fixtureContent(cardDollars)));
 
     for (const text of [
@@ -58,8 +58,9 @@ describe("minimizeCard", () => {
       "MEDELLIN (ANTIOQUIA)",
       "Dirección",
       "Departamento",
-      "Tasas de interés vigente",
+      "Tasa Efectivo Anual",
       "25.3400 %",
+      "Compra un mes",
       "C01234",
       "Interés anual (%)",
       "************1234",
@@ -69,6 +70,7 @@ describe("minimizeCard", () => {
     }
     expect(sent).toContain("ANA MARIA PRUEBA GOMEZ");
     expect(sent).toContain('"1234"');
+    expect(sent).toContain('"Compra 2 - 36 meses","1.9000 %"');
   });
 
   it("leaves no long number, its descriptions' masked", () => {

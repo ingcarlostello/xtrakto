@@ -56,6 +56,7 @@ const leftOf = (
       ? {}
       : { remainingMinor: amountMinorSchema.parse(remaining) }),
     closedOn: localDateSchema.parse("2026-10-10"),
+    bank: "nu",
   },
 });
 
@@ -85,6 +86,7 @@ const summaryWith = (
   balances: null,
   bankFigures: [],
   cardFigures: [],
+  usuryRates: new Map(),
   installmentsLeft:
     purchases === null
       ? null

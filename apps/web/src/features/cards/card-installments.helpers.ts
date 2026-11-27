@@ -29,6 +29,7 @@ export const latestInstallments = (
       latest.set(installment.fingerprint, {
         ...installment,
         closedOn: period.to,
+        bank: card.summary.kind,
       });
   }
   return latest;
@@ -46,6 +47,7 @@ export const installmentsLeft = (
   const latest = statements.findLast(({ isVerified }) => isVerified);
   if (!latest) return null;
   const closedOn = latest.period.to;
+  const bank = latest.card.summary.kind;
   return {
     closedOn,
     purchases: latest.card.installments
@@ -55,7 +57,7 @@ export const installmentsLeft = (
           ({ fingerprint }) => fingerprint === installment.fingerprint,
         );
         return purchase
-          ? [{ purchase, installment: { ...installment, closedOn } }]
+          ? [{ purchase, installment: { ...installment, closedOn, bank } }]
           : [];
       }),
   };

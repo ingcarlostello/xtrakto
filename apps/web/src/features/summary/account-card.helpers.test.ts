@@ -63,6 +63,7 @@ const summaryWith = (changes: Partial<AccountSummary>): AccountSummary => ({
   balances: null,
   bankFigures: [FIGURES],
   cardFigures: [],
+  usuryRates: new Map(),
   installmentsLeft: null,
   unreconciled: [],
   missingMonths: [],

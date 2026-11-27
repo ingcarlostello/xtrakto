@@ -278,7 +278,7 @@ The human decides before the phase starts. The agent may propose options with tr
 - [x] 12.3d A card's movements and installments
 - [x] 12.3e Card payments across accounts
 - [x] 12.4a [HUMAN] Usury rates by month
-- [ ] 12.4b The card's rate against usury
+- [x] 12.4b The card's rate against usury
 - [ ] 12.5a What a card costs and what's due
 - [ ] 12.5b Paying only the minimum
 
@@ -2697,7 +2697,25 @@ It came out at about 250 lines of code, without tests, comments or blank lines, 
 
 **Done when:** the conversion and the comparison are tested.
 
-**Commit:** `feat(web): the card's rate against usury`
+Decided with the human when it started (2026-11-27):
+
+- **The rate** is the one each bank prints for purchases: Bancolombia's in its rates' table, which its parsers now read in Excel and PDF, and the highest Nu prints on its purchases.
+- **Three states:** past the usury only when the rate surely passes it, "en el tope" within its bank's rounding, and below.
+- **One phase,** estimated at 350 to 450 lines.
+
+Found while building it (2026-11-27):
+
+- **The month:** the human's real statements, read locally with yes/no answers only, print every rate under the usury of the month the statement closes in. Bancolombia's, and one of Nu's three statements, are above the usury of the month the cycle starts in. So a rate is weighed against its statement's closing month, the card's month (ADR 0041).
+- **Rounding by bank:** Bancolombia prints four decimals and Nu two, and an annual rate reads with two. A rate is past the usury only when it reads past it however its bank rounded it, and below only when it reads below; one tolerance for every bank would have hidden a real excess of Bancolombia's of up to 0.07 points (ADR 0043).
+- **Nu prints a rate on every purchase,** one paid in one included, and a statement can print two: "Tu tarjeta" takes the highest. The 2.85% its October fixture prints is late interest's, no purchase's.
+- **Bancolombia's annual rates are its monthly ones compounded,** within a millionth, so only the monthly one is kept.
+- **Bancolombia's statements saved before 12.4b keep no purchase rate:** the same file again stays out as another version of its period, so "Tu tarjeta" shows one from the next statement.
+- **A balance transfer's detail** shows its rate too, as any purchase in installments does.
+- **The privacy page** names the card's rate among what a card's statement sends, with its date.
+
+It came out at about 410 lines of code added and 30 deleted, without tests, comments or blank lines (350 to 450 estimated), in commits of one pull request: the design rules, core, the parsers, the database, the app, and the documents.
+
+**Commits:** `docs(rules): a card's rate against usury`, `feat(core): a card's rate against its month's usury`, `feat(parsers): Bancolombia's purchase rate from its rates' table`, `feat(db): the usury rates of some months`, `feat(web): the card's rate against usury`, then `docs: the card's rate against usury`
 
 #### 12.5a What a card costs and what's due
 
@@ -2883,7 +2901,7 @@ Observed on real files. Values below are illustrative; no real data.
   5. `Pagar antes de: ` with the month first and a comma before the year (`oct. 15, 2026`), or `-` when nothing is due.
   6. `Pago mínimo`, `Pago total`, `Cupo total: ` and `Cupo disponible: `: amounts as text with a period for thousands and a comma for decimals (`1.234.567,89`), but the minimum the other way round (`123,456.00`) in the same file.
 - Then the header row `Tasas de interés vigente | Tasa Mes Vencido | Tasa Efectivo Anual | Resumen Saldo Total | (empty) | Resumen Pago Mínimo`, an empty row, and three tables side by side:
-  - the rates by kind (`Compra un mes`, `Compra 2 - 36 meses`, `Impuestos`, `Avances`, `Mora` in pesos; `Compra Internacional`, `Avance Internacional`, `Mora` in dollars), each written `1.9000 %` with a period for decimals;
+  - the rates by kind (`Compra un mes`, `Compra 2 - 36 meses`, `Impuestos`, `Avances`, `Mora` in pesos; `Compra Internacional`, `Avance Internacional`, `Mora` in dollars), each written `1.9000 %` with a period for decimals, its annual rate the monthly one compounded (12.4b reads the monthly rate for purchases in 2 to 36 months);
   - the total's summary: `+ Saldo anterior`, `+ Compras del mes`, `+ Intereses de mora`, `+ Intereses corrientes`, `+ Avances`, `+ Otros cargos`, `Cargos` (their sum, written without its trailing zero: `1.234.567,8`), `(-) Pagos / abonos`, `(-) Saldo a favor` and `Abono` (their sum);
   - the minimum's detail: `Cuota transacciones`, `Cuota Transacciones anteriores`, `Cuota avances`, `+ Intereses de mora`, `+ Intereses corrientes`, `Otros cargos`, `(+) Saldo en mora` and `(-) A favor`.
 - `Movimientos durante el periodo`, then the header `Número de autorización | Fecha | Movimientos | Valor Movimiento | Número de cuotas | Valor cuota/abono | Interés mensual (%) | Interés anual (%) | Saldo pendiente` and a row per movement: an authorization code (`C01234`, empty for interest), the date as `dd/mm/yyyy`, the text (`INTERESES CORRIENTES`, `ABONO SUCURSAL VIRTUAL`), its amount (a charge positive, a payment negative: `-150.000,00`), its installments (`3/12`), the month's installment, the rates (`1,2000`, with a comma here) and what remains to pay.
@@ -2900,7 +2918,7 @@ Observed on real files. Values below are illustrative; no real data.
   - `Información de la Tarjeta *1234` and `Moneda: PESOS`.
   - "Cupo de tu tarjeta": `Deuda a la fecha de corte:` with the debt under it, and `Cupo total:` and `Disponible:`, each with its amount beside it.
   - "Información de pago en pesos": `Periodo facturado` (`31 ago - 30 sep. 2026`), `Pago Total:`, `Pagar antes de:` and `Pago mínimo:`, each value under its label. Nothing due prints `---`.
-  - "Resumen saldo total" at the left and "Detalle del pago mínimo" at the right, then "Tasas de Interés vigente", with the Excel's figures and some labels worded otherwise (`Compra a una cuota` for `Compra un mes`, `(+) En mora` for `(+) Saldo en mora`, `Otros Cargos` for the minimum's `Otros cargos`).
+  - "Resumen saldo total" at the left and "Detalle del pago mínimo" at the right, then "Tasas de Interés vigente", with the Excel's figures and some labels worded otherwise (`Compra a una cuota` for `Compra un mes`, `Compra 2 - 36 cuotas` for `Compra 2 - 36 meses`, `(+) En mora` for `(+) Saldo en mora`, `Otros Cargos` for the minimum's `Otros cargos`).
 - Each summary has a header `Categoría | Transacción | Valor`, and each line its label, a lone `$` and the amount:
   - The total's categories, `Cargos` and `Abonos`, have their totals under them.
   - The minimum's categories are `Cuotas`, `Intereses`, `Otros Cargos` (with its amount beside it) and `Saldos`.
@@ -2921,7 +2939,7 @@ Observed on real files. Values below are illustrative; no real data.
 - From page 2: the header `Fecha | Descripción | Valor | Cuotas | Valor del mes | Interés del mes (Porcentaje y valor) | Total a pagar este mes | Restante por pagar`, some names over two lines, and a row per movement, newest first:
   - the date as `31 AGO` over `2026`, or `11 SEP 2026` on one line;
   - the description over one or two lines (`Tienda Ejemplo` over `Suscripción`);
-  - a purchase's value, `1 de 24` or `1 de 1`, the month's installment, the monthly rate, which changes month to month (`2.05%`), and the month's interest a little apart from it, what to pay this month and what remains;
+  - a purchase's value, `1 de 24` or `1 de 1`, the month's installment, the monthly rate, which changes month to month (`2.05%`), printed on a purchase in one too, and not the same on every purchase of a statement, and the month's interest a little apart from it, what to pay this month and what remains;
   - under a purchase abroad, a sub-row `↪ Comisión por cambio de moneda` with its charge under "Total a pagar este mes";
   - a payment, `Gracias por tu pago`, with its whole value and its parts to the minimum and to the total (negative, the latter not always printed), and sub-rows `↪ A capital`, `↪ A intereses` and `↪ A cargos y comisiones` (`•` instead of `↪` in some months), which aren't movements; its second line sits closer under it than a purchase's;
   - a row's interest of the month, and late interest as a sub-row without a date, `Intereses en` over `mora`, with its rate and value under "Interés del mes".

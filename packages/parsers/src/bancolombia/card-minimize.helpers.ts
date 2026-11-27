@@ -8,7 +8,11 @@ import {
 } from "../sheets/sheet.utils";
 import type { SheetRows } from "../sheets/sheet.utils";
 import { CLIENT_COLUMN, QUARTERLY_BLOCK } from "./bancolombia.constants";
-import { cardSheets, findSummaries } from "./card-header.helpers";
+import {
+  cardSheets,
+  findSummaries,
+  purchaseRateRow,
+} from "./card-header.helpers";
 import {
   findCardTable,
   looksLikeCardMovement,
@@ -67,13 +71,19 @@ const keepLabels = (rows: SheetRows, kept: Kept): void => {
   }
 };
 
-// Both summaries' header, and each of their lines with its amount: not the
-// rates beside them.
+// Both summaries' header, each of their lines with its amount, and the
+// rates' line for purchases in installments with its monthly rate (12.4b):
+// not the other rates beside them.
 const keepSummaries = (rows: SheetRows, kept: Kept): void => {
   const header = findSummaries(rows);
   if (!header.ok) return;
-  const { row: start, total, minimum } = header.value;
-  kept.set(start, keepCells(rows[start] ?? [], new Set([total, minimum])));
+  const { row: start, total, minimum, rates } = header.value;
+  const rateCells = rates === undefined ? [] : [rates.label, rates.monthly];
+  const rateRow = purchaseRateRow(rows, header.value);
+  kept.set(
+    start,
+    keepCells(rows[start] ?? [], new Set([total, minimum, ...rateCells])),
+  );
   const isLine = (cell: SpreadsheetCell | undefined, labels: object) =>
     Object.values(labels).some((label: string) => hasText(cell, label));
   rows.forEach((row, index) => {
@@ -83,6 +93,7 @@ const keepSummaries = (rows: SheetRows, kept: Kept): void => {
       ...(isLine(row[minimum], CARD_MINIMUM_LABEL)
         ? [minimum, minimum + 1]
         : []),
+      ...(index === rateRow ? rateCells : []),
     ];
     if (positions.length > 0)
       kept.set(index, keepCells(row, new Set(positions)));
@@ -150,9 +161,10 @@ const minimizeDollars = (rows: SheetRows): SpreadsheetCell[][] => {
  * Bancolombia's card statement with only what its parser reads (ADR 0017):
  * its sheet in pesos with the holder's name, the card's last 4 digits, the
  * period, what's due and when, the limit, both summaries' lines and each
- * movement's cells read; and of its sheet in dollars, its currency and each
- * movement's date. Never the address, the city or the department, the rates'
- * table or the authorization numbers. Rows keep their positions and sheets
+ * movement's cells read, and its rate for purchases in installments (12.4b);
+ * and of its sheet in dollars, its currency and each movement's date. Never
+ * the address, the city or the department, the other rates or the
+ * authorization numbers. Rows keep their positions and sheets
  * lose their names, so parsing the result gives the same statement.
  */
 export const minimizeCard = (content: ExtractedContent): ExtractedContent => {

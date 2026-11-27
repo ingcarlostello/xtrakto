@@ -47,7 +47,8 @@ const keepField = (
 
 // The labels and values read, the bank's NIT the holder's name is found
 // under, and the summaries' titles each half is found by. The card's number
-// leaves with its last 4 digits only.
+// leaves with its last 4 digits only; of the rates, only the one for
+// purchases in installments (12.4b).
 const keepHeader = (sent: Sent, parts: CardPdfHeaderParts): void => {
   keep(sent, parts.bankId, masked);
   keep(sent, parts.holder);
@@ -59,6 +60,7 @@ const keepHeader = (sent: Sent, parts: CardPdfHeaderParts): void => {
     ...Object.values(parts.payments),
     ...Object.values(parts.total),
     ...Object.values(parts.minimum),
+    parts.purchaseRate,
   ]) {
     keepField(sent, field);
   }

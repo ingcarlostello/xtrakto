@@ -101,6 +101,8 @@ describe("latestInstallments", () => {
       number: 2,
       count: 12,
       closedOn: "2026-10-10",
+      // Whose statement it is says how it rounds its rate (12.4b).
+      bank: "nu",
     });
     expect(latest.get(PHONE)).toMatchObject({
       number: 2,

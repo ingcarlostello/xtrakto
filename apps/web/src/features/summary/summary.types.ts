@@ -15,6 +15,7 @@ import type {
 } from "@xtrakto/db";
 import type { CoverageGaps } from "@/components/coverage-timeline/coverage-gaps.helpers";
 import type { InstallmentsLeft } from "@/features/cards/card-installments.types";
+import type { UsuryRates } from "@/features/cards/card-rates.types";
 import type { CoverageSegment } from "@/components/coverage-timeline/coverage-timeline.types";
 import type {
   ChartEvent,
@@ -47,6 +48,8 @@ export type AccountSummary = PagePeriodChoices & {
   readonly bankFigures: readonly BankFigures[];
   /** A card's statements that close on the period's days (12.3c); none for any other account. */
   readonly cardFigures: readonly CardFigures[];
+  /** The usury rates of the months those statements close in (12.4b). */
+  readonly usuryRates: UsuryRates;
   /**
    * What a card's latest statement that reconciles still charges, whatever
    * the period (12.3d); `null` for any other account, or until one reconciles.
@@ -143,6 +146,14 @@ export type YourCardView = {
   readonly account: string;
   /** Its limit and what's available. */
   readonly figures: readonly BoxFigure[];
+  /**
+   * "Tasa de compras: 1,90% al mes, 25,34% efectivo anual.", and where it
+   * stands against its month's usury, when its statement prints it (12.4b).
+   */
+  readonly rate?: {
+    readonly line: string;
+    readonly usury?: { readonly isAbove: boolean; readonly line: string };
+  };
   readonly status: AccountCardView["status"];
 };
 

@@ -12,3 +12,13 @@ export const PPM_PER_PERCENT = 10_000;
 
 /** The highest rate a card prints, 1,000%, in parts per million. */
 export const MAX_RATE_PPM = 1_000 * PPM_PER_PERCENT;
+
+/**
+ * How many decimals of a percent each bank prints a monthly rate with
+ * (12.4b): Bancolombia's "1.9000 %", Nu's "2.05%". The rate it charges is
+ * within half of the last one.
+ */
+export const PRINTED_RATE_DECIMALS = {
+  [CARD_SUMMARY_KIND.BANCOLOMBIA]: 4,
+  [CARD_SUMMARY_KIND.NU]: 2,
+} as const;

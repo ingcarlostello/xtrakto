@@ -16,6 +16,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { keepTodaysBalance } from "../todays-balance/todays-balance.service";
 import { claimJob, ingestJob } from "../ingestion/ingest-statement.service";
 import { monthExport } from "../../../test/month-exports";
+import {
+  FIXTURE_USURY_RATES,
+  saveFixtureUsuryRates,
+} from "../../../test/usury-rates";
 import { getAccountTransactions } from "./transaction.service";
 
 // Against the test database, as the application role, after real uploads.
@@ -231,7 +235,8 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     ).toBe(true);
   });
 
-  it("notes a card's purchases in installments by their latest statement, in its rows and its detail (12.3d)", async () => {
+  it("notes a card's purchases in installments by their latest statement, in its rows and its detail, with that statement's month's usury (12.3d, 12.4b)", async () => {
+    await saveFixtureUsuryRates(app.db);
     const cardUser = await uploadAs(app, [
       "nu-card-basic-pdf",
       "nu-card-late-pdf",
@@ -260,8 +265,13 @@ describe.skipIf(!testDatabase)("the movements list", () => {
     expect(opened?.detail?.installment).toMatchObject({
       number: 2,
       count: 24,
+      monthlyRatePpm: 20_500,
       closedOn: "2026-10-10",
+      bank: "nu",
     });
+    expect(opened?.detail?.usuryRates).toEqual(
+      new Map([["2026-10", FIXTURE_USURY_RATES.get("2026-10")]]),
+    );
     // A quarter of the card joined its two statements.
     const quarter = await getAccountTransactions(cardUser, {
       period: { kind: "quarter", year: 2026, quarter: 4 },

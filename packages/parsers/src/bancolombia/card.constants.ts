@@ -36,6 +36,18 @@ export const CARD_SUMMARY_HEADER = {
   MINIMUM: "Resumen Pago Mínimo",
 } as const;
 
+/**
+ * The rates' table, under the summaries' header (12.4b): its title, its
+ * monthly rates' column, and the line of its rate for purchases in
+ * installments, as the sheet and the PDF word it.
+ */
+export const CARD_RATES = {
+  TITLE: "Tasas de interés vigente",
+  MONTHLY: "Tasa Mes Vencido",
+  PURCHASES: "Compra 2 - 36 meses",
+  PDF_PURCHASES: "Compra 2 - 36 cuotas",
+} as const;
+
 /** The total's summary, by the field each line fills. */
 export const CARD_TOTAL_LABEL = {
   previousBalanceMinor: "+ Saldo anterior",

@@ -86,7 +86,22 @@ const figuresOf = (
 });
 
 const viewOf = (...cardFigures: CardFigures[]) =>
-  yourCardView({ account: NU_CARD, cardFigures });
+  yourCardView({ account: NU_CARD, cardFigures, usuryRates: new Map() });
+
+// September's usury, invented: 28,34% a year is 2.1010% a month.
+const SEPTEMBER_USURY = new Map([["2026-09", 283_400]]);
+
+// Nu's September with its purchases' monthly rates.
+const nuWithRates = (...rates: number[]): PreparedCard =>
+  preparedCardSchema.parse({
+    ...NU,
+    installments: rates.map((monthlyRatePpm, index) => ({
+      fingerprint: String(index).repeat(64),
+      number: 1,
+      count: 12,
+      monthlyRatePpm,
+    })),
+  });
 
 describe("yourCardView", () => {
   it("reads the debt on the day its statement was cut, what's due and by when, and its limit", () => {
@@ -156,6 +171,55 @@ describe("yourCardView", () => {
     expect(viewOf({ ...october, differenceMinor: null }).status.title).toBe(
       "Tu extracto no cuadra",
     );
+  });
+
+  it("shows its rate for purchases against the usury of the month its statement closed in (12.4b)", () => {
+    const rateIn = (card: PreparedCard) =>
+      yourCardView({
+        account: NU_CARD,
+        cardFigures: [figuresOf(card)],
+        usuryRates: SEPTEMBER_USURY,
+      }).rate;
+
+    expect(
+      rateIn(
+        preparedCardSchema.parse({
+          ...bancolombia(0),
+          purchaseRatePpm: 19_000,
+        }),
+      ),
+    ).toEqual({
+      line: "Tasa de compras: 1,90% al mes, 25,34% efectivo anual.",
+      usury: {
+        isAbove: false,
+        line: "Por debajo de la usura de sep 2026: 28,34% efectivo anual.",
+      },
+    });
+    // The highest Nu prints on its purchases.
+    expect(rateIn(nuWithRates(18_000, 21_000))?.usury).toEqual({
+      isAbove: false,
+      line: "En el tope de la usura de sep 2026: 28,34% efectivo anual.",
+    });
+    expect(rateIn(nuWithRates(21_100))).toEqual({
+      line: "Tasa de compras: 2,11% al mes, 28,48% efectivo anual.",
+      usury: {
+        isAbove: true,
+        line: "Esta tasa pasa la usura de sep 2026: 28,34% efectivo anual. Por ley no puede cobrar más: pídele a tu banco que la revise.",
+      },
+    });
+  });
+
+  it("shows the rate alone without its month's usury, and none when its statement prints none", () => {
+    expect(viewOf(figuresOf(nuWithRates(20_500))).rate).toEqual({
+      line: "Tasa de compras: 2,05% al mes, 27,57% efectivo anual.",
+    });
+    expect(
+      yourCardView({
+        account: NU_CARD,
+        cardFigures: [figuresOf(bancolombia(0))],
+        usuryRates: SEPTEMBER_USURY,
+      }),
+    ).not.toHaveProperty("rate");
   });
 
   it("shows no figures without a statement that reconciles", () => {

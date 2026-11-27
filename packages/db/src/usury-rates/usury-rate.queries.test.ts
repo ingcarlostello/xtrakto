@@ -9,6 +9,7 @@ import { toUserId } from "../user-context/user-context.helpers";
 import { withUserContext } from "../user-context/user-context.queries";
 import {
   listUsuryRates,
+  listUsuryRatesOf,
   saveUsuryRates,
   type UsuryRate,
 } from "./usury-rate.queries";
@@ -63,6 +64,31 @@ describe.skipIf(!testDatabase)("each month's usury rate", () => {
       rate("2091-10-01", 285_900),
       rate("2091-11-01", 283_400),
     ]);
+  });
+
+  it("reads the rates of the months some days fall in, each once, leaving out a month it doesn't have", async () => {
+    await saveUsuryRates(app.db, [
+      rate("2094-01-01", 243_600),
+      rate("2094-02-01", 251_000),
+    ]);
+    const userId = toUserId(await insertUser(owner.db));
+
+    const rates = await withUserContext(app.db, userId, (ctx) =>
+      listUsuryRatesOf(
+        ctx,
+        ["2094-02-10", "2094-01-15", "2094-01-31", "2094-03-01"].map((day) =>
+          localDateSchema.parse(day),
+        ),
+      ),
+    );
+
+    expect(rates).toEqual([
+      rate("2094-01-01", 243_600),
+      rate("2094-02-01", 251_000),
+    ]);
+    expect(
+      await withUserContext(app.db, userId, (ctx) => listUsuryRatesOf(ctx, [])),
+    ).toEqual([]);
   });
 
   it("refuses a day that isn't a month's first, or a rate out of range", async () => {

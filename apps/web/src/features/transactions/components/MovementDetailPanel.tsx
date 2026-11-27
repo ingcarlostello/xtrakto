@@ -1,5 +1,6 @@
 import { Info, X } from "lucide-react";
 import Link from "next/link";
+import { AttentionLine } from "@/components/attention-line/AttentionLine";
 import { ROW_LINK } from "@/components/movement-row/movement-row.constants";
 import { RawTextChip } from "@/components/raw-text-chip/RawTextChip";
 import { Button, IconButton } from "@/components/ui/button";
@@ -195,6 +196,7 @@ export function MovementDetailPanel({
         </p>
         <BankTexts view={view} />
         <DetailFacts view={view} />
+        {view.attention && <AttentionLine>{view.attention}</AttentionLine>}
         <DetailChanges {...changes} />
       </Card>
     </MovementSheet>

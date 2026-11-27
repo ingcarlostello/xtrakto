@@ -42,6 +42,7 @@ import {
 } from "@/features/todays-balance/todays-balance.helpers";
 import { installmentLine } from "@/features/cards/card-installments.helpers";
 import { readCardInstallments } from "@/features/cards/card-installments.service";
+import { readUsuryRates } from "@/features/cards/card-rates.service";
 import type { CardInstallments } from "@/features/cards/card-installments.types";
 import { readBalanceCheck } from "@/features/todays-balance/todays-balance.service";
 import { getDb } from "@/lib/db";
@@ -236,7 +237,8 @@ export const getAccountTransactions = async (
       ...(filter === undefined ? {} : { filter }),
       ...(category === undefined ? {} : { category }),
       ...(await wholePeriod(ctx, shownPeriod)),
-      detail: withInstallment(
+      detail: await withInstallment(
+        ctx,
         await detailOf(ctx, located.account.id, request.movementId),
         installments,
       ),
@@ -258,13 +260,17 @@ const notesOf = (
     }),
   );
 
-// A card's purchase in installments, in its open detail (12.3d).
-const withInstallment = (
+// A card's purchase in installments, in its open detail (12.3d), with the
+// usury rate of the month its statement closed in (12.4b).
+const withInstallment = async (
+  ctx: UserContext,
   detail: OpenMovement | null,
   { byMovement }: CardInstallments,
-): OpenMovement | null => {
+): Promise<OpenMovement | null> => {
   const installment = detail && byMovement.get(detail.movement.id);
-  return detail && installment ? { ...detail, installment } : detail;
+  if (!detail || !installment) return detail;
+  const usuryRates = await readUsuryRates(ctx, [installment.closedOn]);
+  return { ...detail, installment, usuryRates };
 };
 
 // That the days a balance typed worked out add up with the bank (10.3),

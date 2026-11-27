@@ -73,7 +73,7 @@ describe("minimizeCardPdf", () => {
     expect(sentTexts(content).flat()).toContain("SUBTOTAL ***4567");
   });
 
-  it("sends neither the address, the city or the department, nor the rates, the authorizations, the debt or the footers", () => {
+  it("sends neither the address, the city or the department, nor the authorizations, the debt or the footers, nor any rate but the monthly one for purchases", () => {
     const sent = sentTexts(fixtureContent(cardDollarsPdf)).flat();
 
     for (const text of [
@@ -81,7 +81,8 @@ describe("minimizeCardPdf", () => {
       "MEDELLIN (ANTIOQUIA)",
       "ANTIOQUIA",
       "Tasas de Interés vigente",
-      "1.9000%",
+      "Compra a una cuota",
+      "Avances",
       "25.3400%",
       "25,3400 %",
       "C01234",
@@ -95,6 +96,8 @@ describe("minimizeCardPdf", () => {
     expect(sent.some((text) => text.startsWith("DCF:"))).toBe(false);
     expect(sent).toContain("ANA MARIA PRUEBA GOMEZ");
     expect(sent).toContain("Información de la Tarjeta *1234");
+    expect(sent).toContain("Compra 2 - 36 cuotas");
+    expect(sent.filter((text) => text === "1.9000%")).toHaveLength(1);
   });
 
   it("sends a text drawn over itself once, and no long number, its descriptions' masked", () => {

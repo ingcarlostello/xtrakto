@@ -67,6 +67,7 @@ const summaryOf = (
     balances: null,
     bankFigures: [],
     cardFigures: [],
+    usuryRates: new Map(),
     installmentsLeft: null,
     unreconciled: [],
     missingMonths: [],
