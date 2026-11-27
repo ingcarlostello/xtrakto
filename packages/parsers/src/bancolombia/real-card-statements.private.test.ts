@@ -80,6 +80,14 @@ describe.skipIf(contents.length === 0)(
       }
     });
 
+    it("reads each one's rate for purchases in installments (12.4b)", () => {
+      for (const statement of statements) {
+        expect(
+          statement?.ok && statement.value.card?.purchaseRatePpm !== undefined,
+        ).toBe(true);
+      }
+    });
+
     it("parses each minimized exactly as the original", () => {
       const different = contents.filter(
         (content) =>

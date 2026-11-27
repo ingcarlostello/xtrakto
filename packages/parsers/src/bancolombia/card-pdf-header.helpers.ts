@@ -1,4 +1,9 @@
-import { CARD_SUMMARY_KIND, ok, parseCardPeriod } from "@xtrakto/core";
+import {
+  CARD_SUMMARY_KIND,
+  ok,
+  parseCardPeriod,
+  parsePercentText,
+} from "@xtrakto/core";
 import type { CardStatement, Result } from "@xtrakto/core";
 import {
   findField,
@@ -17,6 +22,7 @@ import {
   CARD_PDF_LABEL,
   CARD_PDF_MINIMUM_LABEL,
   CARD_PDF_SUMMARY_TITLE,
+  CARD_RATES,
   CARD_TOTAL_LABEL,
 } from "./card.constants";
 
@@ -45,6 +51,8 @@ export type CardPdfHeaderParts = {
   readonly titles?: readonly [PdfSegment, PdfSegment];
   readonly total: Partial<Record<TotalKey, PdfField>>;
   readonly minimum: Partial<Record<MinimumKey, PdfField>>;
+  /** The rates' line for purchases in installments, beside its monthly rate (12.4b). */
+  readonly purchaseRate?: PdfField;
 };
 
 /** The limit and what's available in "Cupo de tu tarjeta", what's due in "Información de pago". */
@@ -149,8 +157,9 @@ const holderParts = (
  * Finds what the first page in pesos prints by its labels (Appendix A.4b),
  * never by fixed positions: the holder's name under the bank's NIT, the card's
  * last 4 digits, the period, the due date and what's due under their labels,
- * the limit and what's available beside theirs, and each summary's lines in
- * its half of the page.
+ * the limit and what's available beside theirs, each summary's lines in its
+ * half of the page, and the rate for purchases in installments beside its
+ * line of the rates' table (12.4b).
  */
 export const findCardPdfHeader = (
   pesos: readonly PdfLine[],
@@ -167,6 +176,10 @@ export const findCardPdfHeader = (
     }),
     payments: fieldsOf(lines, PAYMENT_LABEL),
     ...summaryParts(lines),
+    purchaseRate: findField(lines, {
+      label: CARD_RATES.PDF_PURCHASES,
+      place: "beside",
+    }),
   };
 };
 
@@ -197,13 +210,23 @@ const readFields = (parts: CardPdfHeaderParts) => {
         labels: CARD_PDF_MINIMUM_LABEL,
         block: MINIMUM,
       }),
+    // None when its rates' table doesn't print it.
+    purchaseRatePpm: () =>
+      parts.purchaseRate === undefined
+        ? ok(undefined)
+        : readField(
+            parts.purchaseRate,
+            { block: CARD_RATES.TITLE, column: CARD_RATES.PDF_PURCHASES },
+            parsePercentText,
+          ),
   });
 };
 
 /**
  * Reads the fields found as the spreadsheet's are read: the holder's name,
  * the card's last 4 digits, the billed period, when it's due, what's due, the
- * limit and what's available, and both summaries.
+ * limit and what's available, both summaries, and the rate for purchases in
+ * installments (12.4b).
  */
 export const readCardPdfHeader = (
   parts: CardPdfHeaderParts,
@@ -224,6 +247,7 @@ export const readCardPdfHeader = (
     payments,
     total,
     minimum,
+    purchaseRatePpm,
   } = header.value;
   return ok({
     holderName,
@@ -232,6 +256,7 @@ export const readCardPdfHeader = (
     card: {
       ...payments,
       ...(dueDate === undefined ? {} : { dueDate }),
+      ...(purchaseRatePpm === undefined ? {} : { purchaseRatePpm }),
       summary: { kind: CARD_SUMMARY_KIND.BANCOLOMBIA, total, minimum },
     },
   });

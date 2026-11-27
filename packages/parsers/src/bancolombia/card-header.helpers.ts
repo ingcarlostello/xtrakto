@@ -5,6 +5,7 @@ import {
   ok,
   parseCardDate,
   parseCardPeriod,
+  parsePercentText,
 } from "@xtrakto/core";
 import type {
   AmountMinor,
@@ -23,6 +24,7 @@ import {
   CARD_LABEL,
   CARD_MINIMUM_LABEL,
   CARD_NUMBER_PATTERN,
+  CARD_RATES,
   CARD_SUMMARY_HEADER,
   CARD_TOTAL_LABEL,
   NOTHING_DUE,
@@ -146,10 +148,26 @@ const readAmountsBeside = <K extends string>(
   return ok(amounts as Record<K, AmountMinor>);
 };
 
-/** The row over both summaries, and the column of each. */
-export const findSummaries = (
-  rows: SheetRows,
-): Result<{ row: number; total: number; minimum: number }> => {
+/**
+ * The row over both summaries, the column of each, and, under the same
+ * header, the rates' table's labels and monthly rates (12.4b).
+ */
+export type SummariesHeader = {
+  readonly row: number;
+  readonly total: number;
+  readonly minimum: number;
+  readonly rates?: { readonly label: number; readonly monthly: number };
+};
+
+// The rates' table's columns in the summaries' header, when it prints one.
+const ratesIn = (cells: SheetRows[number]): Pick<SummariesHeader, "rates"> => {
+  const label = cells.findIndex((cell) => hasText(cell, CARD_RATES.TITLE));
+  const monthly = cells.findIndex((cell) => hasText(cell, CARD_RATES.MONTHLY));
+  return label === -1 || monthly === -1 ? {} : { rates: { label, monthly } };
+};
+
+/** The row over both summaries, the column of each, and the rates' columns. */
+export const findSummaries = (rows: SheetRows): Result<SummariesHeader> => {
   for (const [row, cells] of rows.entries()) {
     const total = cells.findIndex((cell) =>
       hasText(cell, CARD_SUMMARY_HEADER.TOTAL),
@@ -157,12 +175,45 @@ export const findSummaries = (
     const minimum = cells.findIndex((cell) =>
       hasText(cell, CARD_SUMMARY_HEADER.MINIMUM),
     );
-    if (total !== -1 && minimum !== -1) return ok({ row, total, minimum });
+    if (total !== -1 && minimum !== -1)
+      return ok({ row, total, minimum, ...ratesIn(cells) });
   }
   return parseFailed({
     reason: "missing_block",
     block: CARD_SUMMARY_HEADER.TOTAL,
   });
+};
+
+/** The row of the rates' line for purchases in installments, if it prints one (12.4b). */
+export const purchaseRateRow = (
+  rows: SheetRows,
+  { row: start, rates }: SummariesHeader,
+): number | undefined => {
+  if (rates === undefined) return undefined;
+  const row = rows.findIndex(
+    (cells, index) =>
+      index > start && hasText(cells[rates.label], CARD_RATES.PURCHASES),
+  );
+  return row === -1 ? undefined : row;
+};
+
+// Its monthly rate for purchases in installments (12.4b): none when its
+// rates' table doesn't print it.
+const readPurchaseRate = (rows: SheetRows): Result<number | undefined> => {
+  const header = findSummaries(rows);
+  if (!header.ok || header.value.rates === undefined) return ok(undefined);
+  const row = purchaseRateRow(rows, header.value);
+  if (row === undefined) return ok(undefined);
+  const rate = parsePercentText(
+    cellText(rows[row]?.[header.value.rates.monthly]) ?? "",
+  );
+  return rate.ok
+    ? rate
+    : parseFailed({
+        reason: "invalid_value",
+        block: CARD_RATES.TITLE,
+        column: CARD_RATES.PURCHASES,
+      });
 };
 
 const readSummary = (rows: SheetRows): Result<CardSummary> => {
@@ -194,7 +245,8 @@ const readSummary = (rows: SheetRows): Result<CardSummary> => {
  * Reads what the card's sheet in pesos prints before its movements: the
  * holder's name (never the address, the city or the department), the card's
  * last 4 digits, the billed period, when it's due, what's due, the limit and
- * what's available, and both summaries.
+ * what's available, both summaries, and its rate for purchases in
+ * installments (12.4b).
  */
 export const readCardHeader = (rows: SheetRows): Result<CardHeader> => {
   const header = readAll({
@@ -214,10 +266,12 @@ export const readCardHeader = (rows: SheetRows): Result<CardHeader> => {
         block: CARD_LABEL.CARD,
       }),
     summary: () => readSummary(rows),
+    purchaseRatePpm: () => readPurchaseRate(rows),
   });
   if (!header.ok) return header;
   const { holderName, accountLast4, period, dueDate, payments, summary } =
     header.value;
+  const { purchaseRatePpm } = header.value;
   return ok({
     holderName,
     accountLast4,
@@ -225,6 +279,7 @@ export const readCardHeader = (rows: SheetRows): Result<CardHeader> => {
     card: {
       ...payments,
       ...(dueDate === undefined ? {} : { dueDate }),
+      ...(purchaseRatePpm === undefined ? {} : { purchaseRatePpm }),
       summary,
     },
   });

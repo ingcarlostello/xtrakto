@@ -70,7 +70,7 @@ const failureOf = (content: ExtractedContent) => {
 };
 
 describe("bancolombiaCardParser", () => {
-  it("reads the holder, the card, the period, what's due and both summaries", () => {
+  it("reads the holder, the card, the period, what's due, both summaries and the purchase rate", () => {
     expect(parsed(BASIC)).toMatchObject({
       bankId: "bancolombia",
       formatId: "bancolombia-credit-card",
@@ -86,6 +86,7 @@ describe("bancolombiaCardParser", () => {
         minimumPaymentMinor: 57_450_100,
         totalPaymentMinor: 328_450_100,
         dueDate: "2026-10-15",
+        purchaseRatePpm: 19_000,
         summary: {
           kind: "bancolombia",
           total: {
@@ -252,6 +253,19 @@ describe("bancolombiaCardParser", () => {
       },
     ],
     [
+      "a purchase rate that reads",
+      withPesos((rows) =>
+        rows.map((row) =>
+          row[0] === "Compra 2 - 36 meses" ? row.with(1, "mucho") : row,
+        ),
+      ),
+      {
+        reason: "invalid_value",
+        block: "Tasas de interés vigente",
+        column: "Compra 2 - 36 meses",
+      },
+    ],
+    [
       "a movements header with its columns",
       withPesos((rows) =>
         rows.map((row, index) => (index === 30 ? row.with(6, "Tasa") : row)),
@@ -280,6 +294,23 @@ describe("bancolombiaCardParser", () => {
     ],
   ])("fails without %s, naming where", (_, content, failure) => {
     expect(failureOf(content)).toMatchObject(failure);
+  });
+
+  it("reads no purchase rate when its rates' table doesn't print it", () => {
+    const withoutLine = withPesos((rows) =>
+      rows.map((row) =>
+        row[0] === "Compra 2 - 36 meses" ? row.with(0, null) : row,
+      ),
+    );
+    const withoutTable = withPesos((rows) =>
+      rows.map((row) =>
+        row[0] === "Tasas de interés vigente" ? row.with(0, null) : row,
+      ),
+    );
+
+    for (const content of [withoutLine, withoutTable]) {
+      expect(parsed(content).card).not.toHaveProperty("purchaseRatePpm");
+    }
   });
 
   it("fails on a PDF's content", () => {

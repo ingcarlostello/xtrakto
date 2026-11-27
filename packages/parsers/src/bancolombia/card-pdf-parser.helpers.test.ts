@@ -101,6 +101,34 @@ describe("bancolombiaCardPdfParser", () => {
     expect(extracted.ok && parse(extracted.value)).toEqual(parse(BASIC_PDF));
   });
 
+  it("reads no purchase rate without its line, and fails on one that doesn't read", () => {
+    // The line of the rates' table for purchases in installments.
+    const rateY = BASIC_PDF.pages[0]?.items.find(
+      ({ str }) => str === "Compra 2 - 36 cuotas",
+    )?.y;
+    const withoutLine = changed((item) =>
+      item.str === "Compra 2 - 36 cuotas" ? undefined : item,
+    );
+    const statement = parse(withoutLine);
+
+    expect(statement.ok && statement.value.card).not.toHaveProperty(
+      "purchaseRatePpm",
+    );
+    expect(
+      failureOf(
+        changed((item) =>
+          item.str === "1.9000%" && item.y === rateY
+            ? { ...item, str: "mucho" }
+            : item,
+        ),
+      ),
+    ).toMatchObject({
+      reason: "invalid_value",
+      block: "Tasas de interés vigente",
+      column: "Compra 2 - 36 cuotas",
+    });
+  });
+
   it("reads nothing due when the date is dashes, and a period across New Year", () => {
     const statement = parse(
       replaced(
