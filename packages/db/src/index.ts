@@ -210,3 +210,8 @@ export {
   addWaitlistEntry,
   type NewWaitlistEntry,
 } from "./waitlist-entries/waitlist-entry.queries";
+export {
+  listUsuryRates,
+  saveUsuryRates,
+  type UsuryRate,
+} from "./usury-rates/usury-rate.queries";

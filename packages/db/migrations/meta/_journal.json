@@ -246,6 +246,20 @@
       "when": 1795730910820,
       "tag": "0034_card-payment-links-set-null",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795733062082,
+      "tag": "0035_usury-rates",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795733072572,
+      "tag": "0036_usury-rates-rls",
+      "breakpoints": true
     }
   ]
 }
