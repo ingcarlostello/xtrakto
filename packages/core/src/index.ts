@@ -4,7 +4,19 @@ export type {
   AppErrorCode,
   AppErrorDetails,
 } from "./result/app-error.types";
-export { CARD_SUMMARY_KIND, MAX_INSTALLMENTS } from "./cards/card.constants";
+export {
+  CARD_SUMMARY_KIND,
+  MAX_INSTALLMENTS,
+  PPM_PER_PERCENT,
+} from "./cards/card.constants";
+export {
+  annualRateOf,
+  type PrintedRate,
+  purchaseRateOf,
+  USURY_STANDING,
+  type UsuryStanding,
+  usuryStanding,
+} from "./cards/card-rates.helpers";
 export {
   type CardPaymentLink,
   type CardPaymentSide,
